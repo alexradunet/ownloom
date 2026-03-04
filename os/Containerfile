@@ -1,0 +1,63 @@
+# Bloom OS — Fedora bootc 42 with Pi coding agent
+# Build: podman build -f os/Containerfile -t bloom-os:latest .
+# Install: sudo bootc install to-disk /dev/sdX --source-imgref containers-storage:bloom-os:latest
+FROM quay.io/fedora/fedora-bootc:42
+
+# System packages
+RUN dnf install -y \
+    podman \
+    nodejs \
+    npm \
+    git \
+    ripgrep \
+    fd-find \
+    jq \
+    && dnf clean all
+
+# Create bloom system user
+RUN useradd -r -m -d /var/lib/bloom -s /bin/bash -u 900 bloom
+
+# Install Pi coding agent globally
+RUN npm install -g @mariozechner/pi-coding-agent
+
+# Install Bloom Pi package
+COPY . /usr/local/share/bloom/
+RUN cd /usr/local/share/bloom && npm install --production 2>/dev/null || true
+
+# Configure Pi to load Bloom package
+RUN mkdir -p /var/lib/bloom/.pi/agent && \
+    echo '{"packages": ["/usr/local/share/bloom"]}' > /var/lib/bloom/.pi/agent/settings.json && \
+    chown -R bloom:bloom /var/lib/bloom
+
+# Install persona files
+RUN mkdir -p /usr/local/share/bloom/persona
+
+# Create default objects directory
+RUN mkdir -p /var/lib/bloom/.bloom/objects && \
+    chown -R bloom:bloom /var/lib/bloom/.bloom
+
+# Install Quadlet files for WhatsApp bridge
+COPY bridges/whatsapp/quadlet/ /usr/share/containers/systemd/
+
+# Systemd service for Pi auto-start on login
+COPY os/sysconfig/bloom-greeting.sh /usr/local/bin/bloom-greeting.sh
+RUN chmod +x /usr/local/bin/bloom-greeting.sh
+
+# Add bloom user to necessary groups
+RUN usermod -aG systemd-journal bloom
+
+# Set default environment
+RUN echo 'export BLOOM_OBJECTS_DIR=/var/lib/bloom/.bloom/objects' >> /var/lib/bloom/.bashrc && \
+    echo 'export PATH="/usr/local/share/bloom/node_modules/.bin:$PATH"' >> /var/lib/bloom/.bashrc && \
+    echo '# Start Pi on interactive login' >> /var/lib/bloom/.bash_profile && \
+    echo 'if [ -t 0 ] && [ -z "$PI_SESSION" ]; then' >> /var/lib/bloom/.bash_profile && \
+    echo '  export PI_SESSION=1' >> /var/lib/bloom/.bash_profile && \
+    echo '  /usr/local/bin/bloom-greeting.sh' >> /var/lib/bloom/.bash_profile && \
+    echo '  exec pi' >> /var/lib/bloom/.bash_profile && \
+    echo 'fi' >> /var/lib/bloom/.bash_profile && \
+    chown bloom:bloom /var/lib/bloom/.bashrc /var/lib/bloom/.bash_profile
+
+# Labels
+LABEL com.github.containers.toolbox="false"
+LABEL bloom.version="0.1.0"
+LABEL description="Bloom — Pi-native AI companion OS"

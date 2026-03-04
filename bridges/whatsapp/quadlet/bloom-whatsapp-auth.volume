@@ -1,0 +1,4 @@
+[Unit]
+Description=Bloom WhatsApp auth state volume
+
+[Volume]

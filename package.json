@@ -1,0 +1,26 @@
+{
+  "name": "bloom",
+  "version": "0.1.0",
+  "description": "Bloom — Pi-native OS platform on Fedora bootc",
+  "type": "module",
+  "private": true,
+  "keywords": ["pi-package"],
+  "pi": {
+    "extensions": ["./extensions"],
+    "skills": ["./skills"]
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "@sinclair/typebox": "*"
+  },
+  "devDependencies": {
+    "@mariozechner/pi-coding-agent": "^0.55.4",
+    "@sinclair/typebox": "^0.34.0",
+    "typescript": "^5.7.0"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "check": "npx @biomejs/biome check .",
+    "check:fix": "npx @biomejs/biome check --write ."
+  }
+}
