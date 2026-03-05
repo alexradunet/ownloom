@@ -118,3 +118,4 @@ Each artifact carries standard annotations:
 | `whisper` | media | 9000 | Speech-to-text transcription via faster-whisper |
 | `whatsapp` | communication | — | WhatsApp messaging bridge via Baileys |
 | `tailscale` | networking | — | Secure mesh VPN via Tailscale |
+| `syncthing` | sync | 8384 | Peer-to-peer sync for the Garden vault |

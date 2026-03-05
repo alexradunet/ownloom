@@ -55,11 +55,12 @@ Preferred sequence:
 If fork URL is already known, pass `fork_url` explicitly.
 If not, `bloom_repo_configure` tries to create/attach one via `gh` when authenticated.
 
-### 5) Syncthing Setup
+### 5) Syncthing Setup (tool-first)
 
-- Check service state (user/system depending on host setup)
+- Install service package: `service_install(name="syncthing", version="0.1.0")`
+- Validate service: `service_test(name="syncthing")`
 - Direct user to `http://localhost:8384`
-- Help add/share `~/Garden`
+- Help add/share `~/Garden` (mapped in container as `/var/syncthing/Garden`)
 
 ### 6) Optional Service Packages (tool-first)
 

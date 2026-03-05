@@ -5,7 +5,6 @@ FROM quay.io/fedora/fedora-bootc:42@sha256:88db1a4a445e904a40187fc23594500a0671a
 
 # System + development packages
 RUN dnf install -y \
-    syncthing \
     git \
     git-lfs \
     gh \
@@ -96,9 +95,6 @@ RUN mkdir -p /usr/local/share/bloom/persona
 # Systemd service for Pi auto-start on login
 COPY os/sysconfig/bloom-greeting.sh /usr/local/bin/bloom-greeting.sh
 RUN chmod +x /usr/local/bin/bloom-greeting.sh
-
-# Syncthing user service
-RUN systemctl enable syncthing@bloom.service
 
 # Boot to desktop with greetd (sway is configured as default session)
 RUN systemctl enable greetd.service

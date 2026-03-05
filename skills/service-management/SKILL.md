@@ -129,6 +129,7 @@ Services may depend on other components:
 | `whatsapp` | Pi channels server (`/run/bloom/channels.sock`) | Unix socket reconnect with exponential backoff |
 | `whisper` | None (standalone HTTP API) | — |
 | `tailscale` | Network stack (NET_ADMIN, /dev/net/tun) | Host network mode |
+| `syncthing` | Syncthing peers and local Garden bind mount | Host network mode + `%h/Garden` bind mount |
 
 Pi's channels server is a user-space interactive process, not a systemd service. Service bridges handle unavailability via reconnect logic.
 
@@ -180,3 +181,4 @@ Then pass it to `service_install`:
 | `whisper` | 0.1.0 | media | Speech-to-text transcription (faster-whisper, port 9000) |
 | `whatsapp` | 0.1.0 | communication | WhatsApp messaging bridge via Baileys |
 | `tailscale` | 0.1.0 | networking | Secure mesh VPN via Tailscale |
+| `syncthing` | 0.1.0 | sync | Peer-to-peer Garden vault sync via Syncthing (port 8384 UI) |
