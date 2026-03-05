@@ -14,11 +14,11 @@ This document defines Bloom's baseline supply-chain controls for bootc images an
 2. Treat `latest` as development-only.
 3. Prefer digest verification at install time:
    - Resolve digest: `oras resolve ghcr.io/pibloom/bloom-svc-{name}:{version}`
-   - Install with verification: `service_install(..., expected_digest="sha256:...")`
+   - Install with verification: `svc_install(..., expected_digest="sha256:...")`
 
 ### Tooling Enforcement
 
-`service_install` enforces:
+`svc_install` enforces:
 
 - `version=latest` blocked by default (`allow_latest=true` required to override)
 - Optional artifact digest verification via `expected_digest`
@@ -46,6 +46,6 @@ Service container images must be pinned:
 
 - [ ] Service artifacts published with semver tags
 - [ ] Quadlet images pinned (digest preferred)
-- [ ] `service_test` passes for each service
-- [ ] `service_install` tested with `expected_digest`
+- [ ] `svc_test` passes for each service
+- [ ] `svc_install` tested with `expected_digest`
 - [ ] Docs updated when image/digest references change

@@ -24,31 +24,31 @@ Service metadata defaults (version, artifact ref, preflight requirements) are tr
 
 Bloom exposes service lifecycle tools:
 
-- `service_scaffold` — create a new service package skeleton
-- `service_publish` — publish service package to OCI registry
-- `service_install` — install service package from OCI artifact
-- `service_test` — run a local smoke test on installed units
+- `svc_scaffold` — create a new service package skeleton
+- `svc_publish` — publish service package to OCI registry
+- `svc_install` — install service package from OCI artifact
+- `svc_test` — run a local smoke test on installed units
 
 Related declarative tools:
 
-- `manifest_set_service` — declare desired service state in `~/Garden/Bloom/manifest.yaml`
-- `manifest_apply` — apply desired state (install missing, start enabled, stop disabled)
+- `runtime_manifest_set_service` — declare desired service state in `~/Garden/Bloom/manifest.yaml`
+- `runtime_manifest_apply` — apply desired state (install missing, start enabled, stop disabled)
 
 ## End-to-End Example (Scaffold → Test → Publish → Install)
 
 Use this sequence when creating a new service package:
 
 1. Scaffold package files:
-   - `service_scaffold(name="demo-api", description="Demo HTTP API", image="docker.io/library/nginx:stable", version="0.1.0", port=9080, container_port=80)`
+   - `svc_scaffold(name="demo-api", description="Demo HTTP API", image="docker.io/library/nginx:stable", version="0.1.0", port=9080, container_port=80)`
 2. Smoke test locally:
-   - `service_test(name="demo-api", start_timeout_sec=120)`
+   - `svc_test(name="demo-api", start_timeout_sec=120)`
 3. Publish immutable version:
-   - `service_publish(name="demo-api", version="0.1.0")`
+   - `svc_publish(name="demo-api", version="0.1.0")`
 4. Install that exact version:
-   - `service_install(name="demo-api", version="0.1.0")`
+   - `svc_install(name="demo-api", version="0.1.0")`
 5. Verify result:
    - `systemctl --user status bloom-demo-api`
-   - `manifest_show`
+   - `runtime_manifest_show`
 
 For socket-activated services, scaffold with `socket_activated=true` and a `port`, then verify both units:
 - `systemctl --user status bloom-{name}.socket`
@@ -82,7 +82,7 @@ rm -rf /tmp/bloom-svc
 
 Notes:
 
-- `service_install` is registry-first. If OCI pull fails but the service package exists in the local Bloom bundle, it may install from the bundled copy as a fallback.
+- `svc_install` is registry-first. If OCI pull fails but the service package exists in the local Bloom bundle, it may install from the bundled copy as a fallback.
 - For `tailscale`, ensure rootless Podman subuid/subgid mappings exist for user `bloom` (`/etc/subuid`, `/etc/subgid`).
 
 ## Remove a Service
@@ -164,7 +164,7 @@ OCI artifacts use semver tags: `ghcr.io/pibloom/bloom-svc-whisper:0.1.0`
 
 ### Check Installed Version
 
-The manifest at `~/Garden/Bloom/manifest.yaml` tracks installed service versions. Use `manifest_show` to view current state.
+The manifest at `~/Garden/Bloom/manifest.yaml` tracks installed service versions. Use `runtime_manifest_show` to view current state.
 
 ### Pin a Service Version
 
@@ -172,7 +172,7 @@ The manifest at `~/Garden/Bloom/manifest.yaml` tracks installed service versions
 oras pull ghcr.io/pibloom/bloom-svc-{name}:0.1.0 -o /tmp/bloom-svc/
 ```
 
-Then update the manifest with `manifest_set_service` to record the pinned version.
+Then update the manifest with `runtime_manifest_set_service` to record the pinned version.
 
 ### Verify Artifact Digest (Recommended)
 
@@ -183,11 +183,11 @@ oras resolve ghcr.io/pibloom/bloom-svc-{name}:{version}
 # => sha256:...
 ```
 
-Then pass it to `service_install`:
+Then pass it to `svc_install`:
 
-- `service_install(name="{name}", version="{version}", expected_digest="sha256:...")`
+- `svc_install(name="{name}", version="{version}", expected_digest="sha256:...")`
 
-`service_install` verifies the digest (when provided) and enforces pinned runtime images by default.
+`svc_install` verifies the digest (when provided) and enforces pinned runtime images by default.
 
 ## Known Services
 

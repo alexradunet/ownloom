@@ -1,19 +1,20 @@
-import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import os, { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { ensureCommand, runCommand } from "../lib/command.js";
+import { loadManifest, saveManifest } from "../lib/manifest.js";
+import {
+	tailscaleAuthConfigured,
+	tailscaleRootlessPreflightError,
+	validatePinnedImage,
+	validateServiceName,
+} from "../lib/service-policy.js";
 import { createLogger, errorResult, getGardenDir, parseFrontmatter, truncate } from "../lib/shared.js";
 
-const require = createRequire(import.meta.url);
-const yaml: { load: (str: string) => unknown; dump: (obj: unknown) => string } = require("js-yaml");
-
-const execAsync = promisify(execFile);
 const log = createLogger("bloom-services");
 
 function resolvePackageRoot(): string {
@@ -39,60 +40,16 @@ async function run(
 	signal?: AbortSignal,
 	cwd?: string,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-	try {
-		const { stdout, stderr } = await execAsync(cmd, args, { signal, cwd });
-		return { stdout, stderr, exitCode: 0 };
-	} catch (err: unknown) {
-		const e = err as { message: string; stderr?: string; code?: number };
-		return {
-			stdout: "",
-			stderr: e.stderr ?? e.message,
-			exitCode: e.code ?? 1,
-		};
-	}
+	return runCommand(cmd, args, { signal, cwd });
 }
 
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function validateServiceName(name: string): string | null {
-	if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) {
-		return "Service name must be kebab-case using [a-z0-9-].";
-	}
-	return null;
-}
-
-function validatePinnedImage(image: string): string | null {
-	if (image.includes("@sha256:")) return null;
-	const tagMatch = image.match(/:([^/@]+)$/);
-	if (!tagMatch) {
-		return "Image must include an explicit version tag or digest (avoid implicit latest).";
-	}
-	const tag = tagMatch[1].toLowerCase();
-	if (tag === "latest" || tag.startsWith("latest-")) {
-		return "Image tag must be pinned (avoid latest/latest-* tags).";
-	}
-	return null;
-}
-
 function extractDigest(text: string): string | null {
 	const match = text.match(/sha256:[a-f0-9]{64}/i);
 	return match ? match[0].toLowerCase() : null;
-}
-
-function commandMissingError(text: string): boolean {
-	return /ENOENT|not found|No such file/i.test(text);
-}
-
-async function ensureCommand(name: string, args: string[], signal?: AbortSignal): Promise<string | null> {
-	const check = await run(name, args, signal);
-	if (check.exitCode === 0) return null;
-	const output = `${check.stderr || ""}\n${check.stdout || ""}`;
-	if (commandMissingError(output)) {
-		return `Required command not found: ${name}`;
-	}
-	return null;
 }
 
 async function resolveArtifactDigest(ref: string, signal?: AbortSignal): Promise<string | null> {
@@ -109,49 +66,6 @@ async function resolveArtifactDigest(ref: string, signal?: AbortSignal): Promise
 	}
 
 	return null;
-}
-
-function hasSubidRange(filePath: string, username: string): boolean {
-	if (!existsSync(filePath)) return false;
-	try {
-		return readFileSync(filePath, "utf-8")
-			.split("\n")
-			.some((line) => line.trim().startsWith(`${username}:`));
-	} catch {
-		return false;
-	}
-}
-
-function tailscaleRootlessPreflightError(): string | null {
-	const user = os.userInfo().username;
-	const hasSubuid = hasSubidRange("/etc/subuid", user);
-	const hasSubgid = hasSubidRange("/etc/subgid", user);
-	if (hasSubuid && hasSubgid) return null;
-
-	return [
-		`Rootless Podman prerequisite missing for user "${user}":`,
-		`- /etc/subuid entry present: ${hasSubuid ? "yes" : "no"}`,
-		`- /etc/subgid entry present: ${hasSubgid ? "yes" : "no"}`,
-		"",
-		"Fix (requires sudo), then log out and back in:",
-		`sudo usermod --add-subuids 100000-165535 ${user}`,
-		`sudo usermod --add-subgids 100000-165535 ${user}`,
-	].join("\n");
-}
-
-function tailscaleAuthConfigured(): boolean {
-	const direct = process.env.TS_AUTHKEY?.trim();
-	if (direct) return true;
-	const envPath = join(os.homedir(), ".config", "bloom", "tailscale.env");
-	if (!existsSync(envPath)) return false;
-	try {
-		const raw = readFileSync(envPath, "utf-8");
-		return raw
-			.split("\n")
-			.some((line) => line.trim().startsWith("TS_AUTHKEY=") && line.trim().length > "TS_AUTHKEY=".length);
-	} catch {
-		return false;
-	}
 }
 
 function resolveRepoDir(ctx: ExtensionContext): string {
@@ -171,27 +85,9 @@ function resolveRepoDir(ctx: ExtensionContext): string {
 
 function writeManifestService(name: string, image: string, version?: string): void {
 	const manifestPath = join(getGardenDir(), "Bloom", "manifest.yaml");
-	mkdirSync(join(getGardenDir(), "Bloom"), { recursive: true });
-
-	let manifest: {
-		device?: string;
-		os_image?: string;
-		services?: Record<string, { image: string; version?: string; enabled: boolean }>;
-	};
-
-	if (existsSync(manifestPath)) {
-		try {
-			manifest = (yaml.load(readFileSync(manifestPath, "utf-8")) as typeof manifest) ?? {};
-		} catch {
-			manifest = {};
-		}
-	} else {
-		manifest = {};
-	}
-
-	manifest.services ??= {};
+	const manifest = loadManifest(manifestPath);
 	manifest.services[name] = { image, version, enabled: true };
-	writeFileSync(manifestPath, yaml.dump(manifest));
+	saveManifest(manifestPath, manifest);
 }
 
 function extractSkillMetadata(skillPath: string): { image?: string; version?: string } {
@@ -209,12 +105,12 @@ function extractSkillMetadata(skillPath: string): { image?: string; version?: st
 
 export default function (pi: ExtensionAPI) {
 	pi.registerTool({
-		name: "service_scaffold",
+		name: "svc_scaffold",
 		label: "Scaffold Service Package",
 		description: "Generate a new Bloom service package (quadlet + SKILL.md) from a template.",
-		promptSnippet: "service_scaffold — create a new service package skeleton",
+		promptSnippet: "svc_scaffold — create a new service package skeleton",
 		promptGuidelines: [
-			"Use service_scaffold to bootstrap a new OCI service package with correct Bloom conventions.",
+			"Use svc_scaffold to bootstrap a new OCI service package with correct Bloom conventions.",
 			"Prefer upstream images and Quadlet composition (no Containerfile builds).",
 			"Use pinned image tags or digests; avoid latest/latest-* tags.",
 		],
@@ -292,12 +188,12 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.registerTool({
-		name: "service_publish",
+		name: "svc_publish",
 		label: "Publish Service Package",
 		description: "Publish a service package to OCI registry via oras push.",
-		promptSnippet: "service_publish — push Bloom service package to registry",
+		promptSnippet: "svc_publish — push Bloom service package to registry",
 		promptGuidelines: [
-			"Run service_publish after verifying package contents and local tests.",
+			"Run svc_publish after verifying package contents and local tests.",
 			"Use semver tag in version for immutable releases.",
 		],
 		parameters: Type.Object({
@@ -358,12 +254,12 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.registerTool({
-		name: "service_install",
+		name: "svc_install",
 		label: "Install Service Package",
 		description: "Install a service package from OCI artifact to local Quadlet + Garden skill paths.",
-		promptSnippet: "service_install — pull and install Bloom service package",
+		promptSnippet: "svc_install — pull and install Bloom service package",
 		promptGuidelines: [
-			"Use service_install to deploy a packaged service from the registry.",
+			"Use svc_install to deploy a packaged service from the registry.",
 			"Prefer immutable semver tags over latest for reproducible installs.",
 			"After install, verify with systemctl status and container logs.",
 		],
@@ -566,12 +462,12 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.registerTool({
-		name: "service_test",
+		name: "svc_test",
 		label: "Test Service",
 		description: "Smoke-test installed service unit: reload, start, wait, inspect status/logs, optional cleanup.",
-		promptSnippet: "service_test — run local smoke test for installed service",
+		promptSnippet: "svc_test — run local smoke test for installed service",
 		promptGuidelines: [
-			"Use service_test before publishing a new service package.",
+			"Use svc_test before publishing a new service package.",
 			"Check returned status and logs; fix issues before release.",
 		],
 		parameters: Type.Object({

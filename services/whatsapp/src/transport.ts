@@ -10,6 +10,7 @@ import {
 	makeWASocket,
 	useMultiFileAuthState,
 } from "baileys";
+import { isChannelMessage, mimeToExt, splitTcpBuffer } from "./protocol.js";
 
 const AUTH_DIR = process.env.BLOOM_AUTH_DIR ?? "/data/auth";
 const CHANNELS_SOCKET = process.env.BLOOM_CHANNELS_SOCKET ?? "/run/bloom/channels.sock";
@@ -26,25 +27,6 @@ const MEDIA_TYPES: Record<string, string> = {
 	documentMessage: "document",
 	stickerMessage: "sticker",
 };
-
-function mimeToExt(mime: string): string {
-	const map: Record<string, string> = {
-		"audio/ogg": "ogg",
-		"audio/ogg; codecs=opus": "ogg",
-		"audio/mpeg": "mp3",
-		"audio/mp4": "m4a",
-		"audio/wav": "wav",
-		"image/jpeg": "jpg",
-		"image/png": "png",
-		"image/webp": "webp",
-		"image/gif": "gif",
-		"video/mp4": "mp4",
-		"video/3gpp": "3gp",
-		"application/pdf": "pdf",
-		"application/octet-stream": "bin",
-	};
-	return map[mime] ?? mime.split("/").pop() ?? "bin";
-}
 
 // TCP state
 let channelSocket: Socket | null = null;
@@ -266,18 +248,15 @@ function connectToChannels(waSock: ReturnType<typeof makeWASocket>): void {
 
 	sock.on("data", (data: string) => {
 		tcpBuffer += data;
-		const lines = tcpBuffer.split("\n");
-		// Keep any incomplete trailing fragment
-		tcpBuffer = lines.pop() ?? "";
+		const { lines, remainder } = splitTcpBuffer(tcpBuffer);
+		tcpBuffer = remainder;
 
 		for (const line of lines) {
-			const trimmed = line.trim();
-			if (!trimmed) continue;
 			try {
-				const msg = JSON.parse(trimmed) as unknown;
+				const msg = JSON.parse(line) as unknown;
 				handleChannelMessage(waSock, msg);
 			} catch (err) {
-				console.error("[tcp] parse error:", (err as Error).message, "| raw:", trimmed.slice(0, 120));
+				console.error("[tcp] parse error:", (err as Error).message, "| raw:", line.slice(0, 120));
 			}
 		}
 	});
@@ -309,21 +288,6 @@ function sendToChannels(msg: Record<string, unknown>): void {
 }
 
 // --- Incoming channel messages -> WhatsApp ---
-
-interface ChannelMessage {
-	type: string;
-	to?: string;
-	text?: string;
-}
-
-function isChannelMessage(val: unknown): val is ChannelMessage {
-	return (
-		typeof val === "object" &&
-		val !== null &&
-		"type" in val &&
-		typeof (val as Record<string, unknown>).type === "string"
-	);
-}
 
 function handleChannelMessage(waSock: ReturnType<typeof makeWASocket>, raw: unknown): void {
 	if (!isChannelMessage(raw)) {

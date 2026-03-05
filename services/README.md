@@ -76,11 +76,11 @@ Copy/paste quickstart commands are in `services/examples/README.md`.
 
 ### Using Bloom tools
 
-1. `service_scaffold(name="demo-api", description="Demo HTTP API", image="docker.io/library/nginx:stable", version="0.1.0", port=9080, container_port=80)`
-2. `service_test(name="demo-api")`
-3. `service_publish(name="demo-api", version="0.1.0")`
-4. `service_install(name="demo-api", version="0.1.0")`
-5. Verify: `systemctl --user status bloom-demo-api` and `manifest_show`
+1. `svc_scaffold(name="demo-api", description="Demo HTTP API", image="docker.io/library/nginx:stable", version="0.1.0", port=9080, container_port=80)`
+2. `svc_test(name="demo-api")`
+3. `svc_publish(name="demo-api", version="0.1.0")`
+4. `svc_install(name="demo-api", version="0.1.0")`
+5. Verify: `systemctl --user status bloom-demo-api` and `runtime_manifest_show`
 
 ### Using shell commands
 
@@ -131,4 +131,4 @@ Each artifact carries standard annotations:
 - runtime image references
 - service-specific preflight requirements
 
-`manifest_apply` uses this catalog during auto-install and preflight checks.
+`runtime_manifest_apply` uses this catalog during auto-install and preflight checks.

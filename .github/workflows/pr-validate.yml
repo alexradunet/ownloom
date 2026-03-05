@@ -26,5 +26,11 @@ jobs:
       - name: TypeScript build
         run: npm run build
 
+      - name: Test suite
+        run: npm test
+
+      - name: WhatsApp transport tests
+        run: npm --prefix services/whatsapp test
+
       - name: Biome check
         run: npm run check

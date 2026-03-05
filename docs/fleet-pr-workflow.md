@@ -51,15 +51,15 @@ Expected checks:
 
 Run:
 
-1. `bloom_repo_configure(repo_url="https://github.com/<owner>/pi-bloom.git")`
-2. `bloom_repo_status`
-3. `bloom_repo_sync(branch="main")`
+1. `fleet_repo_configure(repo_url="https://github.com/<owner>/pi-bloom.git")`
+2. `fleet_repo_status`
+3. `fleet_repo_sync(branch="main")`
 
 Optional explicit fork:
 
-- `bloom_repo_configure(..., fork_url="https://github.com/<you>/pi-bloom.git")`
+- `fleet_repo_configure(..., fork_url="https://github.com/<you>/pi-bloom.git")`
 
-### What `bloom_repo_configure` does
+### What `fleet_repo_configure` does
 
 - Ensures `~/.bloom/pi-bloom` exists (clones if missing)
 - Sets/updates `upstream`
@@ -74,15 +74,15 @@ Optional explicit fork:
 When a Bloom host identifies a bug and applies a fix:
 
 1. Check readiness
-   - `bloom_repo_status`
+   - `fleet_repo_status`
 2. Sync main
-   - `bloom_repo_sync(branch="main")`
+   - `fleet_repo_sync(branch="main")`
 3. Implement and test locally
    - run `npm run build && npm run check` in repo
 4. Submit PR in one step
-   - `bloom_repo_submit_pr(title="fix: ...", body="...")`
+   - `fleet_repo_submit_pr(title="fix: ...", body="...")`
 
-`bloom_repo_submit_pr` handles:
+`fleet_repo_submit_pr` handles:
 - branch naming/creation
 - staging + commit
 - push to `origin`
@@ -129,7 +129,7 @@ Keep concise and action-oriented:
 
 ## 6) Failure Handling
 
-### `bloom_repo_status` says not PR-ready
+### `fleet_repo_status` says not PR-ready
 
 Common causes:
 - missing `upstream` remote
@@ -137,7 +137,7 @@ Common causes:
 - no GitHub auth
 
 Fix:
-- rerun `bloom_repo_configure`
+- rerun `fleet_repo_configure`
 - verify `gh auth login`
 
 ### PR creation fails after push
@@ -148,7 +148,7 @@ Fix:
 
 ### Wrong repo inferred
 
-- Pass `repo_url` explicitly in `bloom_repo_configure`.
+- Pass `repo_url` explicitly in `fleet_repo_configure`.
 
 ---
 
@@ -157,9 +157,9 @@ Fix:
 For each new machine:
 
 - [ ] `gh auth login`
-- [ ] `bloom_repo_configure`
-- [ ] `bloom_repo_status` shows PR-ready
-- [ ] `bloom_repo_sync main`
+- [ ] `fleet_repo_configure`
+- [ ] `fleet_repo_status` shows PR-ready
+- [ ] `fleet_repo_sync main`
 - [ ] dry-run docs PR submitted successfully
 
 For central repo:

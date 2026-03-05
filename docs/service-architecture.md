@@ -151,7 +151,7 @@ services/{name}/
 - runtime image references
 - preflight requirements (for example rootless subuid/subgid for Tailscale)
 
-The `manifest_apply` tool uses this catalog to auto-install missing services and enforce preflight checks.
+The `runtime_manifest_apply` tool uses this catalog to auto-install missing services and enforce preflight checks.
 
 ### OCI Annotations
 

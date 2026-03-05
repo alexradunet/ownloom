@@ -173,12 +173,12 @@ Pi performs real operations through system APIs/tools (NetworkManager, systemd, 
 ## 8) Proposed Initial Backlog (Sprint-ready)
 
 1. Create `docs/ui-protocol.md`
-2. `service_scaffold` for `ui` service package
+2. `svc_scaffold` for `ui` service package
 3. Implement `/health` + static shell UI
 4. Implement WebSocket event feed from bridge
 5. Build Action Timeline page
 6. Build Confirmation panel
-7. Wire one operation: `bootc_update(stage='check')`
+7. Wire one operation: `os_bootc_update(stage='check')`
 8. Add audit logging for confirmation decisions
 
 ---

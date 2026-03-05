@@ -2,7 +2,7 @@
 
 This guide is for the first interactive session on a freshly installed Bloom OS machine.
 
-> Important: commands like `service_install`, `manifest_apply`, `bloom_repo_configure` are **Pi tools**.
+> Important: commands like `svc_install`, `runtime_manifest_apply`, `fleet_repo_configure` are **Pi tools**.
 > They are not shell binaries unless explicitly wrapped by your environment.
 
 ## 0) Prerequisite
@@ -26,9 +26,9 @@ gh auth status
 
 Use Pi tools (recommended):
 
-1. `bloom_repo_configure(repo_url="https://github.com/pibloom/pi-bloom.git")`
-2. `bloom_repo_status`
-3. `bloom_repo_sync(branch="main")`
+1. `fleet_repo_configure(repo_url="https://github.com/pibloom/pi-bloom.git")`
+2. `fleet_repo_status`
+3. `fleet_repo_sync(branch="main")`
 
 Expected local path:
 
@@ -38,18 +38,18 @@ Expected local path:
 
 Declare desired services in `~/Garden/Bloom/manifest.yaml` via tool calls:
 
-- `manifest_set_service(name="syncthing", image="docker.io/syncthing/syncthing@sha256:...", version="0.1.0", enabled=true)`
-- `manifest_set_service(name="whatsapp", image="ghcr.io/alexradunet/bloom-whatsapp:latest", version="0.1.0", enabled=true)`
-- `manifest_set_service(name="whisper", image="docker.io/fedirz/faster-whisper-server@sha256:...", version="0.1.0", enabled=true)`
-- `manifest_set_service(name="tailscale", image="docker.io/tailscale/tailscale@sha256:...", version="0.1.0", enabled=true)`
+- `runtime_manifest_set_service(name="syncthing", image="docker.io/syncthing/syncthing@sha256:...", version="0.1.0", enabled=true)`
+- `runtime_manifest_set_service(name="whatsapp", image="ghcr.io/alexradunet/bloom-whatsapp:latest", version="0.1.0", enabled=true)`
+- `runtime_manifest_set_service(name="whisper", image="docker.io/fedirz/faster-whisper-server@sha256:...", version="0.1.0", enabled=true)`
+- `runtime_manifest_set_service(name="tailscale", image="docker.io/tailscale/tailscale@sha256:...", version="0.1.0", enabled=true)`
 
 Preview:
 
-- `manifest_apply(dry_run=true)`
+- `runtime_manifest_apply(dry_run=true)`
 
 Apply:
 
-- `manifest_apply(install_missing=true)`
+- `runtime_manifest_apply(install_missing=true)`
 
 ## 5) Service-specific follow-up
 
@@ -99,6 +99,6 @@ touch ~/.bloom/.setup-complete
 
 Run:
 
-- `system_health`
-- `manifest_show`
-- `manifest_sync(mode="detect")`
+- `os_system_health`
+- `runtime_manifest_show`
+- `runtime_manifest_sync(mode="detect")`

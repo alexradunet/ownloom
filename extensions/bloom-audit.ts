@@ -160,7 +160,7 @@ export default function (pi: ExtensionAPI) {
 		parameters: Type.Object({
 			days: Type.Optional(Type.Number({ description: "How many days to scan (1-30)", default: 1 })),
 			limit: Type.Optional(Type.Number({ description: "Max entries to return (1-500)", default: 50 })),
-			tool: Type.Optional(Type.String({ description: "Optional tool name filter (e.g. bash, bootc_update)" })),
+			tool: Type.Optional(Type.String({ description: "Optional tool name filter (e.g. bash, os_bootc_update)" })),
 			include_inputs: Type.Optional(Type.Boolean({ description: "Include sanitized input snippets", default: false })),
 		}),
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {

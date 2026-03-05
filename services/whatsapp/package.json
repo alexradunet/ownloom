@@ -6,7 +6,8 @@
 	"main": "dist/transport.js",
 	"scripts": {
 		"build": "tsc",
-		"start": "node dist/transport.js"
+		"start": "node dist/transport.js",
+		"test": "npm run build && node --test test/*.test.mjs"
 	},
 	"dependencies": {
 		"@hapi/boom": "^10.0.1",

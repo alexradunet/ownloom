@@ -25,7 +25,9 @@ For multi-device code contribution and PR flow, see `docs/fleet-pr-workflow.md`,
 |-----------|---------|-----|
 | `bloom-persona` | Identity injection, safety guardrails, compaction guidance | ~73 |
 | `bloom-audit` | Tool-call audit trail, retention, and review tooling | ~180 |
-| `bloom-os` | bootc, Podman, systemd management tools | ~212 |
+| `bloom-os-core` | OS operations: bootc, systemd, container visibility, health | ~430 |
+| `bloom-fleet` | Repo/fork/PR workflow tooling for multi-device contribution | ~430 |
+| `bloom-runtime` | Manifest drift detection and declarative runtime apply | ~530 |
 | `bloom-services` | Service lifecycle tooling (scaffold, publish, install, test) | ~420 |
 | `bloom-objects` | Flat-file object store (YAML frontmatter + Markdown) | ~330 |
 | `bloom-journal` | Daily journal entries (user + AI) | ~90 |
@@ -71,7 +73,7 @@ pi install /path/to/bloom
 
 Or for development:
 ```bash
-pi -e ./extensions/bloom-persona.ts -e ./extensions/bloom-audit.ts -e ./extensions/bloom-os.ts -e ./extensions/bloom-services.ts -e ./extensions/bloom-objects.ts -e ./extensions/bloom-journal.ts -e ./extensions/bloom-garden.ts -e ./extensions/bloom-channels.ts -e ./extensions/bloom-topics.ts
+pi -e ./extensions/bloom-persona.ts -e ./extensions/bloom-audit.ts -e ./extensions/bloom-os-core.ts -e ./extensions/bloom-fleet.ts -e ./extensions/bloom-runtime.ts -e ./extensions/bloom-services.ts -e ./extensions/bloom-objects.ts -e ./extensions/bloom-journal.ts -e ./extensions/bloom-garden.ts -e ./extensions/bloom-channels.ts -e ./extensions/bloom-topics.ts
 ```
 
 ## Setup & Deployment Docs

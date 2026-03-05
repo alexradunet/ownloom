@@ -24,33 +24,33 @@ Bloom services are **user Quadlet units** managed by `systemd --user`:
 
 Prefer Bloom extension tools over raw shell commands:
 
-- `system_health` — broad health snapshot
-- `bootc_status` — current booted image / staged update state
-- `bootc_update` — check/download/apply updates
-- `bootc_rollback` — rollback staged image
-- `container_status` — running `bloom-*` containers
-- `container_logs` — recent logs for a Bloom service
-- `systemd_control` — start/stop/restart/status for Bloom user services
-- `container_deploy` — `daemon-reload` + start for a Bloom Quadlet unit
-- `manifest_show` / `manifest_sync` / `manifest_set_service` / `manifest_apply` — declarative service state management
+- `os_system_health` — broad health snapshot
+- `os_bootc_status` — current booted image / staged update state
+- `os_bootc_update` — check/download/apply updates
+- `os_bootc_rollback` — rollback staged image
+- `os_container_status` — running `bloom-*` containers
+- `os_container_logs` — recent logs for a Bloom service
+- `os_systemd_control` — start/stop/restart/status for Bloom user services
+- `os_container_deploy` — `daemon-reload` + start for a Bloom Quadlet unit
+- `runtime_manifest_show` / `runtime_manifest_sync` / `runtime_manifest_set_service` / `runtime_manifest_apply` — declarative service state management
 
 ## Standard Triage Flow
 
-1. Run `system_health`
-2. If OS issue suspected: run `bootc_status`
+1. Run `os_system_health`
+2. If OS issue suspected: run `os_bootc_status`
 3. If service issue suspected:
-   - `container_status`
-   - `systemd_control action=status`
-   - `container_logs`
+   - `os_container_status`
+   - `os_systemd_control action=status`
+   - `os_container_logs`
 4. Apply minimal remediation (restart, redeploy, staged update) only with user approval
-5. Re-run `system_health` to confirm recovery
+5. Re-run `os_system_health` to confirm recovery
 
 ## Health Signals
 
 ### Healthy
 - `bloom-*` services active/running
 - Containers running and not unhealthy
-- `bootc_status` consistent with expected image state
+- `os_bootc_status` consistent with expected image state
 
 ### Unhealthy
 - service failed / inactive unexpectedly

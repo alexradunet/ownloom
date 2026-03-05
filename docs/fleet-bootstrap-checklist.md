@@ -26,17 +26,17 @@ gh auth status
 
 Use Bloom tools:
 
-1. `bloom_repo_configure(repo_url="https://github.com/pibloom/pi-bloom.git")`
-2. `bloom_repo_status`
-3. `bloom_repo_sync(branch="main")`
+1. `fleet_repo_configure(repo_url="https://github.com/pibloom/pi-bloom.git")`
+2. `fleet_repo_status`
+3. `fleet_repo_sync(branch="main")`
 
 If you already have a specific fork URL, set it explicitly:
 
-- `bloom_repo_configure(repo_url="https://github.com/pibloom/pi-bloom.git", fork_url="https://github.com/<your-user>/pi-bloom.git")`
+- `fleet_repo_configure(repo_url="https://github.com/pibloom/pi-bloom.git", fork_url="https://github.com/<your-user>/pi-bloom.git")`
 
 ### 3) Verify PR readiness
 
-`bloom_repo_status` should show:
+`fleet_repo_status` should show:
 
 - repo path exists (`~/.bloom/pi-bloom`)
 - upstream and origin are configured
@@ -55,16 +55,16 @@ npm run build && npm run check
 
 3. Submit via tool:
 
-- `bloom_repo_submit_pr(title="docs: dry-run fleet bootstrap validation", body="Initial validation from new device.")`
+- `fleet_repo_submit_pr(title="docs: dry-run fleet bootstrap validation", body="Initial validation from new device.")`
 
 4. Confirm PR appears in `pibloom/pi-bloom` and CI passes.
 
 ## D) Ongoing per-fix flow
 
-1. `bloom_repo_status`
-2. `bloom_repo_sync(branch="main")`
+1. `fleet_repo_status`
+2. `fleet_repo_sync(branch="main")`
 3. implement fix + test (`npm run build && npm run check`)
-4. `bloom_repo_submit_pr(...)`
+4. `fleet_repo_submit_pr(...)`
 5. merge after review + CI
 
 That keeps `pibloom/pi-bloom` as the single source of truth for all devices.

@@ -17,7 +17,7 @@ This plan defines how Bloom devices contribute fixes while keeping one canonical
   - `origin` → device/user fork (write target for branch pushes)
 - PR checks run on every pull request.
 - Branch protection requires PR + passing checks.
-- Bloom can submit fixes through one tool call (`bloom_repo_submit_pr`).
+- Bloom can submit fixes through one tool call (`fleet_repo_submit_pr`).
 
 ## Phase Plan
 
@@ -33,19 +33,19 @@ Owner: repo admin
 
 ### Phase 1 — Device bootstrap tooling
 
-- [x] Add `bloom_repo_configure` tool:
+- [x] Add `fleet_repo_configure` tool:
   - clone repo if missing
   - configure `upstream`
   - configure `origin` (fork URL or gh-assisted)
   - set repo-local git identity
-- [x] Add `bloom_repo_status` PR readiness view.
-- [x] Add `bloom_repo_sync` fast-forward sync helper.
+- [x] Add `fleet_repo_status` PR readiness view.
+- [x] Add `fleet_repo_sync` fast-forward sync helper.
 
 Owner: Bloom extension code
 
 ### Phase 2 — PR submission automation
 
-- [x] Add `bloom_repo_submit_pr` tool:
+- [x] Add `fleet_repo_submit_pr` tool:
   - branch creation
   - staging + commit
   - push to origin
@@ -74,9 +74,9 @@ Owner: docs + skills
 A fresh Bloom device can:
 
 1. Authenticate GitHub (`gh auth login`).
-2. Run `bloom_repo_configure` once.
-3. Run `bloom_repo_status` and see PR-ready state.
-4. Make a small change and run `bloom_repo_submit_pr`.
+2. Run `fleet_repo_configure` once.
+3. Run `fleet_repo_status` and see PR-ready state.
+4. Make a small change and run `fleet_repo_submit_pr`.
 5. Produce a PR URL targeting upstream `main`.
 
 ## Risks + Mitigations
@@ -84,7 +84,7 @@ A fresh Bloom device can:
 - **Missing GitHub auth** → explicit status/error from tools.
 - **No writable fork** → `fork_url` parameter or gh-assisted fork creation.
 - **Repo mismatch (wrong upstream URL)** → explicit `repo_url` override at setup.
-- **Merge conflicts/drift** → `bloom_repo_sync` before branching.
+- **Merge conflicts/drift** → `fleet_repo_sync` before branching.
 - **Unchecked PR merges** → enforce branch protection + required checks.
 
 ## Rollout Notes

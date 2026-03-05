@@ -36,10 +36,10 @@ When extending capabilities, prefer the lightest option: **Skill → Extension �
 - `persona_evolve` — Propose a change to a persona layer (SOUL, BODY, FACULTY, SKILL), tracked as an evolution object requiring user approval
 
 ### Service Lifecycle
-- `service_scaffold` — Generate a new service package skeleton (Quadlet + SKILL.md)
-- `service_publish` — Push a service package to OCI registry (supports semver tags)
-- `service_install` — Pull and install a package from OCI artifact into Quadlet + Garden skill paths
-- `service_test` — Smoke-test installed service units before release
+- `svc_scaffold` — Generate a new service package skeleton (Quadlet + SKILL.md)
+- `svc_publish` — Push a service package to OCI registry (supports semver tags)
+- `svc_install` — Pull and install a package from OCI artifact into Quadlet + Garden skill paths
+- `svc_test` — Smoke-test installed service units before release
 
 ### Object Store (for tracking)
 - `memory_create` — Create evolution tracking objects
@@ -96,18 +96,18 @@ When Bloom identifies a code-level fix or improvement to its own OS/extensions, 
 1. **Detect + Plan**
    - Describe the issue and proposed fix in plain language.
 2. **Ensure repo is configured**
-   - Run `bloom_repo_configure` once per device (upstream + origin fork remotes, git identity).
+   - Run `fleet_repo_configure` once per device (upstream + origin fork remotes, git identity).
 3. **Check readiness**
-   - Run `bloom_repo_status` and confirm:
+   - Run `fleet_repo_status` and confirm:
      - repo exists
      - `upstream` and `origin` remotes are set
      - GitHub auth is valid
 4. **Sync before changes**
-   - Run `bloom_repo_sync(branch="main")`.
+   - Run `fleet_repo_sync(branch="main")`.
 5. **Implement + test**
    - Make the fix, then run `npm run build && npm run check` in the repo.
 6. **Submit PR in one step**
-   - Run `bloom_repo_submit_pr` with title/body (branch + commit + push + PR are automated).
+   - Run `fleet_repo_submit_pr` with title/body (branch + commit + push + PR are automated).
 7. **Notify user**
    - Share PR URL and summary; wait for human review/merge.
 
@@ -185,8 +185,8 @@ Reference example packages:
 
 Use this tool flow for repeatable service delivery:
 
-1. `service_scaffold` — generate package skeleton
-2. `service_test` — smoke test unit startup and logs
-3. `service_publish` — push semver tag (e.g. `0.1.0`) and optionally `latest`
-4. `service_install` — deploy exact version from registry
-5. `manifest_show` / `manifest_sync` — verify tracked state and drift
+1. `svc_scaffold` — generate package skeleton
+2. `svc_test` — smoke test unit startup and logs
+3. `svc_publish` — push semver tag (e.g. `0.1.0`) and optionally `latest`
+4. `svc_install` — deploy exact version from registry
+5. `runtime_manifest_show` / `runtime_manifest_sync` — verify tracked state and drift

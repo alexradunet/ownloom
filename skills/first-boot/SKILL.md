@@ -16,7 +16,7 @@ If `~/.bloom/.setup-complete` exists, setup is already complete. Skip unless use
 - Be conversational (one step at a time)
 - Let user skip/defer steps
 - Prefer Bloom tools over long shell copy-paste blocks
-- Clarify tool-vs-shell: `service_install`, `bloom_repo_configure`, etc. are Pi tools (not bash commands)
+- Clarify tool-vs-shell: `svc_install`, `fleet_repo_configure`, etc. are Pi tools (not bash commands)
 - On fresh Bloom OS, user `bloom` has passwordless `sudo` for bootstrap tasks.
 
 ## Setup Steps
@@ -37,30 +37,30 @@ gh auth status
 
 Prefer repo-local identity via tool setup (instead of global):
 
-- `bloom_repo_configure(git_name="Bloom (<hostname>)", git_email="bloom+<hostname>@localhost")`
+- `fleet_repo_configure(git_name="Bloom (<hostname>)", git_email="bloom+<hostname>@localhost")`
 
 Ask if user wants custom values.
 
 ### 4) Configure Bloom Source Repo for PR Flow
 
-Use `bloom_repo_configure` to make the repo ready for contribution:
+Use `fleet_repo_configure` to make the repo ready for contribution:
 
 - set `upstream` to canonical source repo
 - set `origin` to writable fork
 - clone into `~/.bloom/pi-bloom` if missing
 
 Preferred sequence:
-1. `bloom_repo_configure(repo_url="https://github.com/{owner}/pi-bloom.git")`
-2. `bloom_repo_status` (verify PR-ready state)
-3. `bloom_repo_sync(branch="main")`
+1. `fleet_repo_configure(repo_url="https://github.com/{owner}/pi-bloom.git")`
+2. `fleet_repo_status` (verify PR-ready state)
+3. `fleet_repo_sync(branch="main")`
 
 If fork URL is already known, pass `fork_url` explicitly.
-If not, `bloom_repo_configure` tries to create/attach one via `gh` when authenticated.
+If not, `fleet_repo_configure` tries to create/attach one via `gh` when authenticated.
 
 ### 5) Syncthing Setup (tool-first)
 
-- Install service package: `service_install(name="syncthing", version="0.1.0")`
-- Validate service: `service_test(name="syncthing")`
+- Install service package: `svc_install(name="syncthing", version="0.1.0")`
+- Validate service: `svc_test(name="syncthing")`
 - Direct user to `http://localhost:8384`
 - Help add/share `~/Garden` (mapped in container as `/var/syncthing/Garden`)
 
@@ -75,9 +75,9 @@ Offer one of these access paths:
 
 Prefer declarative setup:
 
-1. Declare desired services in manifest (`manifest_set_service`)
-2. Apply desired state (`manifest_apply(install_missing=true)`)
-3. Validate selected services (`service_test` / `systemd_control` / `container_logs`)
+1. Declare desired services in manifest (`runtime_manifest_set_service`)
+2. Apply desired state (`runtime_manifest_apply(install_missing=true)`)
+3. Validate selected services (`svc_test` / `os_systemd_control` / `os_container_logs`)
 
 Suggested optional profiles:
 
@@ -87,11 +87,11 @@ Suggested optional profiles:
 
 Example declaration flow:
 
-1. `manifest_set_service(name="syncthing", image="docker.io/syncthing/syncthing@sha256:...", version="0.1.0", enabled=true)`
-2. `manifest_set_service(name="whatsapp", image="ghcr.io/alexradunet/bloom-whatsapp:latest", version="0.1.0", enabled=true)`
-3. `manifest_set_service(name="whisper", image="docker.io/fedirz/faster-whisper-server@sha256:...", version="0.1.0", enabled=true)`
-4. `manifest_set_service(name="tailscale", image="docker.io/tailscale/tailscale@sha256:...", version="0.1.0", enabled=true)`
-5. `manifest_apply(install_missing=true)`
+1. `runtime_manifest_set_service(name="syncthing", image="docker.io/syncthing/syncthing@sha256:...", version="0.1.0", enabled=true)`
+2. `runtime_manifest_set_service(name="whatsapp", image="ghcr.io/alexradunet/bloom-whatsapp:latest", version="0.1.0", enabled=true)`
+3. `runtime_manifest_set_service(name="whisper", image="docker.io/fedirz/faster-whisper-server@sha256:...", version="0.1.0", enabled=true)`
+4. `runtime_manifest_set_service(name="tailscale", image="docker.io/tailscale/tailscale@sha256:...", version="0.1.0", enabled=true)`
+5. `runtime_manifest_apply(install_missing=true)`
 
 Post-install guidance:
 
