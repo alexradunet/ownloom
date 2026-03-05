@@ -31,27 +31,29 @@ gh auth login
 gh auth status
 ```
 
-### 3) Git Identity
+### 3) Device Git Identity
 
-```bash
-git config --global user.name "Bloom"
-git config --global user.email "bloom@localhost"
-```
+Prefer repo-local identity via tool setup (instead of global):
+
+- `bloom_repo_configure(git_name="Bloom (<hostname>)", git_email="bloom+<hostname>@localhost")`
 
 Ask if user wants custom values.
 
-### 4) Clone Bloom Source Repo (self-evolution)
+### 4) Configure Bloom Source Repo for PR Flow
 
-```bash
-mkdir -p ~/.bloom
-```
+Use `bloom_repo_configure` to make the repo ready for contribution:
 
-Prefer auto-detection:
-- Get image reference from `bootc status --format=json`
-- Infer GitHub owner from image (`ghcr.io/{owner}/bloom-os`)
-- Clone `https://github.com/{owner}/pibloom.git` into `~/.bloom/pibloom`
+- set `upstream` to canonical source repo
+- set `origin` to writable fork
+- clone into `~/.bloom/pi-bloom` if missing
 
-Fallback: ask user for the repo URL.
+Preferred sequence:
+1. `bloom_repo_configure(repo_url="https://github.com/{owner}/pi-bloom.git")`
+2. `bloom_repo_status` (verify PR-ready state)
+3. `bloom_repo_sync(branch="main")`
+
+If fork URL is already known, pass `fork_url` explicitly.
+If not, `bloom_repo_configure` tries to create/attach one via `gh` when authenticated.
 
 ### 5) Syncthing Setup
 

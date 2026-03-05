@@ -97,7 +97,7 @@ Each artifact carries standard annotations:
 |------------|-------------|
 | `org.opencontainers.image.title` | `bloom-{name}` |
 | `org.opencontainers.image.description` | Human-readable description |
-| `org.opencontainers.image.source` | `https://github.com/alexradunet/bloom` |
+| `org.opencontainers.image.source` | `https://github.com/piBloom/pi-bloom` |
 | `org.opencontainers.image.version` | Semver version |
 | `dev.bloom.service.category` | `media`, `communication`, `networking`, `sync`, or `utility` |
 | `dev.bloom.service.port` | Exposed port (if any) |

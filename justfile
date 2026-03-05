@@ -106,7 +106,7 @@ iso-production: build _require-bib-config
 svc-push name:
 	cd services/{{ name }} && oras push {{ registry }}/bloom-svc-{{ name }}:latest \
 		--annotation "org.opencontainers.image.title=bloom-{{ name }}" \
-		--annotation "org.opencontainers.image.source=https://github.com/alexradunet/bloom" \
+		--annotation "org.opencontainers.image.source=https://github.com/piBloom/pi-bloom" \
 		$(find quadlet -type f | sed 's|.*|&:application/vnd.bloom.quadlet|') \
 		SKILL.md:text/markdown
 

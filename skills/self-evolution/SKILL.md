@@ -87,35 +87,36 @@ Evolution objects are stored at `~/Garden/Bloom/Evolutions/{slug}.pi.md`.
 
 ## Code Evolution Workflow
 
-When Bloom identifies a code-level fix or improvement to its own OS/extensions, use this workflow to propose changes upstream via pull request.
+When Bloom identifies a code-level fix or improvement to its own OS/extensions, use the built-in repo tools to propose changes upstream via pull request.
 
-**Repo path**: `~/.bloom/pibloom` (cloned during first-boot setup)
+**Local repo path**: `~/.bloom/pi-bloom`
 
-### Process
+### Process (Tool-First)
 
-1. **Detect** — Identify a bug, config issue, or improvement opportunity
-2. **Plan** — Design the fix; document what and why
-3. **Branch** — Create a feature branch from `main`:
-   - `bloom/fix-*` for bug fixes
-   - `bloom/feat-*` for new features
-   - `bloom/config-*` for configuration changes
-4. **Implement** — Make changes in the local clone
-5. **Commit** — Use conventional commits:
-   - `fix:` bug fixes
-   - `feat:` new features
-   - `refactor:` code restructuring
-   - `docs:` documentation changes
-6. **Push** — Push the branch to origin
-7. **PR** — Open a pull request using `gh pr create`
-8. **Notify** — Tell the user about the PR and wait for their review
+1. **Detect + Plan**
+   - Describe the issue and proposed fix in plain language.
+2. **Ensure repo is configured**
+   - Run `bloom_repo_configure` once per device (upstream + origin fork remotes, git identity).
+3. **Check readiness**
+   - Run `bloom_repo_status` and confirm:
+     - repo exists
+     - `upstream` and `origin` remotes are set
+     - GitHub auth is valid
+4. **Sync before changes**
+   - Run `bloom_repo_sync(branch="main")`.
+5. **Implement + test**
+   - Make the fix, then run `npm run build && npm run check` in the repo.
+6. **Submit PR in one step**
+   - Run `bloom_repo_submit_pr` with title/body (branch + commit + push + PR are automated).
+7. **Notify user**
+   - Share PR URL and summary; wait for human review/merge.
 
 ### Safety
 
-- **Never** push directly to `main` — always use a PR
+- **Never** push directly to `main` — PR only
 - **Never** force-push
-- **Always** test changes before committing (run `npm run build && npm run check` in the repo)
-- PRs require human merge — Bloom proposes, the user decides
-- Use `bloom_repo_status` to verify repo state before starting
+- **Always** test before PR submission
+- PR merge is always human-controlled; Bloom proposes, user decides
 
 ## Adding a Service Package
 

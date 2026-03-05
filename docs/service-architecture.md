@@ -145,7 +145,7 @@ services/{name}/
 ```
 org.opencontainers.image.title       = bloom-{name}
 org.opencontainers.image.description = Human-readable description
-org.opencontainers.image.source      = https://github.com/alexradunet/bloom
+org.opencontainers.image.source      = https://github.com/piBloom/pi-bloom
 org.opencontainers.image.version     = 1.0.0
 dev.bloom.service.category           = media | communication | networking
 dev.bloom.service.port               = 9000

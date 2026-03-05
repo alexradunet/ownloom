@@ -104,8 +104,8 @@ function resolveRepoDir(ctx: ExtensionContext): string {
 		if (parent === current) break;
 		current = parent;
 	}
-	const fallback = join(os.homedir(), ".bloom", "pibloom");
-	if (existsSync(join(fallback, "services"))) return fallback;
+	const preferred = join(os.homedir(), ".bloom", "pi-bloom");
+	if (existsSync(join(preferred, "services"))) return preferred;
 	return ctx.cwd;
 }
 
@@ -275,7 +275,7 @@ export default function (pi: ExtensionAPI) {
 					"--annotation",
 					`org.opencontainers.image.title=bloom-${params.name}`,
 					"--annotation",
-					"org.opencontainers.image.source=https://github.com/alexradunet/bloom",
+					"org.opencontainers.image.source=https://github.com/piBloom/pi-bloom",
 					"--annotation",
 					`org.opencontainers.image.version=${tag}`,
 					...quadletFiles,
