@@ -12,7 +12,7 @@ import {
 import os from "node:os";
 import { join } from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { commandExists, runCommand } from "../lib/command.js";
 import {
@@ -23,7 +23,7 @@ import {
 	saveManifest as saveManifestFile,
 } from "../lib/manifest.js";
 import { hasSubidRange, hasTagOrDigest, tailscaleAuthConfigured } from "../lib/service-policy.js";
-import { createLogger, errorResult, getGardenDir, truncate } from "../lib/shared.js";
+import { createLogger, errorResult, getGardenDir, requireConfirmation, truncate } from "../lib/shared.js";
 
 const log = createLogger("bloom-runtime");
 
@@ -33,20 +33,6 @@ async function run(
 	signal?: AbortSignal,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
 	return runCommand(cmd, args, { signal });
-}
-
-async function requireConfirmation(
-	ctx: ExtensionContext,
-	action: string,
-	options?: { requireUi?: boolean },
-): Promise<string | null> {
-	const requireUi = options?.requireUi ?? true;
-	if (!ctx.hasUI) {
-		return requireUi ? `Cannot perform "${action}" without interactive user confirmation.` : null;
-	}
-	const confirmed = await ctx.ui.confirm("Confirm action", `Allow: ${action}?`);
-	if (!confirmed) return `User declined: ${action}`;
-	return null;
 }
 
 export default function (pi: ExtensionAPI) {

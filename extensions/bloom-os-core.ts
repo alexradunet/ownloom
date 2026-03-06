@@ -2,10 +2,10 @@ import { readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import { join } from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { runCommand } from "../lib/command.js";
-import { errorResult, truncate } from "../lib/shared.js";
+import { errorResult, requireConfirmation, truncate } from "../lib/shared.js";
 
 async function run(
 	cmd: string,
@@ -19,20 +19,6 @@ function guardBloom(name: string): string | null {
 	if (!name.startsWith("bloom-")) {
 		return `Security error: only bloom-* names are permitted, got "${name}"`;
 	}
-	return null;
-}
-
-async function requireConfirmation(
-	ctx: ExtensionContext,
-	action: string,
-	options?: { requireUi?: boolean },
-): Promise<string | null> {
-	const requireUi = options?.requireUi ?? true;
-	if (!ctx.hasUI) {
-		return requireUi ? `Cannot perform "${action}" without interactive user confirmation.` : null;
-	}
-	const confirmed = await ctx.ui.confirm("Confirm action", `Allow: ${action}?`);
-	if (!confirmed) return `User declined: ${action}`;
 	return null;
 }
 

@@ -1,10 +1,10 @@
 import { mkdirSync } from "node:fs";
 import os from "node:os";
 import { join } from "node:path";
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { runCommand } from "../lib/command.js";
-import { errorResult } from "../lib/shared.js";
+import { errorResult, requireConfirmation } from "../lib/shared.js";
 
 async function run(
 	cmd: string,
@@ -12,20 +12,6 @@ async function run(
 	signal?: AbortSignal,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
 	return runCommand(cmd, args, { signal });
-}
-
-async function requireConfirmation(
-	ctx: ExtensionContext,
-	action: string,
-	options?: { requireUi?: boolean },
-): Promise<string | null> {
-	const requireUi = options?.requireUi ?? true;
-	if (!ctx.hasUI) {
-		return requireUi ? `Cannot perform "${action}" without interactive user confirmation.` : null;
-	}
-	const confirmed = await ctx.ui.confirm("Confirm action", `Allow: ${action}?`);
-	if (!confirmed) return `User declined: ${action}`;
-	return null;
 }
 
 function parseGithubSlugFromUrl(url: string): string | null {
