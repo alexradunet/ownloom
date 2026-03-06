@@ -21,6 +21,9 @@
 		"@sinclair/typebox": "*"
 	},
 	"dependencies": {
+		"@11ty/gray-matter": "^2.0.1",
+		"execa": "^9.6.1",
+		"hosted-git-info": "^9.0.2",
 		"js-yaml": "^4.1.0"
 	},
 	"devDependencies": {

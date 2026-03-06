@@ -1,3 +1,9 @@
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const HostedGitInfo: { fromUrl(url: string): { type: string; user: string; project: string } | undefined } =
+	require("hosted-git-info");
+
 /** Validate that a service/unit name matches `bloom-[a-z0-9-]+`. Returns error message or null. */
 export function guardBloom(name: string): string | null {
 	if (!/^bloom-[a-z0-9][a-z0-9-]*$/.test(name)) {
@@ -8,16 +14,8 @@ export function guardBloom(name: string): string | null {
 
 /** Extract `owner/repo` slug from a GitHub URL (HTTPS, SSH, or ssh:// format). Returns null if not a valid GitHub URL. */
 export function parseGithubSlugFromUrl(url: string): string | null {
-	const trimmed = url.trim();
-	const ssh = trimmed.match(/^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?$/);
-	if (ssh) return `${ssh[1]}/${ssh[2]}`;
-
-	const https = trimmed.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/);
-	if (https) return `${https[1]}/${https[2]}`;
-
-	const sshUrl = trimmed.match(/^ssh:\/\/git@github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/);
-	if (sshUrl) return `${sshUrl[1]}/${sshUrl[2]}`;
-
+	const info = HostedGitInfo.fromUrl(url.trim());
+	if (info && info.type === "github") return `${info.user}/${info.project}`;
 	return null;
 }
 

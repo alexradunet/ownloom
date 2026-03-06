@@ -1,7 +1,4 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-
-const execAsync = promisify(execFile);
+import { execa } from "execa";
 
 /** Result of running a shell command via {@link run}. */
 export interface RunResult {
@@ -20,16 +17,6 @@ export interface RunResult {
  * @param cwd - Optional working directory for the child process.
  */
 export async function run(cmd: string, args: string[], signal?: AbortSignal, cwd?: string): Promise<RunResult> {
-	try {
-		const { stdout, stderr } = await execAsync(cmd, args, { signal, cwd });
-		return { stdout, stderr, exitCode: 0 };
-	} catch (err: unknown) {
-		const e = err as { message?: string; stderr?: string; stdout?: string; code?: string | number; status?: number };
-		const exitCode = typeof e.status === "number" ? e.status : typeof e.code === "number" ? e.code : 1;
-		return {
-			stdout: e.stdout ?? "",
-			stderr: e.stderr ?? e.message ?? String(err),
-			exitCode,
-		};
-	}
+	const result = await execa(cmd, args, { reject: false, cancelSignal: signal, cwd });
+	return { stdout: result.stdout ?? "", stderr: result.stderr ?? "", exitCode: result.exitCode ?? 1 };
 }

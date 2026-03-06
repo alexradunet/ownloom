@@ -38,8 +38,6 @@ describe("frontmatter roundtrip integration", () => {
 		const data = { url: "https://example.com" };
 		const str = stringifyFrontmatter(data, "");
 		const parsed = parseFrontmatter(str);
-		// The parser splits on first colon, so "url" key gets "https" value
-		// (this is expected behavior of the simple parser)
-		expect(parsed.attributes).toHaveProperty("url");
+		expect(parsed.attributes).toEqual({ url: "https://example.com" });
 	});
 });

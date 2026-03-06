@@ -110,10 +110,11 @@ describe("parseFrontmatter", () => {
 		expect(result.bodyBegin).toBe(4);
 	});
 
-	it("skips lines without colon", () => {
+	it("returns empty attributes for malformed YAML", () => {
 		const input = "---\nkey: val\nno-colon-here\nother: ok\n---\n";
 		const result = parseFrontmatter(input);
-		expect(result.attributes).toEqual({ key: "val", other: "ok" });
+		expect(result.attributes).toEqual({});
+		expect(result.body).toBe(input);
 	});
 });
 
@@ -126,9 +127,15 @@ describe("stringifyFrontmatter", () => {
 		expect(result).toBe("---\ntitle: Test\nstatus: done\n---\nbody");
 	});
 
-	it("serializes arrays as comma-separated values", () => {
+	it("serializes arrays as YAML block sequences", () => {
 		const result = stringifyFrontmatter({ tags: ["a", "b"] }, "");
-		expect(result).toBe("---\ntags: a, b\n---\n");
+		expect(result).toBe("---\ntags:\n  - a\n  - b\n---\n");
+	});
+
+	it("preserves URLs with colons in values", () => {
+		const result = stringifyFrontmatter({ url: "https://example.com" }, "");
+		const parsed = parseFrontmatter(result);
+		expect(parsed.attributes).toEqual({ url: "https://example.com" });
 	});
 
 	it("handles empty data", () => {

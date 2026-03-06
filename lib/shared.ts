@@ -1,7 +1,20 @@
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { truncateHead } from "@mariozechner/pi-coding-agent";
+
+const require = createRequire(import.meta.url);
+const matter: (
+	str: string,
+	opts?: Record<string, unknown>,
+) => {
+	data: Record<string, unknown>;
+	content: string;
+	matter: string;
+} = require("@11ty/gray-matter");
+const jsYaml: { dump: (obj: unknown, opts?: Record<string, unknown>) => string; JSON_SCHEMA: unknown } =
+	require("js-yaml");
 
 /**
  * Resolve path segments under a root directory, blocking path traversal.
@@ -65,95 +78,44 @@ export function nowIso(): string {
 
 /** Serialize a data object and markdown body into a frontmatter-delimited string. */
 export function stringifyFrontmatter(data: Record<string, unknown>, content: string): string {
-	const lines: string[] = ["---"];
-	for (const [key, val] of Object.entries(data)) {
-		if (Array.isArray(val)) {
-			lines.push(`${key}: ${val.join(", ")}`);
-		} else {
-			lines.push(`${key}: ${val}`);
-		}
-	}
-	lines.push("---");
-	return `${lines.join("\n")}\n${content}`;
+	const keys = Object.keys(data);
+	if (keys.length === 0) return `---\n---\n${content}`;
+	const yamlStr = jsYaml.dump(data, { schema: jsYaml.JSON_SCHEMA }).trimEnd();
+	return `---\n${yamlStr}\n---\n${content}`;
 }
 
 /** Parse YAML frontmatter from a markdown string. Returns attributes, body, and metadata. Supports comma-separated arrays and YAML-style list arrays. */
 export function parseFrontmatter<T extends Record<string, unknown> = Record<string, unknown>>(
 	str: string,
 ): ParsedFrontmatter<T> {
-	if (!str.startsWith("---\n")) {
-		return {
-			attributes: {} as T,
-			body: str,
-			bodyBegin: 1,
-			frontmatter: "",
-		};
+	const empty: ParsedFrontmatter<T> = { attributes: {} as T, body: str, bodyBegin: 1, frontmatter: "" };
+	if (!str.startsWith("---\n")) return empty;
+	if (str.indexOf("\n---\n", 4) === -1 && !str.match(/\n---$/)) return empty;
+
+	let result: { data: Record<string, unknown>; content: string; matter: string };
+	try {
+		result = matter(str, { schema: jsYaml.JSON_SCHEMA });
+	} catch {
+		return empty;
 	}
+	const attributes = result.data as Record<string, unknown>;
 
-	const end = str.indexOf("\n---\n", 4);
-	if (end === -1) {
-		return {
-			attributes: {} as T,
-			body: str,
-			bodyBegin: 1,
-			frontmatter: "",
-		};
-	}
-
-	const frontmatter = str.slice(4, end);
-	const body = str.slice(end + 5);
-	const attributes: Record<string, unknown> = {};
-
-	let currentArrayKey: string | null = null;
-	let currentArrayValues: string[] = [];
-	const flushArray = () => {
-		if (currentArrayKey) {
-			attributes[currentArrayKey] = currentArrayValues;
-			currentArrayKey = null;
-			currentArrayValues = [];
-		}
-	};
-
-	for (const line of frontmatter.split("\n")) {
-		const trimmed = line.trim();
-		if (!trimmed || trimmed.startsWith("#")) continue;
-
-		if (line.match(/^\s*-\s+/) && currentArrayKey) {
-			const item = line.replace(/^\s*-\s+/, "").trim();
-			if (item) currentArrayValues.push(item);
-			continue;
-		}
-
-		flushArray();
-
-		const colon = line.indexOf(":");
-		if (colon === -1) continue;
-
-		const key = line.slice(0, colon).trim();
-		const val = line.slice(colon + 1).trim();
-		if (!key) continue;
-
-		if (val === "") {
-			currentArrayKey = key;
-			continue;
-		}
-
-		if (FRONTMATTER_ARRAY_KEYS.has(key) && val.includes(",")) {
+	// Compat layer: split comma-separated strings into arrays for known keys
+	for (const key of FRONTMATTER_ARRAY_KEYS) {
+		const val = attributes[key];
+		if (typeof val === "string" && val.includes(",")) {
 			attributes[key] = val
 				.split(",")
 				.map((s) => s.trim())
 				.filter(Boolean);
-		} else {
-			attributes[key] = val;
 		}
 	}
 
-	flushArray();
-
+	const frontmatter = result.matter.trimStart();
 	const bodyBegin = frontmatter.split("\n").length + 3;
 	return {
 		attributes: attributes as T,
-		body,
+		body: result.content,
 		bodyBegin,
 		frontmatter,
 	};
