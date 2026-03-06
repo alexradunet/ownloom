@@ -78,12 +78,14 @@ interface BloomContext {
 	updateAvailable: boolean;
 }
 
-const CONTEXT_FILE = join(os.homedir(), ".pi", "bloom-context.json");
+function getContextFile(): string {
+	return join(os.homedir(), ".pi", "bloom-context.json");
+}
 
 function saveContext(ctx: BloomContext): void {
 	try {
 		mkdirSync(join(os.homedir(), ".pi"), { recursive: true });
-		writeFileSync(CONTEXT_FILE, JSON.stringify(ctx, null, 2));
+		writeFileSync(getContextFile(), JSON.stringify(ctx, null, 2));
 	} catch (err) {
 		log.error("Failed to save context", { error: (err as Error).message });
 	}
@@ -91,8 +93,9 @@ function saveContext(ctx: BloomContext): void {
 
 function loadContext(): BloomContext | null {
 	try {
-		if (!existsSync(CONTEXT_FILE)) return null;
-		return JSON.parse(readFileSync(CONTEXT_FILE, "utf-8")) as BloomContext;
+		const contextFile = getContextFile();
+		if (!existsSync(contextFile)) return null;
+		return JSON.parse(readFileSync(contextFile, "utf-8")) as BloomContext;
 	} catch {
 		return null;
 	}

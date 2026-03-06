@@ -15,15 +15,7 @@ const EXPECTED_TOOL_NAMES = [
 	"container_deploy",
 	"update_status",
 	"schedule_reboot",
-	"bloom_repo_configure",
-	"bloom_repo_sync",
-	"bloom_repo_submit_pr",
-	"bloom_repo_status",
 	"system_health",
-	"manifest_show",
-	"manifest_sync",
-	"manifest_set_service",
-	"manifest_apply",
 ];
 
 beforeEach(async () => {
@@ -45,17 +37,16 @@ function toolNames(): string[] {
 // Registration
 // ---------------------------------------------------------------------------
 describe("bloom-os registration", () => {
-	it("registers exactly 18 tools", () => {
-		expect(api._registeredTools).toHaveLength(18);
+	it("registers exactly 10 tools", () => {
+		expect(api._registeredTools).toHaveLength(10);
 	});
 
 	it("registers all expected tool names", () => {
 		expect(toolNames()).toEqual(EXPECTED_TOOL_NAMES);
 	});
 
-	it("has session_start and before_agent_start event handlers", () => {
+	it("has before_agent_start event handler", () => {
 		const events = [...api._eventHandlers.keys()];
-		expect(events).toContain("session_start");
 		expect(events).toContain("before_agent_start");
 	});
 });

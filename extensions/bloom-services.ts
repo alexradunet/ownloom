@@ -7,20 +7,27 @@
  */
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import os, { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { run } from "../lib/exec.js";
-import { tailscaleAuthConfigured } from "../lib/manifest.js";
-import { commandMissingError, extractDigest, validatePinnedImage, validateServiceName } from "../lib/service-utils.js";
-import { createLogger, errorResult, getGardenDir, parseFrontmatter, truncate } from "../lib/shared.js";
-import { hasSubidRange } from "../lib/system-checks.js";
-
-const require = createRequire(import.meta.url);
-const yaml: { load: (str: string) => unknown; dump: (obj: unknown) => string } = require("js-yaml");
+import { loadManifest, saveManifest, servicePreflightErrors, tailscaleAuthConfigured } from "../lib/manifest.js";
+import {
+	commandMissingError,
+	resolveArtifactDigest,
+	validatePinnedImage,
+	validateServiceName,
+} from "../lib/service-utils.js";
+import {
+	createLogger,
+	errorResult,
+	getGardenDir,
+	getServiceRegistry,
+	parseFrontmatter,
+	truncate,
+} from "../lib/shared.js";
 
 const log = createLogger("bloom-services");
 
@@ -35,12 +42,6 @@ function resolvePackageRoot(): string {
 	return join(here, "../..");
 }
 
-const packageRoot = resolvePackageRoot();
-const defaultNetworkPath = join(packageRoot, "os", "sysconfig", "bloom.network");
-const defaultServiceRegistry =
-	process.env.BLOOM_SERVICE_REGISTRY?.trim() || process.env.BLOOM_REGISTRY?.trim() || "ghcr.io/pibloom";
-const defaultSourceRepo = process.env.BLOOM_SOURCE_REPO?.trim() || "https://github.com/pibloom/pi-bloom";
-
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -53,39 +54,6 @@ async function ensureCommand(name: string, args: string[], signal?: AbortSignal)
 		return `Required command not found: ${name}`;
 	}
 	return null;
-}
-
-async function resolveArtifactDigest(ref: string, signal?: AbortSignal): Promise<string | null> {
-	const resolve = await run("oras", ["resolve", ref], signal);
-	if (resolve.exitCode === 0) {
-		const digest = extractDigest(`${resolve.stdout}\n${resolve.stderr}`);
-		if (digest) return digest;
-	}
-
-	const descriptor = await run("oras", ["manifest", "fetch", "--descriptor", ref], signal);
-	if (descriptor.exitCode === 0) {
-		const digest = extractDigest(`${descriptor.stdout}\n${descriptor.stderr}`);
-		if (digest) return digest;
-	}
-
-	return null;
-}
-
-function tailscaleRootlessPreflightError(): string | null {
-	const user = os.userInfo().username;
-	const hasSubuid = hasSubidRange("/etc/subuid", user);
-	const hasSubgid = hasSubidRange("/etc/subgid", user);
-	if (hasSubuid && hasSubgid) return null;
-
-	return [
-		`Rootless Podman prerequisite missing for user "${user}":`,
-		`- /etc/subuid entry present: ${hasSubuid ? "yes" : "no"}`,
-		`- /etc/subgid entry present: ${hasSubgid ? "yes" : "no"}`,
-		"",
-		"Fix (requires sudo), then log out and back in:",
-		`sudo usermod --add-subuids 100000-165535 ${user}`,
-		`sudo usermod --add-subgids 100000-165535 ${user}`,
-	].join("\n");
 }
 
 function resolveRepoDir(ctx: ExtensionContext): string {
@@ -103,31 +71,6 @@ function resolveRepoDir(ctx: ExtensionContext): string {
 	return ctx.cwd;
 }
 
-function writeManifestService(name: string, image: string, version?: string): void {
-	const manifestPath = join(getGardenDir(), "Bloom", "manifest.yaml");
-	mkdirSync(join(getGardenDir(), "Bloom"), { recursive: true });
-
-	let manifest: {
-		device?: string;
-		os_image?: string;
-		services?: Record<string, { image: string; version?: string; enabled: boolean }>;
-	};
-
-	if (existsSync(manifestPath)) {
-		try {
-			manifest = (yaml.load(readFileSync(manifestPath, "utf-8")) as typeof manifest) ?? {};
-		} catch {
-			manifest = {};
-		}
-	} else {
-		manifest = {};
-	}
-
-	manifest.services ??= {};
-	manifest.services[name] = { image, version, enabled: true };
-	writeFileSync(manifestPath, yaml.dump(manifest));
-}
-
 function extractSkillMetadata(skillPath: string): { image?: string; version?: string } {
 	try {
 		const raw = readFileSync(skillPath, "utf-8");
@@ -142,6 +85,10 @@ function extractSkillMetadata(skillPath: string): { image?: string; version?: st
 }
 
 export default function (pi: ExtensionAPI) {
+	const packageRoot = resolvePackageRoot();
+	const defaultNetworkPath = join(packageRoot, "os", "sysconfig", "bloom.network");
+	const defaultSourceRepo = process.env.BLOOM_SOURCE_REPO?.trim() || "https://github.com/pibloom/pi-bloom";
+
 	pi.registerTool({
 		name: "service_scaffold",
 		label: "Scaffold Service Package",
@@ -237,7 +184,7 @@ export default function (pi: ExtensionAPI) {
 		parameters: Type.Object({
 			name: Type.String({ description: "Service name (e.g. whisper)" }),
 			version: Type.Optional(Type.String({ description: "Tag to publish", default: "latest" })),
-			registry: Type.Optional(Type.String({ description: "Registry namespace", default: defaultServiceRegistry })),
+			registry: Type.Optional(Type.String({ description: "Registry namespace", default: getServiceRegistry() })),
 			also_latest: Type.Optional(Type.Boolean({ description: "Also publish latest tag", default: true })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
@@ -250,7 +197,7 @@ export default function (pi: ExtensionAPI) {
 			if (!existsSync(quadletDir)) return errorResult(`Missing quadlet directory: ${quadletDir}`);
 			if (!existsSync(join(serviceDir, "SKILL.md"))) return errorResult(`Missing SKILL.md in ${serviceDir}`);
 
-			const registry = params.registry ?? defaultServiceRegistry;
+			const registry = params.registry ?? getServiceRegistry();
 			const version = params.version ?? "latest";
 			const tags = new Set<string>([version]);
 			if ((params.also_latest ?? true) && version !== "latest") tags.add("latest");
@@ -304,7 +251,7 @@ export default function (pi: ExtensionAPI) {
 		parameters: Type.Object({
 			name: Type.String({ description: "Service name (e.g. whisper)" }),
 			version: Type.Optional(Type.String({ description: "Version tag to install", default: "latest" })),
-			registry: Type.Optional(Type.String({ description: "Registry namespace", default: defaultServiceRegistry })),
+			registry: Type.Optional(Type.String({ description: "Registry namespace", default: getServiceRegistry() })),
 			start: Type.Optional(Type.Boolean({ description: "Enable/start service after install", default: true })),
 			update_manifest: Type.Optional(
 				Type.Boolean({ description: "Update manifest.yaml with installed version", default: true }),
@@ -323,7 +270,7 @@ export default function (pi: ExtensionAPI) {
 			const guard = validateServiceName(params.name);
 			if (guard) return errorResult(guard);
 
-			const registry = params.registry ?? defaultServiceRegistry;
+			const registry = params.registry ?? getServiceRegistry();
 			const version = params.version ?? "latest";
 			const start = params.start ?? true;
 			const updateManifest = params.update_manifest ?? true;
@@ -333,8 +280,8 @@ export default function (pi: ExtensionAPI) {
 			const ref = `${registry}/bloom-svc-${params.name}:${version}`;
 
 			if (params.name === "tailscale" && start) {
-				const rootlessError = tailscaleRootlessPreflightError();
-				if (rootlessError) return errorResult(rootlessError);
+				const errors = await servicePreflightErrors("tailscale", undefined, signal);
+				if (errors.length > 0) return errorResult(errors.join("\n"));
 			}
 
 			if (version === "latest" && !allowLatest) {
@@ -468,7 +415,15 @@ export default function (pi: ExtensionAPI) {
 
 				const meta = extractSkillMetadata(join(skillDir, "SKILL.md"));
 				if (updateManifest) {
-					writeManifestService(params.name, meta.image ?? "unknown", version === "latest" ? meta.version : version);
+					const gardenDir = getGardenDir();
+					const manifestPath = join(gardenDir, "Bloom", "manifest.yaml");
+					const manifest = loadManifest(manifestPath);
+					manifest.services[params.name] = {
+						image: meta.image ?? "unknown",
+						version: version === "latest" ? meta.version : version,
+						enabled: true,
+					};
+					saveManifest(manifest, manifestPath, gardenDir);
 				}
 
 				return {

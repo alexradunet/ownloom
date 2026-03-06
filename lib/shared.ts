@@ -1,5 +1,6 @@
 import os from "node:os";
 import path from "node:path";
+import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { truncateHead } from "@mariozechner/pi-coding-agent";
 
 /** Result of parsing YAML frontmatter from a markdown string. */
@@ -27,6 +28,21 @@ export function errorResult(message: string) {
 		details: {},
 		isError: true,
 	};
+}
+
+/** Prompt the user for confirmation via UI. Returns null if confirmed, error message if declined or no UI. */
+export async function requireConfirmation(
+	ctx: ExtensionContext,
+	action: string,
+	options?: { requireUi?: boolean },
+): Promise<string | null> {
+	const requireUi = options?.requireUi ?? true;
+	if (!ctx.hasUI) {
+		return requireUi ? `Cannot perform "${action}" without interactive user confirmation.` : null;
+	}
+	const confirmed = await ctx.ui.confirm("Confirm action", `Allow: ${action}?`);
+	if (!confirmed) return `User declined: ${action}`;
+	return null;
 }
 
 /** Return current time as ISO 8601 string without milliseconds (e.g., `2026-03-06T12:00:00Z`). */
@@ -128,6 +144,11 @@ export function parseFrontmatter<T extends Record<string, unknown> = Record<stri
 		bodyBegin,
 		frontmatter,
 	};
+}
+
+/** Resolve the OCI service registry. Checks `BLOOM_SERVICE_REGISTRY`, then `BLOOM_REGISTRY`, then falls back to `ghcr.io/pibloom`. */
+export function getServiceRegistry(): string {
+	return process.env.BLOOM_SERVICE_REGISTRY?.trim() || process.env.BLOOM_REGISTRY?.trim() || "ghcr.io/pibloom";
 }
 
 /** The five PARA methodology directory names used in the Garden vault. */

@@ -120,7 +120,38 @@ describe("bloom-os registration", () => {
 		mod.default(api as never);
 
 		expect(toolNames(api)).toEqual(expect.arrayContaining(["bootc_status", "bootc_update", "bootc_rollback"]));
-		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start", "before_agent_start"]));
+		expect(eventNames(api)).toEqual(expect.arrayContaining(["before_agent_start"]));
+	});
+});
+
+// ---------------------------------------------------------------------------
+// bloom-repo
+// ---------------------------------------------------------------------------
+describe("bloom-repo registration", () => {
+	it("registers expected tools", async () => {
+		const mod = await import("../../extensions/bloom-repo.js");
+		const api = createMockExtensionAPI();
+		mod.default(api as never);
+
+		expect(toolNames(api)).toEqual(
+			expect.arrayContaining(["bloom_repo_configure", "bloom_repo_sync", "bloom_repo_submit_pr", "bloom_repo_status"]),
+		);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// bloom-manifest
+// ---------------------------------------------------------------------------
+describe("bloom-manifest registration", () => {
+	it("registers expected tools and events", async () => {
+		const mod = await import("../../extensions/bloom-manifest.js");
+		const api = createMockExtensionAPI();
+		mod.default(api as never);
+
+		expect(toolNames(api)).toEqual(
+			expect.arrayContaining(["manifest_show", "manifest_sync", "manifest_set_service", "manifest_apply"]),
+		);
+		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start"]));
 	});
 });
 
