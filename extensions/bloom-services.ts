@@ -8,6 +8,7 @@ import { Type } from "@sinclair/typebox";
 import { ensureCommand, runCommand } from "../lib/command.js";
 import { loadManifest, saveManifest } from "../lib/manifest.js";
 import {
+	extractDigest,
 	tailscaleAuthConfigured,
 	tailscaleRootlessPreflightError,
 	validatePinnedImage,
@@ -36,11 +37,6 @@ const defaultSourceRepo = process.env.BLOOM_SOURCE_REPO?.trim() || "https://gith
 
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function extractDigest(text: string): string | null {
-	const match = text.match(/sha256:[a-f0-9]{64}/i);
-	return match ? match[0].toLowerCase() : null;
 }
 
 async function resolveArtifactDigest(ref: string, signal?: AbortSignal): Promise<string | null> {
