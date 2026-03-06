@@ -14,7 +14,7 @@ import {
 	validatePinnedImage,
 	validateServiceName,
 } from "../lib/service-policy.js";
-import { createLogger, errorResult, getGardenDir, parseFrontmatter, truncate } from "../lib/shared.js";
+import { DEFAULT_SERVICE_REGISTRY, createLogger, errorResult, getGardenDir, parseFrontmatter, truncate } from "../lib/shared.js";
 
 const log = createLogger("bloom-services");
 
@@ -31,8 +31,6 @@ function resolvePackageRoot(): string {
 
 const packageRoot = resolvePackageRoot();
 const defaultNetworkPath = join(packageRoot, "os", "sysconfig", "bloom.network");
-const defaultServiceRegistry =
-	process.env.BLOOM_SERVICE_REGISTRY?.trim() || process.env.BLOOM_REGISTRY?.trim() || "ghcr.io/pibloom";
 const defaultSourceRepo = process.env.BLOOM_SOURCE_REPO?.trim() || "https://github.com/pibloom/pi-bloom";
 
 function sleep(ms: number): Promise<void> {
@@ -186,7 +184,7 @@ export default function (pi: ExtensionAPI) {
 		parameters: Type.Object({
 			name: Type.String({ description: "Service name (e.g. whisper)" }),
 			version: Type.Optional(Type.String({ description: "Tag to publish", default: "latest" })),
-			registry: Type.Optional(Type.String({ description: "Registry namespace", default: defaultServiceRegistry })),
+			registry: Type.Optional(Type.String({ description: "Registry namespace", default: DEFAULT_SERVICE_REGISTRY })),
 			also_latest: Type.Optional(Type.Boolean({ description: "Also publish latest tag", default: true })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
@@ -199,7 +197,7 @@ export default function (pi: ExtensionAPI) {
 			if (!existsSync(quadletDir)) return errorResult(`Missing quadlet directory: ${quadletDir}`);
 			if (!existsSync(join(serviceDir, "SKILL.md"))) return errorResult(`Missing SKILL.md in ${serviceDir}`);
 
-			const registry = params.registry ?? defaultServiceRegistry;
+			const registry = params.registry ?? DEFAULT_SERVICE_REGISTRY;
 			const version = params.version ?? "latest";
 			const tags = new Set<string>([version]);
 			if ((params.also_latest ?? true) && version !== "latest") tags.add("latest");
@@ -253,7 +251,7 @@ export default function (pi: ExtensionAPI) {
 		parameters: Type.Object({
 			name: Type.String({ description: "Service name (e.g. whisper)" }),
 			version: Type.Optional(Type.String({ description: "Version tag to install", default: "latest" })),
-			registry: Type.Optional(Type.String({ description: "Registry namespace", default: defaultServiceRegistry })),
+			registry: Type.Optional(Type.String({ description: "Registry namespace", default: DEFAULT_SERVICE_REGISTRY })),
 			start: Type.Optional(Type.Boolean({ description: "Enable/start service after install", default: true })),
 			update_manifest: Type.Optional(
 				Type.Boolean({ description: "Update manifest.yaml with installed version", default: true }),
@@ -272,7 +270,7 @@ export default function (pi: ExtensionAPI) {
 			const guard = validateServiceName(params.name);
 			if (guard) return errorResult(guard);
 
-			const registry = params.registry ?? defaultServiceRegistry;
+			const registry = params.registry ?? DEFAULT_SERVICE_REGISTRY;
 			const version = params.version ?? "latest";
 			const start = params.start ?? true;
 			const updateManifest = params.update_manifest ?? true;

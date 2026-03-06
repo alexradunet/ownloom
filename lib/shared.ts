@@ -138,6 +138,9 @@ export async function requireConfirmation(
 	return null;
 }
 
+export const DEFAULT_SERVICE_REGISTRY =
+	process.env.BLOOM_SERVICE_REGISTRY?.trim() || process.env.BLOOM_REGISTRY?.trim() || "ghcr.io/pibloom";
+
 export const PARA_DIRS = ["Inbox", "Projects", "Areas", "Resources", "Archive"];
 
 type LogLevel = "debug" | "info" | "warn" | "error";

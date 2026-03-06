@@ -23,7 +23,14 @@ import {
 	saveManifest as saveManifestFile,
 } from "../lib/manifest.js";
 import { hasSubidRange, hasTagOrDigest, tailscaleAuthConfigured } from "../lib/service-policy.js";
-import { createLogger, errorResult, getGardenDir, requireConfirmation, truncate } from "../lib/shared.js";
+import {
+	DEFAULT_SERVICE_REGISTRY,
+	createLogger,
+	errorResult,
+	getGardenDir,
+	requireConfirmation,
+	truncate,
+} from "../lib/shared.js";
 
 const log = createLogger("bloom-runtime");
 
@@ -31,8 +38,6 @@ export default function (pi: ExtensionAPI) {
 	const gardenDir = getGardenDir();
 	const manifestPath = join(gardenDir, "Bloom", "manifest.yaml");
 	const repoDir = join(os.homedir(), ".bloom", "pi-bloom");
-	const defaultServiceRegistry =
-		process.env.BLOOM_SERVICE_REGISTRY?.trim() || process.env.BLOOM_REGISTRY?.trim() || "ghcr.io/pibloom";
 	const serviceCatalogCandidates = [
 		join(repoDir, "services", "catalog.yaml"),
 		"/usr/local/share/bloom/services/catalog.yaml",
@@ -403,7 +408,7 @@ export default function (pi: ExtensionAPI) {
 				}),
 			),
 			registry: Type.Optional(
-				Type.String({ description: "Registry namespace for service artifacts", default: defaultServiceRegistry }),
+				Type.String({ description: "Registry namespace for service artifacts", default: DEFAULT_SERVICE_REGISTRY }),
 			),
 			allow_latest: Type.Optional(
 				Type.Boolean({ description: "Allow installing latest when manifest version is missing", default: false }),
@@ -418,7 +423,7 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			const installMissing = params.install_missing ?? true;
-			const registry = params.registry ?? defaultServiceRegistry;
+			const registry = params.registry ?? DEFAULT_SERVICE_REGISTRY;
 			const allowLatest = params.allow_latest ?? false;
 			const dryRun = params.dry_run ?? false;
 
