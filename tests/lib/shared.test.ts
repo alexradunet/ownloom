@@ -3,9 +3,11 @@ import {
 	createLogger,
 	errorResult,
 	getGardenDir,
+	getServiceRegistry,
 	nowIso,
 	PARA_DIRS,
 	parseFrontmatter,
+	requireConfirmation,
 	stringifyFrontmatter,
 } from "../../lib/shared.js";
 
@@ -34,10 +36,16 @@ describe("parseFrontmatter", () => {
 		expect(result.body).toBe("body");
 	});
 
-	it("parses comma-separated values as arrays", () => {
+	it("parses comma-separated values as arrays for known keys", () => {
 		const input = "---\ntags: a, b, c\n---\n";
 		const result = parseFrontmatter(input);
 		expect(result.attributes).toEqual({ tags: ["a", "b", "c"] });
+	});
+
+	it("preserves comma-containing values as strings for non-array keys", () => {
+		const input = "---\ndescription: Hello, world\n---\n";
+		const result = parseFrontmatter(input);
+		expect(result.attributes).toEqual({ description: "Hello, world" });
 	});
 
 	it("parses YAML list items", () => {
@@ -227,6 +235,17 @@ describe("createLogger", () => {
 		spy.mockRestore();
 	});
 
+	it("logs to console.log for debug level", () => {
+		const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+		const logger = createLogger("comp");
+		logger.debug("trace msg");
+		expect(spy).toHaveBeenCalledOnce();
+		const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+		expect(parsed.level).toBe("debug");
+		expect(parsed.msg).toBe("trace msg");
+		spy.mockRestore();
+	});
+
 	it("includes extra fields in log output", () => {
 		const spy = vi.spyOn(console, "log").mockImplementation(() => {});
 		const logger = createLogger("comp");
@@ -234,6 +253,63 @@ describe("createLogger", () => {
 		const parsed = JSON.parse(spy.mock.calls[0][0] as string);
 		expect(parsed.extra).toBe("data");
 		spy.mockRestore();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// requireConfirmation
+// ---------------------------------------------------------------------------
+describe("requireConfirmation", () => {
+	it("returns error when no UI and requireUi is true", async () => {
+		const ctx = { hasUI: false } as never;
+		const result = await requireConfirmation(ctx, "delete file");
+		expect(result).toBe('Cannot perform "delete file" without interactive user confirmation.');
+	});
+
+	it("returns null when no UI and requireUi is false", async () => {
+		const ctx = { hasUI: false } as never;
+		const result = await requireConfirmation(ctx, "delete file", { requireUi: false });
+		expect(result).toBeNull();
+	});
+
+	it("returns null when user confirms", async () => {
+		const ctx = { hasUI: true, ui: { confirm: async () => true } } as never;
+		const result = await requireConfirmation(ctx, "delete file");
+		expect(result).toBeNull();
+	});
+
+	it("returns error when user declines", async () => {
+		const ctx = { hasUI: true, ui: { confirm: async () => false } } as never;
+		const result = await requireConfirmation(ctx, "delete file");
+		expect(result).toBe("User declined: delete file");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// getServiceRegistry
+// ---------------------------------------------------------------------------
+describe("getServiceRegistry", () => {
+	const origEnv = { ...process.env };
+
+	afterEach(() => {
+		process.env = { ...origEnv };
+	});
+
+	it("returns BLOOM_SERVICE_REGISTRY when set", () => {
+		process.env.BLOOM_SERVICE_REGISTRY = "my.registry.io/org";
+		expect(getServiceRegistry()).toBe("my.registry.io/org");
+	});
+
+	it("falls back to BLOOM_REGISTRY", () => {
+		delete process.env.BLOOM_SERVICE_REGISTRY;
+		process.env.BLOOM_REGISTRY = "other.registry.io/org";
+		expect(getServiceRegistry()).toBe("other.registry.io/org");
+	});
+
+	it("defaults to ghcr.io/pibloom", () => {
+		delete process.env.BLOOM_SERVICE_REGISTRY;
+		delete process.env.BLOOM_REGISTRY;
+		expect(getServiceRegistry()).toBe("ghcr.io/pibloom");
 	});
 });
 

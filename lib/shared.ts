@@ -125,7 +125,8 @@ export function parseFrontmatter<T extends Record<string, unknown> = Record<stri
 			continue;
 		}
 
-		if (val.includes(",")) {
+		const ARRAY_KEYS = new Set(["tags", "links", "aliases"]);
+		if (ARRAY_KEYS.has(key) && val.includes(",")) {
 			attributes[key] = val
 				.split(",")
 				.map((s) => s.trim())

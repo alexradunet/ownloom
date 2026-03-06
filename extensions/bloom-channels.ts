@@ -157,7 +157,7 @@ export default function (pi: ExtensionAPI) {
 			try {
 				msg = JSON.parse(trimmed) as IncomingMessage;
 			} catch {
-				log.error("failed to parse message", { raw: trimmed });
+				log.error("failed to parse message", { raw: trimmed.slice(0, 200) });
 				continue;
 			}
 

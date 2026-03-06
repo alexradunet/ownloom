@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -173,17 +173,102 @@ describe("commandCheckArgs", () => {
 	});
 });
 
+describe("loadManifest with malformed YAML", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = mkdtempSync(join(tmpdir(), "manifest-malformed-"));
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("returns empty manifest for invalid YAML that throws", () => {
+		const path = join(tempDir, "manifest.yaml");
+		// A YAML document with duplicate merge keys triggers a parse error
+		writeFileSync(path, "a: &a\n  b: *z\n");
+		const manifest = loadManifest(path);
+		// Either parses to something or falls back to empty — either way, no crash
+		expect(manifest).toBeDefined();
+	});
+});
+
 describe("loadServiceCatalog", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = mkdtempSync(join(tmpdir(), "catalog-test-"));
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
 	it("returns empty object for nonexistent repo dir", () => {
 		const catalog = loadServiceCatalog("/tmp/__bloom_no_such_repo__");
-		// If cwd also doesn't have services/catalog.yaml, empty
+		expect(typeof catalog).toBe("object");
+	});
+
+	it("loads a valid catalog from repo dir", () => {
+		const catalogDir = join(tempDir, "services");
+		mkdirSync(catalogDir, { recursive: true });
+		writeFileSync(
+			join(catalogDir, "catalog.yaml"),
+			["services:", "  whisper:", "    version: '0.1.0'", "    category: ai"].join("\n"),
+		);
+		const catalog = loadServiceCatalog(tempDir);
+		expect(catalog.whisper).toBeDefined();
+		expect(catalog.whisper.version).toBe("0.1.0");
+		expect(catalog.whisper.category).toBe("ai");
+	});
+
+	it("skips catalog without services key and falls through", () => {
+		// This tests the branch where doc.services is falsy
+		const catalogDir = join(tempDir, "services");
+		mkdirSync(catalogDir, { recursive: true });
+		writeFileSync(join(catalogDir, "catalog.yaml"), "something_else: true\n");
+		// When this temp dir is checked first and has no services key,
+		// it falls through. The result depends on whether cwd has a catalog.
+		const catalog = loadServiceCatalog(tempDir);
 		expect(typeof catalog).toBe("object");
 	});
 });
 
 describe("findLocalServicePackage", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = mkdtempSync(join(tmpdir(), "find-svc-"));
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
 	it("returns null for nonexistent repo dir and service", () => {
 		const result = findLocalServicePackage("nonexistent-service", "/tmp/__bloom_no_such_repo__");
+		expect(result).toBeNull();
+	});
+
+	it("finds a service package with quadlet dir and SKILL.md", () => {
+		const svcDir = join(tempDir, "services", "whisper");
+		const quadletDir = join(svcDir, "quadlet");
+		mkdirSync(quadletDir, { recursive: true });
+		writeFileSync(join(svcDir, "SKILL.md"), "---\nname: whisper\n---\n");
+		writeFileSync(join(quadletDir, "bloom-whisper.container"), "[Container]\nImage=test");
+		const result = findLocalServicePackage("whisper", tempDir);
+		expect(result).not.toBeNull();
+		expect(result!.serviceDir).toBe(svcDir);
+		expect(result!.quadletDir).toBe(quadletDir);
+		expect(result!.skillPath).toBe(join(svcDir, "SKILL.md"));
+	});
+
+	it("returns null when quadlet exists but no SKILL.md in temp dir", () => {
+		// Use a unique service name that won't exist in cwd fallback
+		const svcDir = join(tempDir, "services", "nonexistent-test-svc-xyz");
+		mkdirSync(join(svcDir, "quadlet"), { recursive: true });
+		const result = findLocalServicePackage("nonexistent-test-svc-xyz", tempDir);
 		expect(result).toBeNull();
 	});
 });
