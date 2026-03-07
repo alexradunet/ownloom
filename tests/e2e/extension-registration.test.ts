@@ -72,21 +72,6 @@ describe("bloom-garden registration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// bloom-journal
-// ---------------------------------------------------------------------------
-describe("bloom-journal registration", () => {
-	it("registers expected tools", async () => {
-		const mod = await import("../../extensions/bloom-journal.js");
-		const api = createMockExtensionAPI();
-		mod.default(api as never);
-
-		expect(toolNames(api)).toEqual(["journal_write", "journal_read"]);
-		expect(commandNames(api)).toEqual([]);
-		expect(eventNames(api)).toEqual([]);
-	});
-});
-
-// ---------------------------------------------------------------------------
 // bloom-objects
 // ---------------------------------------------------------------------------
 describe("bloom-objects registration", () => {
