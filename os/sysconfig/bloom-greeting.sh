@@ -67,24 +67,61 @@ if command -v netbird >/dev/null 2>&1; then
         echo "  NetBird mesh networking is not connected."
         echo "  This provides secure remote access to your Bloom device."
         echo ""
-        echo "  Starting NetBird authentication..."
+        echo "  How would you like to authenticate?"
+        echo "    1) Browser login (a URL will be displayed)"
+        echo "    2) Setup key (from https://app.netbird.io → Setup Keys)"
+        echo "    3) Skip for now"
         echo ""
-        # netbird up prints the auth URL for the user to visit
-        sudo netbird up 2>&1 || true
+        read -rp "  Choose [1/2/3]: " nb_choice
         echo ""
-        # Wait for connection (poll every 3s, timeout after 5 minutes)
-        echo "  Waiting for NetBird to connect (open the URL above in a browser)..."
-        for i in $(seq 1 100); do
+
+        case "$nb_choice" in
+            2)
+                read -rp "  Enter your NetBird setup key: " nb_setup_key
+                echo ""
+                if [ -n "$nb_setup_key" ]; then
+                    sudo netbird up --setup-key "$nb_setup_key" 2>&1 || true
+                else
+                    echo "  No key entered. Skipping NetBird setup."
+                    echo "  You can retry later with: sudo netbird up"
+                    echo ""
+                fi
+                ;;
+            1)
+                # Capture netbird output to extract the auth URL and open it in Chromium
+                nb_output=$(sudo netbird up 2>&1) || true
+                echo "$nb_output"
+                nb_url=$(echo "$nb_output" | grep -oP 'https://[^\s]+' | head -1)
+                if [ -n "$nb_url" ]; then
+                    echo ""
+                    echo "  Opening browser for NetBird login..."
+                    setsid chromium "$nb_url" >/dev/null 2>&1 &
+                fi
+                echo ""
+                # Wait for connection (poll every 3s, timeout after 5 minutes)
+                echo "  Waiting for NetBird to connect..."
+                for i in $(seq 1 100); do
+                    if sudo netbird status 2>/dev/null | grep -q "Connected"; then
+                        break
+                    fi
+                    sleep 3
+                done
+                ;;
+            *)
+                echo "  Skipping NetBird setup."
+                echo "  You can connect later with: sudo netbird up"
+                echo ""
+                ;;
+        esac
+
+        if [ "$nb_choice" = "1" ] || [ "$nb_choice" = "2" ]; then
             if sudo netbird status 2>/dev/null | grep -q "Connected"; then
                 echo "  NetBird connected successfully!"
                 echo ""
-                break
+            else
+                echo "  NetBird not yet connected. You can retry later with: sudo netbird up"
+                echo ""
             fi
-            sleep 3
-        done
-        if ! sudo netbird status 2>/dev/null | grep -q "Connected"; then
-            echo "  NetBird not yet connected. You can retry later with: sudo netbird up"
-            echo ""
         fi
     fi
 fi
