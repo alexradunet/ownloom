@@ -9,12 +9,12 @@ services:
     preflight:
       commands: [podman, systemctl]
   whatsapp:
-    version: "0.2.0"
+    version: "0.3.0"
     category: communication
+    image: localhost/bloom-whatsapp:latest
     optional: true
-    native: true
     preflight:
-      commands: [systemctl]
+      commands: [podman, systemctl]
   dufs:
     version: "0.1.0"
     category: sync
