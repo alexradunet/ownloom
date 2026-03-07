@@ -68,7 +68,7 @@ export function loadManifest(manifestPath: string): Manifest {
 }
 
 /** Write the manifest to disk, creating the parent directory if needed. */
-export function saveManifest(manifest: Manifest, manifestPath: string, _bloomDir: string): void {
+export function saveManifest(manifest: Manifest, manifestPath: string): void {
 	mkdirSync(dirname(manifestPath), { recursive: true });
 	writeFileSync(manifestPath, yaml.dump(manifest));
 }

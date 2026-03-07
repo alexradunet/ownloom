@@ -412,7 +412,7 @@ export default function (pi: ExtensionAPI) {
 						version: version === "latest" ? meta.version : version,
 						enabled: true,
 					};
-					saveManifest(manifest, manifestPath, bloomDir);
+					saveManifest(manifest, manifestPath);
 				}
 
 				return {

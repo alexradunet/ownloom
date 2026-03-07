@@ -142,7 +142,7 @@ export default function (pi: ExtensionAPI) {
 					}
 				}
 
-				saveManifest(updated, manifestPath, bloomDir);
+				saveManifest(updated, manifestPath);
 				const text =
 					drifts.length > 0
 						? `Manifest updated. Resolved ${drifts.length} drift(s):\n${drifts.join("\n")}`
@@ -187,7 +187,7 @@ export default function (pi: ExtensionAPI) {
 				version: params.version,
 				enabled: params.enabled ?? true,
 			};
-			saveManifest(manifest, manifestPath, bloomDir);
+			saveManifest(manifest, manifestPath);
 			return {
 				content: [
 					{
@@ -358,7 +358,7 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			if (manifestChanged && !dryRun) {
-				saveManifest(manifest, manifestPath, bloomDir);
+				saveManifest(manifest, manifestPath);
 			}
 
 			const summary = [

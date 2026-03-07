@@ -85,7 +85,7 @@ describe("saveManifest + loadManifest roundtrip", () => {
 			},
 		};
 
-		saveManifest(original, manifestPath, tempDir);
+		saveManifest(original, manifestPath);
 		const reloaded = loadManifest(manifestPath);
 
 		expect(reloaded.device).toBe("bloom-device");
@@ -98,7 +98,7 @@ describe("saveManifest + loadManifest roundtrip", () => {
 
 	it("creates parent Bloom directory if missing", () => {
 		const manifestPath = join(tempDir, "Bloom", "manifest.yaml");
-		saveManifest({ services: {} }, manifestPath, tempDir);
+		saveManifest({ services: {} }, manifestPath);
 		const raw = readFileSync(manifestPath, "utf-8");
 		expect(raw).toContain("services");
 	});
