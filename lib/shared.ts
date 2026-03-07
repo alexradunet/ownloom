@@ -127,11 +127,6 @@ export function parseFrontmatter<T extends Record<string, unknown> = Record<stri
 	};
 }
 
-/** Resolve the OCI service registry. Checks `BLOOM_SERVICE_REGISTRY`, then `BLOOM_REGISTRY`, then falls back to `ghcr.io/pibloom`. */
-export function getServiceRegistry(): string {
-	return process.env.BLOOM_SERVICE_REGISTRY?.trim() || process.env.BLOOM_REGISTRY?.trim() || "ghcr.io/pibloom";
-}
-
 /** Frontmatter keys that are parsed as comma-separated arrays. */
 const FRONTMATTER_ARRAY_KEYS = new Set(["tags", "links", "aliases"]);
 

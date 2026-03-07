@@ -61,7 +61,6 @@ export interface Manifest {
 export interface ServiceCatalogEntry {
 	version?: string;
 	category?: string;
-	artifact?: string;
 	image?: string;
 	optional?: boolean;
 	preflight?: {
@@ -124,8 +123,6 @@ export function loadServiceCatalog(repoDir: string): Record<string, ServiceCatal
 /** Return the arguments used to verify a command exists (e.g. `["--version"]`). */
 export function commandCheckArgs(cmd: string): string[] {
 	switch (cmd) {
-		case "oras":
-			return ["version"];
 		case "podman":
 		case "systemctl":
 			return ["--version"];
@@ -149,7 +146,7 @@ export async function servicePreflightErrors(
 	signal?: AbortSignal,
 ): Promise<string[]> {
 	const errors: string[] = [];
-	const commands = entry?.preflight?.commands ?? ["oras", "podman", "systemctl"];
+	const commands = entry?.preflight?.commands ?? ["podman", "systemctl"];
 	for (const command of commands) {
 		const ok = await commandExists(command, signal);
 		if (!ok) errors.push(`missing command: ${command}`);
@@ -168,18 +165,6 @@ export async function servicePreflightErrors(
 	}
 
 	return errors;
-}
-
-// ---------------------------------------------------------------------------
-// Ref / auth helpers
-// ---------------------------------------------------------------------------
-
-/** Check whether a container image reference includes a tag or digest. */
-export function hasTagOrDigest(ref: string): boolean {
-	if (ref.includes("@")) return true;
-	const lastSlash = ref.lastIndexOf("/");
-	const tail = ref.slice(lastSlash + 1);
-	return tail.includes(":");
 }
 
 // ---------------------------------------------------------------------------
@@ -206,52 +191,44 @@ export function findLocalServicePackage(
 	return null;
 }
 
-/** Pull a service package (OCI or local fallback), install Quadlet files, SKILL.md, and channel tokens. */
+/** Install a service from a bundled local package. Copies Quadlet files, SKILL.md, and generates channel tokens. */
 export async function installServicePackage(
 	name: string,
-	version: string,
-	registry: string,
+	_version: string,
 	bloomDir: string,
 	repoDir: string,
-	entry: ServiceCatalogEntry | undefined,
+	_entry: ServiceCatalogEntry | undefined,
 	signal?: AbortSignal,
-): Promise<{ ok: boolean; source: "oci" | "local"; ref: string; note?: string }> {
-	const artifactBase = entry?.artifact?.trim() || `${registry}/bloom-svc-${name}`;
-	const ref = hasTagOrDigest(artifactBase) ? artifactBase : `${artifactBase}:${version}`;
+): Promise<{ ok: boolean; source: "local"; ref: string; note?: string }> {
+	const localPackage = findLocalServicePackage(name, repoDir);
+	if (!localPackage) {
+		return {
+			ok: false,
+			source: "local",
+			ref: name,
+			note: `No local service package found for ${name}. Searched repo dir, /usr/local/share/bloom, and cwd.`,
+		};
+	}
+
 	const tempDir = mkdtempSync(join(os.tmpdir(), `bloom-manifest-${name}-`));
 
 	try {
-		let source: "oci" | "local" = "oci";
-		const pull = await run("oras", ["pull", ref, "-o", tempDir], signal);
-		if (pull.exitCode !== 0) {
-			const localPackage = findLocalServicePackage(name, repoDir);
-			if (!localPackage) {
-				return {
-					ok: false,
-					source,
-					ref,
-					note: `Failed to pull ${ref}: ${pull.stderr || pull.stdout}`,
-				};
-			}
-
-			const localTempQuadlet = join(tempDir, "quadlet");
-			mkdirSync(localTempQuadlet, { recursive: true });
-			for (const fileName of readdirSync(localPackage.quadletDir)) {
-				const src = join(localPackage.quadletDir, fileName);
-				if (!statSync(src).isFile()) continue;
-				writeFileSync(join(localTempQuadlet, fileName), readFileSync(src));
-			}
-			writeFileSync(join(tempDir, "SKILL.md"), readFileSync(localPackage.skillPath));
-			source = "local";
+		const localTempQuadlet = join(tempDir, "quadlet");
+		mkdirSync(localTempQuadlet, { recursive: true });
+		for (const fileName of readdirSync(localPackage.quadletDir)) {
+			const src = join(localPackage.quadletDir, fileName);
+			if (!statSync(src).isFile()) continue;
+			writeFileSync(join(localTempQuadlet, fileName), readFileSync(src));
 		}
+		writeFileSync(join(tempDir, "SKILL.md"), readFileSync(localPackage.skillPath));
 
 		const quadletSrc = join(tempDir, "quadlet");
 		const skillSrc = join(tempDir, "SKILL.md");
 		if (!existsSync(quadletSrc) || !existsSync(skillSrc)) {
 			return {
 				ok: false,
-				source,
-				ref,
+				source: "local",
+				ref: name,
 				note: `Service package for ${name} missing quadlet/ or SKILL.md`,
 			};
 		}
@@ -302,7 +279,7 @@ export async function installServicePackage(
 			writeFileSync(tokenEnvPath, `BLOOM_CHANNEL_TOKEN=${token}\n`);
 		}
 
-		return { ok: true, source, ref };
+		return { ok: true, source: "local", ref: name };
 	} finally {
 		rmSync(tempDir, { recursive: true, force: true });
 	}

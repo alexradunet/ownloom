@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-	commandMissingError,
-	extractDigest,
-	validatePinnedImage,
-	validateServiceName,
-} from "../../lib/service-utils.js";
+import { commandMissingError, validatePinnedImage, validateServiceName } from "../../lib/service-utils.js";
 
 // ---------------------------------------------------------------------------
 // validateServiceName
@@ -59,27 +54,6 @@ describe("validatePinnedImage", () => {
 
 	it("accepts LATEST (case-insensitive rejection)", () => {
 		expect(validatePinnedImage("ghcr.io/foo/bar:LATEST")).not.toBeNull();
-	});
-});
-
-// ---------------------------------------------------------------------------
-// extractDigest
-// ---------------------------------------------------------------------------
-describe("extractDigest", () => {
-	it("extracts sha256 digest from mixed text", () => {
-		const text = `Digest: sha256:${"abcdef01".repeat(8)} done`;
-		const result = extractDigest(text);
-		expect(result).toBe(`sha256:${"abcdef01".repeat(8)}`);
-	});
-
-	it("lowercases the digest", () => {
-		const digest = `SHA256:${"ABCDEF01".repeat(8)}`;
-		const result = extractDigest(digest);
-		expect(result).toBe(`sha256:${"abcdef01".repeat(8)}`);
-	});
-
-	it("returns null when no digest found", () => {
-		expect(extractDigest("no digest here")).toBeNull();
 	});
 });
 

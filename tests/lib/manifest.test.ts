@@ -6,7 +6,6 @@ import {
 	commandCheckArgs,
 	findLocalServicePackage,
 	hasSubidRange,
-	hasTagOrDigest,
 	loadManifest,
 	loadServiceCatalog,
 	saveManifest,
@@ -105,33 +104,7 @@ describe("saveManifest + loadManifest roundtrip", () => {
 	});
 });
 
-describe("hasTagOrDigest", () => {
-	it("returns true for ref with digest (@)", () => {
-		expect(hasTagOrDigest("ghcr.io/foo/bar@sha256:abc123")).toBe(true);
-	});
-
-	it("returns true for ref with explicit tag", () => {
-		expect(hasTagOrDigest("ghcr.io/foo/bar:0.1.0")).toBe(true);
-	});
-
-	it("returns false for ref without tag or digest", () => {
-		expect(hasTagOrDigest("ghcr.io/foo/bar")).toBe(false);
-	});
-
-	it("returns true for ref with latest tag", () => {
-		expect(hasTagOrDigest("ghcr.io/foo/bar:latest")).toBe(true);
-	});
-
-	it("returns false for bare name without registry", () => {
-		expect(hasTagOrDigest("myimage")).toBe(false);
-	});
-});
-
 describe("commandCheckArgs", () => {
-	it("returns ['version'] for oras", () => {
-		expect(commandCheckArgs("oras")).toEqual(["version"]);
-	});
-
 	it("returns ['--version'] for podman", () => {
 		expect(commandCheckArgs("podman")).toEqual(["--version"]);
 	});

@@ -84,11 +84,6 @@ vm-kill:
 clean:
 	rm -rf {{ output }}
 
-# Push built image to GHCR
-push-ghcr: build
-	{{ podman }} tag {{ image }} {{ remote_image }}
-	{{ podman }} push {{ remote_image }}
-
 # Generate ISO with GHCR target-imgref for OTA updates
 iso-production: build _require-bib-config
 	mkdir -p {{ output }}
@@ -101,32 +96,6 @@ iso-production: build _require-bib-config
 		--type anaconda-iso --target-imgref {{ remote_image }} --local {{ image }}
 	# bootc-image-builder may leave host files owned by nobody:nobody
 	sudo chown -R $(id -u):$(id -g) {{ output }} || true
-
-# Push a service package as OCI artifact
-svc-push name:
-	cd services/{{ name }} && oras push {{ registry }}/bloom-svc-{{ name }}:latest \
-		--annotation "org.opencontainers.image.title=bloom-{{ name }}" \
-		--annotation "org.opencontainers.image.source=https://github.com/pibloom/pi-bloom" \
-		$(find quadlet -type f | sed 's|.*|&:application/vnd.bloom.quadlet|') \
-		SKILL.md:text/markdown
-
-# Pull and install a service package locally (for testing)
-svc-install name:
-	mkdir -p /tmp/bloom-svc-{{ name }}
-	oras pull {{ registry }}/bloom-svc-{{ name }}:latest -o /tmp/bloom-svc-{{ name }}/
-	cp /tmp/bloom-svc-{{ name }}/quadlet/* ~/.config/containers/systemd/
-	@if [ ! -f ~/.config/containers/systemd/bloom.network ]; then cp os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network; fi
-	mkdir -p ~/Garden/Bloom/Skills/{{ name }}
-	cp /tmp/bloom-svc-{{ name }}/SKILL.md ~/Garden/Bloom/Skills/{{ name }}/SKILL.md
-	mkdir -p ~/.config/bloom/channel-tokens
-	@test -f ~/.config/bloom/channel-tokens/{{ name }} || (openssl rand -hex 32 > ~/.config/bloom/channel-tokens/{{ name }} && echo "BLOOM_CHANNEL_TOKEN=$(cat ~/.config/bloom/channel-tokens/{{ name }})" > ~/.config/bloom/channel-tokens/{{ name }}.env && echo "Generated channel token for {{ name }}")
-	systemctl --user daemon-reload
-	@if [ -f ~/.config/containers/systemd/bloom-{{ name }}.socket ]; then \
-		systemctl --user enable --now bloom-{{ name }}.socket; \
-	else \
-		systemctl --user enable --now bloom-{{ name }}; \
-	fi
-	rm -rf /tmp/bloom-svc-{{ name }}
 
 # Install host dependencies
 deps:

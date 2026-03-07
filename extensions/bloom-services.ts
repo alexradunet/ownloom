@@ -1,7 +1,7 @@
 /**
- * 📦 bloom-services — Service lifecycle: scaffold, publish, install, and test OCI service packages.
+ * bloom-services — Service lifecycle: scaffold, install, and test local service packages.
  *
- * @tools service_scaffold, service_publish, service_install, service_test
+ * @tools service_scaffold, service_install, service_test
  * @hooks session_start
  * @see {@link ../AGENTS.md#bloom-services} Extension reference
  */
@@ -14,20 +14,8 @@ import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-age
 import { Type } from "@sinclair/typebox";
 import { run } from "../lib/exec.js";
 import { loadManifest, saveManifest, servicePreflightErrors } from "../lib/manifest.js";
-import {
-	commandMissingError,
-	resolveArtifactDigest,
-	validatePinnedImage,
-	validateServiceName,
-} from "../lib/service-utils.js";
-import {
-	createLogger,
-	errorResult,
-	getBloomDir,
-	getServiceRegistry,
-	parseFrontmatter,
-	truncate,
-} from "../lib/shared.js";
+import { commandMissingError, validatePinnedImage, validateServiceName } from "../lib/service-utils.js";
+import { createLogger, errorResult, getBloomDir, parseFrontmatter, truncate } from "../lib/shared.js";
 
 const log = createLogger("bloom-services");
 
@@ -87,15 +75,13 @@ function extractSkillMetadata(skillPath: string): { image?: string; version?: st
 export default function (pi: ExtensionAPI) {
 	const packageRoot = resolvePackageRoot();
 	const defaultNetworkPath = join(packageRoot, "os", "sysconfig", "bloom.network");
-	const defaultSourceRepo = process.env.BLOOM_SOURCE_REPO?.trim() || "https://github.com/pibloom/pi-bloom";
-
 	pi.registerTool({
 		name: "service_scaffold",
 		label: "Scaffold Service Package",
 		description: "Generate a new Bloom service package (quadlet + SKILL.md) from a template.",
 		promptSnippet: "service_scaffold — create a new service package skeleton",
 		promptGuidelines: [
-			"Use service_scaffold to bootstrap a new OCI service package with correct Bloom conventions.",
+			"Use service_scaffold to bootstrap a new service package with correct Bloom conventions.",
 			"Prefer upstream images and Quadlet composition (no Containerfile builds).",
 			"Use pinned image tags or digests; avoid latest/latest-* tags.",
 		],
@@ -152,7 +138,7 @@ export default function (pi: ExtensionAPI) {
 				writeFileSync(socketPath, socketUnit);
 			}
 
-			const skill = `---\nname: ${params.name}\nversion: ${version}\ndescription: ${params.description}\nimage: ${params.image}\n---\n\n# ${params.name}\n\nDescribe how to use this service.\n\n## API\n\nDocument endpoints, commands, and examples here.\n\n## Operations\n\n- Install: \`just svc-install ${params.name}\`\n- Logs: \`journalctl --user -u bloom-${params.name} -n 100\`\n`;
+			const skill = `---\nname: ${params.name}\nversion: ${version}\ndescription: ${params.description}\nimage: ${params.image}\n---\n\n# ${params.name}\n\nDescribe how to use this service.\n\n## API\n\nDocument endpoints, commands, and examples here.\n\n## Operations\n\n- Install: \`systemctl --user start bloom-${params.name}\`\n- Logs: \`journalctl --user -u bloom-${params.name} -n 100\`\n`;
 			writeFileSync(skillPath, skill);
 
 			const created = [containerPath, skillPath];
@@ -173,120 +159,31 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.registerTool({
-		name: "service_publish",
-		label: "Publish Service Package",
-		description: "Publish a service package to OCI registry via oras push.",
-		promptSnippet: "service_publish — push Bloom service package to registry",
-		promptGuidelines: [
-			"Run service_publish after verifying package contents and local tests.",
-			"Use semver tag in version for immutable releases.",
-		],
-		parameters: Type.Object({
-			name: Type.String({ description: "Service name (e.g. lemonade)" }),
-			version: Type.Optional(Type.String({ description: "Tag to publish", default: "latest" })),
-			registry: Type.Optional(Type.String({ description: "Registry namespace", default: getServiceRegistry() })),
-			also_latest: Type.Optional(Type.Boolean({ description: "Also publish latest tag", default: true })),
-		}),
-		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-			const guard = validateServiceName(params.name);
-			if (guard) return errorResult(guard);
-
-			const repoDir = resolveRepoDir(ctx);
-			const serviceDir = join(repoDir, "services", params.name);
-			const quadletDir = join(serviceDir, "quadlet");
-			if (!existsSync(quadletDir)) return errorResult(`Missing quadlet directory: ${quadletDir}`);
-			if (!existsSync(join(serviceDir, "SKILL.md"))) return errorResult(`Missing SKILL.md in ${serviceDir}`);
-
-			const registry = params.registry ?? getServiceRegistry();
-			const version = params.version ?? "latest";
-			const tags = new Set<string>([version]);
-			if ((params.also_latest ?? true) && version !== "latest") tags.add("latest");
-
-			const quadletFiles = readdirSync(quadletDir)
-				.filter((f) => statSync(join(quadletDir, f)).isFile())
-				.map((f) => `quadlet/${f}:application/vnd.bloom.quadlet`);
-			if (quadletFiles.length === 0) return errorResult("No quadlet files found to publish.");
-
-			const pushed: string[] = [];
-			for (const tag of tags) {
-				const ref = `${registry}/bloom-svc-${params.name}:${tag}`;
-				const args = [
-					"push",
-					ref,
-					"--annotation",
-					`org.opencontainers.image.title=bloom-${params.name}`,
-					"--annotation",
-					`org.opencontainers.image.source=${defaultSourceRepo}`,
-					"--annotation",
-					`org.opencontainers.image.version=${tag}`,
-					...quadletFiles,
-					"SKILL.md:text/markdown",
-				];
-				const res = await run("oras", args, signal, serviceDir);
-				if (res.exitCode !== 0) {
-					return errorResult(`Failed to publish ${ref}:\n${res.stderr}`);
-				}
-				pushed.push(ref);
-			}
-
-			return {
-				content: [
-					{ type: "text" as const, text: `Published service package:\n${pushed.map((r) => `- ${r}`).join("\n")}` },
-				],
-				details: { pushed },
-			};
-		},
-	});
-
-	pi.registerTool({
 		name: "service_install",
 		label: "Install Service Package",
-		description: "Install a service package from OCI artifact to local Quadlet + Garden skill paths.",
-		promptSnippet: "service_install — pull and install Bloom service package",
+		description: "Install a service package from a bundled local package to Quadlet + Bloom skill paths.",
+		promptSnippet: "service_install — install Bloom service package from local bundle",
 		promptGuidelines: [
-			"Use service_install to deploy a packaged service from the registry.",
-			"Prefer immutable semver tags over latest for reproducible installs.",
+			"Use service_install to deploy a bundled service package.",
 			"After install, verify with systemctl status and container logs.",
 		],
 		parameters: Type.Object({
 			name: Type.String({ description: "Service name (e.g. lemonade)" }),
-			version: Type.Optional(Type.String({ description: "Version tag to install", default: "latest" })),
-			registry: Type.Optional(Type.String({ description: "Registry namespace", default: getServiceRegistry() })),
+			version: Type.Optional(Type.String({ description: "Version tag for manifest", default: "latest" })),
 			start: Type.Optional(Type.Boolean({ description: "Enable/start service after install", default: true })),
 			update_manifest: Type.Optional(
 				Type.Boolean({ description: "Update manifest.yaml with installed version", default: true }),
-			),
-			allow_latest: Type.Optional(
-				Type.Boolean({ description: "Allow installing latest tag (non-immutable)", default: false }),
-			),
-			require_pinned_image: Type.Optional(
-				Type.Boolean({ description: "Require SKILL.md image to be pinned (tag/digest, not latest)", default: true }),
-			),
-			expected_digest: Type.Optional(
-				Type.String({ description: "Optional expected OCI artifact digest (sha256:...) for verification" }),
 			),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
 			const guard = validateServiceName(params.name);
 			if (guard) return errorResult(guard);
 
-			const registry = params.registry ?? getServiceRegistry();
 			const version = params.version ?? "latest";
 			const start = params.start ?? true;
 			const updateManifest = params.update_manifest ?? true;
-			const allowLatest = params.allow_latest ?? false;
-			const requirePinnedImage = params.require_pinned_image ?? true;
-			const expectedDigest = params.expected_digest?.trim().toLowerCase();
-			const ref = `${registry}/bloom-svc-${params.name}:${version}`;
-
-			if (version === "latest" && !allowLatest) {
-				return errorResult(
-					"Refusing non-immutable install: version=latest. Use a semver tag (e.g. 0.1.0) or set allow_latest=true explicitly.",
-				);
-			}
 
 			const commandChecks: Array<[string, string[]]> = [
-				["oras", ["version"]],
 				["podman", ["--version"]],
 				["systemctl", ["--version"]],
 			];
@@ -295,67 +192,31 @@ export default function (pi: ExtensionAPI) {
 				if (missing) return errorResult(missing);
 			}
 
+			const localServiceDir = join(packageRoot, "services", params.name);
+			const localQuadlet = join(localServiceDir, "quadlet");
+			const localSkill = join(localServiceDir, "SKILL.md");
+
+			if (!existsSync(localQuadlet) || !existsSync(localSkill)) {
+				return errorResult(
+					`No local service package found for ${params.name}. Expected quadlet/ and SKILL.md in ${localServiceDir}.`,
+				);
+			}
+
 			const tempDir = join(tmpdir(), `bloom-svc-${params.name}-${Date.now()}`);
 			mkdirSync(tempDir, { recursive: true });
 
 			try {
-				const resolvedDigest = await resolveArtifactDigest(ref, signal);
-				if (expectedDigest) {
-					if (!expectedDigest.match(/^sha256:[a-f0-9]{64}$/)) {
-						return errorResult("expected_digest must be in sha256:<64-hex> format.");
-					}
-					if (!resolvedDigest) {
-						return errorResult(`Could not resolve digest for ${ref}. Cannot verify expected digest ${expectedDigest}.`);
-					}
-					if (resolvedDigest !== expectedDigest) {
-						return errorResult(
-							`Digest verification failed for ${ref}. Expected ${expectedDigest}, got ${resolvedDigest}.`,
-						);
-					}
+				const localTempQuadlet = join(tempDir, "quadlet");
+				mkdirSync(localTempQuadlet, { recursive: true });
+				for (const fname of readdirSync(localQuadlet)) {
+					const src = join(localQuadlet, fname);
+					if (!statSync(src).isFile()) continue;
+					writeFileSync(join(localTempQuadlet, fname), readFileSync(src));
 				}
-
-				let installSource: "oci" | "local" = "oci";
-				let sourceNote: string | null = null;
-
-				const localServiceDir = join(packageRoot, "services", params.name);
-				const localQuadlet = join(localServiceDir, "quadlet");
-				const localSkill = join(localServiceDir, "SKILL.md");
-
-				if (existsSync(localQuadlet) && existsSync(localSkill)) {
-					// Use local bundled package directly — skip OCI pull
-					const localTempQuadlet = join(tempDir, "quadlet");
-					mkdirSync(localTempQuadlet, { recursive: true });
-					for (const fname of readdirSync(localQuadlet)) {
-						const src = join(localQuadlet, fname);
-						if (!statSync(src).isFile()) continue;
-						writeFileSync(join(localTempQuadlet, fname), readFileSync(src));
-					}
-					writeFileSync(join(tempDir, "SKILL.md"), readFileSync(localSkill));
-					installSource = "local";
-					sourceNote = `Installed from bundled local service package at ${localServiceDir}.`;
-				} else {
-					// No local package — try OCI pull
-					const pull = await run("oras", ["pull", ref, "-o", tempDir], signal);
-					if (pull.exitCode !== 0) {
-						return errorResult(`Failed to pull ${ref}:\n${pull.stderr || pull.stdout}`);
-					}
-				}
+				writeFileSync(join(tempDir, "SKILL.md"), readFileSync(localSkill));
 
 				const quadletSrc = join(tempDir, "quadlet");
 				const skillSrc = join(tempDir, "SKILL.md");
-				if (!existsSync(quadletSrc)) return errorResult(`Artifact ${ref} missing quadlet/ directory.`);
-				if (!existsSync(skillSrc)) return errorResult(`Artifact ${ref} missing SKILL.md.`);
-
-				const pulledMeta = extractSkillMetadata(skillSrc);
-				if (requirePinnedImage) {
-					if (!pulledMeta.image) {
-						return errorResult(`Artifact ${ref} SKILL.md is missing frontmatter image field.`);
-					}
-					const imageGuard = validatePinnedImage(pulledMeta.image);
-					if (imageGuard) {
-						return errorResult(`Artifact ${ref} image policy violation: ${imageGuard}`);
-					}
-				}
 
 				const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
 				const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
@@ -423,14 +284,12 @@ export default function (pi: ExtensionAPI) {
 					content: [
 						{
 							type: "text" as const,
-							text: sourceNote ? `Installed ${ref} successfully.\n${sourceNote}` : `Installed ${ref} successfully.`,
+							text: `Installed ${params.name} successfully from bundled local package.`,
 						},
 					],
 					details: {
-						ref,
-						resolvedDigest: resolvedDigest ?? null,
-						installSource,
-						sourceNote,
+						ref: params.name,
+						installSource: "local",
 						start,
 						manifestUpdated: updateManifest,
 						installedTo: {
@@ -452,7 +311,7 @@ export default function (pi: ExtensionAPI) {
 		description: "Smoke-test installed service unit: reload, start, wait, inspect status/logs, optional cleanup.",
 		promptSnippet: "service_test — run local smoke test for installed service",
 		promptGuidelines: [
-			"Use service_test before publishing a new service package.",
+			"Use service_test to verify a service package is working correctly.",
 			"Check returned status and logs; fix issues before release.",
 		],
 		parameters: Type.Object({

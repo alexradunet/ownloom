@@ -21,14 +21,13 @@ import {
 	saveManifest,
 	servicePreflightErrors,
 } from "../lib/manifest.js";
-import { errorResult, getBloomDir, getServiceRegistry, requireConfirmation, truncate } from "../lib/shared.js";
+import { errorResult, getBloomDir, requireConfirmation, truncate } from "../lib/shared.js";
 
 export default function (pi: ExtensionAPI) {
 	const bloomDir = getBloomDir();
 	const manifestPath = join(bloomDir, "manifest.yaml");
 	const dotBloomDir = join(os.homedir(), ".bloom");
 	const repoDir = join(dotBloomDir, "pi-bloom");
-	const defaultServiceRegistry = getServiceRegistry();
 
 	pi.registerTool({
 		name: "manifest_show",
@@ -213,15 +212,9 @@ export default function (pi: ExtensionAPI) {
 		parameters: Type.Object({
 			install_missing: Type.Optional(
 				Type.Boolean({
-					description: "Install missing services from OCI artifacts before applying state",
+					description: "Install missing services from bundled local packages before applying state",
 					default: true,
 				}),
-			),
-			registry: Type.Optional(
-				Type.String({ description: "Registry namespace for service artifacts", default: defaultServiceRegistry }),
-			),
-			allow_latest: Type.Optional(
-				Type.Boolean({ description: "Allow installing latest when manifest version is missing", default: false }),
 			),
 			dry_run: Type.Optional(Type.Boolean({ description: "Preview actions without mutating system", default: false })),
 		}),
@@ -233,8 +226,6 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			const installMissing = params.install_missing ?? true;
-			const registry = params.registry ?? defaultServiceRegistry;
-			const allowLatest = params.allow_latest ?? false;
 			const dryRun = params.dry_run ?? false;
 
 			if (!dryRun) {
@@ -268,10 +259,6 @@ export default function (pi: ExtensionAPI) {
 
 				const catalogEntry = catalog[name];
 				const version = svc.version?.trim() || catalogEntry?.version || "latest";
-				if (version === "latest" && !allowLatest) {
-					errors.push(`${name}: refused auto-install with version=latest (set explicit version or allow_latest=true)`);
-					continue;
-				}
 
 				const preflight = await servicePreflightErrors(name, catalogEntry, signal);
 				if (preflight.length > 0) {
@@ -285,7 +272,7 @@ export default function (pi: ExtensionAPI) {
 					continue;
 				}
 
-				const install = await installServicePackage(name, version, registry, bloomDir, repoDir, catalogEntry, signal);
+				const install = await installServicePackage(name, version, bloomDir, repoDir, catalogEntry, signal);
 				if (!install.ok) {
 					errors.push(`${name}: install failed — ${install.note ?? "unknown error"}`);
 					continue;
@@ -293,11 +280,7 @@ export default function (pi: ExtensionAPI) {
 
 				installedCount += 1;
 				needsReload = true;
-				lines.push(
-					install.source === "oci"
-						? `Installed ${name} from ${install.ref}`
-						: `Installed ${name} from bundled local package (OCI ref: ${install.ref})`,
-				);
+				lines.push(`Installed ${name} from bundled local package`);
 
 				if (!svc.version) {
 					manifest.services[name].version = version;

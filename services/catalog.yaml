@@ -1,15 +1,13 @@
 version: 1
-registry_default: ghcr.io/pibloom
 source_repo: https://github.com/pibloom/pi-bloom
 services:
   lemonade:
     version: "0.1.0"
     category: ai
-    artifact: ghcr.io/pibloom/bloom-svc-lemonade
     image: ghcr.io/lemonade-sdk/lemonade-server:latest
     optional: false
     preflight:
-      commands: [oras, podman, systemctl]
+      commands: [podman, systemctl]
   whatsapp:
     version: "0.2.0"
     category: communication
@@ -20,8 +18,7 @@ services:
   dufs:
     version: "0.1.0"
     category: sync
-    artifact: ghcr.io/pibloom/bloom-svc-dufs
     image: docker.io/sigoden/dufs:latest
     optional: false
     preflight:
-      commands: [oras, podman, systemctl]
+      commands: [podman, systemctl]

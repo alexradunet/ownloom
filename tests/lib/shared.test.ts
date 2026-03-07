@@ -3,7 +3,6 @@ import {
 	createLogger,
 	errorResult,
 	getBloomDir,
-	getServiceRegistry,
 	guardBloom,
 	nowIso,
 	parseFrontmatter,
@@ -323,34 +322,6 @@ describe("requireConfirmation", () => {
 		const ctx = { hasUI: true, ui: { confirm: async () => false } } as never;
 		const result = await requireConfirmation(ctx, "delete file");
 		expect(result).toBe("User declined: delete file");
-	});
-});
-
-// ---------------------------------------------------------------------------
-// getServiceRegistry
-// ---------------------------------------------------------------------------
-describe("getServiceRegistry", () => {
-	const origEnv = { ...process.env };
-
-	afterEach(() => {
-		process.env = { ...origEnv };
-	});
-
-	it("returns BLOOM_SERVICE_REGISTRY when set", () => {
-		process.env.BLOOM_SERVICE_REGISTRY = "my.registry.io/org";
-		expect(getServiceRegistry()).toBe("my.registry.io/org");
-	});
-
-	it("falls back to BLOOM_REGISTRY", () => {
-		delete process.env.BLOOM_SERVICE_REGISTRY;
-		process.env.BLOOM_REGISTRY = "other.registry.io/org";
-		expect(getServiceRegistry()).toBe("other.registry.io/org");
-	});
-
-	it("defaults to ghcr.io/pibloom", () => {
-		delete process.env.BLOOM_SERVICE_REGISTRY;
-		delete process.env.BLOOM_REGISTRY;
-		expect(getServiceRegistry()).toBe("ghcr.io/pibloom");
 	});
 });
 

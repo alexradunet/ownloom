@@ -160,9 +160,7 @@ describe("bloom-services registration", () => {
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
-		expect(toolNames(api)).toEqual(
-			expect.arrayContaining(["service_scaffold", "service_publish", "service_install", "service_test"]),
-		);
+		expect(toolNames(api)).toEqual(expect.arrayContaining(["service_scaffold", "service_install", "service_test"]));
 		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start"]));
 	});
 });
