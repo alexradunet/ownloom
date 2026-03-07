@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { isChannelMessage, MEDIA_TYPES, makeLogger, mimeToExt } from "../src/utils.js";
+import { describe, expect, it } from "vitest";
+import { isChannelMessage, MEDIA_TYPES, mimeToExt } from "../src/utils.js";
 
 // ---------------------------------------------------------------------------
 // mimeToExt
@@ -75,87 +75,5 @@ describe("isChannelMessage", () => {
 
 	it("returns false for non-string type", () => {
 		expect(isChannelMessage({ type: 123 })).toBe(false);
-	});
-});
-
-// ---------------------------------------------------------------------------
-// makeLogger
-// ---------------------------------------------------------------------------
-describe("makeLogger", () => {
-	it("returns object with expected methods", () => {
-		const logger = makeLogger();
-		expect(typeof logger.trace).toBe("function");
-		expect(typeof logger.debug).toBe("function");
-		expect(typeof logger.info).toBe("function");
-		expect(typeof logger.warn).toBe("function");
-		expect(typeof logger.error).toBe("function");
-		expect(typeof logger.fatal).toBe("function");
-		expect(typeof logger.child).toBe("function");
-	});
-
-	it("has silent level", () => {
-		expect(makeLogger().level).toBe("silent");
-	});
-
-	it("child returns another logger with same shape", () => {
-		const child = makeLogger().child();
-		expect(typeof child.trace).toBe("function");
-		expect(typeof child.warn).toBe("function");
-		expect(typeof child.child).toBe("function");
-	});
-
-	it("warn logs to console.warn with message", () => {
-		const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
-		const logger = makeLogger();
-		logger.warn({}, "test warning");
-		expect(spy).toHaveBeenCalledWith("[wa:warn]", "test warning");
-		spy.mockRestore();
-	});
-
-	it("warn uses obj when message is omitted", () => {
-		const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
-		const logger = makeLogger();
-		logger.warn("fallback warning");
-		expect(spy).toHaveBeenCalledWith("[wa:warn]", "fallback warning");
-		spy.mockRestore();
-	});
-
-	it("error logs to console.error with message", () => {
-		const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-		const logger = makeLogger();
-		logger.error({}, "test error");
-		expect(spy).toHaveBeenCalledWith("[wa:error]", "test error");
-		spy.mockRestore();
-	});
-
-	it("error uses obj when message is omitted", () => {
-		const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-		const logger = makeLogger();
-		logger.error("fallback error");
-		expect(spy).toHaveBeenCalledWith("[wa:error]", "fallback error");
-		spy.mockRestore();
-	});
-
-	it("fatal logs to console.error with message", () => {
-		const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-		const logger = makeLogger();
-		logger.fatal({}, "test fatal");
-		expect(spy).toHaveBeenCalledWith("[wa:fatal]", "test fatal");
-		spy.mockRestore();
-	});
-
-	it("fatal uses obj when message is omitted", () => {
-		const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-		const logger = makeLogger();
-		logger.fatal("fallback fatal");
-		expect(spy).toHaveBeenCalledWith("[wa:fatal]", "fallback fatal");
-		spy.mockRestore();
-	});
-
-	it("noop methods do not throw", () => {
-		const logger = makeLogger();
-		expect(() => logger.trace("test")).not.toThrow();
-		expect(() => logger.debug("test")).not.toThrow();
-		expect(() => logger.info("test")).not.toThrow();
 	});
 });

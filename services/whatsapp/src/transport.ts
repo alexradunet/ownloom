@@ -2,16 +2,11 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { createServer as createHttpServer } from "node:http";
 import { createConnection, type Socket } from "node:net";
-import type { Boom } from "@hapi/boom";
-import {
-	DisconnectReason,
-	downloadMediaMessage,
-	fetchLatestBaileysVersion,
-	makeWASocket,
-	useMultiFileAuthState,
-} from "baileys";
-import qrcode from "qrcode-terminal";
-import { isChannelMessage, MEDIA_TYPES, makeLogger, mimeToExt } from "./utils.js";
+import type WAWebJS from "whatsapp-web.js";
+import pkg from "whatsapp-web.js";
+import { isChannelMessage, mimeToExt } from "./utils.js";
+
+const { Client, LocalAuth } = pkg;
 
 const AUTH_DIR = process.env.BLOOM_AUTH_DIR ?? "/data/auth";
 const CHANNELS_SOCKET = process.env.BLOOM_CHANNELS_SOCKET ?? "/run/bloom/channels.sock";
@@ -20,8 +15,6 @@ const CHANNEL_TOKEN = process.env.BLOOM_CHANNEL_TOKEN ?? "";
 
 const RECONNECT_BASE_MS = 2_000;
 const RECONNECT_MAX_MS = 30_000;
-
-type WaSocket = ReturnType<typeof makeWASocket>;
 
 // TCP state
 let channelSocket: Socket | null = null;
@@ -32,8 +25,8 @@ let tcpConnecting = false;
 let shuttingDown = false;
 let waConnected = false;
 
-// Track last WhatsApp socket so TCP layer can forward responses
-let currentWaSock: WaSocket | null = null;
+// Track WhatsApp client
+let waClient: InstanceType<typeof Client> | null = null;
 
 function clearTcpReconnectTimer(): void {
 	if (tcpReconnectTimer) {
@@ -49,14 +42,14 @@ function resetChannelSocket(): void {
 	if (sock && !sock.destroyed) sock.destroy();
 }
 
-function scheduleTcpReconnect(waSock: WaSocket): void {
+function scheduleTcpReconnect(): void {
 	if (shuttingDown || tcpReconnectTimer) return;
 	const delay = tcpReconnectDelay;
 	console.log(`[tcp] disconnected. Reconnecting in ${delay}ms...`);
 	tcpReconnectDelay = Math.min(tcpReconnectDelay * 2, RECONNECT_MAX_MS);
 	tcpReconnectTimer = setTimeout(() => {
 		tcpReconnectTimer = null;
-		connectToChannels(waSock);
+		connectToChannels();
 	}, delay);
 }
 
@@ -79,148 +72,111 @@ healthServer.listen(HEALTH_PORT, "0.0.0.0", () => {
 	console.log(`[health] listening on :${HEALTH_PORT}`);
 });
 
-// --- WhatsApp ---
+// --- WhatsApp via whatsapp-web.js ---
 
 async function startWhatsApp(): Promise<void> {
 	if (shuttingDown) return;
 
-	console.log("[wa] connecting...");
-	const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
-	const { version, isLatest } = await fetchLatestBaileysVersion();
-	console.log(`[wa] Baileys version ${version.join(".")}${isLatest ? " (latest)" : " (outdated)"}`);
+	console.log("[wa] starting whatsapp-web.js client...");
 
-	const sock = makeWASocket({
-		version,
-		auth: state,
-		// suppress noisy default logger
-		logger: makeLogger(),
+	const client = new Client({
+		authStrategy: new LocalAuth({ dataPath: AUTH_DIR }),
+		puppeteer: {
+			headless: false,
+			args: [
+				"--no-sandbox",
+				"--disable-setuid-sandbox",
+				"--ozone-platform=wayland",
+				"--enable-features=UseOzonePlatform",
+			],
+		},
 	});
 
-	currentWaSock = sock;
+	waClient = client;
 
-	sock.ev.on("creds.update", saveCreds);
+	client.on("qr", (qr: string) => {
+		console.log("[wa] QR code displayed in browser window. Scan with WhatsApp mobile app.");
+		console.log(`[wa] QR data: ${qr.slice(0, 40)}...`);
+	});
 
-	sock.ev.on("connection.update", (update) => {
-		const { connection, lastDisconnect, qr } = update;
+	client.on("ready", () => {
+		console.log("[wa] connected.");
+		waConnected = true;
+		tcpReconnectDelay = RECONNECT_BASE_MS;
+		clearTcpReconnectTimer();
+		resetChannelSocket();
+		connectToChannels();
+	});
 
-		if (qr) {
-			console.log("[wa] New pairing QR generated. Scan this in WhatsApp > Linked devices:");
-			qrcode.generate(qr, { small: true });
-		}
+	client.on("disconnected", (reason: string) => {
+		waConnected = false;
+		clearTcpReconnectTimer();
+		resetChannelSocket();
+		console.log(`[wa] disconnected: ${reason}`);
 
-		if (connection === "open") {
-			console.log("[wa] connected.");
-			waConnected = true;
-			// Reset TCP reconnect state on fresh WA connection
-			tcpReconnectDelay = RECONNECT_BASE_MS;
-			clearTcpReconnectTimer();
-			resetChannelSocket();
-			connectToChannels(sock);
-		}
-
-		if (connection === "close") {
-			waConnected = false;
-			clearTcpReconnectTimer();
-			resetChannelSocket();
-
-			const statusCode = (lastDisconnect?.error as Boom | undefined)?.output?.statusCode;
-			const reason = statusCode ?? "unknown";
-			console.log(`[wa] connection closed (reason: ${reason})`);
-
-			if (statusCode === DisconnectReason.loggedOut) {
-				console.log("[wa] logged out — delete auth state and restart to re-pair.");
-				return;
-			}
-
-			if (!shuttingDown) {
-				console.log("[wa] reconnecting in 5s...");
-				setTimeout(startWhatsApp, 5_000);
-			}
+		if (!shuttingDown) {
+			console.log("[wa] reinitializing in 5s...");
+			setTimeout(startWhatsApp, 5_000);
 		}
 	});
 
-	sock.ev.on("messages.upsert", ({ messages, type }) => {
-		if (type !== "notify") return;
+	client.on("message", async (msg: WAWebJS.Message) => {
+		if (msg.fromMe) return;
 
-		for (const msg of messages) {
-			// Skip own messages
-			if (msg.key.fromMe) continue;
+		const from = msg.from;
+		const timestamp = msg.timestamp;
 
-			const from = msg.key.remoteJid;
-			if (!from) continue;
-
-			const timestamp =
-				typeof msg.messageTimestamp === "number"
-					? msg.messageTimestamp
-					: Number(msg.messageTimestamp ?? Math.floor(Date.now() / 1000));
-
-			// Try text extraction first
-			const text = msg.message?.conversation ?? msg.message?.extendedTextMessage?.text;
-
-			if (text) {
-				console.log(`[wa] message from ${from}: ${text.slice(0, 80)}`);
-				sendToChannels({
-					type: "message",
-					id: randomUUID(),
-					channel: "whatsapp",
-					from,
-					text,
-					timestamp,
-				});
-				continue;
-			}
-
-			// Check for media types
-			if (msg.message) {
-				const mediaType = Object.keys(msg.message).find((k) => k in MEDIA_TYPES);
-				if (mediaType) {
-					handleMediaMessage(msg, from, timestamp, mediaType).catch((err) => {
-						console.error("[wa] media handling error:", (err as Error).message);
-					});
+		if (msg.hasMedia) {
+			try {
+				const media = await msg.downloadMedia();
+				if (media) {
+					await handleMediaMessage(from, timestamp, media, msg.body);
+					return;
 				}
+			} catch (err) {
+				console.error("[wa] media download error:", (err as Error).message);
 			}
 		}
+
+		if (msg.body) {
+			console.log(`[wa] message from ${from}: ${msg.body.slice(0, 80)}`);
+			sendToChannels({
+				type: "message",
+				id: randomUUID(),
+				channel: "whatsapp",
+				from,
+				text: msg.body,
+				timestamp,
+			});
+		}
 	});
+
+	await client.initialize();
 }
 
 async function handleMediaMessage(
-	msg: Parameters<typeof downloadMediaMessage>[0],
 	from: string,
 	timestamp: number,
-	mediaType: string,
+	media: WAWebJS.MessageMedia,
+	caption?: string,
 ): Promise<void> {
-	const kind = MEDIA_TYPES[mediaType] ?? "unknown";
-	const mediaMsg = (msg.message as Record<string, Record<string, unknown>>)?.[mediaType];
-	const mimetype = (mediaMsg?.mimetype as string) ?? "application/octet-stream";
-	const duration = mediaMsg?.seconds as number | undefined;
-	const caption = mediaMsg?.caption as string | undefined;
+	const mimetype = media.mimetype ?? "application/octet-stream";
+	const ext = mimeToExt(mimetype);
+	const id = randomBytes(6).toString("hex");
+	const filename = `${timestamp}-${id}.${ext}`;
+	const filepath = `${MEDIA_DIR}/${filename}`;
 
-	let filepath: string;
-	let size: number;
+	await mkdir(MEDIA_DIR, { recursive: true });
+	const buffer = Buffer.from(media.data, "base64");
+	await writeFile(filepath, buffer);
+	const size = buffer.length;
+	console.log(`[wa] saved media from ${from}: ${filepath} (${size} bytes)`);
 
-	try {
-		const buffer = await downloadMediaMessage(msg, "buffer", {});
-		const ext = mimeToExt(mimetype);
-		const id = randomBytes(6).toString("hex");
-		const filename = `${timestamp}-${id}.${ext}`;
-		filepath = `${MEDIA_DIR}/${filename}`;
-
-		await mkdir(MEDIA_DIR, { recursive: true });
-		await writeFile(filepath, buffer as Buffer);
-		size = (buffer as Buffer).length;
-		console.log(`[wa] saved ${kind} from ${from}: ${filepath} (${size} bytes)`);
-	} catch (err) {
-		console.error(`[wa] media download failed:`, (err as Error).message);
-		sendToChannels({
-			type: "message",
-			id: randomUUID(),
-			channel: "whatsapp",
-			from,
-			text: `[${kind} message — download failed]`,
-			timestamp,
-		});
-		return;
-	}
+	let kind = "unknown";
+	if (mimetype.startsWith("audio/")) kind = "audio";
+	else if (mimetype.startsWith("image/")) kind = "image";
+	else if (mimetype.startsWith("video/")) kind = "video";
+	else if (mimetype.startsWith("application/")) kind = "document";
 
 	sendToChannels({
 		type: "message",
@@ -232,16 +188,15 @@ async function handleMediaMessage(
 			kind,
 			mimetype,
 			filepath,
-			duration,
 			size,
-			caption,
+			caption: caption || undefined,
 		},
 	});
 }
 
 // --- TCP channel connection ---
 
-function connectToChannels(waSock: WaSocket): void {
+function connectToChannels(): void {
 	if (shuttingDown || !waConnected) return;
 	if (tcpConnecting) return;
 	if (channelSocket?.writable) return;
@@ -272,7 +227,6 @@ function connectToChannels(waSock: WaSocket): void {
 
 		tcpBuffer += data;
 		const lines = tcpBuffer.split("\n");
-		// Keep any incomplete trailing fragment
 		tcpBuffer = lines.pop() ?? "";
 
 		for (const line of lines) {
@@ -280,7 +234,7 @@ function connectToChannels(waSock: WaSocket): void {
 			if (!trimmed) continue;
 			try {
 				const msg = JSON.parse(trimmed) as unknown;
-				handleChannelMessage(waSock, msg);
+				handleChannelMessage(msg);
 			} catch (err) {
 				console.error("[tcp] parse error:", (err as Error).message, "| raw:", trimmed.slice(0, 120));
 			}
@@ -297,7 +251,7 @@ function connectToChannels(waSock: WaSocket): void {
 		channelSocket = null;
 		tcpConnecting = false;
 		if (shuttingDown || !waConnected) return;
-		scheduleTcpReconnect(waSock);
+		scheduleTcpReconnect();
 	});
 }
 
@@ -311,7 +265,7 @@ function sendToChannels(msg: Record<string, unknown>): void {
 
 // --- Incoming channel messages -> WhatsApp ---
 
-function handleChannelMessage(waSock: WaSocket, raw: unknown): void {
+function handleChannelMessage(raw: unknown): void {
 	if (!isChannelMessage(raw)) {
 		console.warn("[tcp] unexpected message shape:", raw);
 		return;
@@ -328,14 +282,17 @@ function handleChannelMessage(waSock: WaSocket, raw: unknown): void {
 			console.warn(`[tcp] "${type}" message missing "text" field — dropping.`);
 			return;
 		}
+		if (!waClient) {
+			console.warn("[tcp] WhatsApp client not ready — dropping message.");
+			return;
+		}
 		console.log(`[wa] sending to ${to}: ${text.slice(0, 80)}`);
-		waSock.sendMessage(to, { text }).catch((err: unknown) => {
+		waClient.sendMessage(to, text).catch((err: unknown) => {
 			console.error("[wa] sendMessage error:", (err as Error).message);
 		});
 		return;
 	}
 
-	// Respond to pings from the channel server
 	if (type === "ping") {
 		if (channelSocket?.writable) {
 			channelSocket.write(`${JSON.stringify({ type: "pong" })}\n`);
@@ -343,7 +300,6 @@ function handleChannelMessage(waSock: WaSocket, raw: unknown): void {
 		return;
 	}
 
-	// Acknowledge known control messages silently
 	if (type === "registered" || type === "pong" || type === "status") {
 		return;
 	}
@@ -362,12 +318,11 @@ function shutdown(signal: string): void {
 	clearTcpReconnectTimer();
 	resetChannelSocket();
 
-	if (currentWaSock) {
-		currentWaSock.end(undefined);
-		currentWaSock = null;
+	if (waClient) {
+		waClient.destroy().catch(() => {});
+		waClient = null;
 	}
 
-	// Give in-flight ops a moment then exit
 	setTimeout(() => process.exit(0), 1_500);
 }
 

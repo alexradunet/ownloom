@@ -1,22 +1,22 @@
 ---
 name: whatsapp
-version: 0.1.0
-description: WhatsApp messaging bridge via Baileys — connects WhatsApp to Bloom's channel system
-image: ghcr.io/pibloom/bloom-whatsapp:0.1.0
+version: 0.2.0
+description: WhatsApp messaging bridge via whatsapp-web.js — visible browser on Sway desktop
+image: ghcr.io/pibloom/bloom-whatsapp:0.2.0
 ---
 
 # WhatsApp Bridge
 
-Connects WhatsApp to Bloom via the channel protocol (Unix socket at `/run/bloom/channels.sock`). Messages from WhatsApp users flow into Pi's session.
+Connects WhatsApp to Bloom via the channel protocol (Unix socket at `/run/bloom/channels.sock`). Uses whatsapp-web.js to run WhatsApp Web in a visible Chromium window on the Sway desktop.
 
-The bridge requires a channel token (`BLOOM_CHANNEL_TOKEN`) that is generated automatically by `service_install`.
+The browser window is a normal Sway window — tiled, minimizable, and movable. You can watch Pi interact with WhatsApp in real time.
 
 ## Setup
 
 1. Install the service package
 2. Start the service: `systemctl --user start bloom-whatsapp`
-3. Check logs for QR code: `journalctl --user -u bloom-whatsapp -f`
-4. Scan QR code with WhatsApp mobile app
+3. A Chromium window opens on the Sway desktop showing WhatsApp Web
+4. Scan the QR code with WhatsApp mobile app
 5. Verify: `systemctl --user status bloom-whatsapp`
 
 ## Sending Messages
@@ -26,6 +26,7 @@ Use the `/wa` command in Pi to send outbound WhatsApp messages.
 ## Troubleshooting
 
 - **Won't start**: Check logs: `journalctl --user -u bloom-whatsapp -n 100`
+- **No browser window**: Verify Wayland socket exists: `ls /run/user/$(id -u)/wayland-1`
 - **Connection lost**: Restart: `systemctl --user restart bloom-whatsapp`
 - **Auth expired**: Remove auth volume and re-scan QR:
   ```bash
@@ -38,4 +39,4 @@ Use the `/wa` command in Pi to send outbound WhatsApp messages.
 
 The bridge downloads audio, image, and video messages to `/var/lib/bloom/media/`.
 Media metadata is forwarded to Pi via the channel protocol with file paths.
-Pi can use installed services (e.g., Whisper) to process media files.
+Pi can use installed services (e.g., Lemonade) to process media files.

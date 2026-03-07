@@ -39,17 +39,3 @@ export function isChannelMessage(val: unknown): val is ChannelMessage {
 		typeof (val as Record<string, unknown>).type === "string"
 	);
 }
-
-export function makeLogger() {
-	const noop = () => {};
-	return {
-		level: "silent",
-		trace: noop,
-		debug: noop,
-		info: noop,
-		warn: (obj: unknown, msg?: string) => console.warn("[wa:warn]", msg ?? obj),
-		error: (obj: unknown, msg?: string) => console.error("[wa:error]", msg ?? obj),
-		fatal: (obj: unknown, msg?: string) => console.error("[wa:fatal]", msg ?? obj),
-		child: () => makeLogger(),
-	};
-}
