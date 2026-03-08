@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 async function setupTopicsExtension() {
-	const mod = await import("../../extensions/bloom-topics.js");
+	const mod = await import("../../extensions/bloom-topics/index.js");
 	const api = createMockExtensionAPI();
 	const ctx = createMockExtensionContext();
 	mod.default(api as never);

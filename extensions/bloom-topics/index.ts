@@ -1,70 +1,22 @@
 /**
- * 🗂️ bloom-topics — Conversation topic management and session organization.
+ * bloom-topics — Conversation topic management and session organization.
  *
  * @commands /topic (new | close | list | switch)
  * @hooks session_start, before_agent_start
- * @see {@link ../AGENTS.md#bloom-topics} Extension reference
+ * @see {@link ../../AGENTS.md#bloom-topics} Extension reference
  */
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
-
-/** Metadata for a conversation topic within a session. */
-interface TopicInfo {
-	name: string;
-	status: "active" | "closed";
-	branchPoint: string | undefined;
-}
+import { buildTopicGuidance, getActiveTopic, getTopics } from "./actions.js";
 
 export default function (pi: ExtensionAPI) {
 	let lastCtx: ExtensionContext | null = null;
-
-	function getTopics(): TopicInfo[] {
-		if (!lastCtx) return [];
-		const entries = lastCtx.sessionManager.getEntries();
-		const topics = new Map<string, TopicInfo>();
-		for (const entry of entries) {
-			if (entry.type === "custom" && entry.customType === "bloom-topic") {
-				const data = (entry as { type: "custom"; customType: string; data?: unknown }).data as
-					| { name?: string; status?: string; branchPoint?: string }
-					| undefined;
-				if (data?.name) {
-					topics.set(data.name, {
-						name: data.name,
-						status: (data.status as "active" | "closed") ?? "active",
-						branchPoint: data.branchPoint,
-					});
-				}
-			}
-		}
-		return Array.from(topics.values());
-	}
-
-	function getActiveTopic(): TopicInfo | null {
-		const topics = getTopics();
-		const active = topics.filter((t) => t.status === "active");
-		return active.length > 0 ? (active[active.length - 1] ?? null) : null;
-	}
 
 	pi.on("session_start", (_event, ctx) => {
 		lastCtx = ctx;
 	});
 
 	pi.on("before_agent_start", async (event) => {
-		const topicGuidance = [
-			"",
-			"## Topic Management",
-			"",
-			"You have topic management commands available:",
-			"- `/topic new <name>` — Start a new conversation topic (e.g. `/topic new deploy-planning`)",
-			"- `/topic close` — Close the current topic and summarize it",
-			"- `/topic list` — Show all topics and their status",
-			"- `/topic switch <name>` — Switch to an existing topic",
-			"",
-			"When you notice the conversation shifting to a distinctly different subject:",
-			'- Suggest starting a new topic: "This seems like a new topic. You could use `/topic new <suggested-name>` to track it separately."',
-			"- Do NOT auto-create topics — always suggest and let the user decide.",
-			"- If the user ignores the suggestion, continue normally without repeating it.",
-		].join("\n");
-		return { systemPrompt: event.systemPrompt + topicGuidance };
+		return { systemPrompt: event.systemPrompt + buildTopicGuidance() };
 	});
 
 	pi.registerCommand("topic", {
@@ -93,7 +45,7 @@ export default function (pi: ExtensionAPI) {
 				}
 
 				case "close": {
-					const active = getActiveTopic();
+					const active = getActiveTopic(lastCtx);
 					if (!active) {
 						ctx.ui.notify("No active topic to close.", "warning");
 						return;
@@ -112,7 +64,7 @@ export default function (pi: ExtensionAPI) {
 				}
 
 				case "list": {
-					const topics = getTopics();
+					const topics = getTopics(lastCtx);
 					if (topics.length === 0) {
 						ctx.ui.notify("No topics found in this session.", "info");
 						return;
@@ -127,7 +79,7 @@ export default function (pi: ExtensionAPI) {
 						ctx.ui.notify("Usage: /topic switch <name>", "warning");
 						return;
 					}
-					const topics = getTopics();
+					const topics = getTopics(lastCtx);
 					const target = topics.find((t) => t.name === name);
 					if (!target) {
 						ctx.ui.notify(`Topic not found: ${name}`, "warning");

@@ -162,7 +162,7 @@ describe("bloom-services registration", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-topics registration", () => {
 	it("registers expected command and events", async () => {
-		const mod = await import("../../extensions/bloom-topics.js");
+		const mod = await import("../../extensions/bloom-topics/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
