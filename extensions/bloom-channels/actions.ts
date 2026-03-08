@@ -1,9 +1,5 @@
 /**
- * 📡 bloom-channels — Channel bridge Unix socket server at $XDG_RUNTIME_DIR/bloom/channels.sock.
- *
- * @commands /wa (send message to WhatsApp), /signal (send message to Signal)
- * @hooks session_start, agent_end, session_shutdown
- * @see {@link ../AGENTS.md#bloom-channels} Extension reference
+ * Handler / business logic for bloom-channels.
  */
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, unlinkSync } from "node:fs";
@@ -17,48 +13,10 @@ import type {
 	SessionShutdownEvent,
 	SessionStartEvent,
 } from "@mariozechner/pi-coding-agent";
-import { createLogger } from "../lib/shared.js";
+import { createLogger } from "../../lib/shared.js";
+import type { ChannelContext, ChannelInfo, IncomingMessage } from "./types.js";
 
 const log = createLogger("bloom-channels");
-
-/** State tracking for a connected channel bridge socket. */
-interface ChannelInfo {
-	socket: Socket;
-	connected: boolean;
-	missedPings: number;
-	pingTimer?: ReturnType<typeof setInterval>;
-	pendingCount: number;
-	rateBurst: number;
-	rateTimer?: ReturnType<typeof setInterval>;
-}
-
-/** Context attached to a pending inbound channel message awaiting response. */
-interface ChannelContext {
-	channel: string;
-	from: string;
-	createdAt: number;
-}
-
-interface MediaInfo {
-	kind: string;
-	mimetype: string;
-	filepath: string;
-	duration?: number;
-	size: number;
-	caption?: string;
-}
-
-interface IncomingMessage {
-	type: "register" | "message" | "pong" | "pairing";
-	id?: string;
-	channel: string;
-	token?: string;
-	from?: string;
-	text?: string;
-	timestamp?: number;
-	media?: MediaInfo;
-	data?: string;
-}
 
 const defaultSocketPath = join(
 	process.env.XDG_RUNTIME_DIR ?? `/run/user/${process.getuid?.() ?? 1000}`,
@@ -126,7 +84,15 @@ export function extractResponseText(messages: readonly any[]): string {
 	return "";
 }
 
-export default function (pi: ExtensionAPI) {
+// --- Socket helpers ---
+
+function sendToSocket(socket: Socket, obj: object): void {
+	socket.write(`${JSON.stringify(obj)}\n`);
+}
+
+// --- Channel bridge server ---
+
+export function createChannelBridge(pi: ExtensionAPI) {
 	const channelTokens = new Map<string, string>();
 	const channels = new Map<string, ChannelInfo>();
 	const pendingContexts = new Map<string, ChannelContext>();
@@ -175,10 +141,6 @@ export default function (pi: ExtensionAPI) {
 			}
 		}
 		return null;
-	}
-
-	function sendToSocket(socket: Socket, obj: object): void {
-		socket.write(`${JSON.stringify(obj)}\n`);
 	}
 
 	function startHeartbeat(name: string, info: ChannelInfo): void {
@@ -258,7 +220,13 @@ export default function (pi: ExtensionAPI) {
 				}
 
 				channelTokens.set(name, expectedToken);
-				const info: ChannelInfo = { socket, connected: true, missedPings: 0, pendingCount: 0, rateBurst: RATE_BURST };
+				const info: ChannelInfo = {
+					socket,
+					connected: true,
+					missedPings: 0,
+					pendingCount: 0,
+					rateBurst: RATE_BURST,
+				};
 				channels.set(name, info);
 				startHeartbeat(name, info);
 				startRateRefill(info);
@@ -318,143 +286,145 @@ export default function (pi: ExtensionAPI) {
 		}
 	}
 
-	pi.on("session_start", (_event: SessionStartEvent, ctx: ExtensionContext) => {
-		lastCtx = ctx;
+	return {
+		channels,
+		pendingContexts,
 
-		// Clean up stale socket file
-		if (existsSync(SOCKET_PATH)) {
-			try {
-				unlinkSync(SOCKET_PATH);
-			} catch {
-				log.error("could not remove stale socket", { path: SOCKET_PATH });
-			}
-		}
+		handleSessionStart(_event: SessionStartEvent, ctx: ExtensionContext) {
+			lastCtx = ctx;
 
-		server = createServer((socket: Socket) => {
-			let buffer = "";
-
-			socket.on("data", (chunk: Buffer) => {
-				buffer += chunk.toString();
-				const newlineIdx = buffer.lastIndexOf("\n");
-				if (newlineIdx === -1) return;
-				const complete = buffer.slice(0, newlineIdx + 1);
-				buffer = buffer.slice(newlineIdx + 1);
-				handleSocketData(socket, complete);
-			});
-
-			socket.on("error", (err: Error) => {
-				const channel = removeChannelBySocket(socket);
-				if (channel) {
-					log.error("socket error", { channel, error: err.message });
-				} else {
-					log.error("socket error", { error: err.message });
-				}
-			});
-
-			socket.on("close", () => {
-				const channel = removeChannelBySocket(socket);
-				if (channel) {
-					log.info("channel disconnected", { channel });
-				}
-			});
-		});
-
-		server.on("error", (err: Error) => {
-			log.error("server error", { error: err.message });
-		});
-
-		mkdirSync(dirname(SOCKET_PATH), { recursive: true });
-		server.listen(SOCKET_PATH, () => {
-			log.info("listening", { path: SOCKET_PATH });
-		});
-
-		pendingSweepTimer = setInterval(() => {
-			const now = Date.now();
-			for (const [id, ctx] of pendingContexts) {
-				if (now - ctx.createdAt > PENDING_MAX_AGE_MS) {
-					pendingContexts.delete(id);
-					const channelInfo = channels.get(ctx.channel);
-					if (channelInfo) channelInfo.pendingCount = Math.max(0, channelInfo.pendingCount - 1);
-					log.warn("expired pending context", { id, channel: ctx.channel });
+			// Clean up stale socket file
+			if (existsSync(SOCKET_PATH)) {
+				try {
+					unlinkSync(SOCKET_PATH);
+				} catch {
+					log.error("could not remove stale socket", { path: SOCKET_PATH });
 				}
 			}
-		}, PENDING_SWEEP_INTERVAL_MS);
 
-		updateWidget(ctx);
-	});
+			server = createServer((socket: Socket) => {
+				let buffer = "";
 
-	pi.on("agent_end", (event: AgentEndEvent, ctx: ExtensionContext) => {
-		lastCtx = ctx;
-		if (pendingContexts.size === 0) return;
+				socket.on("data", (chunk: Buffer) => {
+					buffer += chunk.toString();
+					const newlineIdx = buffer.lastIndexOf("\n");
+					if (newlineIdx === -1) return;
+					const complete = buffer.slice(0, newlineIdx + 1);
+					buffer = buffer.slice(newlineIdx + 1);
+					handleSocketData(socket, complete);
+				});
 
-		// Find the message ID from the user prompt that triggered this agent turn
-		const userMessages = event.messages.filter((m) => "role" in m && m.role === "user");
-		let matchedId: string | undefined;
-		for (const um of userMessages) {
-			const content = (um as { role: "user"; content: unknown }).content;
-			const text = typeof content === "string" ? content : "";
-			const match = text.match(/\[msgId:([^\]]+)\]/);
-			if (match) {
-				matchedId = match[1];
-				break;
-			}
-		}
+				socket.on("error", (err: Error) => {
+					const channel = removeChannelBySocket(socket);
+					if (channel) {
+						log.error("socket error", { channel, error: err.message });
+					} else {
+						log.error("socket error", { error: err.message });
+					}
+				});
 
-		// Fall back to most recent pending context if no ID match
-		const contextId = matchedId ?? [...pendingContexts.keys()].pop();
-		if (!contextId) return;
-
-		const channelCtx = pendingContexts.get(contextId);
-		if (!channelCtx) return;
-		pendingContexts.delete(contextId);
-
-		// Decrement pending counter
-		const channelInfo = channels.get(channelCtx.channel);
-		if (!channelInfo) return;
-		channelInfo.pendingCount = Math.max(0, channelInfo.pendingCount - 1);
-
-		const responseText = extractResponseText(event.messages);
-
-		if (responseText) {
-			sendToSocket(channelInfo.socket, {
-				type: "response",
-				id: contextId,
-				channel: channelCtx.channel,
-				to: channelCtx.from,
-				text: responseText,
+				socket.on("close", () => {
+					const channel = removeChannelBySocket(socket);
+					if (channel) {
+						log.info("channel disconnected", { channel });
+					}
+				});
 			});
-		}
-	});
 
-	pi.on("session_shutdown", (_event: SessionShutdownEvent, _ctx: ExtensionContext) => {
-		if (pendingSweepTimer) {
-			clearInterval(pendingSweepTimer);
-			pendingSweepTimer = null;
-		}
-		if (server) {
-			server.close();
-			server = null;
-		}
-		// Clean up socket file
-		if (existsSync(SOCKET_PATH)) {
-			try {
-				unlinkSync(SOCKET_PATH);
-			} catch {
-				// Ignore cleanup errors
+			server.on("error", (err: Error) => {
+				log.error("server error", { error: err.message });
+			});
+
+			mkdirSync(dirname(SOCKET_PATH), { recursive: true });
+			server.listen(SOCKET_PATH, () => {
+				log.info("listening", { path: SOCKET_PATH });
+			});
+
+			pendingSweepTimer = setInterval(() => {
+				const now = Date.now();
+				for (const [id, ctx] of pendingContexts) {
+					if (now - ctx.createdAt > PENDING_MAX_AGE_MS) {
+						pendingContexts.delete(id);
+						const channelInfo = channels.get(ctx.channel);
+						if (channelInfo) channelInfo.pendingCount = Math.max(0, channelInfo.pendingCount - 1);
+						log.warn("expired pending context", { id, channel: ctx.channel });
+					}
+				}
+			}, PENDING_SWEEP_INTERVAL_MS);
+
+			updateWidget(ctx);
+		},
+
+		handleAgentEnd(event: AgentEndEvent, ctx: ExtensionContext) {
+			lastCtx = ctx;
+			if (pendingContexts.size === 0) return;
+
+			// Find the message ID from the user prompt that triggered this agent turn
+			const userMessages = event.messages.filter((m) => "role" in m && m.role === "user");
+			let matchedId: string | undefined;
+			for (const um of userMessages) {
+				const content = (um as { role: "user"; content: unknown }).content;
+				const text = typeof content === "string" ? content : "";
+				const match = text.match(/\[msgId:([^\]]+)\]/);
+				if (match) {
+					matchedId = match[1];
+					break;
+				}
 			}
-		}
-		for (const [, info] of channels) {
-			if (info.pingTimer) clearInterval(info.pingTimer);
-			if (info.rateTimer) clearInterval(info.rateTimer);
-			info.socket.destroy();
-		}
-		channels.clear();
-		pendingContexts.clear();
-	});
 
-	pi.registerCommand("wa", {
-		description: "Send a message to WhatsApp",
-		handler: async (args: string, ctx) => {
+			// Fall back to most recent pending context if no ID match
+			const contextId = matchedId ?? [...pendingContexts.keys()].pop();
+			if (!contextId) return;
+
+			const channelCtx = pendingContexts.get(contextId);
+			if (!channelCtx) return;
+			pendingContexts.delete(contextId);
+
+			// Decrement pending counter
+			const channelInfo = channels.get(channelCtx.channel);
+			if (!channelInfo) return;
+			channelInfo.pendingCount = Math.max(0, channelInfo.pendingCount - 1);
+
+			const responseText = extractResponseText(event.messages);
+
+			if (responseText) {
+				sendToSocket(channelInfo.socket, {
+					type: "response",
+					id: contextId,
+					channel: channelCtx.channel,
+					to: channelCtx.from,
+					text: responseText,
+				});
+			}
+		},
+
+		handleSessionShutdown(_event: SessionShutdownEvent, _ctx: ExtensionContext) {
+			if (pendingSweepTimer) {
+				clearInterval(pendingSweepTimer);
+				pendingSweepTimer = null;
+			}
+			if (server) {
+				server.close();
+				server = null;
+			}
+			// Clean up socket file
+			if (existsSync(SOCKET_PATH)) {
+				try {
+					unlinkSync(SOCKET_PATH);
+				} catch {
+					// Ignore cleanup errors
+				}
+			}
+			for (const [, info] of channels) {
+				if (info.pingTimer) clearInterval(info.pingTimer);
+				if (info.rateTimer) clearInterval(info.rateTimer);
+				info.socket.destroy();
+			}
+			channels.clear();
+			pendingContexts.clear();
+		},
+
+		handleWaCommand(args: string, ctx: ExtensionContext) {
 			const waChannel = channels.get("whatsapp");
 			if (!waChannel) {
 				ctx.ui.notify("WhatsApp not connected", "warning");
@@ -464,11 +434,8 @@ export default function (pi: ExtensionAPI) {
 			waChannel.socket.write(msg);
 			ctx.ui.notify("Sent to WhatsApp", "info");
 		},
-	});
 
-	pi.registerCommand("signal", {
-		description: "Send a message to Signal",
-		handler: async (args: string, ctx) => {
+		handleSignalCommand(args: string, ctx: ExtensionContext) {
 			const signalChannel = channels.get("signal");
 			if (!signalChannel) {
 				ctx.ui.notify("Signal not connected", "warning");
@@ -478,5 +445,5 @@ export default function (pi: ExtensionAPI) {
 			signalChannel.socket.write(msg);
 			ctx.ui.notify("Sent to Signal", "info");
 		},
-	});
+	};
 }

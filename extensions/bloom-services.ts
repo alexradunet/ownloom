@@ -29,7 +29,7 @@ import {
 	validateServiceName,
 } from "../lib/services.js";
 import { createLogger, errorResult, requireConfirmation, truncate } from "../lib/shared.js";
-import { clearPairingData, getPairingData } from "./bloom-channels.js";
+import { clearPairingData, getPairingData } from "./bloom-channels/actions.js";
 
 const log = createLogger("bloom-services");
 

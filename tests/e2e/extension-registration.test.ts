@@ -44,7 +44,7 @@ describe("bloom-audit registration", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-channels registration", () => {
 	it("registers expected commands and events", async () => {
-		const mod = await import("../../extensions/bloom-channels.js");
+		const mod = await import("../../extensions/bloom-channels/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 

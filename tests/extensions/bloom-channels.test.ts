@@ -4,7 +4,7 @@ import {
 	extractResponseText,
 	getPairingData,
 	setPairingData,
-} from "../../extensions/bloom-channels.js";
+} from "../../extensions/bloom-channels/index.js";
 
 // ---------------------------------------------------------------------------
 // extractResponseText (inlined from lib/channel-utils.ts)
