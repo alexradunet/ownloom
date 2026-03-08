@@ -42,8 +42,8 @@ This layer defines Bloom's current competency inventory.
 
 ## Known Limitations
 
-- Audio can be transcribed when the Lemonade service is installed. Image/video processing are future service packages.
-- WhatsApp is the current messaging channel.
+- Audio can be transcribed when the STT service (whisper.cpp) is installed. Image/video processing are future service packages.
+- WhatsApp and Signal are the current messaging channels.
 
 ## Tool Preferences
 
