@@ -17,8 +17,6 @@
 - `filesystem.ts` -- path helpers (safePath, getBloomDir)
 - `frontmatter.ts` -- YAML frontmatter (parseFrontmatter, stringifyFrontmatter, yaml)
 - `services.ts` -- service catalog, manifest, install, validation, container detection
-- ARCHITECTURE.md INCORRECTLY lists: containers.ts, networking.ts, persona.ts (DO NOT EXIST)
-- ARCHITECTURE.md MISSING: audit.ts, repo.ts
 
 ### Service template (2026-03-08)
 - `services/_template/` EXISTS with: Containerfile, package.json, src/, tests/, quadlet/, tsconfig, vitest.config
@@ -33,12 +31,9 @@
 ## Convention Violations Found
 
 ### Documentation drift (2026-03-08 audit)
-- ARCHITECTURE.md lib/ section: 3 phantom files, 2 missing files
 - AGENTS.md: old `bloom-foo.ts` dev paths, stale line counts, shared lib table outdated
 - README.md: missing bloom-display, old `bloom-foo.ts` dev paths
 - CLAUDE.md "Do Not" Pi SDK import rule is misleading (peerDep runtime imports are fine)
-- vitest.config.ts thresholds (60%/25%) do not match CLAUDE.md "80% threshold" claim
-- Tests NOT colocated in extension dirs (ARCHITECTURE.md says they should be)
 
 ## Pi SDK Notes
 - `StringEnum`, `Type`, `truncateHead` are VALUE exports requiring runtime import as peerDependencies -- correct
