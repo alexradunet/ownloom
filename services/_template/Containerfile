@@ -1,0 +1,25 @@
+FROM docker.io/library/node:22-slim
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY dist/ dist/
+
+ENV NODE_ENV=production
+ENV BLOOM_HEALTH_PORT=18800
+
+# TODO: Add service-specific env vars and directories here.
+# Example:
+#   ENV BLOOM_AUTH_DIR=/data/auth
+#   RUN mkdir -p /data/auth && chown -R node:node /data
+
+EXPOSE 18800
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD wget -qO- http://localhost:18800/health || exit 1
+
+USER node
+
+CMD ["node", "dist/index.js"]
