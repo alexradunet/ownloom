@@ -1,7 +1,7 @@
 /**
  * bloom-services — Service lifecycle: scaffold, install, test, and declarative manifest management.
  *
- * @tools service_scaffold, service_install, service_test, manifest_show, manifest_sync, manifest_set_service, manifest_apply
+ * @tools service_scaffold, service_install, service_test, service_pair, manifest_show, manifest_sync, manifest_set_service, manifest_apply
  * @hooks session_start
  * @see {@link ../AGENTS.md#bloom-services} Extension reference
  */
@@ -11,7 +11,9 @@ import { dirname, join } from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import QRCode from "qrcode";
 import { run } from "../lib/exec.js";
+import { clearPairingData, getPairingData } from "./bloom-channels.js";
 import {
 	buildLocalImage,
 	detectRunningServices,
@@ -365,6 +367,87 @@ export default function (pi: ExtensionAPI) {
 				details: { active, socketMode, cleanup },
 				isError: !active,
 			};
+		},
+	});
+
+	pi.registerTool({
+		name: "service_pair",
+		label: "Pair Messaging Service",
+		description:
+			"Get a QR code for pairing WhatsApp or Signal. Returns ASCII QR art inline. For WhatsApp, scan with WhatsApp mobile app (Settings > Linked Devices). For Signal, scan with Signal app (Settings > Linked Devices > Link New Device).",
+		parameters: Type.Object({
+			name: StringEnum(["whatsapp", "signal"] as const, {
+				description: "Service to pair",
+			}),
+			timeout_sec: Type.Optional(
+				Type.Number({ description: "Max seconds to wait for QR data", default: 60 }),
+			),
+		}),
+		async execute(_toolCallId, params, signal) {
+			const serviceName = params.name;
+			const timeoutSec = Math.max(10, Math.round(params.timeout_sec ?? 60));
+			const unit = `bloom-${serviceName}.service`;
+
+			// Check service is installed
+			const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
+			if (!existsSync(join(systemdDir, `bloom-${serviceName}.container`))) {
+				return errorResult(
+					`${serviceName} is not installed. Run service_install(name="${serviceName}") first.`,
+				);
+			}
+
+			// Restart service to trigger fresh QR/linking
+			await run("systemctl", ["--user", "restart", unit], signal);
+
+			// Clear old pairing data
+			clearPairingData(serviceName);
+
+			// Poll for pairing data from channel bridge
+			const deadline = Date.now() + timeoutSec * 1000;
+			let pairingData: string | null = null;
+
+			while (Date.now() < deadline) {
+				pairingData = getPairingData(serviceName);
+				if (pairingData) break;
+
+				// Fallback: check journalctl for pairing data
+				const logs = await run(
+					"journalctl",
+					["--user", "-u", unit, "-n", "50", "--no-pager", "--since", "30s ago"],
+					signal,
+				);
+				if (serviceName === "signal") {
+					const match = logs.stdout.match(/(sgnl:\/\/linkdevice\?[^\s]+)/);
+					if (match) {
+						pairingData = match[1];
+						break;
+					}
+				}
+
+				await sleep(2000);
+			}
+
+			if (!pairingData) {
+				return errorResult(
+					`No pairing data received within ${timeoutSec}s. Check service logs: journalctl --user -u ${unit} -n 100`,
+				);
+			}
+
+			// Generate ASCII QR code
+			try {
+				const qrArt = await QRCode.toString(pairingData, { type: "terminal", small: true });
+				const instructions =
+					serviceName === "whatsapp"
+						? "Scan this QR code with your WhatsApp mobile app:\nSettings > Linked Devices > Link a Device"
+						: "Scan this QR code with your Signal mobile app:\nSettings > Linked Devices > Link New Device";
+
+				return {
+					content: [{ type: "text" as const, text: `${instructions}\n\n${qrArt}` }],
+					details: { service: serviceName, paired: false },
+				};
+			} catch (err) {
+				return errorResult(`Failed to generate QR code: ${(err as Error).message}`);
+			}
 		},
 	});
 
