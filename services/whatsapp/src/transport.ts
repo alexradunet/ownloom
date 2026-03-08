@@ -9,8 +9,8 @@ import makeWASocket, {
 	downloadContentFromMessage,
 	fetchLatestBaileysVersion,
 	getContentType,
-	makeCacheableSignalKeyStore,
 	type MediaType,
+	makeCacheableSignalKeyStore,
 	useMultiFileAuthState,
 } from "@whiskeysockets/baileys";
 import pino from "pino";
