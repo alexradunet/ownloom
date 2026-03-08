@@ -36,8 +36,8 @@ RUN dnf install -y \
     at-spi2-core \
     python3-pyatspi \
     alacritty \
-    greetd \
-    tuigreet \
+    openssh-server \
+    firewalld \
     nodejs \
     npm \
     && dnf clean all \
@@ -92,8 +92,7 @@ RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
 COPY os/sysconfig/bloom-bashrc /etc/skel/.bashrc
 COPY os/sysconfig/bloom-bash_profile /etc/skel/.bash_profile
 
-# Display stack: greetd + Xpra + Xvfb + i3 (agent-native, headless-first)
-COPY os/sysconfig/greetd.toml /etc/greetd/config.toml
+# Display stack: Xpra + Xvfb + i3 (agent-native, headless-first)
 RUN mkdir -p /etc/xdg/i3
 COPY os/sysconfig/i3-config /etc/xdg/i3/config
 COPY os/sysconfig/bloom-display.service /usr/lib/systemd/system/bloom-display.service
@@ -115,9 +114,17 @@ RUN mkdir -p /usr/local/share/bloom/persona
 COPY os/sysconfig/bloom-greeting.sh /usr/local/bin/bloom-greeting.sh
 RUN chmod +x /usr/local/bin/bloom-greeting.sh
 
-# Boot to graphical target — greetd handles console, bloom-display handles virtual display
-RUN systemctl enable greetd.service
-RUN systemctl set-default graphical.target
+# First-boot setup wizard (runs once on VT1, creates password, configures WiFi/NetBird)
+COPY os/sysconfig/bloom-setup.sh /usr/local/bin/bloom-setup.sh
+RUN chmod +x /usr/local/bin/bloom-setup.sh
+COPY os/sysconfig/bloom-setup.service /usr/lib/systemd/system/bloom-setup.service
+RUN systemctl enable bloom-setup.service
+
+# Enable SSH for remote access (hardened by wizard if NetBird is configured)
+RUN systemctl enable sshd.service
+
+# Boot to multi-user target — bloom-setup handles first boot, getty handles login
+RUN systemctl set-default multi-user.target
 
 # Update check timer
 COPY os/sysconfig/bloom-update-check.timer /usr/lib/systemd/system/bloom-update-check.timer
