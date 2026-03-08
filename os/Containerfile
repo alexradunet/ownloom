@@ -28,15 +28,16 @@ RUN dnf install -y \
     qemu-system-x86 \
     edk2-ovmf \
     chromium \
-    sway \
+    xpra \
+    xorg-x11-server-Xvfb \
+    i3 \
+    xdotool \
+    scrot \
+    at-spi2-core \
+    python3-pyatspi \
+    alacritty \
     greetd \
     tuigreet \
-    wayvnc \
-    foot \
-    xdg-desktop-portal-wlr \
-    wl-clipboard \
-    grim \
-    slurp \
     nodejs \
     npm \
     && dnf clean all \
@@ -81,6 +82,7 @@ RUN cd /usr/local/share/bloom && \
     npm prune --omit=dev && \
     rm -rf /tmp/npm-cache /var/roothome/.npm /root/.npm
 
+RUN chmod +x /usr/local/share/bloom/os/scripts/ui-tree.py
 
 # Configure Pi settings defaults in /usr (immutable layer)
 RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
@@ -90,10 +92,12 @@ RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
 COPY os/sysconfig/bloom-bashrc /etc/skel/.bashrc
 COPY os/sysconfig/bloom-bash_profile /etc/skel/.bash_profile
 
-# Minimal desktop defaults: greetd + sway + wayvnc
+# Display stack: greetd + Xpra + Xvfb + i3 (agent-native, headless-first)
 COPY os/sysconfig/greetd.toml /etc/greetd/config.toml
-RUN mkdir -p /etc/skel/.config/sway
-COPY os/sysconfig/sway-config /etc/skel/.config/sway/config
+RUN mkdir -p /etc/xdg/i3
+COPY os/sysconfig/i3-config /etc/xdg/i3/config
+COPY os/sysconfig/bloom-display.service /usr/lib/systemd/system/bloom-display.service
+RUN systemctl enable bloom-display.service
 
 # tmpfiles.d for /var directory structure (created at boot)
 COPY os/sysconfig/bloom-tmpfiles.conf /usr/lib/tmpfiles.d/bloom.conf
@@ -111,7 +115,7 @@ RUN mkdir -p /usr/local/share/bloom/persona
 COPY os/sysconfig/bloom-greeting.sh /usr/local/bin/bloom-greeting.sh
 RUN chmod +x /usr/local/bin/bloom-greeting.sh
 
-# Boot to desktop with greetd (sway is configured as default session)
+# Boot to graphical target — greetd handles console, bloom-display handles virtual display
 RUN systemctl enable greetd.service
 RUN systemctl set-default graphical.target
 
