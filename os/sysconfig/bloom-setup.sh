@@ -453,7 +453,7 @@ setup_netbird() {
 	printf "\n"
 
 	# Check for basic network connectivity
-	if ! ping -c1 -W3 netbird.io >/dev/null 2>&1; then
+	if ! curl -sf --max-time 5 https://api.netbird.io >/dev/null 2>&1; then
 		warn "No internet connection detected."
 		printf "  %sNetBird requires internet. Connect to a network first,%s\n" "$DIM" "$RESET"
 		printf "  %sor skip and set up NetBird later with: sudo netbird up%s\n" "$DIM" "$RESET"
