@@ -1,0 +1,18 @@
+[Unit]
+Description=Bloom Display (Xpra + Xvfb + i3)
+After=network.target
+
+[Service]
+User=bloom
+Environment=DISPLAY=:99
+ExecStart=/usr/bin/xpra start :99 \
+    --start=i3 \
+    --bind-tcp=0.0.0.0:14500 \
+    --html=on \
+    --no-daemon
+ExecStop=/usr/bin/xpra stop :99
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target
