@@ -8,14 +8,27 @@ if [ -t 0 ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.bloom-pi-session 2>/dev/null;
   /usr/local/bin/bloom-greeting.sh
   # First boot: use local LLM and auto-speak to trigger setup wizard
   if [ ! -f "$HOME/.bloom/.setup-complete" ]; then
-    printf 'Waiting for local LLM...'
-    for i in $(seq 1 60); do
-      curl -sf http://127.0.0.1:8080/health >/dev/null 2>&1 && break
-      printf '.'
+    spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    llm_ready=0
+    printf '\n  Loading local AI model (Crow-4B)  '
+    for i in $(seq 1 120); do
+      # Show spinner
+      printf '\b%s' "${spin:i%10:1}"
+      if curl -sf http://127.0.0.1:8080/health >/dev/null 2>&1; then
+        llm_ready=1
+        break
+      fi
       sleep 1
     done
-    printf '\n'
-    exec pi --provider bloom-local --model crow-4b "hello"
+    if [ "$llm_ready" -eq 1 ]; then
+      printf '\r  Loading local AI model (Crow-4B)  ready!\n\n'
+      exec pi --provider bloom-local --model crow-4b "hello"
+    else
+      printf '\r  Loading local AI model (Crow-4B)  timed out\n\n'
+      printf '  LLM failed to start. Starting Pi without local model.\n'
+      printf '  Run: sudo systemctl status bloom-llm-local\n\n'
+      exec pi
+    fi
   else
     exec pi
   fi
