@@ -1,0 +1,18 @@
+[Unit]
+Description=Bloom Local Whisper (whisper.cpp STT)
+After=network.target
+
+[Service]
+Type=simple
+User=llm
+Group=llm
+ExecStart=/usr/local/bin/whisper-server \
+    --model /usr/local/share/bloom/models/whisper-small.bin \
+    --host 127.0.0.1 \
+    --port 8081 \
+    --threads 2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

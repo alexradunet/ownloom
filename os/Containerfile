@@ -56,6 +56,49 @@ RUN printf '[netbird]\nname=netbird\nbaseurl=https://pkgs.netbird.io/yum/\nenabl
     rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log /var/cache/ldconfig/aux-cache
 RUN systemctl enable netbird
 
+# Create dedicated llm user for local model servers
+RUN useradd -r -s /sbin/nologin llm
+
+# Install llama.cpp server binary (pre-built release)
+# TODO: Pin to specific release version and verify checksum
+ARG LLAMA_CPP_VERSION=b5390
+RUN mkdir -p /tmp/llama && \
+    curl -L "https://github.com/ggerganov/llama.cpp/releases/download/${LLAMA_CPP_VERSION}/llama-${LLAMA_CPP_VERSION}-bin-ubuntu-x64.zip" \
+    -o /tmp/llama/llama.zip && \
+    cd /tmp/llama && unzip llama.zip && \
+    cp build/bin/llama-server /usr/local/bin/llama-server && \
+    chmod +x /usr/local/bin/llama-server && \
+    rm -rf /tmp/llama
+
+# Download Qwen3.5-4B GGUF model
+RUN mkdir -p /usr/local/share/bloom/models && \
+    curl -L "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_0.gguf" \
+    -o /usr/local/share/bloom/models/qwen3.5-4b.gguf && \
+    chown llm:llm /usr/local/share/bloom/models/qwen3.5-4b.gguf
+
+# Local LLM service (starts before login, stopped when user switches to cloud)
+COPY os/sysconfig/bloom-llm-local.service /usr/lib/systemd/system/bloom-llm-local.service
+RUN systemctl enable bloom-llm-local.service
+
+# Install whisper.cpp server binary (pre-built release)
+# TODO: Pin to specific release version and verify checksum
+ARG WHISPER_CPP_VERSION=v1.7.5
+RUN mkdir -p /tmp/whisper && \
+    curl -L "https://github.com/ggerganov/whisper.cpp/releases/download/${WHISPER_CPP_VERSION}/whisper-${WHISPER_CPP_VERSION}-bin-x64.zip" \
+    -o /tmp/whisper/whisper.zip && \
+    cd /tmp/whisper && unzip whisper.zip && \
+    cp build/bin/whisper-server /usr/local/bin/whisper-server && \
+    chmod +x /usr/local/bin/whisper-server && \
+    rm -rf /tmp/whisper
+
+# Download whisper-small model
+RUN curl -L "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin" \
+    -o /usr/local/share/bloom/models/whisper-small.bin && \
+    chown llm:llm /usr/local/share/bloom/models/whisper-small.bin
+
+# Whisper service (not enabled by default — started during setup if user opts in)
+COPY os/sysconfig/bloom-whisper-local.service /usr/lib/systemd/system/bloom-whisper-local.service
+
 # Wheel group sudo (Anaconda creates user at install time)
 COPY os/sysconfig/bloom-sudoers /etc/sudoers.d/10-bloom
 RUN chmod 0440 /etc/sudoers.d/10-bloom

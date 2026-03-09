@@ -1,0 +1,21 @@
+[Unit]
+Description=Bloom Local LLM (llama.cpp + Qwen3.5-4B)
+After=network.target
+Before=getty@tty1.service
+
+[Service]
+Type=simple
+User=llm
+Group=llm
+ExecStart=/usr/local/bin/llama-server \
+    --model /usr/local/share/bloom/models/qwen3.5-4b.gguf \
+    --host 127.0.0.1 \
+    --port 8080 \
+    --ctx-size 8192 \
+    --threads 4 \
+    --no-mmap
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
