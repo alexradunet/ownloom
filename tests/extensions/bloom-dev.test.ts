@@ -1,5 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+	handleDevDisable,
+	handleDevEnable,
+	handleDevStatus,
+	isDevEnabled,
+} from "../../extensions/bloom-dev/actions.js";
 import type { DevBuildResult, DevStatus, DevTestResult } from "../../extensions/bloom-dev/types.js";
+import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
+
+let temp: TempGarden;
+
+beforeEach(() => {
+	temp = createTempGarden();
+});
+
+afterEach(() => {
+	temp.cleanup();
+});
 
 // ---------------------------------------------------------------------------
 // Task 1: Type validation
@@ -58,5 +77,53 @@ describe("bloom-dev types", () => {
 		};
 		expect(result.success).toBe(true);
 		expect(result.testOutput).toBe("all tests passed");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Task 2: Sentinel management
+// ---------------------------------------------------------------------------
+describe("bloom-dev sentinel management", () => {
+	it("isDevEnabled returns false when sentinel is absent", () => {
+		expect(isDevEnabled(temp.gardenDir)).toBe(false);
+	});
+
+	it("dev_enable writes the sentinel file", async () => {
+		const result = await handleDevEnable(temp.gardenDir);
+		expect(result.isError).toBeUndefined();
+		expect(result.details.enabled).toBe(true);
+		expect(isDevEnabled(temp.gardenDir)).toBe(true);
+		expect(existsSync(join(temp.gardenDir, ".dev-enabled"))).toBe(true);
+	});
+
+	it("dev_disable removes the sentinel file", async () => {
+		// First enable
+		await handleDevEnable(temp.gardenDir);
+		expect(isDevEnabled(temp.gardenDir)).toBe(true);
+
+		// Then disable
+		const result = await handleDevDisable(temp.gardenDir);
+		expect(result.isError).toBeUndefined();
+		expect(result.details.enabled).toBe(false);
+		expect(isDevEnabled(temp.gardenDir)).toBe(false);
+	});
+
+	it("dev_disable is idempotent when sentinel already absent", async () => {
+		const result = await handleDevDisable(temp.gardenDir);
+		expect(result.isError).toBeUndefined();
+		expect(result.details.enabled).toBe(false);
+	});
+
+	it("dev_status reports disabled when sentinel absent", async () => {
+		const result = await handleDevStatus(temp.gardenDir);
+		expect(result.details.enabled).toBe(false);
+		expect(result.content[0].text).toContain("disabled");
+	});
+
+	it("dev_status reports enabled when sentinel present", async () => {
+		await handleDevEnable(temp.gardenDir);
+		const result = await handleDevStatus(temp.gardenDir);
+		expect(result.details.enabled).toBe(true);
+		expect(result.content[0].text).toContain("enabled");
 	});
 });
