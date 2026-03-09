@@ -77,8 +77,7 @@ Modular capabilities running as containers:
 
 | Service | What | Type |
 |---------|------|------|
-| `bloom-llm` | Local LLM (llama.cpp) | Podman Quadlet |
-| `bloom-stt` | Speech-to-text (whisper.cpp) | Podman Quadlet |
+| `bloom-lemonade` | Unified local AI (LLM, STT, TTS, image gen) | Podman Quadlet |
 | `bloom-dufs` | WebDAV file server | Podman Quadlet |
 | `bloom-whatsapp` | WhatsApp bridge (Baileys) | Podman Quadlet |
 | `bloom-signal` | Signal bridge (signal-cli) | Podman Quadlet |
@@ -168,7 +167,7 @@ Once the OS is running, the `first-boot` skill walks through setup:
 2. GitHub authentication
 3. Device git identity
 4. dufs setup (WebDAV file server)
-5. Optional services (WhatsApp, Signal, LLM, STT, NetBird)
+5. Optional services (WhatsApp, Signal, Lemonade, NetBird)
 
 See [docs/pibloom-setup.md](docs/pibloom-setup.md) for the full guide.
 

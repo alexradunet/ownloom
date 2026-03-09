@@ -35,10 +35,10 @@ export const STEP_GUIDANCE: Record<StepName, string> = {
 		"Ask if the user wants a file server. Explain: dufs (WebDAV) lets you access your files from any device via a web browser or file manager. If yes, use service_install(name='dufs') to install it.",
 	channels:
 		"Ask: 'Would you like to connect a messaging channel? Options: WhatsApp, Signal, both, or skip for now.' For each chosen channel, use service_install(name='whatsapp'|'signal') then service_pair(name='whatsapp'|'signal') to get the QR code for pairing.",
-	whisper:
-		"Ask: 'Want voice message support? This lets you send voice messages on WhatsApp/Signal and I'll transcribe them.' If yes, use service_install(name='stt') to enable whisper.",
+	local_ai:
+		'Ask: \'Want to enable optional local AI capabilities? These run on-device for free:\' List: (1) Voice transcription (Whisper-Small) — transcribe voice messages, (2) Image generation (SD-Turbo) — generate images about your state, (3) Voice responses (Kokoro-v1) — I can speak back to you. For each one the user wants, pull the model via the lemonade API: POST http://localhost:8000/api/v1/pull with body {"model": "<model-name>", "stream": true}. The LLM (Qwen3-4B) was already pulled during first-boot.',
 	llm_upgrade:
-		"Explain: 'You're running on a local model right now. For much better reasoning, let's connect a cloud AI provider.' Guide them step by step: (1) Run /login to sign in via OAuth to Anthropic, OpenAI, or Google. (2) Once logged in, run /model to pick a stronger model (recommend Claude Sonnet or GPT-4o). (3) If the user prefers API keys instead, help them set the environment variable. (4) If they want to stay local-only, that's fine — skip.",
+		"Explain: 'You're running on a local Qwen3-4B model via lemonade-server right now. For much better reasoning, let's connect a cloud AI provider.' Guide them step by step: (1) Run /login to sign in via OAuth to Anthropic, OpenAI, or Google. (2) Once logged in, run /model to pick a stronger model (recommend Claude Sonnet or GPT-4o). (3) If the user prefers API keys instead, help them set the environment variable. (4) If they want to stay local-only, that's fine — skip.",
 	git_identity:
 		"Ask for the user's name and email for git commits. Run: git config --global user.name '<name>' and git config --global user.email '<email>'. Confirm the settings.",
 	contributing:

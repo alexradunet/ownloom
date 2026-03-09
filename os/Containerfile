@@ -56,37 +56,6 @@ RUN printf '[netbird]\nname=netbird\nbaseurl=https://pkgs.netbird.io/yum/\nenabl
     rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log /var/cache/ldconfig/aux-cache
 RUN systemctl enable netbird
 
-# Create dedicated llm user for local model servers
-COPY os/sysconfig/bloom-sysusers.conf /usr/lib/sysusers.d/bloom.conf
-RUN systemd-sysusers /usr/lib/sysusers.d/bloom.conf
-
-# llama.cpp server (built from source — Fedora RPM only ships libraries, not the server binary)
-RUN dnf install -y cmake gcc-c++ && \
-    git clone --depth 1 --branch b8198 https://github.com/ggml-org/llama.cpp.git /tmp/llama-cpp && \
-    cmake -S /tmp/llama-cpp -B /tmp/llama-cpp/build \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DGGML_NATIVE=OFF \
-        -DLLAMA_CURL=OFF \
-        -DBUILD_SHARED_LIBS=OFF && \
-    cmake --build /tmp/llama-cpp/build --target llama-server -j$(nproc) && \
-    cp /tmp/llama-cpp/build/bin/llama-server /usr/local/bin/llama-server && \
-    rm -rf /tmp/llama-cpp && \
-    dnf remove -y cmake gcc-c++ && \
-    dnf clean all && \
-    rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log
-
-# Download Crow-4B GGUF model (4B params — Opus 4.6 distill on Qwen3.5, fast + smart)
-RUN mkdir -p /usr/local/share/bloom/models && \
-    curl -L "https://huggingface.co/crownelius/Crow-4B-Opus-4.6-Distill-Heretic_Qwen3.5/resolve/main/Crow-4B-Opus-4.6-Distill-Heretic_Qwen3.5.Q4_K_M.gguf" \
-    -o /usr/local/share/bloom/models/crow-4b.gguf && \
-    chown llm:llm /usr/local/share/bloom/models/crow-4b.gguf
-
-# Local LLM service (starts before login, stopped when user switches to cloud)
-COPY os/sysconfig/bloom-llm-local.service /usr/lib/systemd/system/bloom-llm-local.service
-RUN systemctl enable bloom-llm-local.service
-
-# Whisper/STT: not baked in — installed on demand via service_install(name="stt") during setup
-
 # Wheel group sudo (Anaconda creates user at install time)
 COPY os/sysconfig/bloom-sudoers /etc/sudoers.d/10-bloom
 RUN chmod 0440 /etc/sudoers.d/10-bloom

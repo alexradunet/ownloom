@@ -22,7 +22,7 @@ echo "SIGNAL_ACCOUNT=+1234567890" > ~/.config/bloom/signal.env
 
 Install the service package: `service_install(name="signal")`
 - The container image is built automatically
-- STT (whisper.cpp) is auto-installed as a dependency for voice message transcription
+- Lemonade (lemonade-server) is auto-installed as a dependency for voice message transcription
 
 ### 3) Pair with your Signal account
 
