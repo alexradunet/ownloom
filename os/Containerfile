@@ -80,16 +80,17 @@ RUN mkdir -p /usr/local/share/bloom/models && \
 COPY os/sysconfig/bloom-llm-local.service /usr/lib/systemd/system/bloom-llm-local.service
 RUN systemctl enable bloom-llm-local.service
 
-# Install whisper.cpp server binary (pre-built release)
-# TODO: Pin to specific release version and verify checksum
-ARG WHISPER_CPP_VERSION=v1.7.5
-RUN mkdir -p /tmp/whisper && \
-    curl -L "https://github.com/ggerganov/whisper.cpp/releases/download/${WHISPER_CPP_VERSION}/whisper-${WHISPER_CPP_VERSION}-bin-x64.zip" \
-    -o /tmp/whisper/whisper.zip && \
-    cd /tmp/whisper && unzip whisper.zip && \
+# Build whisper.cpp server from source (no prebuilt Linux binaries available)
+ARG WHISPER_CPP_VERSION=v1.8.3
+RUN dnf install -y cmake gcc-c++ && \
+    git clone --depth 1 --branch ${WHISPER_CPP_VERSION} https://github.com/ggml-org/whisper.cpp.git /tmp/whisper && \
+    cd /tmp/whisper && cmake -B build -DWHISPER_BUILD_SERVER=ON && \
+    cmake --build build --config Release -j$(nproc) --target whisper-server && \
     cp build/bin/whisper-server /usr/local/bin/whisper-server && \
     chmod +x /usr/local/bin/whisper-server && \
-    rm -rf /tmp/whisper
+    rm -rf /tmp/whisper && \
+    dnf remove -y cmake gcc-c++ && dnf clean all && \
+    rm -rf /var/cache/libdnf5 /var/lib/dnf
 
 # Download whisper-small model
 RUN curl -L "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin" \
