@@ -103,7 +103,7 @@ Bloom-managed services use a `bloom-` prefix on their **unit names** (e.g., `blo
 | `bloom-lemonade` | Podman Quadlet (user) | `ghcr.io/lemonade-sdk/lemonade-server:v9.4.1` | No — upstream image |
 | `bloom-dufs` | Podman Quadlet (user) | `docker.io/sigoden/dufs:latest` | No — upstream image |
 | `bloom-element` | Podman Quadlet (user) | localhost/bloom-element:latest | Yes — custom bridge |
-| `bloom-matrix` | Podman Quadlet (user) | ghcr.io/girlbossceo/continuwuity:main | No — upstream image |
+| `bloom-matrix` | Podman Quadlet (user) | forgejo.ellis.link/continuwuation/continuwuity:latest | No — upstream image |
 | `netbird` | System RPM service | NetBird package | No — upstream RPM |
 
 The prefix enables:
@@ -235,7 +235,7 @@ graph LR
 | bloom-lemonade | ai | 8000 | Podman Quadlet | ghcr.io/lemonade-sdk/lemonade-server:v9.4.1 | 4GB RAM |
 | bloom-dufs | sync | 5000 | Podman Quadlet | docker.io/sigoden/dufs:latest | 64MB RAM |
 | bloom-element | communication | — | Podman Quadlet | localhost/bloom-element:latest | 128MB RAM |
-| bloom-matrix | communication | 6167 | Podman Quadlet | ghcr.io/girlbossceo/continuwuity:main | 512MB RAM |
+| bloom-matrix | communication | 6167 | Podman Quadlet | forgejo.ellis.link/continuwuation/continuwuity:latest | 512MB RAM |
 | netbird | networking | — | System RPM service | NetBird package | 256MB RAM |
 
 ## 📦 Adding a New Service

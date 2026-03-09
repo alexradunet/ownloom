@@ -59,6 +59,8 @@ graph TD
 | `bloom-channels` | Channel bridge Unix socket server |
 | `bloom-topics` | Topic management and session organization |
 | `bloom-display` | AI computer use: screenshots, input, accessibility tree, window management |
+| `bloom-dev` | On-device development: builds, testing, PR submission |
+| `bloom-setup` | First-boot setup wizard with guided steps |
 
 ### 📜 Skills
 

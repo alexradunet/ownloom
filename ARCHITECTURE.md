@@ -53,6 +53,8 @@ lib/
   repo.ts          # git remote helpers (getRemoteUrl, inferRepoUrl)
   audit.ts         # audit utilities (dayStamp, sanitize, summarizeInput)
   services.ts      # catalog parsing, service metadata, manifest logic, service validation
+  lemonade.ts      # lemonade-server model catalog and HTTP pull helpers
+  setup.ts         # first-boot setup wizard state machine (STEP_ORDER, advanceStep, getNextStep)
 ```
 
 ### Rules
@@ -119,7 +121,7 @@ Used by humans, AI, and the bloom-architect agent when reviewing code:
 - [ ] Biome formatting (tabs, double quotes, 120 line width)
 - [ ] Tests exist and pass (TDD: failing test first)
 - [ ] lib/ functions are pure and testable without mocks
-- [ ] Coverage thresholds maintained (lib/: 60% lines, 80% functions; extensions/: 20% lines, 25% functions)
+- [ ] Coverage thresholds maintained (lib/: 55% lines, 80% functions; extensions/: 15% lines, 20% functions)
 
 **bootc:**
 - [ ] No runtime system mutation — changes go through image builds

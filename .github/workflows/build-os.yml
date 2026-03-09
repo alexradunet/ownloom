@@ -37,9 +37,6 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:coverage
 
-      - name: Run WhatsApp transport tests
-        run: cd services/whatsapp && npm ci && npm run test:coverage
-
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:

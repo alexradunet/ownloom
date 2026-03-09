@@ -2,24 +2,14 @@
  * Handler / business logic for bloom-display.
  */
 import { join } from "node:path";
-import { run } from "../../lib/exec.js";
+import { run, runWithEnv } from "../../lib/exec.js";
 import { errorResult, truncate } from "../../lib/shared.js";
 
 const DISPLAY = ":99";
 
-/** Run a command with DISPLAY=:99 set. */
+/** Run a command with DISPLAY=:99 set via env passthrough (no global mutation). */
 async function runDisplay(cmd: string, args: string[], signal?: AbortSignal): ReturnType<typeof run> {
-	const prevDisplay = process.env.DISPLAY;
-	process.env.DISPLAY = DISPLAY;
-	try {
-		return await run(cmd, args, signal);
-	} finally {
-		if (prevDisplay !== undefined) {
-			process.env.DISPLAY = prevDisplay;
-		} else {
-			delete process.env.DISPLAY;
-		}
-	}
+	return runWithEnv(cmd, args, signal, { DISPLAY });
 }
 
 /** Take a screenshot, optionally of a region. */

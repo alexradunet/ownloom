@@ -146,13 +146,28 @@ Conversation topic management and session organization.
 - `before_agent_start` — Inject topic guidance into system prompt
 - `session_start` — Initialize topic state
 
+### 🛠️ bloom-dev
+
+On-device development tools: build, test, switch, rollback, PR submission.
+
+**Tools:** `dev_enable`, `dev_disable`, `dev_status`, `dev_code_server`, `dev_build`, `dev_switch`, `dev_rollback`, `dev_loop`, `dev_test`, `dev_submit_pr`, `dev_push_skill`, `dev_push_service`, `dev_push_extension`, `dev_install_package`
+
+### 🚀 bloom-setup
+
+First-boot setup wizard with 13 guided steps.
+
+**Tools:** `setup_status`, `setup_advance`, `setup_reset`
+**Provider:** `bloom-local` (lemonade-server local AI)
+**Hooks:**
+- `before_agent_start` — Inject first-boot skill into system prompt when setup is incomplete
+
 ### 🖥️ bloom-display
 
 AI agent computer use: screenshots, input injection, accessibility tree, and window management on the headless Xvfb display.
 
 **Tools:** `display` (actions: screenshot, click, type, key, move, scroll, ui_tree, windows, launch, focus)
 
-## 🧩 All Registered Tools (27)
+## 🧩 All Registered Tools (44)
 
 Quick reference of every tool name available to Pi:
 
@@ -185,6 +200,23 @@ Quick reference of every tool name available to Pi:
 | `skill_list` | bloom-garden | List all skills in ~/Bloom/Skills/ |
 | `persona_evolve` | bloom-garden | Propose persona layer change |
 | `display` | bloom-display | AI computer use: screenshots, input, accessibility tree, window management |
+| `dev_enable` | bloom-dev | Enable on-device development mode |
+| `dev_disable` | bloom-dev | Disable on-device development mode |
+| `dev_status` | bloom-dev | Check dev environment status |
+| `dev_code_server` | bloom-dev | Start/stop/restart code-server |
+| `dev_build` | bloom-dev | Build local container image |
+| `dev_switch` | bloom-dev | Switch OS to a local/remote image |
+| `dev_rollback` | bloom-dev | Rollback to previous OS deployment |
+| `dev_loop` | bloom-dev | Build → switch → reboot loop |
+| `dev_test` | bloom-dev | Run tests and linting |
+| `dev_submit_pr` | bloom-dev | Submit PR from local changes |
+| `dev_push_skill` | bloom-dev | Push skill to repo and open PR |
+| `dev_push_service` | bloom-dev | Push service to repo and open PR |
+| `dev_push_extension` | bloom-dev | Push extension to repo and open PR |
+| `dev_install_package` | bloom-dev | Install Pi package from local path |
+| `setup_status` | bloom-setup | Show first-boot setup progress |
+| `setup_advance` | bloom-setup | Mark setup step as completed/skipped |
+| `setup_reset` | bloom-setup | Reset a setup step or full setup |
 
 ## 📜 Skills
 
@@ -245,6 +277,8 @@ See `ARCHITECTURE.md` for structural rules and enforcement checklist.
 | `repo.ts` | `getRemoteUrl`, `inferRepoUrl` |
 | `audit.ts` | `dayStamp`, `sanitize`, `summarizeInput` |
 | `services.ts` | `loadManifest`, `saveManifest`, `loadServiceCatalog`, `installServicePackage`, `buildLocalImage`, `detectRunningServices`, `validateServiceName`, `validatePinnedImage` |
+| `lemonade.ts` | Lemonade-server model catalog and HTTP pull helpers |
+| `setup.ts` | `STEP_ORDER`, `createInitialState`, `advanceStep`, `getNextStep`, `isSetupComplete`, `getStepsSummary` |
 
 ## 🚀 Install
 

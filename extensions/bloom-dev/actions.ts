@@ -7,6 +7,7 @@ import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../lib/exec.js";
 import { getBloomDir } from "../../lib/filesystem.js";
 import { errorResult, requireConfirmation, truncate } from "../../lib/shared.js";
+import { slugifyBranchPart } from "../bloom-repo/actions.js";
 import type { DevBuildResult, DevTestResult } from "./types.js";
 
 const DEV_IMAGE_TAG = "localhost/bloom:dev";
@@ -279,15 +280,6 @@ export async function handleDevTest(repoDir: string, signal?: AbortSignal) {
 	};
 }
 
-/** Convert a string to a safe git branch name slug. */
-function slugify(input: string): string {
-	return input
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-+|-+$/g, "")
-		.slice(0, 48);
-}
-
 /** Submit a pull request from local changes, including test results in the body. */
 export async function handleDevSubmitPr(
 	params: { title: string; body?: string; branch?: string },
@@ -313,7 +305,7 @@ export async function handleDevSubmitPr(
 		"isError" in testResult && testResult.isError ? `Tests: FAILED\n${testResult.content[0].text}` : `Tests: PASSED`;
 
 	// Branch
-	const branch = params.branch || `dev/${slugify(params.title) || "patch"}`;
+	const branch = params.branch || `dev/${slugifyBranchPart(params.title) || "patch"}`;
 	const checkout = await run("git", ["-C", repoDir, "checkout", "-b", branch], signal);
 	if (checkout.exitCode !== 0) {
 		return errorResult(`Failed to create branch ${branch}: ${checkout.stderr}`);
