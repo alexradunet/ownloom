@@ -107,8 +107,8 @@ Services may depend on other components:
 
 | Service | Depends On | Handling |
 |---------|-----------|----------|
-| `whatsapp` | Pi channels server (`$XDG_RUNTIME_DIR/bloom/channels.sock`) | Unix socket reconnect with exponential backoff |
-| `signal` | Pi channels server (`$XDG_RUNTIME_DIR/bloom/channels.sock`) | Unix socket reconnect with exponential backoff |
+| `matrix` | None (standalone Matrix homeserver) | — |
+| `element` | Pi channels server (`$XDG_RUNTIME_DIR/bloom/channels.sock`), bloom-matrix | Unix socket reconnect with exponential backoff |
 | `llm` | None (standalone HTTP API) | — |
 | `stt` | None (standalone HTTP API) | — |
 | `netbird` | Network stack (NET_ADMIN, /dev/net/tun) | Host network mode |
@@ -142,7 +142,7 @@ Update the manifest with `manifest_set_service` to record the desired version.
 |------|---------|----------|-------------|
 | `llm` | 0.1.0 | ai | Local LLM via llama.cpp (port 8080) |
 | `stt` | 0.1.0 | ai | Speech-to-text via whisper.cpp (port 8081, optional) |
-| `whatsapp` | 0.3.0 | communication | WhatsApp messaging bridge via Baileys |
-| `signal` | 0.1.0 | communication | Signal messaging bridge via signal-cli (optional) |
+| `matrix` | 0.1.0 | communication | Continuwuity Matrix homeserver (port 6167) |
+| `element` | 0.1.0 | communication | Matrix bridge for Pi messaging |
 | `netbird` | 0.1.0 | networking | Secure mesh VPN via NetBird |
 | `dufs` | 0.1.0 | sync | WebDAV file server via dufs (port 5000) |
