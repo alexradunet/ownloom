@@ -59,4 +59,4 @@ journalctl --user -u bloom-stt -f
 - Memory usage: ~500MB-1GB (CPU mode)
 - Default model: whisper base.en — fast, good for English
 - Upgrade to `small` or `medium` for better accuracy if hardware allows
-- Audio files from WhatsApp are at `/var/lib/bloom/media/`
+- Audio files from Matrix are at `/var/lib/bloom/media/`

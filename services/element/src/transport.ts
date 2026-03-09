@@ -2,12 +2,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { createServer as createHttpServer } from "node:http";
 import { createConnection, type Socket } from "node:net";
-import {
-	AutojoinRoomsMixin,
-	MatrixAuth,
-	MatrixClient,
-	SimpleFsStorageProvider,
-} from "matrix-bot-sdk";
+import { AutojoinRoomsMixin, MatrixAuth, MatrixClient, SimpleFsStorageProvider } from "matrix-bot-sdk";
 import { isChannelMessage, isSenderAllowed, mimeToExt, parseAllowedSenders } from "./utils.js";
 
 // --- Configuration ---
@@ -179,7 +174,7 @@ async function handleMediaMessage(
 	if (!mxcUrl) return;
 
 	const { data: buffer, contentType } = await client.downloadContent(mxcUrl);
-	const mimetype = (content.info as Record<string, unknown>)?.mimetype as string | undefined ?? contentType;
+	const mimetype = ((content.info as Record<string, unknown>)?.mimetype as string | undefined) ?? contentType;
 	const caption = content.body as string | undefined;
 
 	const ext = mimeToExt(mimetype);

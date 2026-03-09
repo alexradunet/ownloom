@@ -12,7 +12,7 @@ Bloom is a **Pi package** — a bundle of extensions, skills, and services that 
 
 - **Remembers** — flat-file object store with YAML frontmatter in `~/Bloom/Objects/`
 - **Manages its own OS** — bootc updates, rollbacks, container lifecycle, systemd services
-- **Communicates** — channel bridges (WhatsApp via Baileys) over Unix socket IPC
+- **Communicates** — channel bridges (Matrix via Element bot) over Unix socket IPC
 - **Evolves** — structured self-improvement workflow, persona that grows from Seed to Bloom
 - **Stays private** — no cloud, no telemetry. Your thoughts never leave your box.
 
@@ -80,8 +80,8 @@ Modular capabilities running as containers:
 | `bloom-llm` | Local LLM (llama.cpp) | Podman Quadlet |
 | `bloom-stt` | Speech-to-text (whisper.cpp) | Podman Quadlet |
 | `bloom-dufs` | WebDAV file server | Podman Quadlet |
-| `bloom-whatsapp` | WhatsApp bridge (Baileys) | Podman Quadlet |
-| `bloom-signal` | Signal bridge (signal-cli) | Podman Quadlet |
+| `bloom-matrix` | Continuwuity Matrix homeserver | Podman Quadlet |
+| `bloom-element` | Matrix bot bridge (matrix-bot-sdk) | Podman Quadlet |
 | `netbird` | Mesh VPN | System RPM service |
 
 ### 🪞 Persona
@@ -168,7 +168,7 @@ Once the OS is running, the `first-boot` skill walks through setup:
 2. GitHub authentication
 3. Device git identity
 4. dufs setup (WebDAV file server)
-5. Optional services (WhatsApp, Signal, LLM, STT, NetBird)
+5. Optional services (Matrix, Element, LLM, STT, NetBird)
 
 See [docs/pibloom-setup.md](docs/pibloom-setup.md) for the full guide.
 

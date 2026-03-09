@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-	isChannelMessage,
-	isSenderAllowed,
-	mimeToExt,
-	parseAllowedSenders,
-} from "../src/utils.js";
+import { isChannelMessage, isSenderAllowed, mimeToExt, parseAllowedSenders } from "../src/utils.js";
 
 // ---------------------------------------------------------------------------
 // mimeToExt

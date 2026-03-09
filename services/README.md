@@ -76,8 +76,8 @@ Copy/paste quickstart commands are in `services/examples/README.md`.
 |---------|----------|------|-------------|
 | `llm` | ai | 8080 | Local LLM via llama.cpp (OpenAI-compatible) |
 | `stt` | ai | 8081 | Speech-to-text via whisper.cpp (optional) |
-| `whatsapp` | communication | — | WhatsApp messaging bridge via Baileys |
-| `signal` | communication | 18802 | Signal messaging bridge via signal-cli (optional) |
+| `matrix` | communication | 6167 | Continuwuity Matrix homeserver |
+| `element` | communication | — | Matrix bot bridge via matrix-bot-sdk |
 | `netbird` | networking | — | Secure mesh VPN via NetBird |
 | `dufs` | sync | 5000 | WebDAV file server via dufs |
 

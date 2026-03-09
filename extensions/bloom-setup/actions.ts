@@ -34,9 +34,9 @@ export const STEP_GUIDANCE: Record<StepName, string> = {
 	webdav:
 		"Ask if the user wants a file server. Explain: dufs (WebDAV) lets you access your files from any device via a web browser or file manager. If yes, use service_install(name='dufs') to install it.",
 	channels:
-		"Ask: 'Would you like to connect a messaging channel? Options: WhatsApp, Signal, both, or skip for now.' For each chosen channel, use service_install(name='whatsapp'|'signal') then service_pair(name='whatsapp'|'signal') to get the QR code for pairing.",
+		"Ask: 'Would you like to connect a messaging channel? Matrix is the default — it gives you a private homeserver.' If yes, use service_install(name='matrix') then service_install(name='element') then service_pair(name='element') to get connection details.",
 	whisper:
-		"Ask: 'Want voice message support? This lets you send voice messages on WhatsApp/Signal and I'll transcribe them.' If yes, use service_install(name='stt') to enable whisper.",
+		"Ask: 'Want voice message support? This lets you send voice messages on Matrix and I'll transcribe them.' If yes, use service_install(name='stt') to enable whisper.",
 	llm_upgrade:
 		"Explain: 'You're running on a local model right now. For much better reasoning, let's connect a cloud AI provider.' Guide them step by step: (1) Run /login to sign in via OAuth to Anthropic, OpenAI, or Google. (2) Once logged in, run /model to pick a stronger model (recommend Claude Sonnet or GPT-4o). (3) If the user prefers API keys instead, help them set the environment variable. (4) If they want to stay local-only, that's fine — skip.",
 	git_identity:
@@ -46,7 +46,7 @@ export const STEP_GUIDANCE: Record<StepName, string> = {
 	persona:
 		"Guide the user through personalizing their AI companion. Ask one question at a time: SOUL — 'What should I call you?', 'How formal or casual should I be?', 'Any values important to you?'. BODY — 'Short messages on mobile, longer on terminal?'. FACULTY — 'Step-by-step thinker or quick and direct?'. Update ~/Bloom/Persona/ files with their preferences. Fully skippable.",
 	test_message:
-		"If a messaging channel (WhatsApp/Signal) was set up, send a test message: 'Hi. Can you hear me?' using the channel. If no channel was set up, skip this step.",
+		"If a messaging channel (Matrix) was set up, send a test message: 'Hi. Can you hear me?' using the channel. If no channel was set up, skip this step.",
 	complete:
 		"Congratulate the user! Setup is complete. Mention they can chat here on the terminal or on their connected messaging channel. Remind them they can revisit any setup step by asking.",
 };

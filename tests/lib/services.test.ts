@@ -177,10 +177,10 @@ describe("loadServiceCatalog", () => {
 			join(catalogDir, "catalog.yaml"),
 			[
 				"services:",
-				"  whatsapp:",
-				"    version: '0.3.0'",
+				"  element:",
+				"    version: '0.1.0'",
 				"    category: communication",
-				"    image: localhost/bloom-whatsapp:latest",
+				"    image: localhost/bloom-element:latest",
 				"    depends: [stt]",
 				"  stt:",
 				"    version: '0.1.0'",
@@ -193,7 +193,7 @@ describe("loadServiceCatalog", () => {
 			].join("\n"),
 		);
 		const catalog = loadServiceCatalog(tempDir);
-		expect(catalog.whatsapp.depends).toEqual(["stt"]);
+		expect(catalog.element.depends).toEqual(["stt"]);
 		expect(catalog.stt.models).toHaveLength(1);
 		expect(catalog.stt.models![0].volume).toBe("bloom-stt-models");
 		expect(catalog.stt.models![0].path).toBe("/models/ggml-base.en.bin");
@@ -327,7 +327,7 @@ describe("buildLocalImage", () => {
 	});
 
 	it("returns error when service source dir is missing", async () => {
-		const result = await buildLocalImage("signal", "localhost/bloom-signal:latest", "/tmp/__nonexistent__");
+		const result = await buildLocalImage("element", "localhost/bloom-element:latest", "/tmp/__nonexistent__");
 		expect(result.skipped).toBe(false);
 		expect(result.ok).toBe(false);
 		expect(result.note).toContain("not found");

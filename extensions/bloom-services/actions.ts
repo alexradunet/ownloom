@@ -23,7 +23,6 @@ import {
 } from "../../lib/services.js";
 import { createLogger, errorResult, requireConfirmation, truncate } from "../../lib/shared.js";
 
-
 const log = createLogger("bloom-services");
 
 export function sleep(ms: number): Promise<void> {
@@ -205,7 +204,7 @@ export async function handleInstall(
 		saveManifest(manifest, manifestPath);
 	}
 
-	// Auto-install dependencies (e.g., stt for whatsapp/signal)
+	// Auto-install dependencies (e.g., stt for element)
 	const deps = catalogEntry?.depends ?? [];
 	for (const dep of deps) {
 		const depUnit = join(os.homedir(), ".config", "containers", "systemd", `bloom-${dep}.container`);
