@@ -39,10 +39,10 @@ describe("bloom-setup registration", () => {
 		expect(toolNames()).toEqual(EXPECTED_TOOL_NAMES);
 	});
 
-	it("has session_start event handler", async () => {
+	it("has before_agent_start event handler", async () => {
 		await loadExtension();
 		const events = [...api._eventHandlers.keys()];
-		expect(events).toContain("session_start");
+		expect(events).toContain("before_agent_start");
 	});
 });
 

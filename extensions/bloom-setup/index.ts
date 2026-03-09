@@ -2,7 +2,7 @@
  * bloom-setup — First-boot setup wizard: guides user through 14 setup steps.
  *
  * @tools setup_status, setup_advance, setup_reset
- * @hooks session_start
+ * @hooks before_agent_start
  */
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
@@ -82,12 +82,12 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Inject first-boot skill into system prompt when setup is incomplete
-	pi.on("session_start", async () => {
+	pi.on("before_agent_start", async (event) => {
 		if (isSetupDone()) return;
 
-		const prompt = getSetupSystemPrompt();
-		if (prompt) {
-			return { systemPrompt: prompt };
+		const setupPrompt = getSetupSystemPrompt();
+		if (setupPrompt) {
+			return { systemPrompt: `${setupPrompt}\n\n${event.systemPrompt}` };
 		}
 	});
 }
