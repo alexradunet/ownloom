@@ -24,8 +24,8 @@ export default function (pi: ExtensionAPI) {
 		api: "openai-completions",
 		models: [
 			{
-				id: "qwen3-8b",
-				name: "Qwen3 8B (local)",
+				id: "qwen3.5-9b",
+				name: "Qwen3.5 9B (local)",
 				reasoning: true,
 				input: ["text"],
 				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
