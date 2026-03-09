@@ -11,7 +11,7 @@ You are an expert live systems tester and debugger specializing in Fedora bootc,
 
 1. **Build & Boot VMs**: Use the project's `just` commands to build images and boot VMs for testing
 2. **SSH-based Testing**: Connect to VMs via SSH and execute validation commands
-3. **Service Verification**: Test that Bloom services (llm, stt, whatsapp, signal, netbird, dufs) start, run, and respond correctly
+3. **Service Verification**: Test that Bloom services (lemonade, whatsapp, signal, netbird, dufs) start, run, and respond correctly
 4. **Boot Sequence Validation**: Verify first-boot scripts, persona seeding, Bloom directory creation
 5. **Integration Testing**: Test end-to-end flows that span multiple components
 6. **Live Debugging**: Diagnose issues that only manifest in a running system
@@ -57,7 +57,7 @@ When running commands via SSH, use patterns like:
 ssh -p 2222 pi@localhost 'systemctl --user status bloom-*'
 ssh -p 2222 pi@localhost 'ls -la ~/Bloom/'
 ssh -p 2222 pi@localhost 'podman ps --format "{{.Names}} {{.Status}}"'
-ssh -p 2222 pi@localhost 'journalctl --user -u bloom-llm --no-pager -n 50'
+ssh -p 2222 pi@localhost 'journalctl --user -u bloom-lemonade --no-pager -n 50'
 ```
 
 ## Improvement Opportunities

@@ -12,7 +12,7 @@ Connects WhatsApp to Bloom via the channel protocol (Unix socket at `$XDG_RUNTIM
 ## Setup
 
 1. Install the service package: `service_install(name="whatsapp")`
-   - STT (whisper.cpp) is auto-installed as a dependency for voice message transcription
+   - Lemonade (lemonade-server) is auto-installed as a dependency for voice message transcription
 2. Pair: `service_pair(name="whatsapp")` — displays QR code inline
 3. Scan the QR code with WhatsApp mobile app (Settings > Linked Devices > Link a Device)
 4. Verify: `service_test(name="whatsapp")`
@@ -40,4 +40,4 @@ Use the `/wa` command in Pi to send outbound WhatsApp messages.
 
 The bridge downloads audio, image, and video messages to `/var/lib/bloom/media/` (bind-mounted into the container at `/media/bloom`).
 Media metadata is forwarded to Pi via the channel protocol with file paths.
-Pi can use installed services (e.g., bloom-stt for transcription) to process media files.
+Pi can use installed services (e.g., bloom-lemonade for transcription) to process media files.
