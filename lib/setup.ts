@@ -7,7 +7,7 @@ export const STEP_ORDER = [
 	"llm_upgrade",
 	"webdav",
 	"channels",
-	"whisper",
+	"local_ai",
 	"git_identity",
 	"contributing",
 	"persona",

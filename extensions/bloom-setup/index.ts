@@ -17,19 +17,19 @@ import {
 } from "./actions.js";
 
 export default function (pi: ExtensionAPI) {
-	// Register local LLM provider (bundled Crow-4B Opus distill via llama.cpp)
+	// Register local AI provider (lemonade-server — unified LLM, STT, TTS, image gen)
 	pi.registerProvider("bloom-local", {
-		baseUrl: "http://localhost:8080/v1",
+		baseUrl: "http://localhost:8000/api/v1",
 		apiKey: "local",
 		api: "openai-completions",
 		models: [
 			{
-				id: "crow-4b",
-				name: "Crow 4B (local, Opus distill)",
-				reasoning: true,
+				id: "Qwen3-4B-GGUF",
+				name: "Qwen3 4B (local)",
+				reasoning: false,
 				input: ["text"],
 				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-				contextWindow: 131072,
+				contextWindow: 32768,
 				maxTokens: 8192,
 			},
 		],

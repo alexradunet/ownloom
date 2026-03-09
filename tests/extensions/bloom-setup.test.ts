@@ -55,7 +55,7 @@ describe("bloom-setup provider registration", () => {
 		expect(api.registerProvider).toHaveBeenCalledWith(
 			"bloom-local",
 			expect.objectContaining({
-				baseUrl: "http://localhost:8080/v1",
+				baseUrl: "http://localhost:8000/api/v1",
 				api: "openai-completions",
 			}),
 		);
