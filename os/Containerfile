@@ -66,7 +66,7 @@ RUN systemctl enable netbird
 COPY os/sysconfig/bloom-sudoers /etc/sudoers.d/10-bloom
 RUN chmod 0440 /etc/sudoers.d/10-bloom
 
-ARG PI_CODING_AGENT_VERSION=0.55.4
+ARG PI_CODING_AGENT_VERSION=0.57.1
 ARG BIOME_VERSION=2.4.5
 ARG TYPESCRIPT_VERSION=5.9.3
 ARG CLAUDE_CODE_VERSION=2.1.69
