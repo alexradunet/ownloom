@@ -41,7 +41,7 @@ iso: build _require-bib-config
 	# bootc-image-builder may leave host files owned by nobody:nobody
 	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
-# Boot qcow2 in QEMU with graphical display (Sway desktop, SSH on :2222)
+# Boot qcow2 in QEMU with graphical display (SSH on :2222)
 vm:
 	qemu-system-x86_64 \
 		-machine q35 \
