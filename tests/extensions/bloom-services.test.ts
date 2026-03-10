@@ -46,10 +46,7 @@ describe("extractSkillMetadata", () => {
 
 	it("extracts both image and version from frontmatter", () => {
 		const filePath = path.join(tmpDir, "SKILL.md");
-		fs.writeFileSync(
-			filePath,
-			"---\nname: matrix\nimage: ghcr.io/bloom/matrix:2.0\nversion: 2.0.0\n---\n\n# Matrix\n",
-		);
+		fs.writeFileSync(filePath, "---\nname: matrix\nimage: ghcr.io/bloom/matrix:2.0\nversion: 2.0.0\n---\n\n# Matrix\n");
 		const result = extractSkillMetadata(filePath);
 		expect(result.image).toBe("ghcr.io/bloom/matrix:2.0");
 		expect(result.version).toBe("2.0.0");
