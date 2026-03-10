@@ -8,6 +8,8 @@ Type=simple
 User=pi
 Environment=WAYLAND_DISPLAY=wayland-1
 Environment=XDG_RUNTIME_DIR=/run/user/%U
+ExecStartPre=/bin/bash -c 'echo SWAYSOCK=$(ls /run/user/%U/sway-ipc.*.sock 2>/dev/null | head -1) > /run/bloom/wayvnc-env'
+EnvironmentFile=-/run/bloom/wayvnc-env
 ExecStart=/usr/bin/wayvnc --output=* 127.0.0.1 5900
 Restart=on-failure
 RestartSec=3

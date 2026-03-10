@@ -104,7 +104,8 @@ COPY os/sysconfig/bloom-bash_profile /etc/skel/.bash_profile
 # Display stack: Sway Wayland compositor + wayvnc + noVNC for AI computer use + remote desktop
 COPY os/sysconfig/sway-config /etc/bloom/sway-config
 COPY os/scripts/detect-display.sh /usr/local/share/bloom/os/scripts/detect-display.sh
-RUN chmod +x /usr/local/share/bloom/os/scripts/detect-display.sh
+COPY os/scripts/start-sway.sh /usr/local/share/bloom/os/scripts/start-sway.sh
+RUN chmod +x /usr/local/share/bloom/os/scripts/detect-display.sh /usr/local/share/bloom/os/scripts/start-sway.sh
 COPY os/sysconfig/bloom-sway.service /usr/lib/systemd/system/bloom-sway.service
 COPY os/sysconfig/bloom-wayvnc.service /usr/lib/systemd/system/bloom-wayvnc.service
 COPY os/sysconfig/bloom-novnc.service /usr/lib/systemd/system/bloom-novnc.service

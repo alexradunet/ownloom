@@ -29,6 +29,7 @@ function waylandEnv(): Record<string, string> {
 		WAYLAND_DISPLAY,
 		XDG_RUNTIME_DIR,
 		SWAYSOCK: swaysock(),
+		DBUS_SESSION_BUS_ADDRESS: process.env.DBUS_SESSION_BUS_ADDRESS ?? `unix:path=${XDG_RUNTIME_DIR}/bus`,
 	};
 }
 

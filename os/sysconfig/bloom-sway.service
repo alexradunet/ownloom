@@ -6,10 +6,8 @@ After=network.target
 Type=simple
 User=pi
 RuntimeDirectory=bloom
-ExecStartPre=/usr/local/share/bloom/os/scripts/detect-display.sh
-EnvironmentFile=-/run/bloom/display-env
 Environment=XDG_RUNTIME_DIR=/run/user/%U
-ExecStart=/usr/bin/sway --config /etc/bloom/sway-config
+ExecStart=/usr/local/share/bloom/os/scripts/start-sway.sh
 Restart=on-failure
 RestartSec=5
 

@@ -1,6 +1,7 @@
 [Unit]
 Description=Bloom Web Desktop (noVNC)
 After=bloom-wayvnc.service
+BindsTo=bloom-wayvnc.service
 
 [Service]
 Type=simple
