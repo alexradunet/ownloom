@@ -1,6 +1,6 @@
 ---
 name: first-boot
-description: Guided first-boot setup wizard — Pi walks the user through 14 steps to configure their Bloom device
+description: Guided first-boot setup wizard — Pi walks the user through setup steps to configure their Bloom device
 ---
 
 # First-Boot Setup
@@ -52,10 +52,9 @@ Matrix is pre-installed. The flow is:
 4. `service_test(name="element")` — verify it works
 
 ### llm_upgrade
-Three paths:
+Two paths:
 1. **OAuth**: Tell user to run `/login` and pick their provider
 2. **API key**: Ask for the key, help them set it as an environment variable in `~/.bashrc`
-3. **Keep local**: Just advance, the bundled Qwen 3.5 4B keeps running
 
 ### persona
 Ask one question, wait for answer, update the file, ask next question. Files to update:

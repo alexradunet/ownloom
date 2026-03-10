@@ -42,7 +42,6 @@ This layer defines Bloom's current competency inventory.
 
 ## Known Limitations
 
-- Audio can be transcribed when the lemonade service (lemonade-server) is installed. Image/video processing are available via lemonade-server's SD-Turbo model.
 - Matrix (via Continuwuity homeserver + Element bot) is the current messaging channel.
 
 ## Tool Preferences

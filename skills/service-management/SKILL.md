@@ -48,7 +48,7 @@ Reference packages:
 - `services/examples/demo-api/`
 - `services/examples/demo-socket-echo/`
 - `services/examples/README.md` (copy/paste quickstart commands)
-- `services/lemonade/quadlet/` (production HTTP service reference)
+- `services/dufs/quadlet/` (production HTTP service reference)
 
 ## Install a Service
 
@@ -109,7 +109,6 @@ Services may depend on other components:
 |---------|-----------|----------|
 | `matrix` | None (standalone Matrix homeserver) | — |
 | `element` | Pi channels server (`$XDG_RUNTIME_DIR/bloom/channels.sock`), bloom-matrix | Unix socket reconnect with exponential backoff |
-| `lemonade` | None (standalone HTTP API) | — |
 | `netbird` | Network stack (NET_ADMIN, /dev/net/tun) | Host network mode |
 | `dufs` | Local home bind mount | `%h` bind mount |
 
@@ -121,9 +120,9 @@ Service SKILL.md files include `version` and `image` fields in their frontmatter
 
 ```yaml
 ---
-name: lemonade
+name: matrix
 version: 0.1.0
-image: ghcr.io/lemonade-sdk/lemonade-server:v9.4.1
+image: forgejo.ellis.link/continuwuation/continuwuity:latest
 ---
 ```
 
@@ -139,7 +138,6 @@ Update the manifest with `manifest_set_service` to record the desired version.
 
 | Name | Version | Category | Description |
 |------|---------|----------|-------------|
-| `lemonade` | 0.1.0 | ai | Unified local AI via lemonade-server (port 8000) |
 | `matrix` | 0.1.0 | communication | Continuwuity Matrix homeserver (port 6167) |
 | `element` | 0.1.0 | communication | Matrix bridge for Pi messaging |
 | `netbird` | 0.1.0 | networking | Secure mesh VPN via NetBird |

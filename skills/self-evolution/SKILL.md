@@ -142,12 +142,6 @@ services/{name}/
 - Restart: `on-failure` with `RestartSec=10`
 - Optional: `.socket` unit for on-demand activation
 
-### Port Allocation
-
-| Port | Service |
-|------|---------|
-| 8000 | Lemonade (unified local AI) |
-
 ### SKILL.md Format
 
 Include frontmatter with `name` and `description`, then document:
@@ -175,7 +169,7 @@ Reference example packages:
 - `services/examples/demo-api/`
 - `services/examples/demo-socket-echo/`
 - `services/examples/README.md` (copy/paste quickstart commands)
-- `services/lemonade/quadlet/` (production HTTP service reference)
+- `services/dufs/quadlet/` (production HTTP service reference)
 
 ### Tool-Driven Lifecycle (Recommended)
 
