@@ -6,6 +6,7 @@
  */
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import {
+	buildRestoredContextBlock,
 	checkUpdateAvailable,
 	loadContext,
 	loadGuardrails,
@@ -39,14 +40,8 @@ export default function (pi: ExtensionAPI) {
 			contextRestored = true;
 		}
 		if (restoredContext) {
-			const ctx = restoredContext;
+			systemPrompt += buildRestoredContextBlock(restoredContext);
 			restoredContext = null;
-			const lines = ["\n\n[RESTORED CONTEXT]"];
-			if (ctx.activeTopic) lines.push(`Active topic: ${ctx.activeTopic}`);
-			if (ctx.pendingChannels > 0) lines.push(`Pending channel responses: ${ctx.pendingChannels}`);
-			if (ctx.updateAvailable) lines.push("OS update available — inform user if not already done.");
-			lines.push(`Context saved at: ${ctx.savedAt}`);
-			systemPrompt += lines.join("\n");
 		}
 
 		return { systemPrompt };
