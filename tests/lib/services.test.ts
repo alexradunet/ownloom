@@ -165,7 +165,7 @@ describe("loadServiceCatalog", () => {
 		expect(catalog.llm.category).toBe("ai");
 	});
 
-	it("loads catalog with depends and models fields", () => {
+	it("loads catalog with depends fields", () => {
 		const catalogDir = join(tempDir, "services");
 		mkdirSync(catalogDir, { recursive: true });
 		writeFileSync(
@@ -176,17 +176,17 @@ describe("loadServiceCatalog", () => {
 				"    version: '0.1.0'",
 				"    category: communication",
 				"    image: localhost/bloom-element:latest",
-				"    depends: [lemonade]",
-				"  lemonade:",
+				"    depends: [matrix]",
+				"  matrix:",
 				"    version: '0.1.0'",
-				"    category: ai",
-				"    image: ghcr.io/lemonade-sdk/lemonade-server:v9.4.1",
+				"    category: communication",
+				"    image: forgejo.ellis.link/continuwuation/continuwuity:0.5.0-rc.6",
 			].join("\n"),
 		);
 		const catalog = loadServiceCatalog(tempDir);
-		expect(catalog.element.depends).toEqual(["lemonade"]);
-		expect(catalog.lemonade).toBeDefined();
-		expect(catalog.lemonade.version).toBe("0.1.0");
+		expect(catalog.element.depends).toEqual(["matrix"]);
+		expect(catalog.matrix).toBeDefined();
+		expect(catalog.matrix.version).toBe("0.1.0");
 	});
 
 	it("skips catalog without services key and falls through", () => {

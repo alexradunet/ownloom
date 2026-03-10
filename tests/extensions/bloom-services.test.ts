@@ -32,9 +32,9 @@ describe("extractSkillMetadata", () => {
 
 	it("extracts image from frontmatter", () => {
 		const filePath = path.join(tmpDir, "SKILL.md");
-		fs.writeFileSync(filePath, "---\nimage: ghcr.io/bloom/lemonade:latest\n---\n\n# Lemonade\n");
+		fs.writeFileSync(filePath, "---\nimage: ghcr.io/bloom/matrix:latest\n---\n\n# Matrix\n");
 		const result = extractSkillMetadata(filePath);
-		expect(result.image).toBe("ghcr.io/bloom/lemonade:latest");
+		expect(result.image).toBe("ghcr.io/bloom/matrix:latest");
 	});
 
 	it("extracts version from frontmatter", () => {
