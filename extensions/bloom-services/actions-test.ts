@@ -7,9 +7,9 @@ import { join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import QRCode from "qrcode";
 import { run } from "../../lib/exec.js";
-import { detectRunningServices } from "../../lib/services-install.js";
 import { loadManifest } from "../../lib/services-manifest.js";
 import { validateServiceName } from "../../lib/services-validation.js";
+import { detectRunningServices } from "./service-io.js";
 import { createLogger, errorResult, truncate } from "../../lib/shared.js";
 
 const log = createLogger("bloom-services");

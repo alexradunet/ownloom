@@ -2,8 +2,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { buildLocalImage, downloadServiceModels } from "../../extensions/bloom-services/service-io.js";
 import { loadServiceCatalog } from "../../lib/services-catalog.js";
-import { buildLocalImage, downloadServiceModels, findLocalServicePackage } from "../../lib/services-install.js";
+import { findLocalServicePackage } from "../../lib/services-install.js";
 import { loadManifest, saveManifest } from "../../lib/services-manifest.js";
 import { commandCheckArgs, hasSubidRange } from "../../lib/services-validation.js";
 
