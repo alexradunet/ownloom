@@ -78,4 +78,4 @@ Ask one question, wait for answer, update the file, ask next question. Files to 
 Only if matrix step was completed (not skipped). Send a test message through Matrix to verify the channel works.
 
 ### complete
-Congratulate the user. Setup is complete. Mention they can chat on terminal or via Matrix. Remind them they can revisit any step.
+Congratulate the user. Setup is complete. Mention they can chat on terminal or via Matrix. Let them know Pi now runs in the background — even after logout, Pi stays connected to Matrix and responds to messages. When they log back in, the background daemon pauses and they get a full interactive session. Remind them they can revisit any step.

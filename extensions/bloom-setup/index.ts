@@ -42,7 +42,7 @@ export default function (pi: ExtensionAPI) {
 			reason: Type.Optional(Type.String({ description: "Reason for skipping (required when result is 'skipped')" })),
 		}),
 		async execute(_toolCallId, params) {
-			return handleSetupAdvance(params);
+			return await handleSetupAdvance(params);
 		},
 	});
 

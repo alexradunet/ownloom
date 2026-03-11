@@ -4,6 +4,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import { dirname, join } from "node:path";
+import { run } from "../../lib/exec.js";
 import {
 	advanceStep,
 	createInitialState,
@@ -50,11 +51,19 @@ export function saveState(state: SetupState): void {
 	renameSync(tmp, SETUP_STATE_PATH);
 }
 
-/** Mark setup as complete by touching the sentinel file. */
-export function touchSetupComplete(): void {
+/** Mark setup as complete and enable the persistent Pi agent daemon. */
+export async function touchSetupComplete(): Promise<void> {
 	const dir = dirname(SETUP_COMPLETE_PATH);
 	if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
 	writeFileSync(SETUP_COMPLETE_PATH, new Date().toISOString(), "utf-8");
+
+	// Enable linger so user services survive logout
+	const user = os.userInfo().username;
+	await run("loginctl", ["enable-linger", user]);
+
+	// Enable the persistent Pi agent daemon (starts on next login/reboot)
+	await run("systemctl", ["--user", "enable", "bloom-pi-agent.service"]);
+	log.info("enabled bloom-pi-agent.service and linger for persistent Matrix listening");
 }
 
 /** Check if setup is already complete (sentinel file exists). */
@@ -90,7 +99,7 @@ export function handleSetupStatus() {
 }
 
 /** Handle setup_advance tool call. */
-export function handleSetupAdvance(params: { step: string; result: string; reason?: string }) {
+export async function handleSetupAdvance(params: { step: string; result: string; reason?: string }) {
 	const step = params.step as StepName;
 	if (!STEP_ORDER.includes(step)) {
 		return errorResult(`Unknown step: ${step}. Valid steps: ${STEP_ORDER.join(", ")}`);
@@ -106,7 +115,7 @@ export function handleSetupAdvance(params: { step: string; result: string; reaso
 	saveState(state);
 
 	if (isSetupComplete(state)) {
-		touchSetupComplete();
+		await touchSetupComplete();
 		return {
 			content: [
 				{
