@@ -8,6 +8,16 @@
 
 Promote Matrix (Continuwuity homeserver), Cinny (web client), and the Pi-Matrix bot connection from containerized services to native OS infrastructure baked into the bootc image. Retire the Unix socket channel architecture entirely. Matrix rooms become the universal communication layer. External bridges (WhatsApp, Telegram, Signal) remain Podman containers managed by Pi on user request.
 
+## Architecture Exception: OS-Level Infrastructure Tier
+
+ARCHITECTURE.md establishes a "containers first" philosophy. This design deliberately creates an exception: an **OS-level infrastructure tier** for services that are foundational to the system's identity and cannot be optional. Matrix (communication backbone) and NetBird (mesh networking) qualify because every other feature depends on them. This is analogous to how systemd, nginx, and podman are baked into the image rather than containerized.
+
+ARCHITECTURE.md must be updated to document this tier as part of the implementation.
+
+## Rollback Strategy
+
+Since this is a bootc system, the previous image is always available via `bootc rollback`. If Continuwuity fails to start or the Matrix bot cannot connect, the user still has SSH access (NetBird + SSH are independent). The previous containerized Matrix stack can be restored by rolling back to the prior image. This is acceptable for a "big bang" migration on an immutable OS.
+
 ## Decisions
 
 | Decision | Choice | Rationale |
@@ -25,7 +35,7 @@ Promote Matrix (Continuwuity homeserver), Cinny (web client), and the Pi-Matrix 
 
 ### Continuwuity (Matrix homeserver)
 
-- Build Continuwuity binary in a multi-stage Containerfile (Rust build stage, copy binary to final image)
+- Extract the Continuwuity binary from the existing container image (`forgejo.ellis.link/continuwuation/continuwuity:0.5.0-rc.6`) using a multi-stage Containerfile (`COPY --from=continuwuity-image /usr/local/bin/continuwuity /usr/local/bin/continuwuity`). No Rust compilation needed -- the container image already has the binary built.
 - Systemd unit: `bloom-matrix.service` (system-level, auto-enabled on boot)
 - Data directory: `/var/lib/continuwuity/` (SQLite DB, persisted across boots)
 - Config: `/etc/bloom/matrix.toml`
@@ -39,7 +49,16 @@ Promote Matrix (Continuwuity homeserver), Cinny (web client), and the Pi-Matrix 
 
 - Download Cinny release tarball in the Containerfile, extract to `/usr/share/cinny/`
 - Nginx serves Cinny (reverse proxy already in the image)
-- `config.json` points homeserver to `http://localhost:6167`
+- `config.json` points homeserver to relative path (proxied by nginx, see below)
+
+### Nginx configuration
+
+Nginx (already in the image) needs two additions:
+
+- `location /cinny` -- serve static files from `/usr/share/cinny/`
+- `location /_matrix/` -- reverse proxy to `http://localhost:6167` so Cinny (accessed remotely over NetBird) can reach the homeserver. Without this, the browser cannot reach `localhost:6167` on the remote machine.
+
+Cinny's `config.json` should use the relative homeserver URL (e.g., the device's hostname or IP) rather than `localhost`, since users access Cinny remotely over NetBird.
 
 ### NetBird
 
@@ -74,8 +93,8 @@ Replace the Unix socket server (`channel-server.ts`) with a Matrix client using 
 ### Bot identity
 
 - User: `@pi:bloom`, registered on first boot
-- Crypto store: `~/.pi/matrix-crypto/` (E2EE state)
 - Credentials: `~/.pi/matrix-credentials.json`
+- E2EE: Not required. Federation is off, all traffic is localhost between Pi and Continuwuity. This avoids the `matrix-sdk-crypto-nodejs` native Rust addon and its glibc compatibility issues (see commit a610f75). If E2EE is needed later, it can be added as a separate concern.
 
 ### Removed
 
@@ -93,15 +112,15 @@ When the user says "connect my WhatsApp," Pi:
 
 1. Pulls the mautrix bridge image
 2. Generates a Quadlet `.container` file (`bloom-bridge-{name}.container`)
-3. Creates config pointing bridge at local Continuwuity (`http://localhost:6167`)
-4. Registers the bridge's appservice with Continuwuity
+3. Creates config pointing bridge at `http://host.containers.internal:6167` (host-accessible address from inside Podman containers)
+4. Registers the bridge's appservice with Continuwuity by writing a YAML registration file to `/etc/bloom/appservices/` and reloading Continuwuity (`systemctl reload bloom-matrix` or SIGHUP). Pi needs passwordless sudo for `systemctl reload bloom-matrix` (added via sudoers drop-in during image build).
 5. Starts the bridge via systemd
 6. Guides user through auth ("Open Cinny and scan the QR code in the bridge room")
 
 ### Bridge container conventions
 
 - Named `bloom-bridge-{name}` (e.g., `bloom-bridge-whatsapp`)
-- On `bloom.network` so they can reach Continuwuity
+- Use `--network=slirp4netns` or `host.containers.internal` to reach the host's Continuwuity on port 6167. Not on `bloom.network` (that network is for container-to-container communication; Continuwuity is now a native service on the host).
 - Health checks required
 - Managed by systemd (Quadlet)
 
@@ -113,7 +132,7 @@ When the user says "connect my WhatsApp," Pi:
 
 ### Bridge catalog
 
-New `bridges/catalog.yaml` (or section in `services/catalog.yaml`):
+New `bridges` section in `services/catalog.yaml` (reuses existing catalog loading in `lib/services-catalog.ts`):
 
 ```yaml
 bridges:
@@ -176,7 +195,7 @@ bridges:
    - Connects to Matrix, joins `#general:bloom`
 6. **Pi greets the user:**
    - "Your Matrix homeserver is running. Open Cinny at `http://<hostname>/cinny` to chat."
-   - Login: `@user:bloom` with generated password
+   - Login: `@user:bloom` with generated password (displayed once in terminal, stored in `~/.pi/matrix-credentials.json` alongside bot creds; user can ask Pi to reset it later)
    - "Want me to connect your WhatsApp, Telegram, or Signal?"
 
 ### Subsequent boots
@@ -194,9 +213,12 @@ bridges:
 
 ### Extension code removed
 
-- `extensions/bloom-channels/channel-server.ts`
+- `extensions/bloom-channels/channel-server.ts` (socket server)
+- `extensions/bloom-channels/pairing.ts` (socket pairing state)
 - All socket protocol types (message, response, send, ping, heartbeat)
 - Socket-related rate limiting, reconnection, queue logic
+
+**Note:** The `extractResponseText` utility from `channel-server.ts` (converts Pi agent responses to plain text) must migrate to the new Matrix client code or to `lib/`, as the Matrix bot needs the same functionality.
 
 ### Service management code removed
 
