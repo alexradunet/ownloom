@@ -6,8 +6,6 @@ import { createLogger } from "./shared.js";
 
 const log = createLogger("service-routing");
 
-const BLOOM_ZONE_DOMAIN = "bloom.mesh";
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -28,7 +26,7 @@ export interface RoutingResult {
  */
 export async function ensureServiceRouting(
 	serviceName: string,
-	port: number,
+	_port: number,
 	_options?: { websocket?: boolean; maxBodySize?: string },
 	signal?: AbortSignal,
 ): Promise<RoutingResult> {
