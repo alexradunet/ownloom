@@ -61,9 +61,9 @@ export async function touchSetupComplete(): Promise<void> {
 	const user = os.userInfo().username;
 	await run("loginctl", ["enable-linger", user]);
 
-	// Enable the persistent Pi agent daemon (starts on next login/reboot)
-	await run("systemctl", ["--user", "enable", "bloom-pi-agent.service"]);
-	log.info("enabled bloom-pi-agent.service and linger for persistent Matrix listening");
+	// Enable and start the pi-daemon immediately
+	await run("systemctl", ["--user", "enable", "--now", "pi-daemon.service"]);
+	log.info("enabled pi-daemon.service and linger for persistent Matrix listening");
 }
 
 /** Check if setup is already complete (sentinel file exists). */
