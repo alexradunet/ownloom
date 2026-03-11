@@ -30,7 +30,7 @@ No frontend web framework (React/Vue/Next.js) detected.
 
 ### Tests
 - `npm test` — Vitest test suite
-- `npm run test:coverage` — Vitest with v8 coverage (80% threshold)
+- `npm run test:coverage` — Vitest with v8 coverage thresholds
 
 ## Code Conventions (detected)
 
@@ -52,7 +52,7 @@ From `tsconfig.json`:
 
 - `extensions/` — Pi extension modules (core product behavior)
 - `skills/` — Domain skills (`SKILL.md`) used by Pi
-- `services/` — Bundled service packages (matrix, element, dufs, examples)
+- `services/` — Bundled service packages (cinny, dufs, examples)
 - `os/` — bootc image build assets, sysconfig, output manifests
 - `persona/` — OpenPersona identity layers (`SOUL/BODY/FACULTY/SKILL`)
 - `docs/` — architecture, protocol, deployment, supply-chain docs

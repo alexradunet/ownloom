@@ -39,23 +39,28 @@ Start by calling `setup_status()`, then introduce yourself. Keep it to 2-3 short
 Run `nmcli general status` first. If `connected` appears, just confirm: "You're online via [device]." and advance. Only scan for WiFi if there's no connection.
 
 ### netbird
-NetBird is pre-installed in the OS image. The user needs to provide a setup key from their NetBird dashboard. Run `sudo netbird up --setup-key <KEY>`. Check `netbird status` for the mesh IP.
+NetBird is pre-installed in the OS image. The user needs to provide a setup key from their NetBird dashboard or authenticate interactively. Run `sudo netbird up --setup-key <KEY>` or `sudo netbird up`. Check `netbird status` for the mesh IP.
 
-### password
-Triggered because NetBird opens remote access. Use `sudo passwd pi`. The password prompt is interactive — tell the user to type their password when prompted.
+### connectivity
+Summarize how to connect: locally at localhost, or via NetBird mesh IP from any peer device. Show the mesh IP from `netbird status`. Mention SSH: `ssh pi@<mesh-ip>`.
+
+### webdav
+Ask if the user wants a file server. Explain: dufs (WebDAV) lets you access files from any device. If yes, use `service_install(name='dufs')`.
 
 ### matrix
 Matrix homeserver is pre-installed as a native OS service. The flow is:
 1. Verify `bloom-matrix.service` is running: `systemctl status bloom-matrix`
-2. Create Pi's bot account via Matrix registration API
-3. Guide user to register at `http://<host>/cinny` using the registration token
-4. User creates a DM with `@pi:bloom`
-5. Verify messaging works by sending a test message
+2. Install Cinny web client: `service_install(name='cinny')`
+3. Create Pi's bot account via Matrix registration API
+4. Guide user to register at `http://<host>/cinny/` using the registration token
+5. User creates a DM with `@pi:bloom`
+6. Verify messaging works
 
-### llm_upgrade
-Two paths:
-1. **OAuth**: Tell user to run `/login` and pick their provider
-2. **API key**: Ask for the key, help them set it as an environment variable in `~/.bashrc`
+### git_identity
+Ask for the user's name and email for git commits. Run `git config --global user.name` and `git config --global user.email`. Confirm the settings.
+
+### contributing
+Ask if the user wants to contribute back to Bloom (self-evolution via PRs). If yes, set up the device repo with `bloom_repo(action="configure")`. If no, skip.
 
 ### persona
 Ask one question, wait for answer, update the file, ask next question. Files to update:
@@ -64,4 +69,7 @@ Ask one question, wait for answer, update the file, ask next question. Files to 
 - `~/Bloom/Persona/FACULTY.md` — reasoning style
 
 ### test_message
-Only if matrix step was completed (not skipped). Check setup state to see if matrix was completed before attempting.
+Only if matrix step was completed (not skipped). Send a test message through Matrix to verify the channel works.
+
+### complete
+Congratulate the user. Setup is complete. Mention they can chat on terminal or via Matrix. Remind them they can revisit any step.

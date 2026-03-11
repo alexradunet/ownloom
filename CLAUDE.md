@@ -36,7 +36,7 @@ Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension
 | `~/.pi/` | Pi agent state, sessions | No |
 | `~/.pi/bloom-context.json` | Compaction context persistence | No |
 | `~/.config/containers/systemd/` | Quadlet container units | No |
-| `~/.config/bloom/matrix-credentials.json` | Pi's Matrix login credentials | No |
+| `~/.pi/matrix-credentials.json` | Pi's Matrix login credentials | No |
 | `/var/lib/continuwuity/` | Matrix homeserver data | No |
 | `/etc/bloom/appservices/` | Bridge appservice registrations | No |
 
@@ -49,7 +49,7 @@ npm run check                  # biome lint + format check
 npm run check:fix              # biome auto-fix
 npm run test                   # vitest run
 npm run test:watch             # vitest watch mode
-npm run test:coverage          # vitest with v8 coverage (lib/ 60% lines, extensions/ 20% lines)
+npm run test:coverage          # vitest with v8 coverage (lib/ 55% lines, extensions/ 15% lines)
 ```
 
 ### OS Image Build & VM Testing

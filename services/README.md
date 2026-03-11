@@ -74,10 +74,10 @@ Copy/paste quickstart commands are in `services/examples/README.md`.
 
 | Service | Category | Port | Description |
 |---------|----------|------|-------------|
-| `matrix` | communication | 6167 | Continuwuity Matrix homeserver |
-| `element` | communication | — | Matrix bot bridge via matrix-bot-sdk |
-| `netbird` | networking | — | Secure mesh VPN via NetBird |
+| `cinny` | communication | 18810 | Cinny Matrix web client |
 | `dufs` | sync | 5000 | WebDAV file server via dufs |
+
+**Note:** Matrix (Continuwuity) and NetBird are OS-level infrastructure baked into the image, not container services.
 
 ## Service Catalog
 

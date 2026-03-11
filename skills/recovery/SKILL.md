@@ -22,7 +22,7 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
    - Port conflict: verify nothing else is on port 6167
 5. If Pi is not responding to messages:
    - Check Pi agent is running and bloom-channels extension loaded
-   - Verify Pi's Matrix credentials at `~/.config/bloom/matrix-credentials.json`
+   - Verify Pi's Matrix credentials at `~/.pi/matrix-credentials.json`
 
 ## Bridge Issues
 

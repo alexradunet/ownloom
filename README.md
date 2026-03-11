@@ -12,7 +12,7 @@ Bloom is a **Pi package** — a bundle of extensions, skills, and services that 
 
 - **Remembers** — flat-file object store with YAML frontmatter in `~/Bloom/Objects/`
 - **Manages its own OS** — bootc updates, rollbacks, container lifecycle, systemd services
-- **Communicates** — channel bridges (Matrix via Element bot) over Unix socket IPC
+- **Communicates** — Matrix messaging via native Continuwuity homeserver, with bridges to WhatsApp, Telegram, Signal
 - **Evolves** — structured self-improvement workflow, persona that grows from Seed to Bloom
 - **Stays private** — no cloud, no telemetry. Your thoughts never leave your box.
 
@@ -56,7 +56,7 @@ graph TD
 | `bloom-services` | Service lifecycle (scaffold, install, test) and manifest management |
 | `bloom-objects` | Flat-file object store (CRUD with YAML frontmatter) |
 | `bloom-garden` | Bloom directory, blueprint seeding, skill discovery |
-| `bloom-channels` | Channel bridge Unix socket server |
+| `bloom-channels` | Matrix client bridge (matrix-bot-sdk) |
 | `bloom-topics` | Topic management and session organization |
 | `bloom-dev` | On-device development: builds, testing, PR submission |
 | `bloom-setup` | First-boot setup wizard with guided steps |
@@ -142,7 +142,7 @@ npm run build          # tsc --build
 npm run check          # biome lint + format check
 npm run check:fix      # biome auto-fix
 npm run test           # vitest
-npm run test:coverage  # with 80% threshold enforcement
+npm run test:coverage  # with v8 coverage thresholds
 ```
 
 Load extensions for development:
@@ -173,7 +173,7 @@ Once the OS is running, the `first-boot` skill walks through setup:
 2. GitHub authentication
 3. Device git identity
 4. dufs setup (WebDAV file server)
-5. Optional services (Matrix, Element, NetBird)
+5. Matrix messaging setup (native homeserver + Cinny web client)
 
 See [docs/pibloom-setup.md](docs/pibloom-setup.md) for the full guide.
 
@@ -201,7 +201,6 @@ Atomic updates via `bootc upgrade` with automatic rollback support.
 - [Service Architecture](docs/service-architecture.md) — extensibility hierarchy details
 - [Quick Deploy](docs/quick_deploy.md) — OS build and deployment
 - [First Boot Setup](docs/pibloom-setup.md) — initial configuration guide
-- [Channel Protocol](docs/channel-protocol.md) — Unix socket IPC spec
 - [Supply Chain](docs/supply-chain.md) — artifact trust and releases
 - [Fleet PR Workflow](docs/fleet-pr-workflow.md) — multi-device contribution flow
 

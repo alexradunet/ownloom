@@ -247,7 +247,7 @@ Canonical metadata for automation lives in `services/catalog.yaml`.
 | Bridge | Image | Health Port |
 |--------|-------|-------------|
 | whatsapp | `dock.mau.dev/mautrix/whatsapp:latest` | 29318 |
-| telegram | `dock.mau.dev/mautrix/telegram:latest` | 29319 |
+| telegram | `dock.mau.dev/mautrix/telegram:latest` | 29300 |
 | signal | `dock.mau.dev/mautrix/signal:latest` | 29320 |
 
 ## 🪞 Persona
