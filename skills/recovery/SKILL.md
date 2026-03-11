@@ -21,7 +21,7 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
    - Database corruption: check `/var/lib/continuwuity/` for issues
    - Port conflict: verify nothing else is on port 6167
 5. If Pi is not responding to messages:
-   - Check Pi agent is running and bloom-channels extension loaded
+   - Check Pi agent is running and pi-daemon.service is active (`systemctl --user status pi-daemon`)
    - Verify Pi's Matrix credentials at `~/.pi/matrix-credentials.json`
 
 ## Bridge Issues

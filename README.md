@@ -56,8 +56,6 @@ graph TD
 | `bloom-services` | Service lifecycle (scaffold, install, test) and manifest management |
 | `bloom-objects` | Flat-file object store (CRUD with YAML frontmatter) |
 | `bloom-garden` | Bloom directory, blueprint seeding, skill discovery |
-| `bloom-channels` | Matrix client bridge (matrix-bot-sdk) |
-| `bloom-topics` | Topic management and session organization |
 | `bloom-dev` | On-device development: builds, testing, PR submission |
 | `bloom-setup` | First-boot setup wizard with guided steps |
 

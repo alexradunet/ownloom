@@ -39,6 +39,7 @@ Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension
 | `~/.pi/matrix-credentials.json` | Pi's Matrix login credentials | No |
 | `/var/lib/continuwuity/` | Matrix homeserver data | No |
 | `/etc/bloom/appservices/` | Bridge appservice registrations | No |
+| `~/.pi/pi-daemon/rooms.json` | Room-to-session mapping for pi-daemon | No |
 
 ## Build and Test
 

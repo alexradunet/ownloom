@@ -34,9 +34,9 @@ sequenceDiagram
     Ext->>Hooks: Register before_agent_start hooks
     Ext->>Hooks: Register tool_call / tool_result hooks
     Pi->>Hooks: Fire session_start
-    Note over Hooks: bloom-persona sets session name<br/>bloom-audit rotates logs<br/>bloom-garden seeds blueprints<br/>bloom-channels connects to Matrix
+    Note over Hooks: bloom-persona sets session name<br/>bloom-audit rotates logs<br/>bloom-garden seeds blueprints
     Pi->>Hooks: Fire before_agent_start
-    Note over Hooks: bloom-persona injects identity<br/>bloom-os injects update status<br/>bloom-topics injects topic guidance
+    Note over Hooks: bloom-persona injects identity<br/>bloom-os injects update status
     Pi-->>Pi: Ready
 ```
 
@@ -126,26 +126,6 @@ Bloom directory management, blueprint seeding, skill creation, persona evolution
 - `session_start` — Ensure Bloom directory structure, seed blueprints (hash-based change detection)
 - `resources_discover` — Return skill paths from `~/Bloom/Skills/`
 
-### 📡 bloom-channels
-
-Matrix client bridge connecting Pi directly to the local Continuwuity homeserver via `matrix-bot-sdk`. Pi logs in as `@pi:bloom` and listens for messages in Matrix rooms.
-
-**Commands:** `/matrix` (send message via Matrix)
-**Hooks:**
-- `session_start` — Connect to Matrix homeserver, start listening for messages
-- `agent_end` — Send Pi's response back to the originating Matrix room
-- `session_shutdown` — Disconnect from Matrix
-
-### 🗂️ bloom-topics
-
-Conversation topic management and session organization.
-
-**Commands:** `/topic` (new | close | list | switch)
-**Hooks:**
-- `session_start` — Store last context
-- `before_agent_start` — Inject topic guidance into system prompt
-- `session_start` — Initialize topic state
-
 ### 🛠️ bloom-dev
 
 On-device development tools: build, test, switch, rollback, PR submission.
@@ -159,6 +139,21 @@ First-boot setup wizard with guided steps.
 **Tools:** `setup_status`, `setup_advance`, `setup_reset`
 **Hooks:**
 - `before_agent_start` — Inject first-boot skill into system prompt when setup is incomplete
+
+### Pi Daemon (pi-daemon.service)
+
+Always-on SDK-based daemon managing one `AgentSession` per Matrix room. Runs as a systemd user service after first-boot setup. The daemon and interactive terminal run in parallel — they share filesystem and persona but not sessions.
+
+**Components:**
+- `daemon/index.ts` — entry point, wires components
+- `daemon/matrix-listener.ts` — Matrix bot-sdk client
+- `daemon/session-pool.ts` — session lifecycle, LRU eviction (max 3 default)
+- `daemon/room-registry.ts` — `rooms.json` room-to-session mapping
+
+**Key paths:**
+- `~/.pi/pi-daemon/rooms.json` — room registry
+- `~/.pi/agent/sessions/bloom-rooms/` — daemon session files
+- `~/.pi/pi-daemon/matrix-state.json` — Matrix client state
 
 ## 🧩 All Registered Tools (44)
 

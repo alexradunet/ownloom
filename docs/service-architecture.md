@@ -28,7 +28,7 @@ graph TD
 | Mechanism | Use When | Examples | Cost |
 |-----------|----------|----------|------|
 | **Skill** | Pi needs knowledge or a procedure to follow | meal-planning, troubleshooting guides, API references | Zero — just a markdown file |
-| **Extension** | Pi needs to register commands, tools, or react to session events | bloom-channels (Matrix client), bloom-objects (object store) | Low — TypeScript, runs in-process |
+| **Extension** | Pi needs to register commands, tools, or react to session events | bloom-objects (object store), bloom-garden (Bloom directory) | Low — TypeScript, runs in-process |
 | **Service** | A standalone process needs to run independently of Pi's session | dufs (WebDAV), mautrix bridges (WhatsApp, Telegram) | Medium — systemd unit, resource allocation |
 
 **Always prefer the lighter option.** A skill that teaches Pi to call an existing API is better than an extension wrapping that API, which is better than a service re-implementing it.
@@ -48,8 +48,6 @@ graph TB
             persona[bloom-persona]
             garden[bloom-garden]
             objects[bloom-objects]
-            topics[bloom-topics]
-            channels[bloom-channels<br/>Matrix client via matrix-bot-sdk]
         end
 
         subgraph "Service Containers (Podman Quadlet)"
@@ -59,7 +57,6 @@ graph TB
         end
     end
 
-    channels <-->|Matrix CS API| matrix_native
     bridges <-->|Appservice API| matrix_native
     nginx -->|proxy /_matrix/| matrix_native
     nginx -->|proxy /cinny| cinny
@@ -69,7 +66,6 @@ graph TB
     style persona fill:#e8d5f5
     style garden fill:#d5f5e8
     style objects fill:#d5e8f5
-    style channels fill:#f5e8d5
     style matrix_native fill:#f5f5d5
 ```
 
