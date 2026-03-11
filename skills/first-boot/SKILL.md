@@ -26,6 +26,7 @@ You are paired with the `bloom-setup` extension which tracks state in `~/.bloom/
 - **Pi speaks first** — on first boot, start with the welcome without waiting for user input
 - **Respect "skip"** — any step can be deferred, no pressure
 - **Show, don't tell** — when running commands, show the user what's happening
+- **Teach the shell** — early on, mention that `!command` runs a command directly (e.g. `!netbird status`) and `!!` opens an interactive shell. This is their device — encourage hands-on exploration
 
 ## Step-Specific Notes
 
@@ -41,20 +42,25 @@ Run `nmcli general status` first. If `connected` appears, just confirm: "You're 
 ### netbird
 NetBird is pre-installed in the OS image. The user needs to provide a setup key from their NetBird dashboard or authenticate interactively. Run `sudo netbird up --setup-key <KEY>` or `sudo netbird up`. Check `netbird status` for the mesh IP.
 
+After connecting, optionally ask about subdomain routing. If yes, guide them: app.netbird.io → Team → Service Users → create a service user (admin role) → create an access token. Save to `~/.config/bloom/netbird.env` as `NETBIRD_API_TOKEN=<token>`.
+
 ### connectivity
-Summarize how to connect: locally at localhost, or via NetBird mesh IP from any peer device. Show the mesh IP from `netbird status`. Mention SSH: `ssh pi@<mesh-ip>`.
+Summarize how to connect: locally at localhost, or via NetBird mesh IP from any peer device. Show the mesh IP from `netbird status`. Mention SSH: `ssh pi@<mesh-ip>`. The default password was set during image build — remind the user they can change it with `passwd` and add their SSH key with `ssh-copy-id` for passwordless access.
 
 ### webdav
 Ask if the user wants a file server. Explain: dufs (WebDAV) lets you access files from any device. If yes, use `service_install(name='dufs')`.
 
 ### matrix
-Matrix homeserver is pre-installed as a native OS service. The flow is:
+Matrix homeserver is pre-installed as a native OS service. The registration token is auto-generated on first boot at `/var/lib/continuwuity/registration_token`. The flow is:
 1. Verify `bloom-matrix.service` is running: `systemctl status bloom-matrix`
 2. Install Cinny web client: `service_install(name='cinny')`
-3. Create Pi's bot account via Matrix registration API
-4. Guide user to register at `http://<host>/cinny/` using the registration token
-5. User creates a DM with `@pi:bloom`
-6. Verify messaging works
+3. Read the registration token: `sudo cat /var/lib/continuwuity/registration_token`
+4. Register `@pi:bloom` bot account via Matrix registration API
+5. Register `@user:bloom` account for the human user
+6. Store credentials in `~/.pi/matrix-credentials.json` (schema: `{ homeserver, botUserId, botAccessToken, botPassword, userUserId, userPassword, registrationToken }`)
+7. Create `#general:bloom` room and auto-join `@user:bloom` to it
+8. Tell user: open `http://<host>/cinny/`, login as `user` (localpart only, not `@user:bloom`), password shown
+9. User is already in `#general:bloom` — suggest DM with `@pi:bloom`
 
 ### git_identity
 Ask for the user's name and email for git commits. Run `git config --global user.name` and `git config --global user.email`. Confirm the settings.

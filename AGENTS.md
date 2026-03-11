@@ -233,14 +233,25 @@ Quick reference of every tool name available to Pi:
 | `netbird.service` | Mesh VPN networking | System RPM |
 | `nginx.service` | Reverse proxy | Native systemd |
 
+### Subdomain Routing (`bloom.mesh`)
+
+Services get automatic subdomain access via `{name}.bloom.mesh` when a NetBird API token is configured:
+
+1. **DNS**: `ensureServiceRecord` creates an A record in the NetBird `bloom.mesh` custom DNS zone
+2. **Nginx**: `writeVhostConfig` creates `/etc/nginx/conf.d/bloom-{name}.conf` with a `server_name {name}.bloom.mesh` vhost
+
+Graceful degradation: no token = DNS skipped, nginx vhost still written. Path-based routing (`/cinny/`, `/_matrix/`) remains as fallback.
+
+Token location: `~/.config/bloom/netbird.env` (`NETBIRD_API_TOKEN=nbp_...`)
+
 ### Container Services
 
 Canonical metadata for automation lives in `services/catalog.yaml`.
 
-| Service | Category | Port | Type |
-|---------|----------|------|------|
-| `bloom-cinny` | communication | 18810 | Podman Quadlet |
-| `bloom-dufs` | sync | 5000 | Podman Quadlet |
+| Service | Category | Port | Subdomain | Type |
+|---------|----------|------|-----------|------|
+| `bloom-cinny` | communication | 18810 | `cinny.bloom.mesh` | Podman Quadlet |
+| `bloom-dufs` | sync | 5000 | `dufs.bloom.mesh` | Podman Quadlet |
 
 ### Bridges (on-demand via `bridge_create`)
 
@@ -281,7 +292,10 @@ See `ARCHITECTURE.md` for structural rules and enforcement checklist.
 | `shared.ts` | `createLogger`, `truncate`, `errorResult`, `requireConfirmation`, `nowIso`, `guardBloom` |
 | `frontmatter.ts` | `parseFrontmatter`, `stringifyFrontmatter`, `yaml` |
 | `filesystem.ts` | `safePath`, `getBloomDir` |
-| `exec.ts` | `run` (command execution) |
+| `exec.ts` | `run` (command execution, supports stdin `input`) |
+| `netbird.ts` | `loadNetBirdToken`, `getLocalMeshIp`, `ensureBloomZone`, `ensureServiceRecord` |
+| `nginx.ts` | `generateVhostConfig`, `writeVhostConfig`, `reloadNginx`, `removeVhostConfig` |
+| `service-routing.ts` | `ensureServiceRouting` (orchestrates DNS + nginx for subdomain access) |
 | `git.ts` | `parseGithubSlugFromUrl`, `slugifyBranchPart` |
 | `repo.ts` | `getRemoteUrl`, `inferRepoUrl` |
 | `audit.ts` | `dayStamp`, `sanitize`, `summarizeInput` |

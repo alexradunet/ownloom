@@ -1,10 +1,5 @@
 {
 	"defaultHomeserver": 0,
-	"homeserverList": [
-		{
-			"name": "Bloom",
-			"address": "/"
-		}
-	],
-	"allowCustomHomeservers": false
+	"homeserverList": ["/"],
+	"allowCustomHomeservers": true
 }

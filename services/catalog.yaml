@@ -6,6 +6,8 @@ services:
     category: sync
     image: docker.io/sigoden/dufs:v0.38.0
     optional: false
+    port: 5000
+    websocket: true
     preflight:
       commands: [podman, systemctl]
   cinny:
@@ -13,6 +15,7 @@ services:
     category: communication
     image: ghcr.io/cinnyapp/cinny:v4.3.0
     optional: false
+    port: 18810
     preflight:
       commands: [podman, systemctl]
   code-server:
@@ -20,6 +23,8 @@ services:
     category: development
     image: localhost/bloom-code-server:latest
     optional: true
+    port: 8443
+    websocket: true
     preflight:
       commands: [podman, systemctl]
 

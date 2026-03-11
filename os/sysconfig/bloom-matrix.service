@@ -5,6 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
+# Generate registration token on first boot if missing
+ExecStartPre=/bin/bash -c 'TOKEN_FILE=/var/lib/continuwuity/registration_token; [ -f "$TOKEN_FILE" ] || (openssl rand -base64 32 > "$TOKEN_FILE" && chmod 640 "$TOKEN_FILE")'
 ExecStart=/usr/local/bin/continuwuity
 Environment=CONTINUWUITY_CONFIG=/etc/bloom/matrix.toml
 ExecReload=/bin/kill -HUP $MAINPID

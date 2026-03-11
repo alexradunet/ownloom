@@ -6,6 +6,7 @@ import os from "node:os";
 import { join } from "node:path";
 import { run } from "../../lib/exec.js";
 import { parseFrontmatter } from "../../lib/frontmatter.js";
+import { ensureServiceRouting } from "../../lib/service-routing.js";
 import { loadServiceCatalog, servicePreflightErrors } from "../../lib/services-catalog.js";
 import { loadManifest, saveManifest } from "../../lib/services-manifest.js";
 import { validateServiceName } from "../../lib/services-validation.js";
@@ -87,6 +88,19 @@ export async function handleInstall(
 		}
 	}
 
+	// Set up subdomain routing (DNS + nginx vhost) if port is defined
+	if (catalogEntry?.port) {
+		const routing = await ensureServiceRouting(
+			params.name,
+			catalogEntry.port,
+			{ websocket: catalogEntry.websocket },
+			signal,
+		);
+		if (!routing.nginx.ok) log.warn("nginx vhost failed", { service: params.name, error: routing.nginx.error });
+		if (!routing.dns.ok && !routing.dns.skipped)
+			log.warn("DNS record failed", { service: params.name, error: routing.dns.error });
+	}
+
 	const skillDir = join(bloomDir, "Skills", params.name);
 	const meta = extractSkillMetadata(join(skillDir, "SKILL.md"));
 	if (updateManifest) {
@@ -140,6 +154,14 @@ export async function handleInstall(
 		const start = await run("systemctl", ["--user", "start", `bloom-${dep}.service`], signal);
 		if (start.exitCode !== 0) {
 			log.warn("dependency service start failed", { dep, stderr: start.stderr });
+		}
+
+		// Set up subdomain routing for dependency
+		if (depCatalog?.port) {
+			const depRouting = await ensureServiceRouting(dep, depCatalog.port, { websocket: depCatalog.websocket }, signal);
+			if (!depRouting.nginx.ok) log.warn("dep nginx vhost failed", { dep, error: depRouting.nginx.error });
+			if (!depRouting.dns.ok && !depRouting.dns.skipped)
+				log.warn("dep DNS record failed", { dep, error: depRouting.dns.error });
 		}
 
 		const depManifest = loadManifest(manifestPath);

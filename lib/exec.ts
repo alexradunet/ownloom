@@ -17,6 +17,7 @@ export interface RunResult {
  * @param signal - Optional AbortSignal to cancel the process.
  * @param cwd - Optional working directory for the child process.
  * @param env - Optional extra environment variables (merged with process.env by execa).
+ * @param input - Optional string to pipe to the process's stdin.
  */
 export async function run(
 	cmd: string,
@@ -24,7 +25,8 @@ export async function run(
 	signal?: AbortSignal,
 	cwd?: string,
 	env?: Record<string, string>,
+	input?: string,
 ): Promise<RunResult> {
-	const result = await execa(cmd, args, { reject: false, cancelSignal: signal, cwd, env });
+	const result = await execa(cmd, args, { reject: false, cancelSignal: signal, cwd, env, input });
 	return { stdout: result.stdout ?? "", stderr: result.stderr ?? "", exitCode: result.exitCode ?? 1 };
 }

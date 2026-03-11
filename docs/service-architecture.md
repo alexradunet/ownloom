@@ -87,6 +87,17 @@ graph TB
 - **Extensions** need direct access to Pi's session (send messages, register commands, access context). They run in-process and require TypeScript. These are core platform code.
 - **Services** are standalone workloads (file sync, messaging bridges) that run as containers.
 
+### Subdomain Routing Layer
+
+When a service is installed via `service_install`, Bloom automatically creates subdomain routing:
+
+1. **NetBird DNS** — Creates an A record `{name}.bloom.mesh` pointing to the device's mesh IP in a NetBird Custom DNS Zone. Requires `NETBIRD_API_TOKEN` in `~/.config/bloom/netbird.env`.
+2. **Nginx vhost** — Writes `/etc/nginx/conf.d/bloom-{name}.conf` with `server_name {name}.bloom.mesh` proxying to the service's port. Supports WebSocket upgrade and custom body size.
+
+**Graceful degradation**: If no NetBird token is configured, DNS is skipped but the nginx vhost is still created (usable with manual DNS or `/etc/hosts`). Path-based routing (`/cinny/`, `/_matrix/`) remains as fallback in the default server block.
+
+**Idempotency**: Zone and records are checked before creation. Zone ID is cached in `~/.config/bloom/netbird-zone.json` to avoid repeated API calls.
+
 ### OS-Level Infrastructure
 
 Some services are foundational to the system's identity and run as native systemd services baked into the OS image:

@@ -33,9 +33,11 @@ The config file at `~/.config/bloom/cinny-config.json` is created automatically 
 
 ## Configuration
 
-- Config: `~/.config/bloom/cinny-config.json`
-- Homeserver: uses the same origin (`/`) — nginx proxies `/_matrix/` to the local homeserver
-- Container port: 18810 (proxied by nginx)
+- Config: `~/.config/bloom/cinny-config.json` (auto-templated with device hostname at install time)
+- Homeserver: `http://<hostname>` — nginx proxies `/_matrix/` to the local homeserver on port 6167
+- Container port: 18810 (proxied by nginx at `/cinny/` and Cinny asset paths)
+- Custom homeservers: allowed (so users can manually enter the URL if needed)
+- Login: use localpart only (e.g. `user`, not `@user:bloom`)
 
 ## Replacing with Another Client
 

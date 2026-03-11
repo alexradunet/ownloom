@@ -18,6 +18,20 @@ import { run } from "../../lib/exec.js";
 import { findLocalServicePackage } from "../../lib/services-install.js";
 import type { ServiceCatalogEntry } from "../../lib/services-manifest.js";
 
+/** Template Cinny config with the device's hostname as homeserver URL. */
+function templateCinnyConfig(raw: string): string {
+	try {
+		const config = JSON.parse(raw);
+		if (Array.isArray(config.homeserverList)) {
+			const hostname = os.hostname();
+			config.homeserverList = [`http://${hostname}`];
+		}
+		return JSON.stringify(config, null, "\t") + "\n";
+	} catch {
+		return raw;
+	}
+}
+
 /** Install a service from a bundled local package. Copies Quadlet files, SKILL.md, and generates channel tokens. */
 export async function installServicePackage(
 	name: string,
@@ -111,7 +125,12 @@ export async function installServicePackage(
 			if (!statSync(src).isFile()) continue;
 			const dest = join(configDir, fileName);
 			if (!existsSync(dest)) {
-				writeFileSync(dest, readFileSync(src));
+				let content = readFileSync(src, "utf-8");
+				// Template Cinny config with actual homeserver URL
+				if (fileName === "cinny-config.json") {
+					content = templateCinnyConfig(content);
+				}
+				writeFileSync(dest, content);
 			}
 		}
 

@@ -31,6 +31,10 @@ export interface ServiceCatalogEntry {
 	image?: string;
 	optional?: boolean;
 	depends?: string[];
+	/** Host port for nginx reverse proxy routing. */
+	port?: number;
+	/** Whether the service uses WebSocket connections (adds upgrade headers to nginx vhost). */
+	websocket?: boolean;
 	models?: Array<{
 		volume: string;
 		path: string;
