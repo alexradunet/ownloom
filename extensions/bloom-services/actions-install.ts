@@ -88,7 +88,7 @@ export async function handleInstall(
 		}
 	}
 
-	// Set up subdomain routing (DNS + nginx vhost) if port is defined
+	// Set up DNS routing if port is defined
 	if (catalogEntry?.port) {
 		const routing = await ensureServiceRouting(
 			params.name,
@@ -96,7 +96,6 @@ export async function handleInstall(
 			{ websocket: catalogEntry.websocket },
 			signal,
 		);
-		if (!routing.nginx.ok) log.warn("nginx vhost failed", { service: params.name, error: routing.nginx.error });
 		if (!routing.dns.ok && !routing.dns.skipped)
 			log.warn("DNS record failed", { service: params.name, error: routing.dns.error });
 	}
@@ -156,10 +155,9 @@ export async function handleInstall(
 			log.warn("dependency service start failed", { dep, stderr: start.stderr });
 		}
 
-		// Set up subdomain routing for dependency
+		// Set up DNS routing for dependency
 		if (depCatalog?.port) {
 			const depRouting = await ensureServiceRouting(dep, depCatalog.port, { websocket: depCatalog.websocket }, signal);
-			if (!depRouting.nginx.ok) log.warn("dep nginx vhost failed", { dep, error: depRouting.nginx.error });
 			if (!depRouting.dns.ok && !depRouting.dns.skipped)
 				log.warn("dep DNS record failed", { dep, error: depRouting.dns.error });
 		}
