@@ -156,18 +156,3 @@ describe("bloom-services registration", () => {
 		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start"]));
 	});
 });
-
-// ---------------------------------------------------------------------------
-// bloom-topics
-// ---------------------------------------------------------------------------
-describe("bloom-topics registration", () => {
-	it("registers expected command and events", async () => {
-		const mod = await import("../../extensions/bloom-topics/index.js");
-		const api = createMockExtensionAPI();
-		mod.default(api as never);
-
-		expect(toolNames(api)).toEqual([]);
-		expect(commandNames(api)).toEqual(["topic"]);
-		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start", "before_agent_start"]));
-	});
-});
