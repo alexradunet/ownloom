@@ -76,7 +76,7 @@ export async function handleManifestApply(
 			continue;
 		}
 
-		const installResult = await installServicePackage(name, version, bloomDir, repoDir, catalogEntry, signal);
+		const installResult = await installServicePackage(name, bloomDir, repoDir, signal);
 		if (!installResult.ok) {
 			errors.push(`${name}: install failed — ${installResult.note ?? "unknown error"}`);
 			continue;

@@ -46,7 +46,7 @@ async function installDependency(
 		return;
 	}
 
-	const depInstall = await installServicePackage(dep, depVersion, bloomDir, repoDir, depCatalog, signal);
+	const depInstall = await installServicePackage(dep, bloomDir, repoDir, signal);
 	if (!depInstall.ok) {
 		log.warn("dependency install failed", { dep, note: depInstall.note });
 		return;
@@ -107,7 +107,7 @@ export async function handleInstall(
 		return errorResult(`Preflight failed: ${preflight.join("; ")}`);
 	}
 
-	const install = await installServicePackage(params.name, version, bloomDir, repoDir, catalogEntry, signal);
+	const install = await installServicePackage(params.name, bloomDir, repoDir, signal);
 	if (!install.ok) {
 		return errorResult(install.note ?? `Install failed for ${params.name}`);
 	}

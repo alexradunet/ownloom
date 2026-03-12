@@ -13,7 +13,6 @@ import os from "node:os";
 import { join } from "node:path";
 import { run } from "../../lib/exec.js";
 import { getQuadletDir } from "../../lib/filesystem.js";
-import type { ServiceCatalogEntry } from "../../lib/services-catalog.js";
 import { findLocalServicePackage } from "../../lib/services-catalog.js";
 
 /** Template Cinny config with the device's hostname as homeserver URL. */
@@ -33,10 +32,8 @@ function templateCinnyConfig(raw: string): string {
 /** Install a service from a bundled local package. Copies Quadlet files, SKILL.md, and config files. */
 export async function installServicePackage(
 	name: string,
-	_version: string,
 	bloomDir: string,
 	repoDir: string,
-	_entry: ServiceCatalogEntry | undefined,
 	signal?: AbortSignal,
 ): Promise<{ ok: boolean; source: "local"; ref: string; note?: string }> {
 	const localPackage = findLocalServicePackage(name, repoDir);

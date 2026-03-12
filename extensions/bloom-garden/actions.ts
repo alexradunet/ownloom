@@ -70,8 +70,8 @@ export function handleSkillCreate(bloomDir: string, params: { name: string; desc
 	}
 
 	fs.mkdirSync(skillDir, { recursive: true });
-	const frontmatter = `---\nname: ${params.name}\ndescription: ${params.description}\n---\n\n`;
-	fs.writeFileSync(filepath, frontmatter + params.content);
+	const content = stringifyFrontmatter({ name: params.name, description: params.description }, `\n${params.content}\n`);
+	fs.writeFileSync(filepath, content);
 
 	return {
 		content: [{ type: "text" as const, text: `created skill: ${params.name} at ${filepath}` }],

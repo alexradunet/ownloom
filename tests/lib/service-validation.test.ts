@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commandMissingError, validatePinnedImage, validateServiceName } from "../../lib/services-validation.js";
+import { validatePinnedImage, validateServiceName } from "../../lib/services-validation.js";
 
 // ---------------------------------------------------------------------------
 // validateServiceName
@@ -54,30 +54,5 @@ describe("validatePinnedImage", () => {
 
 	it("accepts LATEST (case-insensitive rejection)", () => {
 		expect(validatePinnedImage("ghcr.io/foo/bar:LATEST")).not.toBeNull();
-	});
-});
-
-// ---------------------------------------------------------------------------
-// commandMissingError
-// ---------------------------------------------------------------------------
-describe("commandMissingError", () => {
-	it("detects ENOENT", () => {
-		expect(commandMissingError("Error: ENOENT: no such file")).toBe(true);
-	});
-
-	it("detects 'not found'", () => {
-		expect(commandMissingError("command not found")).toBe(true);
-	});
-
-	it("detects 'No such file'", () => {
-		expect(commandMissingError("No such file or directory")).toBe(true);
-	});
-
-	it("returns false for success", () => {
-		expect(commandMissingError("success")).toBe(false);
-	});
-
-	it("returns false for generic error", () => {
-		expect(commandMissingError("exit code 1")).toBe(false);
 	});
 });

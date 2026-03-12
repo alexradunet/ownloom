@@ -11,8 +11,6 @@ import { loadBridgeCatalog } from "../../lib/services-catalog.js";
 import { validateServiceName } from "../../lib/services-validation.js";
 import { errorResult } from "../../lib/shared.js";
 
-const QUADLET_DIR = getQuadletDir();
-
 /** Generate the Quadlet .container unit content for a bridge. */
 function bridgeContainerUnit(name: string, image: string, healthPort: number, configDir: string): string {
 	return [
@@ -99,8 +97,8 @@ export async function handleBridgeCreate(
 	}
 
 	// Write Quadlet container unit
-	mkdirSync(QUADLET_DIR, { recursive: true });
-	const unitPath = join(QUADLET_DIR, `bloom-bridge-${params.name}.container`);
+	mkdirSync(getQuadletDir(), { recursive: true });
+	const unitPath = join(getQuadletDir(), `bloom-bridge-${params.name}.container`);
 	writeFileSync(unitPath, bridgeContainerUnit(params.name, image, health_port, configDir));
 
 	// Reload systemd and start
@@ -150,7 +148,7 @@ export async function handleBridgeRemove(
 	const guard = validateServiceName(params.name);
 	if (guard) return errorResult(guard);
 
-	const unitPath = join(QUADLET_DIR, `bloom-bridge-${params.name}.container`);
+	const unitPath = join(getQuadletDir(), `bloom-bridge-${params.name}.container`);
 
 	// Stop the service (best-effort — may already be stopped)
 	await run("systemctl", ["--user", "stop", `bloom-bridge-${params.name}.service`], signal);

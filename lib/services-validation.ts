@@ -47,7 +47,7 @@ export function validatePinnedImage(image: string): string | null {
 }
 
 /** Check if an error message indicates a missing command (ENOENT, not found, etc.). */
-export function commandMissingError(text: string): boolean {
+function commandMissingError(text: string): boolean {
 	return /ENOENT|not found|No such file/i.test(text);
 }
 
