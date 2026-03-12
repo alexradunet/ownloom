@@ -46,26 +46,27 @@ COPY cinny-config.json /srv/cinny/config.json
 
 ## Caddyfile
 
+Gateway uses `Network=host` so it can reach localhost-bound backends directly.
+
 ```
-:80 {
-    # Matrix API — use `handle` (not `handle_path`) to preserve /_matrix prefix
+:18810 {
+    # Matrix API — preserve /_matrix prefix for Continuwuity
     handle /_matrix/* {
-        reverse_proxy host.containers.internal:6167
+        reverse_proxy localhost:6167
     }
 
-    # Well-known for Matrix client discovery
-    handle /.well-known/matrix/* {
-        respond /client `{"m.homeserver": {"base_url": "/"}}` 200 {
-            header Content-Type application/json
-        }
+    # Well-known for Matrix client discovery (same-origin base URL)
+    handle /.well-known/matrix/client {
+        header Content-Type application/json
+        respond `{"m.homeserver": {"base_url": "/"}}` 200
     }
 
-    # WebDAV — `handle_path` strips /webdav prefix (dufs expects root paths)
+    # WebDAV — strip /webdav prefix (dufs expects root paths)
     handle_path /webdav/* {
-        reverse_proxy host.containers.internal:5000
+        reverse_proxy localhost:5000
     }
 
-    # Default: Cinny web client
+    # Default: Cinny web client (SPA with fallback)
     handle {
         root * /srv/cinny
         file_server
@@ -91,10 +92,9 @@ COPY cinny-config.json /srv/cinny/config.json
 ## Quadlet Unit
 
 `services/gateway/quadlet/bloom-gateway.container` replaces `bloom-cinny.container`:
-- Same port: 18810 mapped to container port 80
-- Bridged networking with `PublishPort=18810:80` (same as current bloom-cinny)
-- `host.containers.internal` resolves to host (Podman 4.1+, shipped with Fedora 42)
-- Health check: `curl -sf http://localhost:80/ || exit 1`
+- Same port: 18810 (Caddy listens directly on host port via `Network=host`)
+- Host networking required so gateway can reach localhost-bound backends (Continuwuity :6167, dufs :5000)
+- Health check: `wget -qO- http://localhost:18810/ || exit 1`
 - Memory limit: 128m (increased from 64m — Caddy uses more than static nginx due to reverse proxy buffers)
 
 ## Files to Create
