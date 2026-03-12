@@ -50,7 +50,7 @@ graph TB
         end
 
         subgraph "Service Containers (Podman Quadlet)"
-            cinny[bloom-cinny<br/>Cinny Web Client :18810]
+            gateway[bloom-gateway<br/>Caddy Gateway :18810]
             dufs[bloom-dufs<br/>WebDAV :5000]
             bridges[mautrix bridges<br/>WhatsApp, Telegram, Signal]
         end
@@ -188,7 +188,7 @@ graph LR
 
 | Service | Category | Port | Type | Resources |
 |---------|----------|------|------|-----------|
-| bloom-cinny | communication | 18810 | Podman Quadlet | 64MB RAM |
+| bloom-gateway | communication | 18810 | Podman Quadlet | 64MB RAM |
 | bloom-dufs | sync | 5000 | Podman Quadlet | 64MB RAM |
 | bloom-matrix | communication | 6167 | Native systemd | 512MB RAM |
 | netbird | networking | — | System RPM | 256MB RAM |

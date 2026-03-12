@@ -25,7 +25,7 @@ Use `bridge_create(protocol)` to set up a bridge. Pi will:
 
 ## Authentication
 
-After creating a bridge, open Cinny at `http://<hostname>/cinny` and look for the bridge bot room. Follow the bot's instructions:
+After creating a bridge, open Cinny at `http://<hostname>/` and look for the bridge bot room. Follow the bot's instructions:
 - **QR code bridges** (WhatsApp, Signal): Scan the QR code with your phone
 - **Phone code bridges** (Telegram): Enter your phone number, then the verification code
 

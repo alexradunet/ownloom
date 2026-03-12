@@ -66,7 +66,7 @@ Use as a template for frontmatter, Quadlet layout, health checks, and local inst
 
 | Service | Category | Port | Description |
 |---------|----------|------|-------------|
-| `cinny` | communication | 18810 | Cinny Matrix web client |
+| `gateway` | communication | 18810 | Caddy gateway (serves Cinny, Matrix well-known, and routes) |
 | `dufs` | sync | 5000 | WebDAV file server via dufs |
 
 **Note:** Matrix (Continuwuity) and NetBird are OS-level infrastructure baked into the image, not container services.

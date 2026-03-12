@@ -83,7 +83,7 @@ Container services:
 
 | Service | What | Type |
 |---------|------|------|
-| `bloom-cinny` | Cinny Matrix web client | Podman Quadlet |
+| `bloom-gateway` | Caddy gateway (Cinny web client, Matrix well-known, service routes) | Podman Quadlet |
 | `bloom-dufs` | WebDAV file server | Podman Quadlet |
 
 ### 🪞 Persona

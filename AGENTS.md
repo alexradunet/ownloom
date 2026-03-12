@@ -245,7 +245,7 @@ Canonical metadata for automation lives in `services/catalog.yaml`.
 
 | Service | Category | Port | Subdomain | Type |
 |---------|----------|------|-----------|------|
-| `bloom-cinny` | communication | 18810 | `cinny.bloom.mesh` | Podman Quadlet |
+| `bloom-gateway` | communication | 18810 | `gateway.bloom.mesh` | Podman Quadlet |
 | `bloom-dufs` | sync | 5000 | `dufs.bloom.mesh` | Podman Quadlet |
 
 ### Bridges (on-demand via `bridge_create`)
