@@ -1,6 +1,12 @@
 # Source .bashrc for env vars (BLOOM_DIR, PATH, etc.)
 [ -f ~/.bashrc ] && . ~/.bashrc
 
+# Auto-launch Zellij on interactive SSH login (skip if escape hatch or already inside Zellij)
+# Guards: interactive TTY, SSH session, not already in Zellij, no escape hatch env var
+if [ -t 0 ] && [ -n "$SSH_CONNECTION" ] && [ -z "$ZELLIJ" ] && [ -z "$BLOOM_NO_ZELLIJ" ]; then
+  exec zellij attach bloom --create --layout bloom
+fi
+
 # Start Pi on interactive login (only one instance — atomic mkdir lock)
 # The pi-daemon runs independently via systemd — no stop/start needed.
 if [ -t 0 ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.bloom-pi-session 2>/dev/null; then
