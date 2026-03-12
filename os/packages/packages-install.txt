@@ -1,0 +1,45 @@
+# System essentials
+sudo
+openssl
+curl
+wget
+unzip
+jq
+
+# Development tools
+git
+git-lfs
+ripgrep
+fd-find
+bat
+htop
+just
+ShellCheck
+tmux
+
+# Runtime
+nodejs
+npm
+libatomic
+
+# Container tooling
+podman
+buildah
+skopeo
+oras
+
+# VM testing
+qemu-system-x86
+edk2-ovmf
+
+# Network & remote access
+openssh-server
+openssh-clients
+firewalld
+chromium
+
+# VS Code (repo added by repos.sh)
+code
+
+# Mesh networking (repo added by repos.sh)
+netbird
