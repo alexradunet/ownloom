@@ -1,5 +1,0 @@
-{
-	"defaultHomeserver": 0,
-	"homeserverList": ["http://localhost:6167"],
-	"allowCustomHomeservers": true
-}
