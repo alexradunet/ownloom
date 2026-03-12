@@ -3,7 +3,7 @@
 image := env("BLOOM_IMAGE", "localhost/bloom-os:latest")
 output := "os/output"
 bib := "quay.io/centos-bootc/bootc-image-builder:latest"
-bib_config := "os/bib-config.toml"
+bib_config := "os/disk_config/bib-config.toml"
 podman := env("BLOOM_PODMAN", "sudo podman")
 storage := env("BLOOM_STORAGE", "/var/lib/containers/storage")
 ovmf := "/usr/share/edk2/ovmf/OVMF_CODE.fd"
@@ -102,6 +102,10 @@ iso-production: build _require-bib-config
 deps:
 	sudo dnf install -y just podman qemu-system-x86 edk2-ovmf
 
+# Lint OS build scripts with shellcheck
+lint-os:
+	shellcheck os/build_files/*.sh os/packages/repos.sh
+
 # Guard: ensure bib-config.toml exists before image generation
 _require-bib-config:
-	@test -f {{ bib_config }} || (echo "Error: {{ bib_config }} not found. Copy os/bib-config.example.toml to os/bib-config.toml and set your password." && exit 1)
+	@test -f {{ bib_config }} || (echo "Error: {{ bib_config }} not found. Copy os/disk_config/bib-config.example.toml to {{ bib_config }} and set your password." && exit 1)
