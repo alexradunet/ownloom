@@ -383,6 +383,63 @@ step_git() {
 	mark_done git
 }
 
+step_ai() {
+	echo ""
+	echo "--- AI Provider ---"
+	echo "Pi needs an AI model to work. You can set up an API key now,"
+	echo "or skip and use /login inside Pi to authenticate via browser."
+	echo ""
+	echo "Supported API key providers:"
+	echo "  1) Anthropic     (ANTHROPIC_API_KEY)"
+	echo "  2) OpenAI        (OPENAI_API_KEY)"
+	echo "  3) Google Gemini (GEMINI_API_KEY)"
+	echo "  4) OpenRouter    (OPENROUTER_API_KEY)"
+	echo "  s) Skip — configure later with /login or /model"
+	echo ""
+
+	local choice
+	read -rp "Choose [1-4, s]: " choice
+
+	if [[ "${choice,,}" == "s" || -z "$choice" ]]; then
+		echo ""
+		echo "Skipped. After setup, run /login in Pi to authenticate,"
+		echo "then /model to select your preferred AI model."
+		mark_done_with ai "skipped"
+		return
+	fi
+
+	local provider key_name auth_key
+	case "$choice" in
+		1) provider="anthropic"; key_name="Anthropic" ;;
+		2) provider="openai"; key_name="OpenAI" ;;
+		3) provider="google"; key_name="Google Gemini" ;;
+		4) provider="openrouter"; key_name="OpenRouter" ;;
+		*) echo "Invalid choice. You can configure later with /login."; mark_done_with ai "skipped"; return ;;
+	esac
+
+	read -rsp "${key_name} API key: " auth_key
+	echo ""
+
+	if [[ -z "$auth_key" ]]; then
+		echo "No key entered. You can configure later with /login."
+		mark_done_with ai "skipped"
+		return
+	fi
+
+	# Write auth.json
+	mkdir -p "$PI_DIR/agent"
+	cat > "$PI_DIR/agent/auth.json" <<-AUTH
+	{
+	  "${provider}": "${auth_key}"
+	}
+	AUTH
+	chmod 600 "$PI_DIR/agent/auth.json"
+
+	echo "${key_name} API key saved."
+	echo "Use /model in Pi to select your preferred model."
+	mark_done_with ai "$provider"
+}
+
 step_services() {
 	echo ""
 	echo "--- Optional Services ---"
@@ -440,6 +497,8 @@ finalize() {
 	matrix_user=$(read_checkpoint_data matrix)
 	local services
 	services=$(read_checkpoint_data services)
+	local ai_provider
+	ai_provider=$(read_checkpoint_data ai)
 
 	echo ""
 	echo "========================================="
@@ -449,8 +508,17 @@ finalize() {
 	[[ -n "$matrix_user" ]] && echo "  Matrix user: @${matrix_user}:bloom"
 	echo "  Services:${services:-none}"
 	echo ""
-	echo "  Starting Pi — your AI companion will"
-	echo "  help you personalize your experience."
+	echo "  Starting Pi — your AI companion."
+	if [[ "$ai_provider" == "skipped" ]]; then
+		echo ""
+		echo "  To get started in Pi:"
+		echo "    /login  — authenticate with your AI provider"
+		echo "    /model  — select your preferred model"
+	else
+		echo ""
+		echo "  AI provider: ${ai_provider}"
+		echo "  Use /model in Pi to select a model."
+	fi
 	echo "========================================="
 	echo ""
 }
@@ -472,6 +540,7 @@ main() {
 	step_done netbird  || step_netbird
 	step_done matrix   || step_matrix
 	step_done git      || step_git
+	step_done ai       || step_ai
 	step_done services || step_services
 
 	finalize
