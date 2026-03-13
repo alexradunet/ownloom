@@ -1,60 +1,77 @@
-# piBloom First-Boot Setup
+# Bloom First-Boot Setup
 
-> [Emoji Legend](LEGEND.md)
+> 📖 [Emoji Legend](LEGEND.md)
 
-This guide describes the first-boot experience on a freshly installed Bloom OS machine.
+Bloom's first-boot experience is split into two phases.
 
-```mermaid
-flowchart TD
-    Start([First Boot]) --> Wizard[bloom-wizard.sh]
-    Wizard --> Password[1. Change password]
-    Password --> Network[2. Network check]
-    Network --> NetBird[3. NetBird mesh setup]
-    NetBird --> Matrix[4. Matrix accounts]
-    Matrix --> Git[5. Git identity]
-    Git --> Services[6. Optional services]
-    Services --> Pi[Pi starts]
-    Pi --> Persona[7. Persona customization]
-    Persona --> Done([Ready])
-```
+## Phase 1: Bash Wizard
 
-## Phase 1: Wizard (bash script)
+`bloom-wizard.sh` handles deterministic machine setup on first interactive login.
 
-The `bloom-wizard.sh` script runs automatically on first interactive login. It handles deterministic setup steps using `read -p` prompts. Each step is checkpointed — if interrupted, it resumes on next login.
+Current responsibilities:
 
-1. **Password** — change the default password
-2. **Network** — verify connectivity, connect to WiFi if needed
-3. **NetBird** — provide a setup key from app.netbird.io
-4. **Matrix** — choose a username, accounts created automatically
-5. **Git identity** — name and email for commits
-6. **Services** — optional dufs (WebDAV)
+1. password change and basic connectivity checks
+2. NetBird enrollment
+3. primary Matrix account bootstrap
+4. Git identity setup
+5. optional bundled service choices
 
-After completion, the wizard touches `~/.bloom/.setup-complete` and starts Pi.
+The wizard writes completion state under `~/.bloom/` and hands control back to Pi when finished.
 
-## Phase 2: Pi (AI companion)
+## Phase 2: Pi Persona Step
 
-Pi starts after the wizard and guides persona customization:
+After the wizard is complete, `bloom-setup` tracks a single Pi-side setup step:
 
-7. **Persona** — Pi asks about preferences (name, formality, values, reasoning style) and updates `~/Bloom/Persona/` files
+- `persona`
 
-## Post-Setup
+That step is recorded in `~/.bloom/setup-state.json` and completed when Pi finishes the persona customization flow.
 
-### Service management
+Relevant files:
 
-Use Pi tools for additional services:
-- `service_install(name="<service>")` — install from bundled packages
-- `manifest_apply(install_missing=true)` — apply manifest declaratively
-- `bridge_create(bridge="whatsapp")` — connect messaging bridges
+| Path | Purpose |
+|------|---------|
+| `~/.bloom/.setup-complete` | wizard complete sentinel |
+| `~/.bloom/setup-state.json` | Pi-side setup state |
+| `~/.bloom/wizard-state/persona-done` | persona step complete marker |
 
-### Health check
+## Tools
 
-- `system_health` — composite health check
-- `manifest_show` — show installed services
-- `manifest_sync(mode="detect")` — sync manifest with actual state
+`bloom-setup` provides:
+
+- `setup_status`
+- `setup_advance`
+- `setup_reset`
+
+Current behavior:
+
+- before the wizard completes, `setup_status` reports that Pi is waiting for the wizard
+- after the wizard completes, Pi injects persona-step guidance until the `persona` step is marked complete
+
+## Recovery
+
+If setup state is corrupt:
+
+- `bloom-setup` backs up a corrupt `setup-state.json`
+- a fresh initial state is created automatically
+
+If you want to restart only the Pi-side step:
+
+- use `setup_reset(step="persona")`
+
+If you want to restart all Pi-side setup state:
+
+- use `setup_reset()` with no step
+
+## After Setup
+
+Typical next actions:
+
+- inspect host status with `system_health`
+- inspect service state with `manifest_show`
+- install or apply services with `service_install` or `manifest_apply`
+- create additional Matrix agents with `agent_create`
 
 ## Related
 
-- [Emoji Legend](LEGEND.md) — Notation reference
-- [Quick Deploy](quick_deploy.md) — OS build and deployment
-- [Fleet PR Workflow](fleet-pr-workflow.md) — Fleet contribution and PR workflow
-- [AGENTS.md](../AGENTS.md) — Extension, tool, and hook reference
+- [docs/quick_deploy.md](quick_deploy.md)
+- [AGENTS.md](../AGENTS.md)

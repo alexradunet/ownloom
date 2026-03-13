@@ -1,96 +1,78 @@
 # CLAUDE.md
 
+Bloom contributor quick reference.
+
 ## Project
 
-Bloom — Pi-native OS platform on Fedora bootc. Pi IS the product. Bloom is the OS concept — a Fedora bootc image that makes Pi a first-class citizen with extensions teaching it about its host.
-The bloom word comes from the concept that you "plant" your mini-pc and then in time it grows and blooms with you.
+Bloom is a Pi package plus Fedora bootc image. This repo contains:
 
-## Architecture
+- Pi extensions and bundled skills
+- the Bloom room daemon
+- bundled service packages
+- the OS image build and first-boot assets
 
-See `ARCHITECTURE.md` for the full rulebook (extension structure, lib/ organization, service conventions, enforcement checklist).
+Canonical docs:
 
-Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension → Service**.
+- structure and architectural rules: `ARCHITECTURE.md`
+- tools, hooks, paths, daemon, and feature reference: `AGENTS.md`
+- service and packaging model: `docs/service-architecture.md`
 
-- **Pi package**: Extensions + skills bundled as a Pi package (`pi install ./`)
-- **Extensions**: `extensions/bloom-{name}/` — directory per extension with `index.ts` (wiring), `actions.ts` (handlers), `types.ts`
-- **lib/**: Pure logic organized by capability (`filesystem.ts`, `shared.ts`, `matrix.ts`, `exec.ts`, etc.)
-- **Skills**: `skills/` — 6 Pi skill markdown files (first-boot, os-operations, object-store, service-management, self-evolution, recovery)
-- **Services**: `services/` — containerized services (dufs, code-server). Scaffolded from template. Matrix and NetBird are native OS services. Bridge metadata in `services/catalog.yaml`
-- **Persona**: `persona/` — OpenPersona 4-layer identity (SOUL.md, BODY.md, FACULTY.md, SKILL.md) — seeded to `~/Bloom/` on first run
-- **Guardrails**: `guardrails.yaml` — bash patterns blocked by bloom-persona (rm -rf, mkfs, dd, fork bombs, eval, pipe-to-shell, force-push, etc.)
-- **User home**: `$HOME` — the user's space, accessible via dufs WebDAV
-- **Bloom directory**: `~/Bloom/` — persona, skills, evolutions, guardrails, objects (synced). Env override: `BLOOM_DIR`
-- **Pi state**: `~/.pi/` — internal agent state, sessions, settings (NOT synced)
-- **OS image**: `os/Containerfile` — Fedora bootc 42
-
-## Key Paths
-
-| Path | Purpose | Synced |
-|------|---------|--------|
-| `$HOME` | User's home directory | Yes (dufs WebDAV) |
-| `~/Bloom/` | Bloom config: persona, skills, evolutions, guardrails | Yes |
-| `~/Bloom/Persona/` | Active persona files | Yes |
-| `~/Bloom/Skills/` | Installed skills | Yes |
-| `~/Bloom/Evolutions/` | Proposed persona changes | Yes |
-| `~/Bloom/Objects/` | Tracked objects (notes, tasks, etc.) | Yes |
-| `~/.pi/` | Pi agent state, sessions | No |
-| `~/.pi/bloom-context.json` | Compaction context persistence | No |
-| `~/.config/containers/systemd/` | Quadlet container units | No |
-| `~/.pi/matrix-credentials.json` | Pi's Matrix login credentials | No |
-| `/var/lib/continuwuity/` | Matrix homeserver data | No |
-| `/etc/bloom/appservices/` | Bridge appservice registrations | No |
-| `~/.pi/pi-daemon/rooms.json` | Room-to-session mapping for pi-daemon | No |
-
-## Build and Test
+## Daily Commands
 
 ```bash
-npm install                    # install dev deps
-npm run build                  # tsc --build
-npm run check                  # biome lint + format check
-npm run check:fix              # biome auto-fix
-npm run test                   # vitest run
-npm run test:watch             # vitest watch mode
-npm run test:coverage          # vitest with v8 coverage (lib/ 55% lines, extensions/ 15% lines)
+npm install
+npm run build
+npm run check
+npm run test
+npm run test:coverage
 ```
 
-### OS Image Build & VM Testing
-
-Requires: `sudo dnf install just qemu-system-x86 edk2-ovmf`
+OS image workflow:
 
 ```bash
-just build                     # podman build container image
-just qcow2                     # generate qcow2 disk image (BIB)
-just iso                       # generate anaconda-iso installer (BIB)
-just vm                        # boot qcow2 in QEMU (serial + SSH :2222)
-just vm-ssh                    # ssh -p 2222 pi@localhost
-just vm-kill                   # stop running VM
-just clean                     # remove os/output/
+just build
+just qcow2
+just iso
+just vm
+just vm-ssh
+just vm-kill
+just clean
 ```
 
-## Conventions
+## Current Conventions
 
-- **TypeScript**: strict, ES2022, NodeNext
-- **Formatting**: Biome (tabs, double quotes, 120 line width)
-- **Extensions**: `export default function(pi: ExtensionAPI) { ... }` pattern
-- **Skills**: SKILL.md with frontmatter (name, description)
-- **Containers**: `Containerfile` (not Dockerfile), `podman` (not docker)
-- **Services**: Quadlet units named `bloom-{name}`, host networking, health checks required
-- **Objects**: Markdown files with YAML frontmatter in ~/Bloom/Objects/
+- use `Containerfile`, never `Dockerfile`
+- use `podman`, never `docker`
+- keep docs aligned with current code, not historical intent
+- delete stale docs and dead files instead of preserving them as passive clutter
+- update root docs and affected guides whenever tools, hooks, setup flow, service packaging, or daemon behavior changes
 
-## Documentation Workflow
+## Important Paths
 
-When changing code:
-1. TDD — Write failing test first
-2. Implement — Make it pass
-3. JSDoc — Update/add JSDoc on changed exports
-4. Docs — If change affects tools, hooks, or architecture, update the relevant doc
-5. Links — If adding a new doc, add cross-references from related docs
+| Path | Purpose |
+|------|---------|
+| `extensions/` | Pi extensions |
+| `daemon/` | room daemon |
+| `lib/` | shared helpers |
+| `services/` | packaged services and template |
+| `skills/` | bundled skills |
+| `persona/` | default persona layers |
+| `os/` | bootc image build assets |
+| `tests/` | test suite |
+| `docs/` | live docs only |
 
-Canonical locations: tool/hook reference → `AGENTS.md`, architecture → `docs/service-architecture.md`, emoji legend → `docs/LEGEND.md`
+## Current Runtime Paths
+
+| Path | Purpose |
+|------|---------|
+| `~/Bloom/` | user-facing Bloom state |
+| `~/.pi/` | Pi internal state |
+| `~/.bloom/pi-bloom` | local repo clone used by repo/dev tools |
+| `~/.config/containers/systemd/` | installed Quadlet units |
 
 ## Do Not
 
-- Add eslint, prettier, or formatting tools besides Biome
-- Use `Dockerfile` naming — always `Containerfile`
-- Use `docker` CLI — always `podman`
-- Bundle Pi SDK as a dependency — it must be a `peerDependency` (runtime VALUE imports like StringEnum, Type are fine)
+- keep stale plan/spec archives in the live docs tree
+- describe `lib/` as purely functional when the current module is host-aware
+- document deleted daemon components such as `session-pool.ts` or `room-registry.ts`
+- claim a workflow is template- or policy-driven unless the code actually does that today

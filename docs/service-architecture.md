@@ -1,216 +1,152 @@
 # Service Architecture
 
-> [Emoji Legend](LEGEND.md)
+> 📖 [Emoji Legend](LEGEND.md)
 
-Bloom extends Pi's capabilities through three mechanisms, each suited to different needs. When Pi detects a capability gap or the user requests a new feature, choose the lightest mechanism that fits.
+This document describes Bloom's current capability model and the service packaging approach that exists in this
+repository today.
 
-## Extensibility Hierarchy
+## Capability Hierarchy
 
-```mermaid
-graph TD
-    gap[Capability Gap Detected] --> q1{Needs code<br/>execution or<br/>long-running process?}
-    q1 -->|No| skill[Skill<br/>SKILL.md]
-    q1 -->|Yes| q2{Needs direct access<br/>to Pi session?}
-    q2 -->|Yes| ext[Extension<br/>TypeScript]
-    q2 -->|No| svc[Service<br/>Container]
+Use the lightest mechanism that solves the problem.
 
-    skill --> skill_desc["Markdown file with instructions<br/>Cheapest to create<br/>No code, just knowledge"]
-    ext --> ext_desc["In-process TypeScript<br/>Full Pi API access<br/>Commands, tools, events"]
-    svc --> svc_desc["Containerized workload<br/>Isolated, resource-limited<br/>HTTP interaction"]
+| Layer | When to use it | Current examples |
+|------|-----------------|------------------|
+| Skill | Pi needs instructions, reference material, or a repeatable procedure | `first-boot`, `recovery`, `service-management` |
+| Extension | Pi needs tools, hooks, commands, or direct session integration | `bloom-os`, `bloom-services`, `bloom-garden` |
+| Service | a standalone workload should run outside the Pi process | `dufs`, `code-server`, Matrix bridges |
 
-    style skill fill:#d5f5d5
-    style ext fill:#d5d5f5
-    style svc fill:#f5d5d5
-```
+OS-level infrastructure sits beside this model rather than inside it:
 
-### When to Use What
+- `bloom-matrix.service`
+- `netbird.service`
+- `pi-daemon.service`
 
-| Mechanism | Use When | Examples | Cost |
-|-----------|----------|----------|------|
-| **Skill** | Pi needs knowledge or a procedure to follow | meal-planning, troubleshooting guides, API references | Zero — just a markdown file |
-| **Extension** | Pi needs to register commands, tools, or react to session events | bloom-objects (object store), bloom-garden (Bloom directory) | Low — TypeScript, runs in-process |
-| **Service** | A standalone process needs to run independently of Pi's session | dufs (WebDAV), mautrix bridges (WhatsApp, Telegram) | Medium — systemd unit, resource allocation |
+## Skills
 
-**Always prefer the lighter option.** A skill that teaches Pi to call an existing API is better than an extension wrapping that API, which is better than a service re-implementing it.
+Bundled skill directories in `skills/` are seeded into `~/Bloom/Skills/` by `bloom-garden`:
 
-## System Overview
+- `first-boot`
+- `object-store`
+- `os-operations`
+- `recovery`
+- `self-evolution`
+- `service-management`
 
-```mermaid
-graph TB
-    subgraph "Bloom OS (Fedora bootc)"
-        subgraph "OS-Level Infrastructure"
-            matrix_native[bloom-matrix.service<br/>Continuwuity Homeserver :6167]
-            netbird[netbird.service<br/>Mesh VPN]
-        end
+Skills can also be created dynamically through `skill_create`.
 
-        subgraph "Pi Agent Process"
-            persona[bloom-persona]
-            garden[bloom-garden]
-            objects[bloom-objects]
-        end
+## Extensions
 
-        subgraph "Service Containers (Podman Quadlet)"
-            dufs[bloom-dufs<br/>WebDAV :5000]
-            bridges[mautrix bridges<br/>WhatsApp, Telegram, Signal]
-        end
-    end
+Extensions are the Pi-facing integration layer. They register:
 
-    bridges <-->|Appservice API| matrix_native
-    netbird <-->|WireGuard| netbird_cloud[NetBird Cloud]
-    dufs -->|WebDAV| devices[Other Devices]
+- tools
+- session hooks
+- commands
+- resource discovery
 
-    style persona fill:#e8d5f5
-    style garden fill:#d5f5e8
-    style objects fill:#d5e8f5
-    style matrix_native fill:#f5f5d5
-```
+Current extension families:
 
-## The Three Layers
+| Extension | Main responsibility |
+|-----------|---------------------|
+| `bloom-persona` | persona injection, guardrails, compacted context |
+| `bloom-audit` | audit logging and review |
+| `bloom-os` | bootc, container, systemd, and health workflows |
+| `bloom-repo` | repo bootstrap, sync, and PR creation |
+| `bloom-services` | service and bridge lifecycle |
+| `bloom-objects` | object store |
+| `bloom-garden` | Bloom directory, skills, agents, blueprint seeding |
+| `bloom-dev` | on-device dev workflows |
+| `bloom-setup` | persona-step progress after the first-boot wizard |
 
-| Layer | Mechanism | Lifecycle | Communication | Created By |
-|-------|-----------|-----------|---------------|------------|
-| **Skills** | Markdown files (SKILL.md) | Discovered at session start | Pi reads and follows instructions | Pi (via `skill_create`) or developer |
-| **Extensions** | In-process TypeScript | Loaded with Pi session | Direct API (ExtensionAPI) | Developer (requires code review + PR) |
-| **Services** | Containers (Podman Quadlet) | systemd-managed, independent | HTTP, Matrix appservice API | Pi (via self-evolution) or developer |
+## Service Packages
 
-### Why Three Layers?
+Service packages are the optional container workloads shipped in `services/`.
 
-- **Skills** are pure knowledge — procedures, API references, troubleshooting guides. Pi reads them and acts. No code, no process, no resources. Pi can create these autonomously.
-- **Extensions** need direct access to Pi's session (send messages, register commands, access context). They run in-process and require TypeScript. These are core platform code.
-- **Services** are standalone workloads (file sync, messaging bridges) that run as containers.
+### Package Layout
 
-### Subdomain Routing Layer
+Typical package:
 
-When a service is installed via `service_install`, Bloom automatically creates subdomain routing:
-
-1. **NetBird DNS** — Creates an A record `{name}.bloom.mesh` pointing to the device's mesh IP in a NetBird Custom DNS Zone. Requires `NETBIRD_API_TOKEN` in `~/.config/bloom/netbird.env`.
-
-Services use host networking and are accessible directly at `http://{name}.bloom.mesh:{port}` from any mesh peer. No reverse proxy is needed.
-
-**Graceful degradation**: If no NetBird token is configured, DNS is skipped. Services remain accessible via the device's mesh IP and port directly.
-
-**Idempotency**: Zone and records are checked before creation. Zone ID is cached in `~/.config/bloom/netbird-zone.json` to avoid repeated API calls.
-
-### OS-Level Infrastructure
-
-Some services are foundational to the system's identity and run as native systemd services baked into the OS image:
-
-| Unit | Purpose |
-|------|---------|
-| `bloom-matrix.service` | Continuwuity Matrix homeserver — communication backbone |
-| `netbird.service` | Mesh networking — device reachability |
-
-These are analogous to systemd, podman, and SSH — they're part of the OS, not optional services.
-
-### The `bloom-` Prefix
-
-Bloom-managed services use a `bloom-` prefix on their **unit names** (e.g., `bloom-dufs`). This is a management namespace — it does NOT mean the underlying image is Bloom-specific.
-
-| Unit Name | Type | Image / Runtime | Bloom-specific? |
-|-----------|------|-----------------|-----------------|
-| `bloom-dufs` | Podman Quadlet (user) | `docker.io/sigoden/dufs:latest` | No — upstream image |
-| `bloom-matrix` | Native systemd service | Continuwuity binary in OS image | Part of OS |
-| `netbird` | System RPM service | NetBird package | No — upstream RPM |
-
-The prefix enables:
-- `systemctl --user status bloom-*` — list all Bloom-managed user services
-- Clear separation from user-installed services
-
-## Local Package Installation
-
-Services are installed from bundled local packages in `services/{name}/`. Each package contains Quadlet container units and a SKILL.md file.
-
-### Package Format
-
-```
+```text
 services/{name}/
-├── quadlet/
-│   ├── bloom-{name}.container    # Podman Quadlet unit
-│   └── bloom-{name}-*.volume     # Volume definitions
-└── SKILL.md                      # Skill file (frontmatter + API docs)
+  SKILL.md
+  quadlet/
+    bloom-{name}.container
+  Containerfile          optional, required for locally built images
 ```
 
-### Service Catalog
+`service_install` copies package assets into the user's runtime locations:
 
-`services/catalog.yaml` is the declarative metadata index:
+- Quadlet units to `~/.config/containers/systemd/`
+- socket units, when present, to `~/.config/systemd/user/`
+- `SKILL.md` to `~/Bloom/Skills/{name}/`
+- config files to `~/.config/bloom/`
 
-- `services:` — container service defaults (version, image, preflight requirements)
-- `bridges:` — mautrix bridge metadata (image, health_port)
+### Bundled Packages
 
-The `manifest_apply` tool uses the services catalog to auto-install missing services and enforce preflight checks.
+| Package | Image source | Notes |
+|---------|--------------|-------|
+| `dufs` | pinned upstream image | packaged network file server |
+| `code-server` | local image `localhost/bloom-code-server:latest` | built from `services/code-server/Containerfile` when needed |
+| `_template` | scaffold source | basis for new service packages |
 
-## Service Lifecycle
+Reference-only infrastructure skill docs also live under `services/`:
 
-```mermaid
-stateDiagram-v2
-    [*] --> Installed: service_install (local package)
-    Installed --> Running: systemctl --user start
-    Running --> Stopped: systemctl --user stop
-    Stopped --> Running: systemctl --user start
-    Stopped --> Removed: Remove quadlet + skill files
-    Removed --> [*]
-    Running --> Removed: systemctl --user stop + remove files
+- `services/matrix/SKILL.md`
+- `services/netbird/SKILL.md`
 
-    note right of Installed
-        ~/.config/containers/systemd/bloom-{name}.container
-        ~/Bloom/Skills/{name}/SKILL.md
-    end note
-```
+### Catalog
 
-## File System Layout
+`services/catalog.yaml` is the machine-readable catalog used by Bloom:
 
-```mermaid
-graph LR
-    subgraph "Immutable OS Layer (/usr)"
-        bloom_pkg["/usr/local/share/bloom/<br/>Extensions + Skills + Persona"]
-        continuwuity["/usr/local/bin/continuwuity<br/>Matrix homeserver binary"]
-    end
+- `services:` contains package metadata such as version, category, image, port, and preflight commands
+- `bridges:` contains Matrix bridge image metadata
 
-    subgraph "User State (~)"
-        config["~/.config/containers/systemd/<br/>Installed Quadlet units"]
-        bloom_dir["~/Bloom/<br/>Persona, skills, objects"]
-        skills["~/Bloom/Skills/<br/>Installed service skills"]
-        pi_state["~/.pi/<br/>Pi agent state"]
-        matrix_creds["~/.pi/<br/>Matrix credentials, daemon state"]
-    end
+## Manifest Workflow
 
-    subgraph "System State"
-        matrix_data["/var/lib/continuwuity/<br/>Matrix homeserver data"]
-        nb_state["/var/lib/netbird/<br/>NetBird identity"]
-        appservices["/etc/bloom/appservices/<br/>Bridge registrations"]
-    end
+Bloom keeps desired service state in `~/Bloom/manifest.yaml`.
 
-    bloom_pkg --> config
-```
+Tools:
 
-## Available Services
+- `manifest_show`
+- `manifest_sync`
+- `manifest_set_service`
+- `manifest_apply`
 
-| Service | Category | Port | Type | Resources |
-|---------|----------|------|------|-----------|
-| bloom-dufs | sync | 5000 | Podman Quadlet | 64MB RAM |
-| bloom-matrix | communication | 6167 | Native systemd | 512MB RAM |
-| netbird | networking | — | System RPM | 256MB RAM |
+Current behavior:
 
-## Adding a New Service
+- `manifest_apply` can install missing packaged services
+- service state is reconciled through user systemd / Quadlet units
+- manifest entries may be updated by service installation and dependency installation flows
 
-1. Create `services/{name}/quadlet/bloom-{name}.container` with Quadlet conventions
-2. Create `services/{name}/SKILL.md` documenting the API and usage
-3. Test locally: copy to `~/.config/containers/systemd/`, reload, start
-4. Update the services table in `services/README.md` and `AGENTS.md`
+## Matrix Bridges
 
-### Quadlet Conventions Checklist
+Bridge lifecycle is managed through `bloom-services`.
 
-- [ ] Container name: `bloom-{name}`
-- [ ] Network: host networking
-- [ ] Health check defined (`HealthCmd`, `HealthInterval`, `HealthRetries`)
-- [ ] Logging: `LogDriver=journald`
-- [ ] Security: `NoNewPrivileges=true`
-- [ ] Restart policy: `on-failure` with `RestartSec=10`
-- [ ] Resource limits set (`--memory`)
-- [ ] `WantedBy=default.target` in `[Install]`
+Current supported bridge names from `services/catalog.yaml`:
+
+- `whatsapp`
+- `telegram`
+- `signal`
+
+Bridge creation currently:
+
+- writes a Quadlet unit
+- writes starter bridge config
+- points the bridge at the local Matrix homeserver
+- starts the bridge service
+
+## Daemon and Services
+
+The room daemon is not a service package. It is OS-level infrastructure that coordinates Pi RPC subprocesses for Matrix
+rooms.
+
+Keep this distinction clear:
+
+- daemon: core platform runtime
+- service packages: optional user workloads
 
 ## Related
 
-- [Emoji Legend](LEGEND.md) — Notation reference
-- [Supply Chain](supply-chain.md) — Artifact trust and releases
-- [Quick Deploy](quick_deploy.md) — OS build and deployment
+- [README.md](../README.md)
+- [ARCHITECTURE.md](../ARCHITECTURE.md)
+- [docs/supply-chain.md](supply-chain.md)
+- [services/README.md](../services/README.md)

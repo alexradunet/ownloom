@@ -1,100 +1,77 @@
-# Bloom OS Quick Deploy & Installation
+# Bloom OS Quick Deploy
 
 > 📖 [Emoji Legend](LEGEND.md)
 
-This guide covers the fastest dev path (QEMU) and production-style installation options.
+This guide matches the current `justfile`.
 
-```mermaid
-flowchart TD
-    Start([🚀 Deploy Bloom OS]) --> Q1{Development?}
-    Q1 -->|Yes| QEMU[💻 Option A: QEMU<br/>just build → just qcow2 → just vm]
-    Q1 -->|No| Q2{Bare metal / VM?}
-    Q2 -->|Yes| ISO[💻 Option B: Installer ISO<br/>just iso]
-    Q2 -->|No| Bootc[💻 Option C: bootc install<br/>Direct to disk]
-    QEMU --> Setup[🚀 First Boot Setup]
-    ISO --> Setup
-    Bootc --> Setup
-```
+## Prerequisites
 
-## Option A — QEMU (fastest for development)
-
-### 1) Install host dependencies (Fedora)
+Fedora host dependencies:
 
 ```bash
-sudo dnf install -y just qemu-system-x86 edk2-ovmf podman
+sudo dnf install -y just podman qemu-system-x86 edk2-ovmf
 ```
 
-### 2) Build Bloom OS image
+Create a local bootc-image-builder config before generating images:
+
+```bash
+cp os/disk_config/bib-config.example.toml os/disk_config/bib-config.toml
+```
+
+Edit `os/disk_config/bib-config.toml` with your desired password, SSH key, and optional customizations.
+
+## Fast Dev Path: QEMU
 
 ```bash
 just build
-```
-
-### 3) Generate VM disk (qcow2)
-
-```bash
 just qcow2
-```
-
-Output:
-
-- `os/output/qcow2/disk.qcow2`
-
-### 4) Boot VM
-
-```bash
 just vm
 ```
 
-Forwarded host ports:
+Important outputs:
 
-- `localhost:2222 -> guest:22` (SSH)
-- `localhost:5000 -> guest:5000` (dufs WebDAV)
+- image tag default: `localhost/bloom-os:latest`
+- qcow2 path: `os/output/qcow2/disk.qcow2`
 
-### 5) Log in
+Forwarded ports in `just vm`:
 
-Default user comes from `os/disk_config/bib-config.toml` (copied from `os/disk_config/bib-config.example.toml`):
+- `2222` -> guest SSH
+- `5000` -> `dufs`
+- `8080`
+- `8081`
+- `8888` -> guest port `80`
 
-- username: `pi`
-- SSH key auth: from `customizations.user.key`
+Access the VM:
 
-If you want password auth, configure it explicitly in your bootc-image-builder config and rebuild.
+```bash
+just vm-ssh
+```
 
-### 6) Run first-boot setup
-
-Follow the setup guide:
-
-- `docs/pibloom-setup.md`
-
-### 7) Stop VM
+Stop it:
 
 ```bash
 just vm-kill
 ```
 
----
+## ISO Build
 
-## Option B — Installer ISO (VM manager / bare metal)
-
-Build installer media:
+Build a local installer ISO:
 
 ```bash
 just iso
 ```
 
-Use ISO from `os/output/anaconda-iso/` as installation media.
-
-For OTA-oriented builds targeting GHCR image refs:
+Build a production-style ISO flow:
 
 ```bash
 just iso-production
 ```
 
----
+Both write outputs under `os/output/`.
 
-## Option C — Direct bootc install (advanced)
+## Direct bootc Install
 
-After building locally, install directly to a disk:
+For advanced manual installation after a local build:
 
 ```bash
 sudo bootc install to-disk /dev/sdX --source-imgref containers-storage:localhost/bloom-os:latest
@@ -102,19 +79,20 @@ sudo bootc install to-disk /dev/sdX --source-imgref containers-storage:localhost
 
 Replace `/dev/sdX` with the target disk.
 
----
-
-## Remote access (SSH)
-
-Bloom OS is accessed via SSH.
+## Related Commands
 
 ```bash
-# SSH into your Bloom (replace with your NetBird IP or hostname)
-ssh pi@<netbird-ip>
+just deps
+just clean
+just lint-os
 ```
 
-## Related
+## After Boot
 
-- [Emoji Legend](LEGEND.md) — Notation reference
-- [First Boot Setup](pibloom-setup.md) — Initial configuration guide
-- [Service Architecture](service-architecture.md) — Extensibility hierarchy details
+On first login:
+
+1. complete `bloom-wizard.sh`
+2. let Pi resume the persona step
+3. use `setup_status` if you need to inspect or resume the Pi-side setup state
+
+See [docs/pibloom-setup.md](pibloom-setup.md) for the full first-boot flow.

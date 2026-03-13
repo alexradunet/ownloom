@@ -1,209 +1,118 @@
-# piBloom
+# Bloom
 
 > 📖 [Emoji Legend](docs/LEGEND.md)
 
-A personal AI companion that lives on a quiet box on your shelf or on a repove VPS, your choice. piBloom is a Fedora bootc OS image that makes [Pi](https://github.com/nicholasgasior/pi-coding-agent) a first-class citizen — extending it with knowledge of its host, a persistent memory store, and a growing identity that evolves alongside you.
+Bloom is a Pi package and bootc-based OS image for running Pi as a personal, self-hosted companion on a Fedora host.
+This repository contains:
 
-You "plant" your mini-PC and over time it grows and blooms with you.
+- the Pi package: extensions, skills, persona blueprints, and bundled service packages
+- the Bloom OS image: `os/Containerfile`, systemd units, and first-boot tooling
+- the Matrix room daemon: a long-running service that bridges Matrix rooms to Pi RPC subprocesses
 
-## 🌱 What It Is
+## What Ships Today
 
-Bloom is a **Pi package** — a bundle of extensions, skills, and services that teach Pi about its environment. When installed on a Fedora bootc system, Pi becomes a sovereign personal AI that:
+Bloom currently provides:
 
-- **Remembers** — flat-file object store with YAML frontmatter in `~/Bloom/Objects/`
-- **Manages its own OS** — bootc updates, rollbacks, container lifecycle, systemd services
-- **Communicates** — Matrix messaging via native Continuwuity homeserver, with bridges to WhatsApp, Telegram, Signal
-- **Evolves** — structured self-improvement workflow, persona that grows from Seed to Bloom
-- **Stays private** — no cloud, no telemetry. Your thoughts never leave your box.
+- Bloom directory management and blueprint seeding for `~/Bloom/`
+- persona injection, shell guardrails, and compaction context persistence
+- an audit trail for tool calls and tool results
+- OS management tools for `bootc`, containers, systemd, health, and scheduled reboot
+- repository bootstrap, sync, and PR submission helpers
+- service scaffolding, installation, smoke testing, manifest management, and bridge lifecycle tools
+- a flat-file object store in `~/Bloom/Objects/`
+- an optional multi-agent Matrix daemon with one Pi session per `(room, agent)` pair
+- a first-boot flow split between a bash wizard and a Pi-guided persona step
 
-## 🌱 Architecture
+## Repository Layout
 
-Bloom extends Pi through three mechanisms, lightest first:
+| Path | Purpose |
+|------|---------|
+| `extensions/` | Pi extensions |
+| `lib/` | shared logic and host/runtime helpers |
+| `daemon/` | Matrix room daemon and RPC room/session orchestration |
+| `cli/` | local CLI helpers such as `bloom-attach.ts` |
+| `skills/` | bundled skills seeded into `~/Bloom/Skills/` |
+| `services/` | bundled service packages and service template |
+| `persona/` | default persona layers seeded into `~/Bloom/Persona/` |
+| `os/` | Fedora bootc image build assets and system files |
+| `tests/` | unit, integration, daemon, and extension tests |
+| `docs/` | live project documentation |
 
-| Layer | What | When |
-|-------|------|------|
-| **Skill** | Markdown instructions (SKILL.md) | Pi needs knowledge or a procedure |
-| **Extension** | In-process TypeScript module | Pi needs tools, commands, or event hooks |
-| **Service** | Container (Podman Quadlet) | Standalone workload needing isolation |
+## Extensions
 
-Always prefer the lightest option.
+| Extension | Tools | Hooks / Commands |
+|-----------|-------|------------------|
+| `bloom-persona` | — | `session_start`, `before_agent_start`, `tool_call`, `session_before_compact` |
+| `bloom-audit` | `audit_review` | `session_start`, `tool_call`, `tool_result` |
+| `bloom-os` | `bootc`, `container`, `systemd_control`, `system_health`, `update_status`, `schedule_reboot` | `before_agent_start` |
+| `bloom-repo` | `bloom_repo`, `bloom_repo_submit_pr` | — |
+| `bloom-services` | `service_scaffold`, `service_install`, `service_test`, `manifest_show`, `manifest_sync`, `manifest_set_service`, `manifest_apply`, `bridge_create`, `bridge_remove`, `bridge_status` | `session_start` |
+| `bloom-objects` | `memory_create`, `memory_read`, `memory_search`, `memory_link`, `memory_list` | — |
+| `bloom-garden` | `garden_status`, `skill_create`, `skill_list`, `agent_create`, `persona_evolve` | `session_start`, `resources_discover`, `/bloom` |
+| `bloom-dev` | `dev_enable`, `dev_disable`, `dev_status`, `dev_code_server`, `dev_build`, `dev_switch`, `dev_rollback`, `dev_loop`, `dev_test`, `dev_submit_pr`, `dev_push_skill`, `dev_push_service`, `dev_push_extension`, `dev_install_package` | — |
+| `bloom-setup` | `setup_status`, `setup_advance`, `setup_reset` | `before_agent_start` |
 
-```mermaid
-graph TD
-    Pi[🤖 Pi Agent] --> Skills[📜 Skills<br/>Markdown instructions]
-    Pi --> Extensions[🧩 Extensions<br/>In-process TypeScript]
-    Pi --> Services[📦 Services<br/>Containers]
-    Extensions --> BloomDir[🌿 Bloom Directory<br/>~/Bloom/]
-    Services --> BloomDir
-    Extensions --> Persona[🪞 Persona<br/>4-layer identity]
+## Bundled Skills
 
-    style Pi fill:#f5e8d5
-    style Skills fill:#d5f5d5
-    style Extensions fill:#d5d5f5
-    style Services fill:#f5d5d5
-    style BloomDir fill:#d5f5e8
-    style Persona fill:#e8d5f5
-```
+Bundled skill directories in `skills/`:
 
-### 🧩 Extensions
+- `first-boot`
+- `object-store`
+- `os-operations`
+- `recovery`
+- `self-evolution`
+- `service-management`
 
-| Extension | Purpose |
-|-----------|---------|
-| `bloom-persona` | Identity injection, safety guardrails, compaction guidance |
-| `bloom-audit` | Tool-call audit trail, retention, and review |
-| `bloom-os` | bootc, Podman, systemd management |
-| `bloom-repo` | Repository management, PR-based self-evolution |
-| `bloom-services` | Service lifecycle (scaffold, install, test) and manifest management |
-| `bloom-objects` | Flat-file object store (CRUD with YAML frontmatter) |
-| `bloom-garden` | Bloom directory, blueprint seeding, skill discovery |
-| `bloom-dev` | On-device development: builds, testing, PR submission |
-| `bloom-setup` | First-boot setup wizard with guided steps |
+## Bundled Service Packages
 
-### 📜 Skills
+| Package | Current role |
+|---------|--------------|
+| `dufs` | packaged Quadlet service exposed on port `5000` |
+| `code-server` | packaged service built locally as `localhost/bloom-code-server:latest` |
+| `_template` | scaffold template for new services |
 
-| Skill | Purpose |
-|-------|---------|
-| `first-boot` | One-time system setup guide |
-| `os-operations` | System health inspection and remediation |
-| `object-store` | CRUD operations for the memory store |
-| `service-management` | Install, manage, and discover bundled service packages |
-| `self-evolution` | Structured system change workflow |
-| `recovery` | System recovery procedures |
+Reference material for OS-level infrastructure also lives under `services/`:
 
-### 📦 Services & Infrastructure
+- `services/matrix/SKILL.md`
+- `services/netbird/SKILL.md`
 
-OS-level infrastructure baked into the image:
+## Daemon Model
 
-| Unit | What | Type |
-|------|------|------|
-| `bloom-matrix` | Continuwuity Matrix homeserver | Native systemd |
-| `netbird` | Mesh VPN | System RPM |
+`daemon/index.ts` starts the Bloom room daemon in one of two modes:
 
-Container services:
+- single-agent fallback when no agent definitions exist in `~/Bloom/Agents/*/AGENTS.md`
+- multi-agent mode when agent overlays exist, with one Matrix client per configured agent and one Pi RPC subprocess per
+  `(room, agent)` pair
 
-| Service | What | Type |
-|---------|------|------|
-| `bloom-dufs` | WebDAV file server | Podman Quadlet |
+Each room process runs `pi --mode rpc`, communicates over JSON lines, and exposes a local socket for terminal
+attachment.
 
-### 🪞 Persona
-
-Bloom has an [OpenPersona](persona/) 4-layer identity seeded to `~/Bloom/Persona/` on first boot:
-
-- **SOUL.md** — Identity, values, voice, boundaries
-- **BODY.md** — Channel adaptation, presence behavior
-- **FACULTY.md** — Reasoning patterns, decision frameworks
-- **SKILL.md** — Current capabilities inventory
-
-### 🌿 Bloom Directory
-
-The Bloom directory (`~/Bloom/`) holds Bloom's configuration and data, accessible across devices via dufs WebDAV:
-
-```
-~/Bloom/
-├── Persona/      # 4-layer identity files
-├── Skills/       # Installed skill files
-├── Evolutions/   # Proposed system changes
-└── Objects/      # Tracked objects (notes, tasks, etc.)
-```
-
-## 🗂️ Project Structure
-
-```
-bloom/
-├── extensions/       # TypeScript Pi extensions
-├── lib/              # Shared utilities (frontmatter, logging, paths)
-├── skills/           # SKILL.md procedure guides
-├── services/         # Bundled service packages
-├── persona/          # OpenPersona 4-layer identity
-├── os/               # Fedora bootc 42 image (Containerfile + config)
-├── tests/            # Unit, integration, and e2e tests
-├── docs/             # Architecture and deployment guides
-├── guardrails.yaml   # Safety rules for tool execution
-└── justfile          # Build, image generation, VM management
-```
-
-## 🚀 Getting Started
-
-### 🤖 Install as a Pi Package
-
-```bash
-pi install /path/to/bloom
-```
-
-### 💻 Development
+## Build and Test
 
 ```bash
 npm install
-npm run build          # tsc --build
-npm run check          # biome lint + format check
-npm run check:fix      # biome auto-fix
-npm run test           # vitest
-npm run test:coverage  # with v8 coverage thresholds
+npm run build
+npm run check
+npm run test
 ```
 
-Load extensions for development:
+Additional commands:
 
 ```bash
-pi install ./
+npm run test:coverage
+just build
+just qcow2
+just iso
+just vm
+just vm-ssh
 ```
 
-### 💻 Build the OS Image
+## Key Docs
 
-Requires: `sudo dnf install just qemu-system-x86 edk2-ovmf`
-
-```bash
-just build             # podman build container image
-just qcow2             # generate qcow2 disk image
-just iso               # generate Anaconda installer ISO
-just vm                # boot in QEMU (graphical + SSH on :2222)
-just vm-ssh            # ssh into running VM
-just vm-kill           # stop VM
-just clean             # remove os/output/
-```
-
-### 🚀 First Boot
-
-Once the OS is running, `bloom-wizard.sh` handles deterministic machine setup first:
-
-1. Password and connectivity checks
-2. NetBird enrollment
-3. Matrix account bootstrap
-4. Git identity
-5. Optional bundled services
-
-After the wizard finishes, Pi resumes with the remaining persona customization step.
-
-See [docs/pibloom-setup.md](docs/pibloom-setup.md) for the full guide.
-
-## 💻 OS Image
-
-The Bloom OS image (`os/Containerfile`) is based on **Fedora bootc 42** and includes:
-
-- **Runtime**: Node.js, Pi, Claude Code
-- **Containers**: Podman, Buildah, Skopeo, oras
-- **Tools**: git, gh, ripgrep, fd, bat, VS Code
-- **User**: `pi` with rootless Podman and passwordless sudo for first-boot
-
-Atomic updates via `bootc upgrade` with automatic rollback support.
-
-## 📖 Conventions
-
-- **TypeScript**: strict, ES2022, NodeNext
-- **Formatting**: Biome (tabs, double quotes, 120 line width)
-- **Containers**: `Containerfile` (not Dockerfile), `podman` (not docker)
-- **Extensions**: `export default function(pi: ExtensionAPI) { ... }` pattern
-- **Skills**: SKILL.md with YAML frontmatter
-
-## 📖 Docs
-
-- [Service Architecture](docs/service-architecture.md) — extensibility hierarchy details
-- [Quick Deploy](docs/quick_deploy.md) — OS build and deployment
-- [First Boot Setup](docs/pibloom-setup.md) — initial configuration guide
-- [Supply Chain](docs/supply-chain.md) — artifact trust and releases
-- [Fleet PR Workflow](docs/fleet-pr-workflow.md) — multi-device contribution flow
-
-## 🔗 Related
-
-- [Emoji Legend](docs/LEGEND.md) — Notation reference
-- [AGENTS.md](AGENTS.md) — Extension, tool, and hook reference
-- [Service Architecture](docs/service-architecture.md) — Extensibility hierarchy details
+- [AGENTS.md](AGENTS.md) for the complete tool, hook, path, and feature reference
+- [ARCHITECTURE.md](ARCHITECTURE.md) for the current structure and design rules
+- [docs/service-architecture.md](docs/service-architecture.md) for the Skill / Extension / Service model
+- [docs/pibloom-setup.md](docs/pibloom-setup.md) for first boot
+- [docs/quick_deploy.md](docs/quick_deploy.md) for image build and install
+- [docs/fleet-pr-workflow.md](docs/fleet-pr-workflow.md) for repo contribution flow
+- [docs/supply-chain.md](docs/supply-chain.md) for image and package trust rules

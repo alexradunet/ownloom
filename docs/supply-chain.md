@@ -1,41 +1,66 @@
-# Supply Chain & Reproducibility Policy
+# Supply Chain and Image Policy
 
 > 📖 [Emoji Legend](LEGEND.md)
 
-This document defines Bloom's baseline supply-chain controls for bootc images and runtime container images.
+This file documents the trust and reproducibility rules that match the current repository.
 
-## 🛡️ Goals
+## Current Policy
 
-- Reproducible installs
-- Drift-resistant runtime images
-- Explicit trust decisions for mutable tags
+### Published / Pulled Runtime Images
 
-## 📦 Runtime Image Policy (Quadlet)
+For packaged services and bridges, prefer:
 
-Service container images must be pinned:
+1. digests
+2. explicit non-`latest` tags
 
-- Preferred: digest (`image@sha256:...`)
-- Acceptable: explicit non-latest tag
-- Disallowed: implicit latest / `latest*` tags
+Disallowed by policy for normal remote images:
 
-### 📦 Current Exceptions
+- implicit `latest`
+- `latest*`
 
-- None.
+This rule is enforced by `validatePinnedImage()` for `service_scaffold`.
 
-## 💻 bootc Image Policy
+### Current Exception
 
-- Base image is pinned by digest in `os/Containerfile`.
-- Global npm CLIs in OS image are pinned to explicit versions.
-- Build context excludes nested `node_modules` and worktrees.
+`services/catalog.yaml` intentionally includes one mutable local-build image:
 
-## 🚀 Release Checklist
+- `code-server` -> `localhost/bloom-code-server:latest`
 
-- [ ] Quadlet images pinned (digest preferred)
-- [ ] `service_test` passes for each service
-- [ ] Docs updated when image/digest references change
+Reason:
 
-## 🔗 Related
+- the service is built locally from repository source before installation
+- the mutable tag refers to a local artifact, not to a remote registry trust decision
 
-- [Emoji Legend](LEGEND.md) — Notation reference
-- [Service Architecture](service-architecture.md) — Extensibility hierarchy details
-- [AGENTS.md](../AGENTS.md#-services) — Service reference
+## What `service_install` Does Today
+
+Depending on the package, installation may:
+
+- copy Quadlet and skill assets from the bundled package
+- build a local image for `localhost/*` refs
+- download declared model artifacts into Podman volumes
+- update `~/Bloom/manifest.yaml`
+
+This means installation is not fully hermetic today. It is reproducible at the package-layout level, but some flows
+still depend on the local host and network.
+
+## OS Image
+
+The bootc image is built from `os/Containerfile` and current `justfile` targets.
+
+Current expectations:
+
+- build with `podman`
+- install with `bootc`
+- keep image- and package-related docs aligned with the actual build flow
+
+## Review Checklist
+
+- are remote runtime images pinned?
+- are local-image exceptions documented?
+- do docs describe the actual installation behavior, including local builds and downloads?
+- does `services/catalog.yaml` still match the packaged services in the repo?
+
+## Related
+
+- [docs/service-architecture.md](service-architecture.md)
+- [services/catalog.yaml](../services/catalog.yaml)
