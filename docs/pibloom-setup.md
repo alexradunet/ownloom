@@ -16,6 +16,20 @@ Current responsibilities:
 4. Git identity setup
 5. optional bundled service choices
 
+What the wizard leaves installed by default:
+
+- NetBird
+- the local Matrix homeserver
+- Pi's Matrix daemon once AI setup is ready
+
+What it does not install by default:
+
+- Cinny
+- Caddy
+- optional packaged services unless you explicitly choose them
+
+The only client-facing web prompt in the wizard is optional Bloom Web Chat, which installs Cinny preconfigured for this Bloom node's Matrix server.
+
 The wizard writes completion state under `~/.bloom/` and hands control back to Pi when finished.
 
 ## Phase 2: Pi Persona Step
@@ -70,6 +84,8 @@ Typical next actions:
 - inspect service state with `manifest_show`
 - install or apply services with `service_install` or `manifest_apply`
 - create additional Matrix agents with `agent_create`
+
+The setup completion summary now prints the current NetBird name, mesh IP, and any installed service URLs it can confirm, including Bloom Web Chat when Cinny is installed.
 
 ## Related
 

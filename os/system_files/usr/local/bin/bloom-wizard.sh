@@ -47,6 +47,13 @@ netbird_fqdn() {
 	echo "$status" | sed -n 's/.*"fqdn":"\([^"]*\)".*/\1/p' | head -n1
 }
 
+netbird_ip() {
+	local status
+	status=$(netbird_status_json)
+	[[ -n "$status" ]] || return 0
+	echo "$status" | sed -n 's/.*"netbirdIp":"\([^"]*\)".*/\1/p' | sed 's#/.*##' | head -n1
+}
+
 # --- Matrix state helpers ---
 
 matrix_state_get() {
@@ -218,18 +225,100 @@ print_service_access_summary() {
 	local mesh_host="${mesh_fqdn:-$mesh_ip}"
 
 	echo "  Service access:"
-	if [[ "$installed_services" == *"dufs"* ]]; then
+	if [[ "$installed_services" == *"cinny"* ]]; then
 		if [[ -n "$mesh_host" ]]; then
-			echo "    dufs/WebDAV  — http://${mesh_host}:5000"
+			echo "    Bloom Web Chat - http://${mesh_host}:8081"
 		fi
 		if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-			echo "    dufs/WebDAV  — http://${mesh_ip}:5000"
+			echo "    Bloom Web Chat - http://${mesh_ip}:8081"
 		fi
-		echo "    dufs path    — ~/Public/Bloom"
+		echo "    Cinny        - preconfigured for this Bloom server"
+	else
+		echo "    Cinny        - not installed on this box"
 	fi
 
-	echo "    Matrix       — bloom / http://localhost:6167 (local-only)"
-	echo "    Cinny        — not installed on this box"
+	if [[ "$installed_services" == *"dufs"* ]]; then
+		if [[ -n "$mesh_host" ]]; then
+			echo "    dufs/WebDAV  - http://${mesh_host}:5000"
+		fi
+		if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
+			echo "    dufs/WebDAV  - http://${mesh_ip}:5000"
+		fi
+		echo "    dufs path    - ~/Public/Bloom"
+	fi
+
+	if [[ -n "$mesh_host" ]]; then
+		echo "    Matrix       - http://${mesh_host}:6167"
+	fi
+	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
+		echo "    Matrix       - http://${mesh_ip}:6167"
+	fi
+	echo "    Matrix       - http://localhost:6167 (local access on the box)"
+}
+
+write_cinny_runtime_config() {
+	local mesh_fqdn mesh_ip primary_host primary_matrix_url fallback_matrix_url
+	mesh_fqdn=$(netbird_fqdn)
+	mesh_ip=$(netbird_ip)
+	primary_host="${mesh_fqdn:-$mesh_ip}"
+	primary_matrix_url="http://localhost:6167"
+	fallback_matrix_url=""
+
+	if [[ -n "$primary_host" ]]; then
+		primary_matrix_url="http://${primary_host}:6167"
+	fi
+	if [[ -n "$mesh_fqdn" && -n "$mesh_ip" ]]; then
+		fallback_matrix_url="http://${mesh_ip}:6167"
+	fi
+
+	mkdir -p "$BLOOM_CONFIG/cinny/.well-known/matrix"
+	cat > "$BLOOM_CONFIG/cinny/config.json" <<-CONFIG
+	{
+	  "defaultHomeserver": 0,
+	  "homeserverList": [
+	    "${primary_matrix_url}"$( [[ -n "$fallback_matrix_url" ]] && printf ',\n    "%s"' "$fallback_matrix_url" )
+	  ],
+	  "allowCustomHomeservers": true,
+	  "hashRouter": {
+	    "enabled": true
+	  }
+	}
+	CONFIG
+
+	cat > "$BLOOM_CONFIG/cinny/.well-known/matrix/client" <<-WELLKNOWN
+	{
+	  "m.homeserver": {
+	    "base_url": "${primary_matrix_url}",
+	    "server_name": "bloom"
+	  }
+	}
+	WELLKNOWN
+
+	cat > "$BLOOM_CONFIG/cinny/nginx.conf" <<-'NGINX'
+	server {
+	    listen 80;
+	    server_name _;
+
+	    root /app;
+	    index index.html;
+
+	    location = /config.json {
+	        add_header Cache-Control "no-store";
+	        try_files /config.json =404;
+	    }
+
+	    location = /.well-known/matrix/client {
+	        add_header Access-Control-Allow-Origin "*";
+	        add_header Cache-Control "no-store";
+	        default_type application/json;
+	        try_files /.well-known/matrix/client =404;
+	    }
+
+	    location / {
+	        try_files $uri /index.html;
+	    }
+	}
+	NGINX
 }
 
 # --- Service install helper ---
@@ -270,6 +359,9 @@ install_service() {
 
 	if [[ "$name" == "dufs" ]]; then
 		mkdir -p "$HOME/Public/Bloom"
+	fi
+	if [[ "$name" == "cinny" ]]; then
+		write_cinny_runtime_config
 	fi
 
 	# Copy SKILL.md
@@ -610,6 +702,17 @@ step_services() {
 	echo ""
 	echo "--- Optional Services ---"
 	local installed=""
+
+	read -rp "Install Bloom Web Chat? (Cinny web client for Matrix over NetBird) [y/N]: " cinny_answer
+	if [[ "${cinny_answer,,}" == "y" ]]; then
+		echo "  Installing Cinny..."
+		if install_service cinny; then
+			echo "  Cinny installed."
+			installed="${installed} cinny"
+		else
+			echo "  Cinny installation failed."
+		fi
+	fi
 
 	read -rp "Install dufs file server? (access files from any device via WebDAV) [y/N]: " dufs_answer
 	if [[ "${dufs_answer,,}" == "y" ]]; then

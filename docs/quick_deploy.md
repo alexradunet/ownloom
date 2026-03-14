@@ -95,5 +95,11 @@ On first login:
 2. let Pi resume the persona step
 3. use `setup_status` if you need to inspect or resume the Pi-side setup state
 
+Fresh-image defaults:
+
+- installed: SSH, NetBird, local Matrix homeserver, Pi daemon
+- optional: `cinny`, `dufs`, `code-server`, bridges
+- not included by default: Cinny, Caddy, hosted web proxy stack
+
 See [docs/pibloom-setup.md](pibloom-setup.md) for the full first-boot flow.
 Use [docs/live-testing-checklist.md](live-testing-checklist.md) as the acceptance checklist for a fresh device run.

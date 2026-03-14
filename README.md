@@ -23,6 +23,28 @@ Bloom currently provides:
 - an optional multi-agent Matrix daemon with one Pi session per `(room, agent)` pair
 - a first-boot flow split between a bash wizard and a Pi-guided persona step
 
+## Default Install
+
+The default OS image is intentionally small. On a fresh box, Bloom installs:
+
+- `sshd.service`
+- `netbird.service`
+- `bloom-matrix.service`
+- `pi-daemon.service` after setup when AI credentials/defaults are ready
+
+Optional packaged services are not installed automatically. Today that includes:
+
+- `cinny`
+- `dufs`
+- `code-server`
+- Matrix bridges
+
+Not installed by default:
+
+- `caddy`
+- `cinny`
+- any bundled web reverse proxy
+
 Operational hardening in the current tree:
 
 - invalid `~/Bloom/Agents/*/AGENTS.md` files are skipped with warnings instead of crashing the daemon

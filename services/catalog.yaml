@@ -1,6 +1,14 @@
 version: 1
 source_repo: https://github.com/pibloom/pi-bloom
 services:
+  cinny:
+    version: "0.1.0"
+    category: messaging
+    image: ghcr.io/cinnyapp/cinny:v4.10.2
+    optional: true
+    port: 8081
+    preflight:
+      commands: [podman, systemctl]
   dufs:
     version: "0.1.0"
     category: sync

@@ -69,6 +69,9 @@ export async function installServicePackage(
 	if (name === "dufs") {
 		mkdirSync(join(os.homedir(), "Public", "Bloom"), { recursive: true });
 	}
+	if (name === "cinny") {
+		await writeCinnyRuntimeConfig(configDir, signal);
+	}
 
 	// Copy extra config files (e.g., cinny-config.json) from service package
 	for (const fileName of readdirSync(localPackage.serviceDir)) {
@@ -82,6 +85,100 @@ export async function installServicePackage(
 	}
 
 	return { ok: true, source: "local", ref: name };
+}
+
+async function writeCinnyRuntimeConfig(configDir: string, signal?: AbortSignal): Promise<void> {
+	const cinnyDir = join(configDir, "cinny");
+	const wellKnownDir = join(cinnyDir, ".well-known", "matrix");
+	mkdirSync(wellKnownDir, { recursive: true });
+
+	const access = await resolveMeshMatrixAccess(signal);
+	const homeserverList = [access.primaryMatrixUrl];
+	if (access.fallbackMatrixUrl) homeserverList.push(access.fallbackMatrixUrl);
+
+	writeFileSync(
+		join(cinnyDir, "config.json"),
+		JSON.stringify(
+			{
+				defaultHomeserver: 0,
+				homeserverList,
+				allowCustomHomeservers: true,
+				hashRouter: {
+					enabled: true,
+				},
+			},
+			null,
+			2,
+		),
+	);
+
+	writeFileSync(
+		join(wellKnownDir, "client"),
+		JSON.stringify(
+			{
+				"m.homeserver": {
+					base_url: access.primaryMatrixUrl,
+					server_name: "bloom",
+				},
+			},
+			null,
+			2,
+		),
+	);
+
+	writeFileSync(
+		join(cinnyDir, "nginx.conf"),
+		`server {
+    listen 80;
+    server_name _;
+
+    root /app;
+    index index.html;
+
+    location = /config.json {
+        add_header Cache-Control "no-store";
+        try_files /config.json =404;
+    }
+
+    location = /.well-known/matrix/client {
+        add_header Access-Control-Allow-Origin "*";
+        add_header Cache-Control "no-store";
+        default_type application/json;
+        try_files /.well-known/matrix/client =404;
+    }
+
+    location / {
+        try_files $uri /index.html;
+    }
+}
+`,
+	);
+}
+
+async function resolveMeshMatrixAccess(
+	signal?: AbortSignal,
+): Promise<{ primaryMatrixUrl: string; fallbackMatrixUrl?: string }> {
+	const status = await run("netbird", ["status", "--json"], signal);
+	if (status.exitCode === 0) {
+		try {
+			const parsed = JSON.parse(status.stdout) as { fqdn?: string; netbirdIp?: string };
+			const fqdn = parsed.fqdn?.trim();
+			const meshIp = parsed.netbirdIp?.split("/")[0]?.trim();
+			if (fqdn) {
+				return {
+					primaryMatrixUrl: `http://${fqdn}:6167`,
+					fallbackMatrixUrl: meshIp ? `http://${meshIp}:6167` : undefined,
+				};
+			}
+			if (meshIp) {
+				return { primaryMatrixUrl: `http://${meshIp}:6167` };
+			}
+		} catch {
+			// Fall back to localhost below.
+		}
+	}
+
+	return { primaryMatrixUrl: "http://localhost:6167" };
 }
 
 /** Build a local container image if the image ref starts with localhost/. */
