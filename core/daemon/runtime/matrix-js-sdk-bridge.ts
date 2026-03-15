@@ -173,111 +173,148 @@ export class MatrixJsSdkBridge implements MatrixBridge {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Markdown to HTML Rendering
+// ---------------------------------------------------------------------------
+
+interface LineParserState {
+	lines: string[];
+	index: number;
+	parts: string[];
+}
+
 function renderMatrixHtml(text: string): string {
 	const normalized = text.replace(/\r\n/g, "\n").trim();
 	if (!normalized) return "<p></p>";
 
-	const lines = normalized.split("\n");
-	const parts: string[] = [];
-	let index = 0;
+	const state: LineParserState = {
+		lines: normalized.split("\n"),
+		index: 0,
+		parts: [],
+	};
 
-	while (index < lines.length) {
-		const line = lines[index] ?? "";
+	while (state.index < state.lines.length) {
+		const line = state.lines[state.index] ?? "";
 		if (!line.trim()) {
-			index += 1;
+			state.index += 1;
 			continue;
 		}
 
-		if (line.startsWith("```")) {
-			const fence = line.slice(3).trim();
-			const codeLines: string[] = [];
-			index += 1;
-			while (index < lines.length && !(lines[index] ?? "").startsWith("```")) {
-				codeLines.push(lines[index] ?? "");
-				index += 1;
-			}
-			if (index < lines.length) index += 1;
-			const classAttr = fence ? ` class="language-${escapeHtmlAttribute(fence)}"` : "";
-			parts.push(`<pre><code${classAttr}>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
-			continue;
-		}
+		const parsed =
+			tryParseCodeBlock(state, line) ??
+			tryParseHeading(state, line) ??
+			tryParseBlockquote(state, line) ??
+			tryParseUnorderedList(state, line) ??
+			tryParseOrderedList(state, line) ??
+			parseParagraph(state);
 
-		const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
-		if (headingMatch) {
-			const level = headingMatch[1]?.length ?? 1;
-			const content = headingMatch[2] ?? "";
-			parts.push(`<h${level}>${renderInlineMarkdown(content)}</h${level}>`);
-			index += 1;
-			continue;
+		if (parsed) {
+			state.parts.push(parsed);
 		}
-
-		if (line.startsWith(">")) {
-			const quoteLines: string[] = [];
-			while (index < lines.length) {
-				const current = lines[index] ?? "";
-				if (!current.trim()) {
-					index += 1;
-					break;
-				}
-				if (!current.startsWith(">")) break;
-				quoteLines.push(current.replace(/^>\s?/, ""));
-				index += 1;
-			}
-			parts.push(`<blockquote>${quoteLines.map((entry) => `<p>${renderInlineMarkdown(entry)}</p>`).join("")}</blockquote>`);
-			continue;
-		}
-
-		const unorderedMatch = line.match(/^(\s*)[-*+]\s+(.+)$/);
-		if (unorderedMatch) {
-			const items: string[] = [];
-			while (index < lines.length) {
-				const current = lines[index] ?? "";
-				const match = current.match(/^(\s*)[-*+]\s+(.+)$/);
-				if (!match) break;
-				items.push(`<li>${renderInlineMarkdown(match[2] ?? "")}</li>`);
-				index += 1;
-			}
-			parts.push(`<ul>${items.join("")}</ul>`);
-			continue;
-		}
-
-		const orderedMatch = line.match(/^\s*\d+[.)]\s+(.+)$/);
-		if (orderedMatch) {
-			const items: string[] = [];
-			while (index < lines.length) {
-				const current = lines[index] ?? "";
-				const match = current.match(/^\s*\d+[.)]\s+(.+)$/);
-				if (!match) break;
-				items.push(`<li>${renderInlineMarkdown(match[1] ?? "")}</li>`);
-				index += 1;
-			}
-			parts.push(`<ol>${items.join("")}</ol>`);
-			continue;
-		}
-
-		const paragraphLines: string[] = [];
-		while (index < lines.length) {
-			const current = lines[index] ?? "";
-			if (!current.trim()) {
-				index += 1;
-				break;
-			}
-			if (
-				current.startsWith("```") ||
-				current.startsWith(">") ||
-				/^#{1,6}\s+/.test(current) ||
-				/^(\s*)[-*+]\s+/.test(current) ||
-				/^\s*\d+[.)]\s+/.test(current)
-			) {
-				break;
-			}
-			paragraphLines.push(current);
-			index += 1;
-		}
-		parts.push(`<p>${renderInlineMarkdown(paragraphLines.join("\n"))}</p>`);
 	}
 
-	return parts.join("");
+	return state.parts.join("");
+}
+
+function tryParseCodeBlock(state: LineParserState, line: string): string | null {
+	if (!line.startsWith("```")) return null;
+
+	const fence = line.slice(3).trim();
+	const codeLines: string[] = [];
+	state.index += 1;
+
+	while (state.index < state.lines.length && !(state.lines[state.index] ?? "").startsWith("```")) {
+		codeLines.push(state.lines[state.index] ?? "");
+		state.index += 1;
+	}
+	if (state.index < state.lines.length) state.index += 1;
+
+	const classAttr = fence ? ` class="language-${escapeHtmlAttribute(fence)}"` : "";
+	return `<pre><code${classAttr}>${escapeHtml(codeLines.join("\n"))}</code></pre>`;
+}
+
+function tryParseHeading(state: LineParserState, line: string): string | null {
+	const match = line.match(/^(#{1,6})\s+(.+)$/);
+	if (!match) return null;
+
+	const level = match[1]?.length ?? 1;
+	const content = match[2] ?? "";
+	state.index += 1;
+	return `<h${level}>${renderInlineMarkdown(content)}</h${level}>`;
+}
+
+function tryParseBlockquote(state: LineParserState, line: string): string | null {
+	if (!line.startsWith(">")) return null;
+
+	const quoteLines: string[] = [];
+	while (state.index < state.lines.length) {
+		const current = state.lines[state.index] ?? "";
+		if (!current.trim()) {
+			state.index += 1;
+			break;
+		}
+		if (!current.startsWith(">")) break;
+		quoteLines.push(current.replace(/^>\s?/, ""));
+		state.index += 1;
+	}
+
+	const paragraphs = quoteLines.map((entry) => `<p>${renderInlineMarkdown(entry)}</p>`).join("");
+	return `<blockquote>${paragraphs}</blockquote>`;
+}
+
+function tryParseUnorderedList(state: LineParserState, line: string): string | null {
+	const match = line.match(/^(\s*)[-*+]\s+(.+)$/);
+	if (!match) return null;
+
+	const items: string[] = [];
+	while (state.index < state.lines.length) {
+		const current = state.lines[state.index] ?? "";
+		const itemMatch = current.match(/^(\s*)[-*+]\s+(.+)$/);
+		if (!itemMatch) break;
+		items.push(`<li>${renderInlineMarkdown(itemMatch[2] ?? "")}</li>`);
+		state.index += 1;
+	}
+	return `<ul>${items.join("")}</ul>`;
+}
+
+function tryParseOrderedList(state: LineParserState, line: string): string | null {
+	const match = line.match(/^\s*\d+[.)]\s+(.+)$/);
+	if (!match) return null;
+
+	const items: string[] = [];
+	while (state.index < state.lines.length) {
+		const current = state.lines[state.index] ?? "";
+		const itemMatch = current.match(/^\s*\d+[.)]\s+(.+)$/);
+		if (!itemMatch) break;
+		items.push(`<li>${renderInlineMarkdown(itemMatch[1] ?? "")}</li>`);
+		state.index += 1;
+	}
+	return `<ol>${items.join("")}</ol>`;
+}
+
+function isBlockStart(line: string): boolean {
+	return (
+		line.startsWith("```") ||
+		line.startsWith(">") ||
+		/^#{1,6}\s+/.test(line) ||
+		/^(\s*)[-*+]\s+/.test(line) ||
+		/^\s*\d+[.)]\s+/.test(line)
+	);
+}
+
+function parseParagraph(state: LineParserState): string {
+	const paragraphLines: string[] = [];
+	while (state.index < state.lines.length) {
+		const current = state.lines[state.index] ?? "";
+		if (!current.trim()) {
+			state.index += 1;
+			break;
+		}
+		if (isBlockStart(current)) break;
+		paragraphLines.push(current);
+		state.index += 1;
+	}
+	return `<p>${renderInlineMarkdown(paragraphLines.join("\n"))}</p>`;
 }
 
 function renderInlineMarkdown(text: string): string {
@@ -295,10 +332,7 @@ function renderInlineMarkdown(text: string): string {
 }
 
 function escapeHtml(value: string): string {
-	return value
-		.replaceAll("&", "&amp;")
-		.replaceAll("<", "&lt;")
-		.replaceAll(">", "&gt;");
+	return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
 function escapeHtmlAttribute(value: string): string {
