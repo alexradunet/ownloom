@@ -324,6 +324,7 @@ describe("handleAgentCreate", () => {
 	});
 
 	it("creates agent credentials and a starter AGENTS.md", async () => {
+		const restartDaemon = vi.fn().mockResolvedValue({ ok: true });
 		const result = await handleAgentCreate(
 			bloomDir,
 			{
@@ -341,6 +342,7 @@ describe("handleAgentCreate", () => {
 					homeserver: "http://localhost:6167",
 					registrationToken: "reg-token",
 				}),
+				restartDaemon,
 				provision: async () => ({
 					ok: true,
 					credentials: {
@@ -363,6 +365,9 @@ describe("handleAgentCreate", () => {
 		expect(raw).toContain("username: planner");
 		expect(raw).not.toContain("Optional proactive jobs example");
 		expect(raw).not.toContain("HEARTBEAT_OK");
+		expect(result.content[0].text).toContain("pi-daemon restarted");
+		expect(result.details).toEqual(expect.objectContaining({ daemonRestarted: true }));
+		expect(restartDaemon).toHaveBeenCalledTimes(1);
 	});
 
 	it("defaults username to the agent id", async () => {
@@ -397,6 +402,42 @@ describe("handleAgentCreate", () => {
 
 		expect(provision).toHaveBeenCalledWith(
 			expect.objectContaining({ username: "critic", homeserver: "http://localhost:6167" }),
+		);
+	});
+
+	it("returns success with a warning when pi-daemon restart fails", async () => {
+		const result = await handleAgentCreate(
+			bloomDir,
+			{
+				id: "cashus",
+				name: "Cashus",
+				description: "Financial guidance.",
+				role_prompt: "Provide financial guidance.",
+			},
+			{
+				homeDir: bloomDir,
+				loadPrimaryMatrixConfig: () => ({
+					homeserver: "http://localhost:6167",
+					registrationToken: "reg-token",
+				}),
+				restartDaemon: async () => ({ ok: false, error: "restart failed" }),
+				provision: async () => ({
+					ok: true,
+					credentials: {
+						homeserver: "http://localhost:6167",
+						userId: "@cashus:bloom",
+						accessToken: "cashus-token",
+						password: "secret-pass",
+						username: "cashus",
+					},
+				}),
+			},
+		);
+
+		expect(result.content[0].text).toContain("created agent: cashus");
+		expect(result.content[0].text).toContain("Warning: agent was created");
+		expect(result.details).toEqual(
+			expect.objectContaining({ daemonRestarted: false, daemonRestartError: "restart failed" }),
 		);
 	});
 

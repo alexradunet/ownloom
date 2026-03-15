@@ -6,6 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path, { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { run } from "../../lib/exec.js";
 import { safePath } from "../../lib/filesystem.js";
 import { stringifyFrontmatter } from "../../lib/frontmatter.js";
 import {
@@ -129,6 +130,7 @@ interface AgentCreateDeps {
 	homeDir?: string;
 	loadPrimaryMatrixConfig?: () => { homeserver: string; registrationToken: string };
 	provision?: typeof provisionMatrixAgentAccount;
+	restartDaemon?: () => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 function loadPrimaryMatrixConfigFromDisk(homeDir = os.homedir()): { homeserver: string; registrationToken: string } {
@@ -202,11 +204,23 @@ export async function handleAgentCreate(bloomDir: string, params: AgentCreatePar
 		}),
 	);
 
+	const restartDaemon =
+		deps.restartDaemon ??
+		(async () => {
+			const result = await run("systemctl", ["--user", "restart", "pi-daemon.service"]);
+			return result.exitCode === 0 ? { ok: true as const } : { ok: false as const, error: result.stderr || result.stdout };
+		});
+	const restartResult = await restartDaemon();
+	const restartNote =
+		restartResult.ok
+			? "\npi-daemon restarted to load the new agent."
+			: `\nWarning: agent was created, but pi-daemon could not be restarted automatically.\n${truncate(restartResult.error)}`;
+
 	return {
 		content: [
 			{
 				type: "text" as const,
-				text: `created agent: ${params.id}\nuser: ${result.credentials.userId}\ncredentials: ${credentialsPath}\ninstructions: ${instructionsPath}`,
+				text: `created agent: ${params.id}\nuser: ${result.credentials.userId}\ncredentials: ${credentialsPath}\ninstructions: ${instructionsPath}${restartNote}`,
 			},
 		],
 		details: {
@@ -214,6 +228,8 @@ export async function handleAgentCreate(bloomDir: string, params: AgentCreatePar
 			userId: result.credentials.userId,
 			credentialsPath,
 			instructionsPath,
+			daemonRestarted: restartResult.ok,
+			...(restartResult.ok ? {} : { daemonRestartError: truncate(restartResult.error) }),
 		},
 	};
 }
