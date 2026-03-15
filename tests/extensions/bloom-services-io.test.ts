@@ -50,7 +50,7 @@ describe("installServicePackage", () => {
 		expect(existsSync(join(tempHome, "Public", "Bloom"))).toBe(true);
 	});
 
-	it("writes Cinny runtime config preconfigured for the Bloom Matrix server", async () => {
+	it("writes FluffyChat runtime config preconfigured for the Bloom Matrix server", async () => {
 		runMock.mockResolvedValue({
 			exitCode: 0,
 			stdout: JSON.stringify({
@@ -60,37 +60,22 @@ describe("installServicePackage", () => {
 			stderr: "",
 		});
 
-		const serviceDir = join(tempRepo, "services", "cinny");
+		const serviceDir = join(tempRepo, "services", "fluffychat");
 		const quadletDir = join(serviceDir, "quadlet");
 		mkdirSync(quadletDir, { recursive: true });
-		writeFileSync(join(serviceDir, "SKILL.md"), "# cinny\n");
-		writeFileSync(join(quadletDir, "bloom-cinny.container"), "[Container]\nImage=test\n");
+		writeFileSync(join(serviceDir, "SKILL.md"), "# fluffychat\n");
+		writeFileSync(join(quadletDir, "bloom-fluffychat.container"), "[Container]\nImage=test\n");
 
-		const result = await installServicePackage("cinny", join(tempHome, "Bloom"), tempRepo);
+		const result = await installServicePackage("fluffychat", join(tempHome, "Bloom"), tempRepo);
 
 		expect(result.ok).toBe(true);
-		const cinnyConfig = JSON.parse(
-			readFileSync(join(tempHome, ".config", "bloom", "cinny", "config.json"), "utf-8"),
+		const fluffychatConfig = JSON.parse(
+			readFileSync(join(tempHome, ".config", "bloom", "fluffychat", "config.json"), "utf-8"),
 		) as {
-			defaultHomeserver: number;
-			homeserverList: string[];
+			applicationName: string;
+			defaultHomeserver: string;
 		};
-		expect(cinnyConfig.defaultHomeserver).toBe(0);
-		expect(cinnyConfig.homeserverList).toEqual([
-			"http://bloom-164-14.netbird.cloud:6167",
-			"http://100.109.164.14:6167",
-		]);
-
-		const wellKnown = JSON.parse(
-			readFileSync(join(tempHome, ".config", "bloom", "cinny", ".well-known", "matrix", "client"), "utf-8"),
-		) as {
-			"m.homeserver": { base_url: string; server_name: string };
-		};
-		expect(wellKnown["m.homeserver"].base_url).toBe("http://bloom-164-14.netbird.cloud:6167");
-		expect(wellKnown["m.homeserver"].server_name).toBe("bloom");
-
-		const nginxConf = readFileSync(join(tempHome, ".config", "bloom", "cinny", "nginx.conf"), "utf-8");
-		expect(nginxConf).toContain("location = /.well-known/matrix/client");
-		expect(nginxConf).toContain("try_files /.well-known/matrix/client =404;");
+		expect(fluffychatConfig.applicationName).toBe("Bloom Web Chat");
+		expect(fluffychatConfig.defaultHomeserver).toBe("http://bloom-164-14.netbird.cloud:6167");
 	});
 });

@@ -33,7 +33,7 @@ Current responsibilities:
 Optional service prompts offered by the wizard:
 
 - Bloom Home landing page on port `8080` (built into the image)
-- Bloom Web Chat (`cinny`) on port `8081`
+- Bloom Web Chat (`fluffychat`) on port `8081`
 - `dufs` WebDAV file server on port `5000`
 
 What the wizard does not install by default:

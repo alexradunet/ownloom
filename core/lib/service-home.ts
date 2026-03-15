@@ -171,7 +171,7 @@ export function renderServiceHomeHtml(params: {
 				.join("\n")
 		: `<article class="service-card empty-state">
 				<h2>No web services installed yet</h2>
-				<p class="service-description">Install Cinny, dufs, code-server, or other Bloom services and this page will update itself.</p>
+				<p class="service-description">Install FluffyChat, dufs, code-server, or other Bloom services and this page will update itself.</p>
 			</article>`;
 
 	const alternateMarkup = alternateTargets.length

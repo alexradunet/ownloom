@@ -232,16 +232,16 @@ print_service_access_summary() {
 		echo "    Bloom Home   - http://${mesh_ip}:8080"
 	fi
 	echo "    Share this   - send other NetBird peers the Bloom Home URL"
-	if [[ "$installed_services" == *"cinny"* ]]; then
+	if [[ "$installed_services" == *"fluffychat"* ]]; then
 		if [[ -n "$mesh_host" ]]; then
 			echo "    Bloom Web Chat - http://${mesh_host}:8081"
 		fi
 		if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
 			echo "    Bloom Web Chat - http://${mesh_ip}:8081"
 		fi
-		echo "    Cinny        - preconfigured for this Bloom server"
+		echo "    FluffyChat   - preconfigured for this Bloom server"
 	else
-		echo "    Cinny        - not installed on this box"
+		echo "    FluffyChat   - not installed on this box"
 	fi
 
 	if [[ "$installed_services" == *"dufs"* ]]; then
@@ -478,7 +478,7 @@ write_service_home_runtime() {
 	    </article>
 	HTML
 
-		if [[ "$installed_services" == *"cinny"* ]]; then
+		if [[ "$installed_services" == *"fluffychat"* ]]; then
 			cat <<-HTML
 	    <article class="service-card">
 	      <div class="service-head">
@@ -557,69 +557,47 @@ install_home_infrastructure() {
 	systemctl --user start bloom-home.service
 }
 
-write_cinny_runtime_config() {
-	local mesh_fqdn mesh_ip primary_host primary_matrix_url fallback_matrix_url
+write_fluffychat_runtime_config() {
+	local mesh_fqdn mesh_ip primary_host primary_matrix_url
 	mesh_fqdn=$(netbird_fqdn)
 	mesh_ip=$(netbird_ip)
 	primary_host="${mesh_fqdn:-$mesh_ip}"
 	primary_matrix_url="http://localhost:6167"
-	fallback_matrix_url=""
 
 	if [[ -n "$primary_host" ]]; then
 		primary_matrix_url="http://${primary_host}:6167"
 	fi
-	if [[ -n "$mesh_fqdn" && -n "$mesh_ip" ]]; then
-		fallback_matrix_url="http://${mesh_ip}:6167"
-	fi
 
-	mkdir -p "$BLOOM_CONFIG/cinny/.well-known/matrix"
-	cat > "$BLOOM_CONFIG/cinny/config.json" <<-CONFIG
+	mkdir -p "$BLOOM_CONFIG/fluffychat"
+	cat > "$BLOOM_CONFIG/fluffychat/config.json" <<-CONFIG
 	{
-	  "defaultHomeserver": 0,
-	  "homeserverList": [
-	    "${primary_matrix_url}"$( [[ -n "$fallback_matrix_url" ]] && printf ',\n    "%s"' "$fallback_matrix_url" )
-	  ],
-	  "allowCustomHomeservers": true,
-	  "hashRouter": {
-	    "enabled": true
-	  }
+	  "applicationName": "Bloom Web Chat",
+	  "defaultHomeserver": "${primary_matrix_url}"
 	}
 	CONFIG
+}
 
-	cat > "$BLOOM_CONFIG/cinny/.well-known/matrix/client" <<-WELLKNOWN
-	{
-	  "m.homeserver": {
-	    "base_url": "${primary_matrix_url}",
-	    "server_name": "bloom"
-	  }
-	}
-	WELLKNOWN
+build_local_service_image_if_needed() {
+	local name="$1"
+	local svc_dir="${BLOOM_SERVICES}/${name}"
+	local image_ref=""
 
-	cat > "$BLOOM_CONFIG/cinny/nginx.conf" <<-'NGINX'
-	server {
-	    listen 80;
-	    server_name _;
+	case "$name" in
+		fluffychat) image_ref="localhost/bloom-fluffychat:latest" ;;
+		code-server) image_ref="localhost/bloom-code-server:latest" ;;
+		*) return 0 ;;
+	esac
 
-	    root /app;
-	    index index.html;
+	if [[ ! -f "$svc_dir/Containerfile" ]]; then
+		echo "  Missing Containerfile for ${name}: ${svc_dir}/Containerfile" >&2
+		return 1
+	fi
 
-	    location = /config.json {
-	        add_header Cache-Control "no-store";
-	        try_files /config.json =404;
-	    }
-
-	    location = /.well-known/matrix/client {
-	        add_header Access-Control-Allow-Origin "*";
-	        add_header Cache-Control "no-store";
-	        default_type application/json;
-	        try_files /.well-known/matrix/client =404;
-	    }
-
-	    location / {
-	        try_files $uri /index.html;
-	    }
-	}
-	NGINX
+	echo "  Building local image ${image_ref}..."
+	if ! podman build -t "$image_ref" -f "$svc_dir/Containerfile" "$svc_dir"; then
+		echo "  Failed to build local image ${image_ref}." >&2
+		return 1
+	fi
 }
 
 # --- Service install helper ---
@@ -661,8 +639,12 @@ install_service() {
 	if [[ "$name" == "dufs" ]]; then
 		mkdir -p "$HOME/Public/Bloom"
 	fi
-	if [[ "$name" == "cinny" ]]; then
-		write_cinny_runtime_config
+	if [[ "$name" == "fluffychat" ]]; then
+		write_fluffychat_runtime_config
+	fi
+
+	if ! build_local_service_image_if_needed "$name"; then
+		return 1
 	fi
 
 	# Copy SKILL.md
@@ -962,15 +944,15 @@ step_services() {
 		echo "  Bloom Home setup failed."
 	fi
 
-	read -rp "Install Bloom Web Chat? (Cinny web client for Matrix over NetBird) [y/N]: " cinny_answer
-	if [[ "${cinny_answer,,}" == "y" ]]; then
-		echo "  Installing Cinny..."
-		if install_service cinny; then
-			echo "  Cinny installed."
-			installed="${installed} cinny"
+	read -rp "Install Bloom Web Chat? (FluffyChat web client for Matrix over NetBird) [y/N]: " fluffychat_answer
+	if [[ "${fluffychat_answer,,}" == "y" ]]; then
+		echo "  Installing FluffyChat..."
+		if install_service fluffychat; then
+			echo "  FluffyChat installed."
+			installed="${installed} fluffychat"
 			write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
 		else
-			echo "  Cinny installation failed."
+			echo "  FluffyChat installation failed."
 		fi
 	fi
 

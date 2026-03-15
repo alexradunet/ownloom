@@ -37,7 +37,7 @@ Current packages:
 
 | Path | Role |
 |------|------|
-| `services/cinny/` | packaged Bloom Web Chat client using a pinned upstream image on port `8081` |
+| `services/fluffychat/` | packaged Bloom Web Chat client built locally from a pinned FluffyChat release on port `8081` |
 | `services/dufs/` | packaged WebDAV file server using a pinned upstream image on port `5000` |
 | `services/code-server/` | packaged editor service built as a local image and exposed on port `8443` |
 | `services/_template/` | scaffold template source for new packages |

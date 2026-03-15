@@ -1,15 +1,15 @@
 version: 1
 source_repo: https://github.com/pibloom/pi-bloom
 services:
-  cinny:
+  fluffychat:
     version: "0.1.0"
     category: messaging
-    image: ghcr.io/cinnyapp/cinny:v4.10.2
+    image: localhost/bloom-fluffychat:latest
     optional: true
     home_visible: true
     port: 8081
     title: Bloom Web Chat
-    description: Browser Matrix client preconfigured for this Bloom node
+    description: FluffyChat web client preconfigured for this Bloom node
     icon_text: MX
     access_path: /
     preflight:

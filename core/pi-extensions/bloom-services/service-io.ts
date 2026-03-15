@@ -55,8 +55,8 @@ async function installServiceRuntimeExtras(name: string, configDir: string, sign
 	if (name === "dufs") {
 		mkdirSync(join(os.homedir(), "Public", "Bloom"), { recursive: true });
 	}
-	if (name === "cinny") {
-		await writeCinnyRuntimeConfig(configDir, signal);
+	if (name === "fluffychat") {
+		await writeFluffychatRuntimeConfig(configDir, signal);
 	}
 }
 
@@ -103,71 +103,22 @@ export async function installServicePackage(
 	return { ok: true, source: "local", ref: name };
 }
 
-async function writeCinnyRuntimeConfig(configDir: string, signal?: AbortSignal): Promise<void> {
-	const cinnyDir = join(configDir, "cinny");
-	const wellKnownDir = join(cinnyDir, ".well-known", "matrix");
-	mkdirSync(wellKnownDir, { recursive: true });
+async function writeFluffychatRuntimeConfig(configDir: string, signal?: AbortSignal): Promise<void> {
+	const fluffychatDir = join(configDir, "fluffychat");
+	mkdirSync(fluffychatDir, { recursive: true });
 
 	const access = await resolveMeshMatrixAccess(signal);
-	const homeserverList = [access.primaryMatrixUrl];
-	if (access.fallbackMatrixUrl) homeserverList.push(access.fallbackMatrixUrl);
 
 	writeFileSync(
-		join(cinnyDir, "config.json"),
+		join(fluffychatDir, "config.json"),
 		JSON.stringify(
 			{
-				defaultHomeserver: 0,
-				homeserverList,
-				allowCustomHomeservers: true,
-				hashRouter: {
-					enabled: true,
-				},
+				applicationName: "Bloom Web Chat",
+				defaultHomeserver: access.primaryMatrixUrl,
 			},
 			null,
 			2,
 		),
-	);
-
-	writeFileSync(
-		join(wellKnownDir, "client"),
-		JSON.stringify(
-			{
-				"m.homeserver": {
-					base_url: access.primaryMatrixUrl,
-					server_name: "bloom",
-				},
-			},
-			null,
-			2,
-		),
-	);
-
-	writeFileSync(
-		join(cinnyDir, "nginx.conf"),
-		`server {
-    listen 80;
-    server_name _;
-
-    root /app;
-    index index.html;
-
-    location = /config.json {
-        add_header Cache-Control "no-store";
-        try_files /config.json =404;
-    }
-
-    location = /.well-known/matrix/client {
-        add_header Access-Control-Allow-Origin "*";
-        add_header Cache-Control "no-store";
-        default_type application/json;
-        try_files /.well-known/matrix/client =404;
-    }
-
-    location / {
-        try_files $uri /index.html;
-    }
-}
-`,
 	);
 }
 

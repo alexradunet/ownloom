@@ -62,7 +62,7 @@ Installed by default:
 
 Optional packaged services:
 
-- `cinny`
+- `fluffychat`
 - `dufs`
 - `code-server`
 

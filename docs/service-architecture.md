@@ -87,7 +87,7 @@ Bundled packages:
 
 | Package | Image source | Notes |
 |---------|--------------|-------|
-| `cinny` | pinned upstream image | optional Bloom Web Chat client on port `8081` |
+| `fluffychat` | local image `localhost/bloom-fluffychat:latest` | optional Bloom Web Chat client built from a pinned FluffyChat release and exposed on port `8081` |
 | `dufs` | pinned upstream image | packaged WebDAV file server on port `5000` |
 | `code-server` | local image `localhost/bloom-code-server:latest` | built from `services/code-server/Containerfile` and exposed on port `8443` |
 | `_template` | scaffold source | basis for new service packages |

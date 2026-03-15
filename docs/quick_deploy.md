@@ -46,7 +46,7 @@ Forwarded ports in `just vm`:
 - `2222` -> guest SSH
 - `5000` -> `dufs`
 - `8080` -> guest port `8080`
-- `8081` -> `cinny`
+- `8081` -> `fluffychat`
 - `8888` -> guest port `80`
 
 Access the VM:

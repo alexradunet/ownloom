@@ -1,0 +1,25 @@
+[Unit]
+Description=Bloom FluffyChat - browser-based Matrix web client
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/bloom-fluffychat:latest
+ContainerName=bloom-fluffychat
+
+PublishPort=8081:80
+
+Volume=%h/.config/bloom/fluffychat/config.json:/usr/share/nginx/html/config.json:ro
+
+PodmanArgs=--memory=384m
+PodmanArgs=--security-opt label=disable
+NoNewPrivileges=true
+LogDriver=journald
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=600
+
+[Install]
+WantedBy=default.target
