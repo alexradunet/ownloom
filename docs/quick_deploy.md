@@ -91,7 +91,7 @@ Important outputs:
 
 - image tag default: `localhost/bloom-os:latest`
 - qcow2 path: `core/os/output/qcow2/disk.qcow2`
-- production registry default in `justfile`: `ghcr.io/pibloom/bloom-os:latest`
+- production registry default in `justfile`: `ghcr.io/alexradunet/bloom-os:latest`
 
 Related `just` commands:
 

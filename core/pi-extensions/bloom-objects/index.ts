@@ -10,6 +10,15 @@ import { type RegisteredExtensionTool, defineTool, registerTools } from "../../l
 import { listObjects, queryObjects, searchObjects } from "./actions-query.js";
 import { createObject, linkObjects, readObject, updateObject, upsertObject } from "./actions.js";
 
+type MemoryCreateParams = Parameters<typeof createObject>[0];
+type MemoryUpdateParams = Parameters<typeof updateObject>[0];
+type MemoryUpsertParams = Parameters<typeof upsertObject>[0];
+type MemoryReadParams = Parameters<typeof readObject>[0];
+type MemoryQueryParams = Parameters<typeof queryObjects>[0];
+type MemorySearchParams = Parameters<typeof searchObjects>[0];
+type MemoryLinkParams = Parameters<typeof linkObjects>[0];
+type MemoryListParams = Parameters<typeof listObjects>[0];
+
 const fieldValueSchema = Type.Union([
 	Type.String(),
 	Type.Number(),
@@ -44,7 +53,7 @@ export default function (pi: ExtensionAPI) {
 				),
 			}),
 			async execute(_toolCallId, params) {
-				return createObject(params);
+				return createObject(params as MemoryCreateParams);
 			},
 		}),
 		defineTool({
@@ -59,7 +68,7 @@ export default function (pi: ExtensionAPI) {
 				path: Type.Optional(Type.String({ description: "Optional direct file path relative to home dir" })),
 			}),
 			async execute(_toolCallId, params) {
-				return updateObject(params);
+				return updateObject(params as MemoryUpdateParams);
 			},
 		}),
 		defineTool({
@@ -74,7 +83,7 @@ export default function (pi: ExtensionAPI) {
 				path: Type.Optional(Type.String({ description: "Optional direct file path relative to home dir" })),
 			}),
 			async execute(_toolCallId, params) {
-				return upsertObject(params);
+				return upsertObject(params as MemoryUpsertParams);
 			},
 		}),
 		defineTool({
@@ -87,7 +96,7 @@ export default function (pi: ExtensionAPI) {
 				path: Type.Optional(Type.String({ description: "Optional direct file path relative to home dir" })),
 			}),
 			async execute(_toolCallId, params) {
-				return readObject(params);
+				return readObject(params as MemoryReadParams);
 			},
 		}),
 		defineTool({
@@ -115,7 +124,7 @@ export default function (pi: ExtensionAPI) {
 				limit: Type.Optional(Type.Number({ description: "Max ranked results", default: 10 })),
 			}),
 			async execute(_toolCallId, params, signal) {
-				return queryObjects(params, signal);
+				return queryObjects(params as MemoryQueryParams, signal);
 			},
 		}),
 		defineTool({
@@ -128,7 +137,7 @@ export default function (pi: ExtensionAPI) {
 				}),
 			}),
 			async execute(_toolCallId, params, signal) {
-				return searchObjects(params, signal);
+				return searchObjects(params as MemorySearchParams, signal);
 			},
 		}),
 		defineTool({
@@ -144,7 +153,7 @@ export default function (pi: ExtensionAPI) {
 				}),
 			}),
 			async execute(_toolCallId, params) {
-				return linkObjects(params);
+				return linkObjects(params as MemoryLinkParams);
 			},
 		}),
 		defineTool({
@@ -161,7 +170,7 @@ export default function (pi: ExtensionAPI) {
 				),
 			}),
 			async execute(_toolCallId, params, signal) {
-				return listObjects(params, signal);
+				return listObjects(params as MemoryListParams, signal);
 			},
 		}),
 	];

@@ -26,6 +26,8 @@ import {
 } from "./actions.js";
 
 type BloomCommandContext = Parameters<Parameters<ExtensionAPI["registerCommand"]>[1]["handler"]>[1];
+type SkillCreateParams = Parameters<typeof handleSkillCreate>[1];
+type PersonaEvolveParams = Parameters<typeof handlePersonaEvolve>[1];
 
 export default function (pi: ExtensionAPI) {
 	const bloomDir = getBloomDir();
@@ -50,7 +52,7 @@ export default function (pi: ExtensionAPI) {
 				content: Type.String({ description: "Skill body in markdown (instructions, guidelines, examples)" }),
 			}),
 			async execute(_toolCallId, params) {
-				return handleSkillCreate(bloomDir, params);
+				return handleSkillCreate(bloomDir, params as SkillCreateParams);
 			},
 		}),
 		defineTool({
@@ -98,10 +100,11 @@ export default function (pi: ExtensionAPI) {
 				proposal: Type.String({ description: "Detailed description of what to change and why" }),
 			}),
 			async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-				const slug = "slug" in params && typeof params.slug === "string" ? params.slug : "persona change";
+				const typedParams = params as PersonaEvolveParams;
+				const slug = typedParams.slug || "persona change";
 				const denied = await requireConfirmation(ctx, `Apply persona evolution ${slug}`);
 				if (denied) return { content: [{ type: "text" as const, text: denied }], details: {}, isError: true };
-				return handlePersonaEvolve(bloomDir, params);
+				return handlePersonaEvolve(bloomDir, typedParams);
 			},
 		}),
 	];

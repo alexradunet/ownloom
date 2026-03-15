@@ -8,7 +8,7 @@ podman := env("BLOOM_PODMAN", "sudo podman")
 storage := env("BLOOM_STORAGE", "/var/lib/containers/storage")
 ovmf := "/usr/share/edk2/ovmf/OVMF_CODE.fd"
 ovmf_vars := "/usr/share/edk2/ovmf/OVMF_VARS.fd"
-registry := env("BLOOM_REGISTRY", "ghcr.io/pibloom")
+registry := env("BLOOM_REGISTRY", "ghcr.io/alexradunet")
 remote_image := registry + "/bloom-os:latest"
 
 # Build the container image (rootful by default, so BIB can see it)

@@ -11,6 +11,8 @@ import { sanitize } from "../../lib/audit.js";
 import { type RegisteredExtensionTool, defineTool, registerTools } from "../../lib/extension-tools.js";
 import { appendAudit, ensureAuditDir, handleAuditReview, rotateAudit } from "./actions.js";
 
+type AuditReviewParams = Parameters<typeof handleAuditReview>[0];
+
 export default function (pi: ExtensionAPI) {
 	let rotated = false;
 
@@ -59,7 +61,7 @@ export default function (pi: ExtensionAPI) {
 				),
 			}),
 			async execute(_toolCallId, params) {
-				return handleAuditReview(params);
+				return handleAuditReview(params as AuditReviewParams);
 			},
 		}),
 	];

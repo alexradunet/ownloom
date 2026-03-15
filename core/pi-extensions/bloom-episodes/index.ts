@@ -11,6 +11,13 @@ import { type RegisteredExtensionTool, defineTool, registerTools } from "../../l
 import { truncate } from "../../lib/shared.js";
 import { consolidateEpisodes, createEpisode, listEpisodes, promoteEpisode } from "./actions.js";
 
+type EpisodeCreateParams = Parameters<typeof createEpisode>[0] & {
+	promote_to?: Parameters<typeof promoteEpisode>[0]["target"];
+};
+type EpisodeListParams = Parameters<typeof listEpisodes>[0];
+type EpisodePromoteParams = Parameters<typeof promoteEpisode>[0];
+type EpisodeConsolidateParams = Parameters<typeof consolidateEpisodes>[0];
+
 function projectNameFromCtx(ctx: { cwd?: string } | undefined): string | undefined {
 	if (!ctx?.cwd) return undefined;
 	const name = path.basename(ctx.cwd);
@@ -54,13 +61,14 @@ export default function (pi: ExtensionAPI) {
 				),
 			}),
 			async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-				const episodeResult = createEpisode(params);
-				if (("isError" in episodeResult && episodeResult.isError) || !params.promote_to) {
+				const typedParams = params as EpisodeCreateParams;
+				const episodeResult = createEpisode(typedParams);
+				if (("isError" in episodeResult && episodeResult.isError) || !typedParams.promote_to) {
 					return episodeResult;
 				}
 				const promotion = promoteEpisode({
 					episode_id: String((episodeResult.details as { id: string }).id),
-					target: params.promote_to,
+					target: typedParams.promote_to,
 					mode: "upsert",
 					projectName: projectNameFromCtx(ctx),
 				});
@@ -89,7 +97,7 @@ export default function (pi: ExtensionAPI) {
 				limit: Type.Optional(Type.Number({ description: "Max results to return", default: 20 })),
 			}),
 			async execute(_toolCallId, params) {
-				const matches = listEpisodes(params);
+				const matches = listEpisodes(params as EpisodeListParams);
 				const text = matches.length > 0 ? matches.join("\n") : "No episodes found";
 				return {
 					content: [{ type: "text" as const, text: truncate(text) }],
@@ -118,10 +126,11 @@ export default function (pi: ExtensionAPI) {
 				}),
 			}),
 			async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+				const typedParams = params as EpisodePromoteParams;
 				return promoteEpisode({
-					episode_id: params.episode_id,
-					target: params.target,
-					mode: params.mode,
+					episode_id: typedParams.episode_id,
+					target: typedParams.target,
+					mode: typedParams.mode,
 					projectName: projectNameFromCtx(ctx),
 				});
 			},
@@ -137,7 +146,8 @@ export default function (pi: ExtensionAPI) {
 				limit: Type.Optional(Type.Number({ description: "Max episodes to scan", default: 20 })),
 			}),
 			async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-				return consolidateEpisodes({ ...params, projectName: projectNameFromCtx(ctx) });
+				const typedParams = params as EpisodeConsolidateParams;
+				return consolidateEpisodes({ ...typedParams, projectName: projectNameFromCtx(ctx) });
 			},
 		}),
 	];
