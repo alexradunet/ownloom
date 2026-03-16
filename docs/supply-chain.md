@@ -53,7 +53,7 @@ Current repo sources of truth:
 
 - `services/catalog.yaml` for packaged service and bridge image refs
 - `services/*/quadlet/` for runtime unit behavior
-- `core/os/Containerfile` and `justfile` for the Bloom OS image
+- `flake.nix` and `justfile` for the Bloom OS image
 
 Review checklist:
 

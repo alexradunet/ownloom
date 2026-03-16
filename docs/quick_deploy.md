@@ -23,7 +23,7 @@ Install [Nix](https://determinate.systems/posts/determinate-nix-installer/) and 
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
-sudo dnf install -y just qemu-system-x86 edk2-ovmf   # Fedora build host
+sudo dnf install -y just qemu-system-x86 edk2-ovmf   # on Fedora/RHEL hosts
 ```
 
 Or install all deps at once:

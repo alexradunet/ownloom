@@ -29,21 +29,21 @@
         bloom-app = bloomApp;
 
         qcow2 = nixos-generators.nixosGenerate {
-          inherit system;
+          inherit system pkgs;
           format = "qcow";
           modules = [ ./core/os/hosts/x86_64.nix ];
           specialArgs = { inherit piAgent bloomApp; };
         };
 
         raw = nixos-generators.nixosGenerate {
-          inherit system;
+          inherit system pkgs;
           format = "raw";
           modules = [ ./core/os/hosts/x86_64.nix ];
           specialArgs = { inherit piAgent bloomApp; };
         };
 
         iso = nixos-generators.nixosGenerate {
-          inherit system;
+          inherit system pkgs;
           format = "install-iso";
           modules = [ ./core/os/hosts/x86_64.nix ];
           specialArgs = { inherit piAgent bloomApp; };
