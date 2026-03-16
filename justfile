@@ -41,6 +41,8 @@ vm: qcow2
     set -euo pipefail
     disk="/tmp/bloom-vm-disk.qcow2"
     vars="/tmp/bloom-ovmf-vars.fd"
+    # Always use fresh OVMF vars to avoid stale boot entries
+    rm -f "$vars"
     # Find the actual qcow2 file in the result directory (follow symlinks)
     qcow2_src=$(find -L {{ output }} -name "*.qcow2" -type f | head -1)
     if [ -z "$qcow2_src" ]; then
@@ -60,13 +62,49 @@ vm: qcow2
         -enable-kvm \
         -m 4096 \
         -smp 2 \
+        -boot order=c,menu=on \
         -drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
         -drive if=pflash,format=raw,file="$vars" \
-        -drive file="$disk",format=qcow2,if=virtio \
+        -drive file="$disk",format=qcow2,if=virtio,cache=writeback \
         -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000,hostfwd=tcp::8080-:8080,hostfwd=tcp::8081-:8081,hostfwd=tcp::8888-:80 \
         -device virtio-net-pci,netdev=net0 \
         -nographic \
         -serial mon:stdio
+
+# Run VM with GUI display and debug output
+vm-gui: qcow2
+    #!/usr/bin/env bash
+    set -euo pipefail
+    disk="/tmp/bloom-vm-disk.qcow2"
+    vars="/tmp/bloom-ovmf-vars.fd"
+    # Always use fresh OVMF vars
+    rm -f "$vars"
+    # Find the actual qcow2 file in the result directory (follow symlinks)
+    qcow2_src=$(find -L {{ output }} -name "*.qcow2" -type f | head -1)
+    if [ -z "$qcow2_src" ]; then
+        echo "Error: No qcow2 found in {{ output }}"
+        exit 1
+    fi
+    echo "Found qcow2: $qcow2_src"
+    echo "Copying disk image to $disk..."
+    cp -f "$qcow2_src" "$disk"
+    chmod 644 "$disk"
+    cp "{{ ovmf_vars }}" "$vars"
+    echo "Starting VM with GUI... Close window to exit"
+    qemu-system-x86_64 \
+        -machine q35 \
+        -cpu host \
+        -enable-kvm \
+        -m 4096 \
+        -smp 2 \
+        -boot order=c,menu=on \
+        -drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
+        -drive if=pflash,format=raw,file="$vars" \
+        -drive file="$disk",format=qcow2,if=virtio,cache=writeback \
+        -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000,hostfwd=tcp::8080-:8080,hostfwd=tcp::8081-:8081 \
+        -device virtio-net-pci,netdev=net0 \
+        -vga virtio \
+        -display gtk
 
 # Run VM with existing qcow2 (no rebuild)
 vm-run:
