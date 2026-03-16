@@ -99,11 +99,11 @@ Hooks:
 
 Purpose:
 
-- host OS management for bootc, systemd, containers, and updates
+- host OS management for NixOS, systemd, containers, and updates
 
 Tools:
 
-- `bootc`
+- `nixos_update`
 - `container`
 - `systemd_control`
 - `system_health`

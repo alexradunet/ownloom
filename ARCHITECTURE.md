@@ -11,7 +11,7 @@ Bloom is intentionally built from simple host-native primitives:
 - markdown for durable human-readable state
 - TypeScript extensions for Pi integration
 - systemd and Quadlet for long-running workloads
-- a bootc image for host distribution
+- a NixOS flake for host distribution
 
 The design goal is inspectability over abstraction. Bloom should be understandable from the repo and from the host filesystem without requiring hidden control planes or databases.
 

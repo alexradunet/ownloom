@@ -670,7 +670,7 @@ step_welcome() {
 	echo "Press Ctrl+C at any time to abort — you'll resume where you left off next login."
 	echo ""
 
-	# Set hostname if not already set (bootc strips /etc/hostname from the image)
+	# Set hostname (NixOS derives it from networking.hostName; this sets it at runtime)
 	if [[ "$(hostnamectl hostname 2>/dev/null)" != "bloom" ]]; then
 		sudo hostnamectl set-hostname bloom 2>/dev/null || true
 	fi
@@ -975,54 +975,13 @@ step_services() {
 step_bootc_switch() {
 	echo ""
 	echo "--- System Updates ---"
-
-	# Check if bootc is available
-	if ! command -v bootc &>/dev/null; then
-		echo "bootc not available — skipping update configuration."
-		mark_done bootc_switch
-		return
-	fi
-
-	# Get current image info
-	local current_image
-	current_image=$(sudo bootc status --json 2>/dev/null | sed -n 's/.*"image"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || true)
-
-	# Check if already using registry image
-	if [[ "$current_image" == *"ghcr.io/alexradunet/bloom-os"* ]]; then
-		echo "Already configured for registry updates."
-		mark_done bootc_switch
-		return
-	fi
-
-	echo "Your system was installed from an offline ISO (embedded container)."
-	echo "To receive over-the-air (OTA) updates from the registry, you can"
-	echo "switch to the registry image now."
+	echo "Bloom OS uses NixOS with automatic OTA updates."
+	echo "The bloom-update timer checks for updates every 6 hours."
 	echo ""
-	echo "Current image: ${current_image:-local/embedded}"
-	echo "Registry image: ghcr.io/alexradunet/bloom-os:latest"
+	echo "To update manually at any time: sudo nixos-rebuild switch --flake github:alexradunet/piBloom#bloom-x86_64"
+	echo "To roll back:                   sudo nixos-rebuild switch --rollback"
 	echo ""
-
-	local answer
-	read -rp "Switch to registry image for OTA updates? [y/N]: " answer
-	if [[ "${answer,,}" != "y" ]]; then
-		echo "Skipped. You can switch later with:"
-		echo "  sudo bootc switch --transport registry ghcr.io/alexradunet/bloom-os:latest"
-		mark_done_with bootc_switch "skipped"
-		return
-	fi
-
-	echo "Switching to registry image..."
-	if sudo bootc switch --transport registry ghcr.io/alexradunet/bloom-os:latest; then
-		echo ""
-		echo "Switched successfully! The next reboot will use the registry image."
-		echo "OTA updates are now available via: sudo bootc update"
-		mark_done_with bootc_switch "registry"
-	else
-		echo ""
-		echo "Switch failed. You can retry later with:"
-		echo "  sudo bootc switch --transport registry ghcr.io/alexradunet/bloom-os:latest"
-		mark_done_with bootc_switch "failed"
-	fi
+	mark_done bootc_switch
 }
 
 # --- Finalization ---

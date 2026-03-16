@@ -32,7 +32,7 @@ Current platform capabilities:
 - Bloom directory management and blueprint seeding for `~/Bloom/`
 - persona injection, shell guardrails, durable-memory digest injection, and compaction context persistence
 - audit logging for tool calls and tool results
-- host OS management tools for `bootc`, containers, systemd, health, and reboot scheduling
+- host OS management tools for NixOS updates, containers, systemd, health, and reboot scheduling
 - repo bootstrap, sync, and PR submission helpers
 - service scaffolding, installation, smoke testing, manifest management, and bridge lifecycle tools
 - markdown-native durable memory in `~/Bloom/Objects/`

@@ -1,6 +1,6 @@
 ---
 name: os-operations
-description: Inspect, manage, and remediate the Bloom OS system — bootc status, services, containers, and timers
+description: Inspect, manage, and remediate the Bloom OS system — NixOS updates, services, containers, and timers
 ---
 
 # OS Operations Skill
@@ -9,23 +9,23 @@ Use this skill when the user asks about Bloom OS health/state, or when an error 
 
 ## Bloom OS Architecture
 
-Bloom runs on **Fedora bootc 42** (immutable, image-based):
+Bloom runs on **NixOS** (declarative, flake-based):
 
-- `/usr` — immutable OS content, updated via bootc image upgrades
-- `/etc` — host configuration
+- `/run/current-system` — immutable OS content, updated via `nixos-rebuild switch`
+- `/etc` — generated host configuration
 - `/var` — persistent runtime/user state
 
-Bloom services are **user Quadlet units** managed by `systemd --user`:
+Bloom services are **systemd units** managed by `systemd` (system) and `systemd --user` (Pi agent):
 
-- Unit files: `~/.config/containers/systemd/`
-- Typical control path: `systemctl --user ...`
+- System units: `/etc/systemd/system/`
+- Typical control path: `systemctl ...` / `systemctl --user ...`
 
 ## Use Tools First (preferred)
 
 Prefer Bloom extension tools over raw shell commands:
 
 - `system_health` — broad health snapshot
-- `bootc(action)` — status, check, download, apply, rollback for OS image
+- `nixos_update(action)` — status, apply, rollback for NixOS generation
 - `container(action)` — status, logs, deploy for bloom-* containers
 - `systemd_control` — start/stop/restart/status for Bloom user services
 - `manifest_show` / `manifest_sync` / `manifest_set_service` / `manifest_apply` — declarative service state management
@@ -33,7 +33,7 @@ Prefer Bloom extension tools over raw shell commands:
 ## Standard Triage Flow
 
 1. Run `system_health`
-2. If OS issue suspected: run `bootc(action="status")`
+2. If OS issue suspected: run `nixos_update(action="status")`
 3. If service issue suspected:
    - `container(action="status")`
    - `systemd_control action=status`
@@ -46,7 +46,7 @@ Prefer Bloom extension tools over raw shell commands:
 ### Healthy
 - `bloom-*` services active/running
 - Containers running and not unhealthy
-- `bootc(action="status")` consistent with expected image state
+- `nixos_update(action="status")` shows current generation is booted
 
 ### Unhealthy
 - service failed / inactive unexpectedly

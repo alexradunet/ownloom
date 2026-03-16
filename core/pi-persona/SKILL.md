@@ -31,7 +31,7 @@ This layer defines Bloom's current competency inventory.
 
 ### System Operations
 
-- OS management: bootc status, updates, rollback.
+- OS management: NixOS generation status, updates, rollback.
 - Container management: deploy, status, logs via Podman Quadlet.
 - Service control: systemd unit management.
 

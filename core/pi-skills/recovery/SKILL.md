@@ -38,16 +38,16 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
 
 ## OS Update Failure
 
-**Symptoms**: Update staged but reboot fails, or system boots into old image.
+**Symptoms**: Update failed, or system boots into old NixOS generation.
 
-1. Check current image: `bootc(action="status")`
-2. If booted into wrong image: `bootc(action="rollback")` to revert
-3. If update stuck: check `bootc(action="check")` for available updates
+1. Check current generation: `nixos_update(action="status")`
+2. If booted into wrong generation: `nixos_update(action="rollback")` to revert
+3. If update failed: check `/var/lib/bloom/update-status.json` for last error
 4. Common causes:
-   - Network interruption during download: retry `bootc(action="download")`
-   - Incompatible image: rollback and report to maintainer
-   - Disk full: check with `system_health`, clear space in /var
-5. After rollback: schedule reboot with `schedule_reboot delay_minutes=1`
+   - Network interruption during build: retry `nixos_update(action="apply")`
+   - Evaluation error: check flake source for Nix errors
+   - Disk full: check with `system_health`, run `nix-collect-garbage`
+5. After rollback: confirm with `nixos_update(action="status")`
 
 ## dufs WebDAV Issues
 
@@ -93,7 +93,7 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
 
 1. Check disk: `system_health` — look at Disk Usage section
 2. Common consumers:
-   - Container images: `podman image prune` to remove unused
+   - Nix store: `nix-collect-garbage -d` to remove old generations and unused paths
    - Journal logs: `sudo journalctl --vacuum-size=500M`
    - Home directory: check for large files in `$HOME`
 3. For /var partition: focus on container images and logs
