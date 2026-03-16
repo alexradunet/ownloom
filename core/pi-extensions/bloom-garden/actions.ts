@@ -293,3 +293,90 @@ export function discoverSkillPaths(bloomDir: string): string[] | undefined {
 	if (!fs.existsSync(skillsDir)) return undefined;
 	return [skillsDir];
 }
+
+interface AgentInfo {
+	id: string;
+	name: string;
+	userId: string;
+	description?: string;
+}
+
+/** Load agent definitions from AGENTS.md files. */
+export function loadAgentInfos(bloomDir: string): AgentInfo[] {
+	const agentsDir = path.join(bloomDir, "Agents");
+	if (!fs.existsSync(agentsDir)) return [];
+
+	const agents: AgentInfo[] = [];
+	const entries = fs.readdirSync(agentsDir, { withFileTypes: true });
+
+	for (const entry of entries) {
+		if (!entry.isDirectory()) continue;
+		const agentFile = path.join(agentsDir, entry.name, "AGENTS.md");
+		if (!fs.existsSync(agentFile)) continue;
+
+		try {
+			const raw = fs.readFileSync(agentFile, "utf-8");
+			// Parse simple frontmatter
+			const idMatch = raw.match(/^id:\s*(.+)$/m);
+			const nameMatch = raw.match(/^name:\s*(.+)$/m);
+			const usernameMatch = raw.match(/username:\s*(.+)$/m);
+			const descMatch = raw.match(/^description:\s*(.+)$/m);
+
+			if (idMatch && nameMatch && usernameMatch) {
+				const id = idMatch[1].trim();
+				const username = usernameMatch[1].trim();
+				// Determine server name from bloomDir context or default
+				const serverName = process.env.BLOOM_SERVER_NAME ?? "bloom";
+				agents.push({
+					id,
+					name: nameMatch[1].trim(),
+					userId: `@${username}:${serverName}`,
+					...(descMatch ? { description: descMatch[1].trim() } : {}),
+				});
+			}
+		} catch {
+			// Skip malformed agent files
+		}
+	}
+
+	return agents;
+}
+
+/** Format a message that mentions another agent. */
+export function handleMentionAgent(
+	bloomDir: string,
+	params: { agent_id: string; message: string },
+): { content: Array<{ type: "text"; text: string }>; details: Record<string, unknown> } {
+	const agents = loadAgentInfos(bloomDir);
+	const target = agents.find((a) => a.id === params.agent_id);
+
+	if (!target) {
+		const available = agents.map((a) => `- ${a.id} (${a.name})`).join("\n");
+		return {
+			content: [
+				{
+					type: "text" as const,
+					text: `Unknown agent: ${params.agent_id}\n\nAvailable agents:\n${available || "(none)"}`,
+				},
+			],
+			details: { availableAgents: agents.map((a) => a.id) },
+			isError: true,
+		} as unknown as { content: Array<{ type: "text"; text: string }>; details: Record<string, unknown> };
+	}
+
+	const formattedMessage = `${target.userId} ${params.message}`;
+	return {
+		content: [
+			{
+				type: "text" as const,
+				text: formattedMessage,
+			},
+		],
+		details: {
+			agentId: target.id,
+			agentName: target.name,
+			userId: target.userId,
+			formattedMessage,
+		},
+	};
+}

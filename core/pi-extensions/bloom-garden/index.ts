@@ -1,7 +1,7 @@
 /**
  * bloom-garden — Bloom directory management, blueprint seeding, skill creation, agent provisioning, persona evolution.
  *
- * @tools garden_status, skill_create, skill_list, agent_create, persona_evolve
+ * @tools garden_status, skill_create, skill_list, agent_create, mention_agent, persona_evolve
  * @commands /bloom (init | status | update-blueprints)
  * @hooks session_start, resources_discover
  * @see {@link ../../AGENTS.md#bloom-garden} Extension reference
@@ -20,6 +20,7 @@ import {
 	getPackageDir,
 	handleAgentCreate,
 	handleGardenStatus,
+	handleMentionAgent,
 	handlePersonaEvolve,
 	handleSkillCreate,
 	handleSkillList,
@@ -105,6 +106,23 @@ export default function (pi: ExtensionAPI) {
 				const denied = await requireConfirmation(ctx, `Apply persona evolution ${slug}`);
 				if (denied) return { content: [{ type: "text" as const, text: denied }], details: {}, isError: true };
 				return handlePersonaEvolve(bloomDir, typedParams);
+			},
+		}),
+		defineTool({
+			name: "mention_agent",
+			label: "Mention Agent",
+			description: "Format a message that mentions another Bloom agent to trigger them in a Matrix room. Returns the formatted message with the agent's Matrix User ID.",
+			promptGuidelines: [
+				"Use this to ask another agent for help or delegate tasks.",
+				"The returned message should be sent in a Matrix room where both agents are present.",
+				"Target agent must have allow_agent_mentions: true (default) in their AGENTS.md.",
+			],
+			parameters: Type.Object({
+				agent_id: Type.String({ description: "ID of the agent to mention (e.g., 'cookie', 'planner')" }),
+				message: Type.String({ description: "The message or request to send to the agent" }),
+			}),
+			async execute(_toolCallId, params) {
+				return handleMentionAgent(bloomDir, params as { agent_id: string; message: string });
 			},
 		}),
 	];

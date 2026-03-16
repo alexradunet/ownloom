@@ -7,8 +7,10 @@ import {
 	getPackageDir,
 	handleAgentCreate,
 	handleGardenStatus,
+	handleMentionAgent,
 	handleSkillCreate,
 	handleSkillList,
+	loadAgentInfos,
 } from "../../core/pi-extensions/bloom-garden/actions.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
@@ -553,5 +555,129 @@ describe("handleSkillList", () => {
 		fs.mkdirSync(path.join(bloomDir, "Skills", "orphan"), { recursive: true });
 		const result = handleSkillList(bloomDir);
 		expect(result.content[0].text).toContain("No skills found");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// loadAgentInfos
+// ---------------------------------------------------------------------------
+describe("loadAgentInfos", () => {
+	it("returns empty array when Agents directory does not exist", () => {
+		const agents = loadAgentInfos(bloomDir);
+		expect(agents).toEqual([]);
+	});
+
+	it("parses agent definitions from AGENTS.md files", () => {
+		ensureBloom(bloomDir);
+		const agentDir = path.join(bloomDir, "Agents", "cookie");
+		fs.mkdirSync(agentDir, { recursive: true });
+		fs.writeFileSync(
+			path.join(agentDir, "AGENTS.md"),
+			`---
+id: cookie
+name: Cookie
+matrix:
+  username: cookie
+description: Memory manager
+---
+
+# Cookie
+
+I manage memories.
+`,
+		);
+
+		const agents = loadAgentInfos(bloomDir);
+		expect(agents).toHaveLength(1);
+		expect(agents[0]).toMatchObject({
+			id: "cookie",
+			name: "Cookie",
+			userId: expect.stringContaining("@cookie:"),
+			description: "Memory manager",
+		});
+	});
+
+	it("skips malformed agent files", () => {
+		ensureBloom(bloomDir);
+		const agentDir = path.join(bloomDir, "Agents", "bad");
+		fs.mkdirSync(agentDir, { recursive: true });
+		fs.writeFileSync(path.join(agentDir, "AGENTS.md"), "not valid frontmatter");
+
+		const agents = loadAgentInfos(bloomDir);
+		expect(agents).toEqual([]);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// handleMentionAgent
+// ---------------------------------------------------------------------------
+describe("handleMentionAgent", () => {
+	beforeEach(() => {
+		ensureBloom(bloomDir);
+	});
+
+	it("formats a message with the agent's Matrix User ID", () => {
+		// Setup: create an agent
+		const agentDir = path.join(bloomDir, "Agents", "cookie");
+		fs.mkdirSync(agentDir, { recursive: true });
+		fs.writeFileSync(
+			path.join(agentDir, "AGENTS.md"),
+			`---
+id: cookie
+name: Cookie
+matrix:
+  username: cookie
+description: Memory manager
+---
+`,
+		);
+
+		const result = handleMentionAgent(bloomDir, {
+			agent_id: "cookie",
+			message: "Please remember that I prefer dark mode",
+		});
+
+		expect(result.content[0].text).toBe("@cookie:bloom Please remember that I prefer dark mode");
+		expect(result.details).toMatchObject({
+			agentId: "cookie",
+			agentName: "Cookie",
+			userId: "@cookie:bloom",
+		});
+	});
+
+	it("returns error for unknown agent with available agents list", () => {
+		// Setup: create one agent
+		const agentDir = path.join(bloomDir, "Agents", "planner");
+		fs.mkdirSync(agentDir, { recursive: true });
+		fs.writeFileSync(
+			path.join(agentDir, "AGENTS.md"),
+			`---
+id: planner
+name: Planner
+matrix:
+  username: planner
+description: Planning assistant
+---
+`,
+		);
+
+		const result = handleMentionAgent(bloomDir, {
+			agent_id: "unknown",
+			message: "Hello",
+		});
+
+		expect(result.content[0].text).toContain("Unknown agent: unknown");
+		expect(result.content[0].text).toContain("planner");
+		expect(result.content[0].text).toContain("Planner");
+	});
+
+	it("returns error when no agents exist", () => {
+		const result = handleMentionAgent(bloomDir, {
+			agent_id: "anyone",
+			message: "Hello",
+		});
+
+		expect(result.content[0].text).toContain("Unknown agent: anyone");
+		expect(result.content[0].text).toContain("(none)");
 	});
 });
