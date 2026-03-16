@@ -27,6 +27,27 @@
     in {
       packages.${system} = {
         bloom-app = bloomApp;
+
+        qcow2 = nixos-generators.nixosGenerate {
+          inherit system;
+          format = "qcow";
+          modules = [ disko.nixosModules.disko ./core/os/hosts/x86_64.nix ];
+          specialArgs = { inherit piAgent bloomApp; };
+        };
+
+        raw = nixos-generators.nixosGenerate {
+          inherit system;
+          format = "raw";
+          modules = [ disko.nixosModules.disko ./core/os/hosts/x86_64.nix ];
+          specialArgs = { inherit piAgent bloomApp; };
+        };
+
+        iso = nixos-generators.nixosGenerate {
+          inherit system;
+          format = "install-iso";
+          modules = [ disko.nixosModules.disko ./core/os/hosts/x86_64.nix ];
+          specialArgs = { inherit piAgent bloomApp; };
+        };
       };
 
       nixosConfigurations.bloom-x86_64 = nixpkgs.lib.nixosSystem {
