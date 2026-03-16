@@ -25,10 +25,9 @@ qcow2: build _require-bib-config
 		-v {{ storage }}:/var/lib/containers/storage \
 		{{ bib }} \
 		--type qcow2 --local {{ image }}
-	# bootc-image-builder may leave host files owned by nobody:nobody
 	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
-# Generate anaconda-iso installer via bootc-image-builder
+# Generate installer ISO via bootc-image-builder (uses bootc native installer)
 iso: build _require-bib-config
 	mkdir -p {{ output }}
 	{{ podman }} run --rm -it --privileged --pull=newer \
@@ -37,9 +36,77 @@ iso: build _require-bib-config
 		-v ./{{ output }}:/output \
 		-v {{ storage }}:/var/lib/containers/storage \
 		{{ bib }} \
-		--type anaconda-iso --local {{ image }}
-	# bootc-image-builder may leave host files owned by nobody:nobody
+		--type iso --local {{ image }}
 	sudo chown -R $(id -u):$(id -g) {{ output }} || true
+
+# Generate production ISO from registry image
+iso-production: build _require-bib-config
+	mkdir -p {{ output }}
+	{{ podman }} run --rm -it --privileged --pull=newer \
+		--security-opt label=type:unconfined_t \
+		-v ./{{ bib_config }}:/config.toml:ro \
+		-v ./{{ output }}:/output \
+		-v {{ storage }}:/var/lib/containers/storage \
+		{{ bib }} \
+		--type iso {{ image }}
+	sudo chown -R $(id -u):$(id -g) {{ output }} || true
+
+# Test ISO installation in QEMU (creates a temporary disk, boots ISO installer)
+test-iso:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	disk="/tmp/bloom-test-disk.qcow2"
+	vars="/tmp/bloom-ovmf-vars.fd"
+	if [ ! -f "{{ output }}/bootiso/install.iso" ]; then
+		echo "Error: No ISO found. Run 'just iso' first."
+		exit 1
+	fi
+	qemu-img create -f qcow2 "$disk" 40G
+	cp "{{ ovmf_vars }}" "$vars"
+	echo "Starting ISO installation test..."
+	echo "Press Ctrl+A X to exit QEMU"
+	qemu-system-x86_64 \
+		-machine q35 \
+		-cpu host \
+		-enable-kvm \
+		-m 8G \
+		-smp 2 \
+		-drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
+		-drive if=pflash,format=raw,file="$vars" \
+		-drive file="$disk",format=qcow2,if=virtio \
+		-cdrom {{ output }}/bootiso/install.iso \
+		-netdev user,id=net0,hostfwd=tcp::2222-:22 \
+		-device virtio-net-pci,netdev=net0 \
+		-nographic \
+		-serial mon:stdio
+
+# Test ISO installation in QEMU with graphical display
+test-iso-gui:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	disk="/tmp/bloom-test-disk.qcow2"
+	vars="/tmp/bloom-ovmf-vars.fd"
+	if [ ! -f "{{ output }}/bootiso/install.iso" ]; then
+		echo "Error: No ISO found. Run 'just iso' first."
+		exit 1
+	fi
+	qemu-img create -f qcow2 "$disk" 40G
+	cp "{{ ovmf_vars }}" "$vars"
+	echo "Starting ISO installation test (GUI)..."
+	qemu-system-x86_64 \
+		-machine q35 \
+		-cpu host \
+		-enable-kvm \
+		-m 8G \
+		-smp 2 \
+		-drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
+		-drive if=pflash,format=raw,file="$vars" \
+		-drive file="$disk",format=qcow2,if=virtio \
+		-cdrom {{ output }}/bootiso/install.iso \
+		-netdev user,id=net0,hostfwd=tcp::2222-:22 \
+		-device virtio-net-pci,netdev=net0 \
+		-device virtio-vga-gl \
+		-display gtk,gl=on
 
 # Boot qcow2 in QEMU headless (serial console + SSH on :2222)
 vm:
@@ -84,19 +151,6 @@ vm-kill:
 # Remove generated images
 clean:
 	rm -rf {{ output }}
-
-# Generate production ISO (after install, run: sudo bootc switch <registry-image> for OTA)
-iso-production: build _require-bib-config
-	mkdir -p {{ output }}
-	{{ podman }} run --rm -it --privileged --pull=newer \
-		--security-opt label=type:unconfined_t \
-		-v ./{{ bib_config }}:/config.toml:ro \
-		-v ./{{ output }}:/output \
-		-v {{ storage }}:/var/lib/containers/storage \
-		{{ bib }} \
-		--type anaconda-iso {{ image }}
-	# bootc-image-builder may leave host files owned by nobody:nobody
-	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
 # Install host dependencies
 deps:
