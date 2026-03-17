@@ -57,6 +57,12 @@ vm: qcow2
     # Expand virtual disk so growPartition has room for user data (model is ~6GB)
     qemu-img resize "$disk" 24G
     cp "{{ ovmf_vars }}" "$vars"
+    # Stage project prefill into host-bloom share if present
+    if [[ -f "core/scripts/prefill.env" ]]; then
+        mkdir -p "$HOME/.bloom"
+        cp "core/scripts/prefill.env" "$HOME/.bloom/prefill.env"
+        echo "Staged core/scripts/prefill.env → ~/.bloom/prefill.env"
+    fi
     echo "Starting VM... Press Ctrl+A X to exit"
     qemu-system-x86_64 \
         -machine q35 \
@@ -96,6 +102,12 @@ vm-gui: qcow2
     chmod 644 "$disk"
     qemu-img resize "$disk" 24G
     cp "{{ ovmf_vars }}" "$vars"
+    # Stage project prefill into host-bloom share if present
+    if [[ -f "core/scripts/prefill.env" ]]; then
+        mkdir -p "$HOME/.bloom"
+        cp "core/scripts/prefill.env" "$HOME/.bloom/prefill.env"
+        echo "Staged core/scripts/prefill.env → ~/.bloom/prefill.env"
+    fi
     echo "Starting VM with GUI... Close window to exit"
     qemu-system-x86_64 \
         -machine q35 \
@@ -190,6 +202,12 @@ vm-daemon: qcow2
     chmod 644 "$disk"
     qemu-img resize "$disk" 24G
     cp "{{ ovmf_vars }}" "$vars"
+    # Stage project prefill into host-bloom share if present
+    if [[ -f "core/scripts/prefill.env" ]]; then
+        mkdir -p "$HOME/.bloom"
+        cp "core/scripts/prefill.env" "$HOME/.bloom/prefill.env"
+        echo "Staged core/scripts/prefill.env → ~/.bloom/prefill.env"
+    fi
 
     # Check if VM is already running
     if pgrep -f "[q]emu-system-x86_64.*bloom-vm-disk" > /dev/null; then
