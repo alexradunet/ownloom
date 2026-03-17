@@ -70,6 +70,8 @@ vm: qcow2
         -device virtio-net-pci,netdev=net0 \
         -nographic \
         -serial mon:stdio
+    echo ""
+    echo "Hint: Use 'just vm-daemon' to run VM in background, then 'just vm-ssh' to connect"
 
 # Run VM with GUI display and debug output
 vm-gui: qcow2
@@ -162,13 +164,96 @@ test-iso:
         -nographic \
         -serial mon:stdio
 
+# Run VM in background daemon mode (detached, no terminal attached)
+# Use this when you want to run the VM and still use your shell
+# Then connect with: just vm-ssh
+vm-daemon: qcow2
+    #!/usr/bin/env bash
+    set -euo pipefail
+    disk="/tmp/bloom-vm-disk.qcow2"
+    vars="/tmp/bloom-ovmf-vars.fd"
+    rm -f "$vars"
+    qcow2_src=$(find -L {{ output }} -name "*.qcow2" -type f | head -1)
+    if [ -z "$qcow2_src" ]; then
+        echo "Error: No qcow2 found in {{ output }}"
+        exit 1
+    fi
+    echo "Found qcow2: $qcow2_src"
+    echo "Copying disk image to $disk..."
+    cp -f "$qcow2_src" "$disk"
+    chmod 644 "$disk"
+    cp "{{ ovmf_vars }}" "$vars"
+    
+    # Check if VM is already running
+    if pgrep -f "[q]emu-system-x86_64.*bloom-vm-disk" > /dev/null; then
+        echo "VM already running. Use 'just vm-ssh' to connect or 'just vm-stop' to stop."
+        exit 1
+    fi
+    
+    echo "Starting VM in background..."
+    echo "  - Log file: /tmp/bloom-vm.log"
+    echo "  - Connect:  just vm-ssh"
+    echo "  - Stop:     just vm-stop"
+    
+    nohup qemu-system-x86_64 \
+        -machine q35 \
+        -cpu host \
+        -enable-kvm \
+        -m 4096 \
+        -smp 2 \
+        -boot order=c,menu=on \
+        -drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
+        -drive if=pflash,format=raw,file="$vars" \
+        -drive file="$disk",format=qcow2,if=virtio,cache=writeback \
+        -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000,hostfwd=tcp::8080-:8080,hostfwd=tcp::8081-:8081,hostfwd=tcp::8888-:80 \
+        -device virtio-net-pci,netdev=net0 \
+        -nographic \
+        -serial file:/tmp/bloom-vm.log \
+        > /dev/null 2>&1 &
+    
+    echo "Waiting for VM to boot..."
+    for i in {1..30}; do
+        if nc -z localhost 2222 2>/dev/null; then
+            echo "VM is ready! SSH available on port 2222"
+            exit 0
+        fi
+        sleep 1
+    done
+    echo "VM starting... try 'just vm-ssh' in a few seconds"
+
 # SSH into the running VM
 vm-ssh:
+    #!/usr/bin/env bash
+    if ! pgrep -f "[q]emu-system-x86_64.*bloom-vm-disk" > /dev/null; then
+        echo "No VM running. Start with: just vm-daemon"
+        exit 1
+    fi
+    echo "Connecting to VM..."
     ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 pi@localhost
 
-# Kill the running QEMU VM
-vm-kill:
-    pkill -f "[q]emu-system-x86_64.*bloom-vm-disk" || true
+# Show VM log (for vm-daemon)
+vm-logs:
+    tail -f /tmp/bloom-vm.log
+
+# Stop the running VM (graceful if possible, otherwise kill)
+vm-stop:
+    #!/usr/bin/env bash
+    pid=$(pgrep -f "[q]emu-system-x86_64.*bloom-vm-disk" || true)
+    if [ -z "$pid" ]; then
+        echo "No VM running"
+        exit 0
+    fi
+    echo "Stopping VM (PID: $pid)..."
+    kill "$pid" 2>/dev/null || true
+    sleep 2
+    if kill -0 "$pid" 2>/dev/null; then
+        echo "Force killing VM..."
+        kill -9 "$pid" 2>/dev/null || true
+    fi
+    echo "VM stopped"
+
+# Kill the running QEMU VM (legacy alias)
+vm-kill: vm-stop
 
 # Remove build results and VM disk
 clean:
