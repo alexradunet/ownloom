@@ -116,6 +116,25 @@
         }).config.system.build.isoImage;
       };
 
+      nixosModules = {
+        # Single composable module exporting all six Bloom feature modules.
+        # Consuming flake.nix must provide piAgent and bloomApp in specialArgs.
+        bloom = { piAgent, bloomApp, ... }: {
+          imports = [
+            ./core/os/modules/bloom-app.nix
+            ./core/os/modules/bloom-llm.nix
+            ./core/os/modules/bloom-matrix.nix
+            ./core/os/modules/bloom-network.nix
+            ./core/os/modules/bloom-shell.nix
+            ./core/os/modules/bloom-update.nix
+          ];
+          nixpkgs.config.allowUnfree = true;
+        };
+
+        # First-boot service module (included separately, not part of portable bloom module).
+        bloom-firstboot = import ./core/os/modules/bloom-firstboot.nix;
+      };
+
       # NixOS configuration for bare-metal install
       nixosConfigurations.bloom-x86_64 = nixpkgs.lib.nixosSystem {
         inherit system specialArgs;
