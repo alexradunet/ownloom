@@ -25,7 +25,7 @@
       Type = "oneshot";
       RemainAfterExit = true;
       User = "pi";
-      ExecStart = "${pkgs.bash}/bin/bash ${./bloom-firstboot.sh}";
+      ExecStart = "${pkgs.bash}/bin/bash ${../../scripts/bloom-firstboot.sh}";
       StandardOutput = "journal+console";
       # systemctl --user needs XDG_RUNTIME_DIR to reach the user bus socket.
       # This env var is not set automatically for system services running as a
