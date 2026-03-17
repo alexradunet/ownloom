@@ -1,9 +1,12 @@
 # core/calamares/package.nix
 # Custom calamares-nixos-extensions override for Bloom OS.
 # Replaces the standard nixos install module with bloom_nixos and adds bloom_prefill.
-{ pkgs }:
+#
+# upstreamCalamares must be the PRE-OVERLAY calamares-nixos-extensions (i.e. prev.*
+# in the nixpkgs overlay). Passing the post-overlay value causes infinite recursion.
+{ pkgs, upstreamCalamares }:
 
-pkgs.calamares-nixos-extensions.overrideAttrs (old: {
+upstreamCalamares.overrideAttrs (old: {
   src = pkgs.runCommand "bloom-calamares-src" {} ''
     # Start from the upstream package source
     cp -r ${old.src} $out

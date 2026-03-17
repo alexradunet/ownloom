@@ -2,12 +2,8 @@
 # Graphical installer ISO configuration for Bloom OS.
 # Uses Calamares GUI installer with LXQt desktop.
 # Custom calamares-nixos-extensions override provides Bloom-specific wizard pages.
-{ pkgs, lib, modulesPath, ... }:
+{ lib, modulesPath, ... }:
 
-let
-  # Build the custom Calamares extensions package from core/calamares/
-  bloomCalamaresExtensions = pkgs.callPackage ../../calamares/package.nix { };
-in
 {
   imports = [
     # Calamares + GNOME installer base (provides Calamares, display manager, etc.)
@@ -18,10 +14,14 @@ in
     ../modules/bloom-desktop.nix
   ];
 
-  # Replace upstream calamares-nixos-extensions with our custom Bloom version
+  # Replace upstream calamares-nixos-extensions with our custom Bloom version.
+  # Use prev.callPackage so package.nix receives the pre-overlay pkgs and the
+  # pre-overlay calamares-nixos-extensions — prevents infinite recursion.
   nixpkgs.overlays = [
     (final: prev: {
-      calamares-nixos-extensions = bloomCalamaresExtensions;
+      calamares-nixos-extensions = prev.callPackage ../../calamares/package.nix {
+        upstreamCalamares = prev.calamares-nixos-extensions;
+      };
     })
   ];
 
