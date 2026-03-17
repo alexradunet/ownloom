@@ -18,12 +18,10 @@ const BLOOM_REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../.."
 
 let sharedResourceLoaderPromise: Promise<{
 	resourceLoader: DefaultResourceLoader;
-	settingsManager: SettingsManager;
 }> | null = null;
 
 async function getSharedResources(): Promise<{
 	resourceLoader: DefaultResourceLoader;
-	settingsManager: SettingsManager;
 }> {
 	if (!sharedResourceLoaderPromise) {
 		sharedResourceLoaderPromise = (async () => {
@@ -33,7 +31,7 @@ async function getSharedResources(): Promise<{
 				settingsManager,
 			});
 			await resourceLoader.reload();
-			return { resourceLoader, settingsManager };
+			return { resourceLoader };
 		})();
 	}
 	return sharedResourceLoaderPromise;
@@ -68,7 +66,11 @@ export class PiRoomSession implements BloomSessionLike {
 	}
 
 	async spawn(): Promise<void> {
-		const { resourceLoader, settingsManager } = await getSharedResources();
+		const { resourceLoader } = await getSharedResources();
+		// Create a fresh SettingsManager per spawn so model/provider changes
+		// made in the TUI (written to ~/.pi/agent/settings.json) are always
+		// picked up when a new room session starts.
+		const settingsManager = SettingsManager.create(BLOOM_REPO_ROOT);
 		const { session } = await createAgentSession({
 			cwd: this.opts.sessionDir,
 			resourceLoader,
