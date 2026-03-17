@@ -196,7 +196,7 @@ The installed system uses `nixos-rebuild switch --flake /etc/nixos#bloom` for up
 
 ```python
 subprocess.run(["pkexec", "nixos-install", "--root", root_mount_point,
-                "--no-root-passwd", "--flake", "/mnt/etc/nixos#bloom"])
+                "--no-root-passwd", "--flake", root_mount_point + "/etc/nixos#bloom"])
 ```
 
 ## `bloom_prefill` Python Module
@@ -213,7 +213,7 @@ PREFILL_SERVICES=<gs.value("bloom_services") or "">
 ```
 `PREFILL_USERNAME` maps to the Matrix handle (`bloom_matrix_username`), not the OS login name. The OS login name is always `pi` (locked by `users.conf`) and is not written to `prefill.env`.
 
-File written with `chmod 600`, owned by `pi` (uid looked up via `pwd.getpwnam("pi")`). Parent directory `~pi/.bloom/` created if absent.
+File written with `chmod 600`, owned by UID/GID 1000 (hardcoded — NixOS deterministically assigns UID 1000 to the first normal user; `pwd.getpwnam("pi")` is not used because the live ISO does not have a `pi` user in `/etc/passwd`). Parent directory `~pi/.bloom/` created if absent.
 
 **`/mnt/home/pi/.pi/agent/settings.json`**
 ```json
@@ -258,9 +258,12 @@ The target directory is created before the copy. If no `.nmconnection` files exi
     # systemd starts getty@tty1 only after bloom-firstboot completes because
     # of the Before= relationship and the shared multi-user.target membership.
     wantedBy = [ "multi-user.target" ];
-    before = [ "getty@tty1.service" "getty@tty2.service" "getty@tty3.service" ];
-    after = [ "network-online.target" "bloom-matrix.service" "netbird.service" ];
-    wants = [ "network-online.target" "bloom-matrix.service" "netbird.service" ];
+    # Use getty.target (not individual getty@ttyN instances) to reliably block all
+    # console logins — individual instances may not be in the transaction if they are
+    # socket-activated or demand-started.
+    before = [ "getty.target" ];
+    after = [ "network-online.target" "bloom-matrix.service" "netbird.service" "user@1000.service" ];
+    wants = [ "network-online.target" "bloom-matrix.service" "netbird.service" "user@1000.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
@@ -274,7 +277,10 @@ The target directory is created before the copy. If no `.nmconnection` files exi
   };
 
   # Passwordless sudo rules required by bloom-firstboot.sh in the non-TTY service context.
-  # These are narrow, command-specific grants — not full sudo.
+  # NOTE: bloom-shell.nix (included via nixosModules.bloom) already grants pi ALL NOPASSWD
+  # sudo, so these narrow rules are currently redundant. They are included here for
+  # documentation clarity and to support future hardening (when bloom-shell.nix's full-sudo
+  # grant is removed, these rules must be present for the first-boot service to work).
   security.sudo.extraRules = [
     {
       users = [ "pi" ];
@@ -313,7 +319,28 @@ A stripped, non-interactive version of `bloom-wizard.sh`. Reads `~/.bloom/prefil
 
 All interactive prompts are removed. Non-fatal failures are logged to the journal and do not block subsequent steps or login.
 
-**`bloom-wizard.sh` `step_services` change:** When `PREFILL_SERVICES` is set and non-empty, skip the interactive `read -rp` prompts and iterate the comma-separated list to auto-install services. When unset or empty, preserve existing interactive behavior. `install_home_infrastructure` is always called regardless of `PREFILL_SERVICES`.
+**`bloom-wizard.sh` `step_services` change:** `install_home_infrastructure` is always called first. Then:
+
+```bash
+# Pseudocode for the modified step_services non-interactive path
+install_home_infrastructure
+if [[ -n "$PREFILL_SERVICES" ]]; then
+  # Non-interactive: iterate comma-separated list
+  IFS=',' read -ra services <<< "$PREFILL_SERVICES"
+  for svc in "${services[@]}"; do
+    svc="$(echo "$svc" | xargs)"  # trim whitespace
+    install_service "$svc"
+    installed+=" $svc"
+  done
+else
+  # Interactive: existing read -rp prompts unchanged
+  ...
+fi
+write_service_home_runtime "$installed"
+mark_done_with "step_services"
+```
+
+`write_service_home_runtime` and `mark_done_with` are called in both paths. The interactive path is unchanged when `PREFILL_SERVICES` is unset or empty.
 
 `bloom-wizard.sh` continues to work as a recovery mechanism: if `.setup-complete` is absent it re-runs from the last incomplete checkpoint using the same prefill logic.
 
