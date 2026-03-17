@@ -32,7 +32,7 @@ Service-dependent steps (NetBird connection, Matrix account creation, optional s
 
 Two new outputs added to `flake.nix`:
 
-- `nixosModules.bloom` — exports the six Bloom feature modules (`bloom-app`, `bloom-llm`, `bloom-matrix`, `bloom-network`, `bloom-shell`, `bloom-update`) as a single composable NixOS module, plus `nixpkgs.config.allowUnfree = true`. Does not include disko disk config or VM-specific mounts.
+- `nixosModules.bloom` — exports the six Bloom feature modules (`bloom-app`, `bloom-llm`, `bloom-matrix`, `bloom-network`, `bloom-shell`, `bloom-update`) as a single composable NixOS module, plus `nixpkgs.config.allowUnfree = true`. Does not include disko disk config or VM-specific mounts. **Requires `piAgent` and `bloomApp` in the consuming system's `specialArgs`** — these are packages from `llm-agents-nix` and `pkgs.callPackage ./core/os/pkgs/bloom-app` respectively. The generated installer `flake.nix` always provides them (see Step 3 below).
 - `nixosModules.bloom-firstboot` — exports the first-boot service module (see below).
 
 These allow the Calamares-installed system's local `flake.nix` to import Bloom cleanly without pulling in machine-specific or dev-only configuration.
@@ -47,6 +47,9 @@ core/calamares/
   bloom_nixos/
     main.py          # Replaces the standard nixos Calamares module
     module.desc      # Module descriptor
+  bloom_prefill/
+    main.py          # Python module: reads globalstorage, writes prefill.env + .gitconfig + NM configs
+    module.desc      # Module descriptor
   pages/
     BloomNetbird.qml # Page: NetBird setup key
     BloomGit.qml     # Page: Git name + email
@@ -54,7 +57,7 @@ core/calamares/
   config/
     bloom-settings.conf  # Calamares settings.conf (sequence definition)
     bloom-nixos.conf     # bloom-nixos module config
-    bloom-prefill.conf   # shellprocess config for writing prefill.env
+    users.conf           # Override: lock username to "pi"
   package.nix            # Nix derivation
 ```
 
@@ -72,7 +75,7 @@ All fields are optional — the first-boot service handles missing keys graceful
 
 **4. `core/os/modules/bloom-firstboot.nix` + `core/scripts/bloom-firstboot.sh`**
 
-A new NixOS module that declares `bloom-firstboot.service`. The service runs once before `getty@tty1.service` on first boot, reads `~/,bloom/prefill.env`, and completes the service-dependent setup non-interactively.
+A new NixOS module that declares `bloom-firstboot.service`. The service runs once before `getty@tty1.service` on first boot, reads `~/.bloom/prefill.env`, and completes the service-dependent setup non-interactively.
 
 **5. Updated `core/os/hosts/x86_64-installer.nix`**
 
@@ -103,8 +106,8 @@ The `packagechooser` page (desktop environment selection) is removed. Bloom alwa
 1. `partition` — formats and creates partitions per user selection
 2. `mount` — mounts target at `/mnt`
 3. `bloom-nixos` — custom module: generates local flake + `host-config.nix` + `hardware-configuration.nix`, runs `nixos-install`
-4. `users` — sets `pi` password hash on the installed system
-5. `shellprocess@bloom-prefill` — writes `prefill.env`, `.gitconfig`, copies NM WiFi connections
+4. `users` — sets `pi` password hash on the installed system (Calamares chpasswds the user it created; `users.conf` locks the username to `pi`)
+5. `bloom-prefill` — Python module: reads globalstorage, writes `prefill.env` + `.gitconfig`, copies NM WiFi connections
 6. `umount` — unmounts target
 
 ### Final Show Phase
@@ -140,10 +143,14 @@ Machine-specific overrides written to `/mnt/etc/nixos/host-config.nix`:
   users.users.pi = {
     isNormalUser = true;
     extraGroups = [ "networkmanager" "wheel" ];
+    # No initialPassword here — Calamares users exec module sets the password
+    # directly via chpasswd on the mounted target after nixos-install completes.
   };
   system.stateVersion = "25.05";
 }
 ```
+
+The Calamares `users.conf` override sets `defaultGroups`, locks the displayed username field to `pi` (non-editable), and maps that username to what the exec-phase `users` module applies. The user types only a password in the Calamares users page, not a username.
 
 ### Step 3 — Write local `flake.nix`
 
@@ -190,34 +197,39 @@ subprocess.run(["pkexec", "nixos-install", "--root", root_mount_point,
                 "--no-root-passwd", "--flake", "/mnt/etc/nixos#bloom"])
 ```
 
-## `shellprocess@bloom-prefill` Job
+## `bloom_prefill` Python Module
 
-Runs after `nixos-install`, before `umount`. Writes three things to the installed target:
+A Calamares Python job module (not `shellprocess` — that module cannot read globalstorage values). Runs after `nixos-install`, before `umount`. Reads values from `libcalamares.globalstorage` and writes three things to the installed target:
 
 **`/mnt/home/pi/.bloom/prefill.env`**
 ```bash
-PREFILL_NETBIRD_KEY=<from bloom_netbird_key globalstorage>
-PREFILL_USERNAME=<from Calamares username globalstorage>
-PREFILL_NAME=<from bloom_git_name globalstorage>
-PREFILL_EMAIL=<from bloom_git_email globalstorage>
-PREFILL_SERVICES=<from bloom_services globalstorage, e.g. "fluffychat,dufs">
+PREFILL_NETBIRD_KEY=<gs.value("bloom_netbird_key") or "">
+PREFILL_USERNAME=<gs.value("username")>
+PREFILL_NAME=<gs.value("bloom_git_name") or "">
+PREFILL_EMAIL=<gs.value("bloom_git_email") or "">
+PREFILL_SERVICES=<gs.value("bloom_services") or "">
 ```
-File permissions: `600`, owned by `pi`.
+File written with `chmod 600`, owned by `pi` (uid looked up via `pwd.getpwnam("pi")`). Parent directory `~pi/.bloom/` created if absent.
 
 **`/mnt/home/pi/.gitconfig`**
 ```ini
 [user]
-    name = <name>
-    email = <email>
+    name = <bloom_git_name>
+    email = <bloom_git_email>
 ```
-Written directly — no first-boot step needed for git config.
+Written only if both name and email are non-empty. No first-boot step needed for git config.
 
-**NetworkManager WiFi connections**
-```bash
-cp /etc/NetworkManager/system-connections/*.nmconnection \
-   /mnt/etc/NetworkManager/system-connections/
+**NetworkManager WiFi connections (best-effort)**
+
+```python
+src = "/etc/NetworkManager/system-connections"
+dst = root_mount_point + "/etc/NetworkManager/system-connections"
+os.makedirs(dst, exist_ok=True)
+for f in glob.glob(src + "/*.nmconnection"):
+    shutil.copy2(f, dst)
 ```
-Ensures WiFi configured during live session works immediately after reboot.
+
+The target directory is created before the copy. If no `.nmconnection` files exist (e.g., user is on ethernet), the step completes silently with no error. Ensures WiFi connected during live session works immediately after reboot.
 
 ## First-Boot Automation
 
@@ -227,34 +239,41 @@ Ensures WiFi configured during live session works immediately after reboot.
 { config, pkgs, ... }: {
   systemd.services.bloom-firstboot = {
     description = "Bloom First-Boot Setup";
+    # Pulled into multi-user.target and must complete before getty starts.
+    # systemd starts getty@tty1 only after bloom-firstboot completes because
+    # of the Before= relationship and the shared multi-user.target membership.
     wantedBy = [ "multi-user.target" ];
-    before = [ "getty@tty1.service" ];
+    before = [ "getty@tty1.service" "getty@tty2.service" "getty@tty3.service" ];
     after = [ "network-online.target" "bloom-matrix.service" "netbird.service" ];
-    wants = [ "network-online.target" ];
+    wants = [ "network-online.target" "bloom-matrix.service" "netbird.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
       User = "pi";
       ExecStart = "${pkgs.bash}/bin/bash ${./bloom-firstboot.sh}";
       StandardOutput = "journal+console";
+      # Do not fail the boot if setup fails — user can recover via bloom-wizard.sh
+      SuccessExitStatus = "0 1";
     };
     unitConfig.ConditionPathExists = "!/home/pi/.bloom/.setup-complete";
   };
 }
 ```
 
+The `wants = [ "bloom-matrix.service" "netbird.service" ]` ensures those services are started before `bloom-firstboot` attempts to use them, even though they may not be fully ready at the socket level. The script uses retry loops (see below) to wait for application-level readiness.
+
 ### `bloom-firstboot.sh`
 
-A stripped, non-interactive version of `bloom-wizard.sh`. Reads `~/,bloom/prefill.env`. Only runs the service-dependent steps:
+A stripped, non-interactive version of `bloom-wizard.sh`. Reads `~/.bloom/prefill.env`. Only runs the service-dependent steps:
 
 1. **`step_netbird`** — starts netbird daemon, connects using `PREFILL_NETBIRD_KEY`; skipped if key is empty
-2. **`step_matrix`** — waits for `bloom-matrix.service`, registers bot + user accounts using `PREFILL_USERNAME`
-3. **`step_services`** — installs services listed in `PREFILL_SERVICES`
+2. **`step_matrix`** — polls `http://localhost:6167/_matrix/client/versions` in a retry loop (up to 60s, 1s interval) until the homeserver is accepting connections, then registers bot + user accounts using `PREFILL_USERNAME`
+3. **`step_services`** — iterates `PREFILL_SERVICES` (comma-separated list, e.g. `"fluffychat,dufs"`) and installs each named service; skipped if empty
 4. **`finalize`** — enables linger for `pi`, starts `pi-daemon.service`, writes `.setup-complete`
 
-All prompts from `bloom-wizard.sh` are removed. Error handling logs to journal and continues (non-fatal failures don't block login).
+All interactive prompts from `bloom-wizard.sh` are removed. Non-fatal failures are logged to the journal and do not block subsequent steps or login.
 
-`bloom-wizard.sh` is left unchanged and continues to work as a recovery mechanism (re-runs skipped steps if `.setup-complete` is absent).
+`bloom-wizard.sh` is updated to recognise `PREFILL_SERVICES` (iterates it in `step_services` instead of prompting, when set) and continues to work as a recovery mechanism: if `.setup-complete` is absent it re-runs from the last incomplete checkpoint.
 
 ## File Changes Summary
 
@@ -268,11 +287,14 @@ All prompts from `bloom-wizard.sh` are removed. Error handling logs to journal a
 | ADD | `core/calamares/pages/BloomServices.qml` |
 | ADD | `core/calamares/config/bloom-settings.conf` |
 | ADD | `core/calamares/config/bloom-nixos.conf` |
-| ADD | `core/calamares/config/bloom-prefill.conf` |
+| ADD | `core/calamares/config/users.conf` |
+| ADD | `core/calamares/bloom_prefill/main.py` |
+| ADD | `core/calamares/bloom_prefill/module.desc` |
 | ADD | `core/os/modules/bloom-firstboot.nix` |
 | ADD | `core/scripts/bloom-firstboot.sh` |
 | MODIFY | `flake.nix` — add `nixosModules.bloom` + `nixosModules.bloom-firstboot` outputs + nixpkgs overlay |
 | MODIFY | `core/os/hosts/x86_64-installer.nix` — use custom Calamares package, remove bloom-convert |
+| MODIFY | `core/scripts/bloom-wizard.sh` — add `PREFILL_SERVICES` support to `step_services` |
 | DELETE | `core/scripts/bloom-convert.sh` |
 
 ## Error Handling
