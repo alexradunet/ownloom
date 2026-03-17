@@ -1131,6 +1131,20 @@ finalize() {
 	echo ""
 	print_service_access_summary "$services" "$mesh_ip" "$mesh_fqdn"
 	echo ""
+	if [[ "$ai_provider" == "localai" ]]; then
+		echo "  Waiting for local AI to be ready..."
+		for i in $(seq 1 180); do
+			if curl -sf http://localhost:11435/health > /dev/null 2>&1; then
+				echo "  Local AI ready."
+				break
+			fi
+			if [[ $i -eq 180 ]]; then
+				echo "  Local AI is taking longer than expected — it will finish loading soon."
+			fi
+			sleep 1
+		done
+	fi
+	echo ""
 	echo "  Starting Pi — your AI companion."
 	if [[ "$ai_provider" == "skipped" ]]; then
 		echo ""
