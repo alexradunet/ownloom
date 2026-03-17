@@ -95,6 +95,17 @@ Hooks:
 - `tool_call`
 - `tool_result`
 
+### `bloom-localai`
+
+Purpose:
+
+- register LocalAI as a Pi provider for local LLM inference
+
+Notes:
+
+- llama-server (from `pkgs.llama-cpp`) runs on port `11435` with the `omnicoder-9b-q4_k_m` model pre-seeded
+- no tools or hooks — provider registration only
+
 ### `bloom-os`
 
 Purpose:
@@ -350,6 +361,7 @@ Key daemon files:
 Bundled skill directories seeded into `~/Bloom/Skills/`:
 
 - `first-boot`
+- `local-llm`
 - `object-store`
 - `os-operations`
 - `recovery`
