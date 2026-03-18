@@ -17,12 +17,6 @@ upstreamCalamares.overrideAttrs (old: {
     cp -r ${./bloom_nixos} $out/modules/bloom-nixos
     chmod -R u+w $out/modules/bloom-nixos
 
-    # Bundle the repo's flake.lock alongside the bloom_nixos module.
-    # The installer copies this to /mnt/etc/nixos/flake.lock so that
-    # `nix build` evaluates the same derivation hashes as the ISO, allowing
-    # bloom-app and piAgent (pre-built into the ISO squashfs) to be reused
-    # from the host store without downloading the Rust toolchain.
-    cp ${../../flake.lock} $out/modules/bloom-nixos/flake.lock
 
     # Add the bloom_prefill module
     cp -r ${./bloom_prefill} $out/modules/bloom-prefill

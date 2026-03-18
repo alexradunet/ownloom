@@ -161,39 +161,42 @@ def _run():
     with open(os.path.join(nixos_dir, "flake.nix"), "w") as f:
         f.write(flake_nix)
 
-    # ── Step 3b: Copy bundled flake.lock to target ───────────────────────────
-    # The calamares package bundles the repo's flake.lock (built in alongside
-    # this module at package time).  Copying it here pins nix build to the
-    # exact flake input commits used when the ISO itself was built.  This
-    # ensures bloom-app and piAgent resolve to the same store paths already
-    # present in the ISO squashfs — no Rust-toolchain download required.
-    import shutil as _shutil
-    _flake_lock_src = os.path.join(os.path.dirname(__file__), "flake.lock")
-    if os.path.exists(_flake_lock_src):
-        _shutil.copy(_flake_lock_src, os.path.join(nixos_dir, "flake.lock"))
-        libcalamares.utils.debug("bloom_nixos: copied bundled flake.lock to target")
-    else:
-        libcalamares.utils.warning(
-            "bloom_nixos: bundled flake.lock not found — nix will resolve latest inputs"
-        )
-
     # ── Step 4: Build system closure on the HOST nix store ───────────────────
-    # Problem with --store "local?real-root=<target>": Nix must substitute ALL
-    # dependencies (including build-time deps) to the target disk.  piAgent is
-    # not in cache.nixos.org, so Nix builds it from source, pulling the full
-    # Rust toolchain + npm tooling onto the 40 GB install disk → "No space".
+    # Build on the HOST store (the live ISO already has bloom-app, piAgent,
+    # etc. in /nix/store).  Then use `nix copy` to transfer only the runtime
+    # closure to the target disk (no build-time deps like rustc).
     #
-    # Fix: build on the HOST store instead (the live ISO already has bloom-app,
-    # piAgent, Chromium, etc. in /nix/store — no re-download needed).  Then
-    # use `nix copy` to transfer ONLY the runtime closure to the target disk,
-    # skipping build-time deps (Rust compiler etc.) entirely.
-    #
-    # narHash is not an issue because both host and target use /nix/store as
-    # the store path prefix, so the path hashes match.
+    # Offline support: the ISO embeds flake input source trees under
+    # /etc/bloom/offline/{nixpkgs,bloom,llm-agents-nix}.  We pass each as
+    # --override-input so Nix uses the local path instead of fetching from
+    # GitHub.  --no-write-lock-file prevents writing a path:-based lock file
+    # to the target (the installed system generates its own lock on first
+    # `nixos-rebuild switch` using the GitHub URLs in flake.nix).
     store_uri = f"local?real-root={root}&store=/nix/store"
     flake_attr = (
         root + "/etc/nixos#nixosConfigurations.bloom.config.system.build.toplevel"
     )
+
+    # Build --override-input flags from offline sources embedded in the ISO.
+    _offline_base = "/etc/bloom/offline"
+    _input_names = {
+        "nixpkgs":       "nixpkgs",
+        "bloom":         "bloom",
+        "llm-agents-nix": "llm-agents-nix",
+    }
+    _overrides = []
+    for dir_name, input_name in _input_names.items():
+        p = os.path.join(_offline_base, dir_name)
+        if os.path.isdir(p):
+            real = os.path.realpath(p)
+            _overrides += ["--override-input", input_name, f"path:{real}"]
+            libcalamares.utils.debug(f"bloom_nixos: offline input {input_name} → {real}")
+        else:
+            libcalamares.utils.warning(
+                f"bloom_nixos: offline source for {input_name} not found at {p}; "
+                "will fetch from network"
+            )
+
     libcalamares.utils.debug("bloom_nixos: building system closure on host store")
     build = subprocess.run(
         [
@@ -201,10 +204,8 @@ def _run():
             "--no-link", "--print-out-paths",
             "--extra-experimental-features", "nix-command flakes",
             "--option", "sandbox", "false",
-            # Use the bundled flake.lock we just wrote; don't update it.
-            "--no-update-lock-file",
-            flake_attr,
-        ],
+            "--no-write-lock-file",
+        ] + _overrides + [flake_attr],
         capture_output=True, text=True,
     )
     libcalamares.utils.debug("bloom_nixos: nix build stdout: " + build.stdout[-2000:])
