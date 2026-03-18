@@ -13,6 +13,7 @@ import glob
 import json
 import os
 import shutil
+import subprocess
 import libcalamares
 
 # UID/GID 1000 is hardcoded: the live ISO has no 'pi' user in /etc/passwd
@@ -99,6 +100,33 @@ def run():
         gitconfig = f"[user]\n    name = {git_name}\n    email = {git_email}\n"
         _write_owned(gitconfig_path, gitconfig, mode=0o644)
         libcalamares.utils.debug(f"bloom_prefill: wrote {gitconfig_path}")
+
+    # ── pi user password ─────────────────────────────────────────────────────
+    # The Calamares users exec module is NOT in the sequence (it would call
+    # `usermod <typed-username>` which fails because only "pi" exists).
+    # We set the pi user password directly using the pre-hashed value that
+    # the users view module stored in globalstorage, regardless of what
+    # username the user typed on the users page.
+    users_list = gs.value("users") or []
+    password_hash = ""
+    if users_list and isinstance(users_list, list):
+        first = users_list[0]
+        if isinstance(first, dict):
+            password_hash = first.get("password", "")
+    if password_hash:
+        chpasswd = subprocess.run(
+            ["chpasswd", "--root", root, "--encrypted"],
+            input=f"pi:{password_hash}\n",
+            capture_output=True, text=True,
+        )
+        if chpasswd.returncode != 0:
+            libcalamares.utils.warning(
+                f"bloom_prefill: chpasswd failed (exit {chpasswd.returncode}): {chpasswd.stderr.strip()}"
+            )
+        else:
+            libcalamares.utils.debug("bloom_prefill: set pi user password")
+    else:
+        libcalamares.utils.warning("bloom_prefill: no password hash in globalstorage — pi will have no password")
 
     # ── NetworkManager WiFi connections (best-effort) ────────────────────────
     src_nm = "/etc/NetworkManager/system-connections"
