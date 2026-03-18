@@ -14,6 +14,12 @@
   # Allow unfree packages (required for WiFi firmware and other hardware drivers)
   nixpkgs.config.allowUnfree = true;
 
+  # Enable redistributable firmware (includes iwlwifi firmware for Intel AX101)
+  hardware.enableRedistributableFirmware = true;
+
+  # Ensure iwlwifi module is loaded for Intel AX101 WiFi 6
+  boot.kernelModules = [ "iwlwifi" ];
+
   # Replace upstream calamares-nixos-extensions with our custom Bloom version.
   # Use prev.callPackage so package.nix receives the pre-overlay pkgs and the
   # pre-overlay calamares-nixos-extensions — prevents infinite recursion.
