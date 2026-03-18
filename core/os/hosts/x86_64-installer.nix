@@ -11,19 +11,14 @@
     "${modulesPath}/installer/cd-dvd/installation-cd-graphical-calamares-gnome.nix"
   ];
 
-  # Allow unfree packages (required for WiFi firmware and other hardware drivers)
+  # Allow unfree packages (required for proprietary firmware and drivers)
   nixpkgs.config.allowUnfree = true;
 
-  # Enable ALL firmware (includes iwlwifi firmware for Intel AX101)
-  # AX101 needs specific firmware (iwlwifi-so-a0-hr-b0-XX.ucode) that may not
-  # be in the redistributable set alone
+  # Enable all firmware for maximum hardware compatibility.
+  # The base installer sets hardware.enableAllHardware which includes
+  # redistributable firmware; we extend this to ALL firmware (including
+  # non-free) to support the widest range of WiFi cards and hardware.
   hardware.enableAllFirmware = true;
-
-  # Ensure iwlwifi and related modules are loaded for Intel AX101 WiFi 6
-  boot.kernelModules = [ "iwlwifi" "iwlmvm" "mac80211" "cfg80211" ];
-
-  # Explicitly add latest linux-firmware package for AX101 support
-  hardware.firmware = with pkgs; [ linux-firmware ];
 
   # Replace upstream calamares-nixos-extensions with our custom Bloom version.
   # Use prev.callPackage so package.nix receives the pre-overlay pkgs and the
@@ -49,6 +44,12 @@
     gparted
     bloomApp
     piAgent
+    # Hardware diagnostic tools for troubleshooting
+    pciutils      # lspci - check PCI devices (WiFi cards, etc.)
+    usbutils      # lsusb - check USB devices
+    iw            # wireless tools - iw dev, iw list
+    wirelesstools # wireless-tools - iwconfig, iwpriv
+    hdparm        # disk diagnostics
   ];
 
   # Offline installation: embed flake input source trees in the squashfs.
