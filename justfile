@@ -220,7 +220,7 @@ test-iso-gui:
     echo "Starting graphical ISO test..."
     echo "  - ISO: $ISO"
     echo "  - Disk: $disk (40GB)"
-    echo "  - RAM: 4GB"
+    echo "  - RAM: 12GB"
     echo ""
     echo "Close the QEMU window to exit"
     echo ""
@@ -229,7 +229,7 @@ test-iso-gui:
         -machine q35 \
         -cpu host \
         -enable-kvm \
-        -m 16384 \
+        -m 12288 \
         -smp 2 \
         -drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
         -drive if=pflash,format=raw,file="$vars" \
