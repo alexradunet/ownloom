@@ -2,8 +2,8 @@
 { pkgs, lib, ... }:
 
 let
-  modelFileName = "omnicoder-9b-q4_k_m.gguf";
-  modelUrl      = "https://huggingface.co/Tesslate/OmniCoder-9B-GGUF/resolve/main/omnicoder-9b-q4_k_m.gguf?download=true";
+  modelFileName = "Qwen3.5-4B-Q4_K_M.gguf";
+  modelUrl      = "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf?download=true";
 in
 {
   # Static localai user shared by localai-download and localai services.
@@ -37,7 +37,7 @@ in
           echo "${modelFileName} already present — skipping download"
           exit 0
         fi
-        echo "Downloading ${modelFileName} (~5 GB) — this will take a while..."
+        echo "Downloading ${modelFileName} (~2.7 GB) — this will take a while..."
         ${pkgs.curl}/bin/curl -L --retry 5 --retry-delay 10 \
           --progress-bar -o "$dest.tmp" "${modelUrl}"
         mv "$dest.tmp" "$dest"

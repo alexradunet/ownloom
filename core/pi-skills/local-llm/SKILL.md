@@ -25,7 +25,7 @@ curl http://localhost:11435/v1/models
 
 ## Default Model
 
-`omnicoder-9b-q4_k_m` is pre-loaded at boot. No download needed.
+`Qwen3.5-4B-Q4_K_M` is pre-loaded at boot. No download needed.
 
 ## LLM Inference
 
@@ -33,14 +33,14 @@ curl http://localhost:11435/v1/models
 curl http://localhost:11435/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "omnicoder-9b-q4_k_m",
+    "model": "Qwen3.5-4B-Q4_K_M",
     "messages": [{"role": "user", "content": "Hello"}]
   }'
 ```
 
 ## Changing the Model
 
-llama-server loads a single model at startup specified via `--model` in the systemd service. The default is `omnicoder-9b-q4_k_m.gguf`.
+llama-server loads a single model at startup specified via `--model` in the systemd service. The default is `Qwen3.5-4B-Q4_K_M.gguf`.
 
 To switch models, update `core/os/modules/bloom-llm.nix` in the Bloom repo:
 - Change `modelFileName` to the new GGUF filename

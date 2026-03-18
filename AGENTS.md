@@ -103,7 +103,7 @@ Purpose:
 
 Notes:
 
-- llama-server (from `pkgs.llama-cpp`) runs on port `11435` with the `omnicoder-9b-q4_k_m` model pre-seeded
+- llama-server (from `pkgs.llama-cpp`) runs on port `11435` with the `Qwen3.5-4B-Q4_K_M` model pre-seeded
 - no tools or hooks — provider registration only
 
 ### `bloom-os`

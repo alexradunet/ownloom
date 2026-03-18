@@ -2,7 +2,7 @@
  * bloom-localai — Register LocalAI as a Pi provider for local LLM inference.
  *
  * llama-server runs on every Bloom OS instance at http://localhost:11435/v1.
- * The omnicoder-9b-q4_k_m model is pre-seeded and available at boot.
+ * The Qwen 3.5 4B Q4_K_M model is pre-seeded and available at boot.
  *
  * @see {@link ../../AGENTS.md#bloom-localai} Extension reference
  */
@@ -15,8 +15,8 @@ export default function (pi: ExtensionAPI) {
 		api: "openai-completions",
 		models: [
 			{
-				id: "omnicoder-9b-q4_k_m",
-				name: "OmniCoder 9B",
+				id: "Qwen3.5-4B-Q4_K_M",
+				name: "Qwen 3.5 4B",
 				reasoning: false,
 				input: ["text"],
 				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },

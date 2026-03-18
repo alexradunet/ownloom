@@ -118,7 +118,7 @@ def run():
     settings = {
         "packages": ["/usr/local/share/bloom"],
         "defaultProvider": "localai",
-        "defaultModel": "omnicoder-9b-q4_k_m",
+        "defaultModel": "Qwen3.5-4B-Q4_K_M",
         "defaultThinkingLevel": "medium",
     }
     _write_owned(settings_path, json.dumps(settings, indent=2) + "\n", mode=0o600)
