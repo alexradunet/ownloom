@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
 import { formatEntries, handleAuditReview, readEntries } from "../../core/pi-extensions/bloom-audit/actions.js";
 import type { AuditEntry } from "../../core/pi-extensions/bloom-audit/types.js";
 import { type MockExtensionAPI, createMockExtensionAPI } from "../helpers/mock-extension-api.js";
@@ -117,6 +119,18 @@ describe("bash audit entries", () => {
 		const output = formatEntries([bashResultEntry], false);
 		expect(output).toContain("[ok]");
 	});
+
+	it("formats a bash_result entry with status 'error' when exitCode is non-zero", () => {
+		const errorResultEntry: AuditEntry = {
+			ts: "2026-01-01T00:00:05.000Z",
+			event: "bash_result",
+			tool: "bash",
+			toolCallId: "bash-2",
+			exitCode: 1,
+		};
+		const output = formatEntries([errorResultEntry], false);
+		expect(output).toContain("[error]");
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -206,11 +220,7 @@ describe("handleAuditReview", () => {
 	});
 
 	it("returns empty-result message when audit dir exists but has no files", () => {
-		import("node:fs").then(({ mkdirSync }) => {
-			import("node:path").then(({ join }) => {
-				mkdirSync(join(temp.gardenDir, "audit"), { recursive: true });
-			});
-		});
+		mkdirSync(join(temp.gardenDir, "audit"), { recursive: true });
 		const result = handleAuditReview({ days: 1 });
 		expect(result.content[0].text).toContain("No audit entries found");
 	});
