@@ -31,6 +31,26 @@ def run():
         return ("bloom-nixos module error", traceback.format_exc())
 
 
+def _normalize_locale(locale: str) -> str:
+    """Ensure locale is in the glibc-compatible xx_YY.UTF-8 format.
+
+    Calamares may return bare language codes (e.g. "en") or codes without
+    an encoding suffix (e.g. "en_US").  NixOS derives the glibc locale as
+    "<defaultLocale>/UTF-8", so "en" → "en/UTF-8" which glibc rejects.
+    """
+    if not locale:
+        return "en_US.UTF-8"
+    # Already has encoding (e.g. "en_US.UTF-8") — use as-is.
+    if "." in locale:
+        return locale
+    # Has territory but no encoding (e.g. "en_US") — append ".UTF-8".
+    if "_" in locale:
+        return locale + ".UTF-8"
+    # Bare language code (e.g. "en") — cannot reliably guess territory;
+    # fall back to the safe default.
+    return "en_US.UTF-8"
+
+
 def _run():
     gs = libcalamares.globalstorage
     root = gs.value("rootMountPoint") or "/mnt"
@@ -53,7 +73,7 @@ def _run():
     # Calamares stores these as plain strings, not dicts.
     # timezone key is "timezone" in Calamares GS (not "timezoneName").
     timezone  = gs.value("timezone")         or gs.value("timezoneName") or "UTC"
-    lang      = gs.value("locale")           or "en_US.UTF-8"
+    lang      = _normalize_locale(gs.value("locale") or "en_US.UTF-8")
     kb_layout = gs.value("keyboardLayout")   or "us"
     kb_variant = gs.value("keyboardVariant") or ""
     # vconsole keymap may not always be set; fall back to the X layout.
