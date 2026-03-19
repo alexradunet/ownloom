@@ -233,10 +233,12 @@ EOF
     echo "Partitioning disk with disko..."
     
     # Run disko to partition and mount the disk
+    # Use --disk to override the hardcoded device in the config
     nix --extra-experimental-features "nix-command flakes" run \
         "${real_disko}#disko" -- \
         --mode destroy,format,mount \
-        --flake "$WORKDIR#bloom"
+        --flake "$WORKDIR#bloom" \
+        --disk main "$TARGET_DISK"
     
     echo ""
     echo "Installing NixOS..."
