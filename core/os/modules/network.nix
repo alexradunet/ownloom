@@ -5,24 +5,24 @@ let
   u = config.nixpi.username;
   bloomHomeBootstrap = pkgs.writeShellScript "nixpi-home-bootstrap" ''
     set -eu
-    mkdir -p "$HOME/.config/workspace/home" "$HOME/.config/workspace/home/tmp"
-    if [ ! -f "$HOME/.config/workspace/home/index.html" ]; then
-      cat > "$HOME/.config/workspace/home/index.html" <<'HTML'
+    mkdir -p "$HOME/.config/nixpi/home" "$HOME/.config/nixpi/home/tmp"
+    if [ ! -f "$HOME/.config/nixpi/home/index.html" ]; then
+      cat > "$HOME/.config/nixpi/home/index.html" <<'HTML'
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workspace Home</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>nixPI Home</title></head>
 <body>
-  <h1>Workspace Home</h1>
+  <h1>nixPI Home</h1>
   <ul>
-    <li><a href="http://localhost:8081">Workspace Web Chat</a></li>
-    <li><a href="http://localhost:5000">Workspace Files</a></li>
+    <li><a href="http://localhost:8081">nixPI Chat</a></li>
+    <li><a href="http://localhost:5000">nixPI Files</a></li>
     <li><a href="http://localhost:8443">code-server</a></li>
   </ul>
 </body>
 </html>
 HTML
     fi
-    cat > "$HOME/.config/workspace/home/nginx.conf" <<'NGINX'
+    cat > "$HOME/.config/nixpi/home/nginx.conf" <<'NGINX'
 daemon off;
 pid /run/user/1000/nixpi-home-nginx.pid;
 error_log stderr;
@@ -31,10 +31,10 @@ http {
     include ${pkgs.nginx}/conf/mime.types;
     default_type application/octet-stream;
     access_log off;
-    client_body_temp_path /home/${u}/.config/workspace/home/tmp;
+    client_body_temp_path /home/${u}/.config/nixpi/home/tmp;
     server {
         listen 8080;
-        root /home/${u}/.config/workspace/home;
+        root /home/${u}/.config/nixpi/home;
         try_files $uri $uri/ =404;
     }
 }
@@ -42,14 +42,14 @@ NGINX
   '';
   fluffychatBootstrap = pkgs.writeShellScript "nixpi-chat-bootstrap" ''
     set -eu
-    mkdir -p "$HOME/.config/workspace/fluffychat" "$HOME/.config/workspace/fluffychat/tmp"
-    cat > "$HOME/.config/workspace/fluffychat/config.json" <<'CONFIG'
+    mkdir -p "$HOME/.config/nixpi/chat" "$HOME/.config/nixpi/chat/tmp"
+    cat > "$HOME/.config/nixpi/chat/config.json" <<'CONFIG'
 {
-  "applicationName": "Workspace Web Chat",
+  "applicationName": "nixPI Chat",
   "defaultHomeserver": "http://localhost:6167"
 }
 CONFIG
-    cat > "$HOME/.config/workspace/fluffychat/nginx.conf" <<'NGINX'
+    cat > "$HOME/.config/nixpi/chat/nginx.conf" <<'NGINX'
 daemon off;
 pid /run/user/1000/nixpi-chat-nginx.pid;
 error_log stderr;
@@ -58,11 +58,11 @@ http {
     include ${pkgs.nginx}/conf/mime.types;
     default_type application/octet-stream;
     access_log off;
-    client_body_temp_path /home/${u}/.config/workspace/fluffychat/tmp;
+    client_body_temp_path /home/${u}/.config/nixpi/chat/tmp;
     server {
         listen 8081;
         location /config.json {
-            alias /home/${u}/.config/workspace/fluffychat/config.json;
+            alias /home/${u}/.config/nixpi/chat/config.json;
         }
         location / {
             root /etc/nixpi/fluffychat-web;
@@ -113,7 +113,7 @@ in
       wants = [ "network-online.target" ];
       serviceConfig = {
         ExecStartPre = "${bloomHomeBootstrap}";
-        ExecStart = "${pkgs.nginx}/bin/nginx -c %h/.config/workspace/home/nginx.conf";
+        ExecStart = "${pkgs.nginx}/bin/nginx -c %h/.config/nixpi/home/nginx.conf";
         Restart = "on-failure";
         RestartSec = 10;
       };
@@ -126,7 +126,7 @@ in
       wants = [ "network-online.target" ];
       serviceConfig = {
         ExecStartPre = "${fluffychatBootstrap}";
-        ExecStart = "${pkgs.nginx}/bin/nginx -c %h/.config/workspace/fluffychat/nginx.conf";
+        ExecStart = "${pkgs.nginx}/bin/nginx -c %h/.config/nixpi/chat/nginx.conf";
         Restart = "on-failure";
         RestartSec = 10;
       };
@@ -138,8 +138,8 @@ in
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       serviceConfig = {
-        ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/Public/Workspace";
-        ExecStart = "${pkgs.dufs}/bin/dufs %h/Public/Workspace -A -b 0.0.0.0 -p 5000";
+        ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/Public/nixPI";
+        ExecStart = "${pkgs.dufs}/bin/dufs %h/Public/nixPI -A -b 0.0.0.0 -p 5000";
         Restart = "on-failure";
         RestartSec = 10;
       };
@@ -158,37 +158,37 @@ in
     };
 
     systemd.tmpfiles.rules = [
-      "d /home/${u}/.config/workspace 0755 ${u} ${u} -"
-      "d /home/${u}/.config/workspace/home 0755 ${u} ${u} -"
-      "d /home/${u}/.config/workspace/fluffychat 0755 ${u} ${u} -"
+      "d /home/${u}/.config/nixpi 0755 ${u} ${u} -"
+      "d /home/${u}/.config/nixpi/home 0755 ${u} ${u} -"
+      "d /home/${u}/.config/nixpi/chat 0755 ${u} ${u} -"
       "d /home/${u}/.config/code-server 0755 ${u} ${u} -"
-      "d /home/${u}/Public/Workspace 0755 ${u} ${u} -"
+      "d /home/${u}/Public/nixPI 0755 ${u} ${u} -"
     ];
 
     system.activationScripts.nixpi-builtins = lib.stringAfter [ "users" ] ''
-      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/workspace/home
-      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/workspace/home/tmp
-      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/workspace/fluffychat
-      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/workspace/fluffychat/tmp
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/nixpi/home
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/nixpi/home/tmp
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/nixpi/chat
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/nixpi/chat/tmp
       install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/code-server
-      install -d -m 0755 -o ${u} -g ${u} /home/${u}/Public/Workspace
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/Public/nixPI
 
-      cat > /home/${u}/.config/workspace/home/index.html <<'HTML'
+      cat > /home/${u}/.config/nixpi/home/index.html <<'HTML'
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workspace Home</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>nixPI Home</title></head>
 <body>
-  <h1>Workspace Home</h1>
+  <h1>nixPI Home</h1>
   <ul>
-    <li><a href="http://localhost:8081">Workspace Web Chat</a></li>
-    <li><a href="http://localhost:5000">Workspace Files</a></li>
-    <li><a href="http://localhost:8443">Workspace Code</a></li>
+    <li><a href="http://localhost:8081">nixPI Chat</a></li>
+    <li><a href="http://localhost:5000">nixPI Files</a></li>
+    <li><a href="http://localhost:8443">nixPI Code</a></li>
   </ul>
 </body>
 </html>
 HTML
 
-      cat > /home/${u}/.config/workspace/home/nginx.conf <<'NGINX'
+      cat > /home/${u}/.config/nixpi/home/nginx.conf <<'NGINX'
 daemon off;
 pid /run/user/1000/nixpi-home-nginx.pid;
 error_log stderr;
@@ -197,23 +197,23 @@ http {
     include ${pkgs.nginx}/conf/mime.types;
     default_type application/octet-stream;
     access_log off;
-    client_body_temp_path /home/${u}/.config/workspace/home/tmp;
+    client_body_temp_path /home/${u}/.config/nixpi/home/tmp;
     server {
         listen 8080;
-        root /home/${u}/.config/workspace/home;
+        root /home/${u}/.config/nixpi/home;
         try_files $uri $uri/ =404;
     }
 }
 NGINX
 
-      cat > /home/${u}/.config/workspace/fluffychat/config.json <<'CONFIG'
+      cat > /home/${u}/.config/nixpi/chat/config.json <<'CONFIG'
 {
-  "applicationName": "Workspace Web Chat",
+  "applicationName": "nixPI Chat",
   "defaultHomeserver": "http://localhost:6167"
 }
 CONFIG
 
-      cat > /home/${u}/.config/workspace/fluffychat/nginx.conf <<'NGINX'
+      cat > /home/${u}/.config/nixpi/chat/nginx.conf <<'NGINX'
 daemon off;
 pid /run/user/1000/nixpi-chat-nginx.pid;
 error_log stderr;
@@ -222,11 +222,11 @@ http {
     include ${pkgs.nginx}/conf/mime.types;
     default_type application/octet-stream;
     access_log off;
-    client_body_temp_path /home/${u}/.config/workspace/fluffychat/tmp;
+    client_body_temp_path /home/${u}/.config/nixpi/chat/tmp;
     server {
         listen 8081;
         location /config.json {
-            alias /home/${u}/.config/workspace/fluffychat/config.json;
+            alias /home/${u}/.config/nixpi/chat/config.json;
         }
         location / {
             root /etc/nixpi/fluffychat-web;
@@ -236,7 +236,7 @@ http {
 }
 NGINX
 
-      chown -R ${u}:${u} /home/${u}/.config/workspace /home/${u}/.config/code-server /home/${u}/Public/Workspace
+      chown -R ${u}:${u} /home/${u}/.config/nixpi /home/${u}/.config/code-server /home/${u}/Public/nixPI
     '';
   };
 }

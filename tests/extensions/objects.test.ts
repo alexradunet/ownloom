@@ -3,15 +3,15 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { parseRef } from "../../core/pi/extensions/objects/actions.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
-import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-nixpi.js";
+import { createTempNixpi, type TempNixpi } from "../helpers/temp-nixpi.js";
 
-let temp: TempWorkspace;
+let temp: TempNixpi;
 let api: MockExtensionAPI;
 
 beforeEach(async () => {
-	temp = createTempWorkspace();
+	temp = createTempNixpi();
 	// Create Objects directory
-	fs.mkdirSync(path.join(temp.workspaceDir, "Objects"), { recursive: true });
+	fs.mkdirSync(path.join(temp.nixpiDir, "Objects"), { recursive: true });
 	api = createMockExtensionAPI();
 	const mod = await import("../../core/pi/extensions/objects/index.js");
 	mod.default(api as never);
@@ -104,7 +104,7 @@ describe("memory_create and memory_read execution", () => {
 		expect(createResult.content[0].text).toContain("created note/test-note");
 
 		// Verify file was actually written to Objects/
-		const filepath = path.join(temp.workspaceDir, "Objects", "test-note.md");
+		const filepath = path.join(temp.nixpiDir, "Objects", "test-note.md");
 		expect(fs.existsSync(filepath)).toBe(true);
 
 		const readResult = await read("call-2", { type: "note", slug: "test-note" });

@@ -19,7 +19,7 @@ import {
 import { errorResult, nowIso, truncate } from "../../../lib/shared.js";
 import { readBlueprintVersions } from "./actions-blueprints.js";
 
-const WORKSPACE_DIRS = ["Persona", "Skills", "Evolutions", "Objects", "Episodes", "Agents", "audit"];
+const NIXPI_DIRS = ["Persona", "Skills", "Evolutions", "Objects", "Episodes", "Agents", "audit"];
 
 // --- Package helpers ---
 
@@ -44,7 +44,7 @@ export function getPackageVersion(packageDir: string): string {
 // --- Directory setup ---
 
 export function ensureWorkspace(workspaceDir: string): void {
-	for (const dir of WORKSPACE_DIRS) {
+	for (const dir of NIXPI_DIRS) {
 		fs.mkdirSync(path.join(workspaceDir, dir), { recursive: true });
 	}
 }
@@ -325,8 +325,7 @@ export function loadAgentInfos(workspaceDir: string): AgentInfo[] {
 			if (idMatch && nameMatch && usernameMatch) {
 				const id = idMatch[1].trim();
 				const username = usernameMatch[1].trim();
-				// Determine server name from workspaceDir context or default
-				const serverName = process.env.BLOOM_SERVER_NAME ?? "workspace";
+				const serverName = process.env.NIXPI_SERVER_NAME ?? "nixpi";
 				agents.push({
 					id,
 					name: nameMatch[1].trim(),

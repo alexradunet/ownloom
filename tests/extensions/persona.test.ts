@@ -5,13 +5,13 @@ import { stringifyFrontmatter } from "../../core/lib/frontmatter.js";
 import { normalizeCommand } from "../../core/pi/extensions/persona/actions.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-nixpi.js";
+import { createTempNixpi, type TempNixpi } from "../helpers/temp-nixpi.js";
 
-let temp: TempWorkspace;
+let temp: TempNixpi;
 let api: MockExtensionAPI;
 
 beforeEach(async () => {
-	temp = createTempWorkspace();
+	temp = createTempNixpi();
 	api = createMockExtensionAPI();
 	const mod = await import("../../core/pi/extensions/persona/index.js");
 	mod.default(api as never);
@@ -53,7 +53,7 @@ describe("persona session_start", () => {
 	});
 
 	it("injects a durable memory digest into the system prompt", async () => {
-		const objectsDir = path.join(temp.workspaceDir, "Objects");
+		const objectsDir = path.join(temp.nixpiDir, "Objects");
 		fs.mkdirSync(objectsDir, { recursive: true });
 		fs.writeFileSync(
 			path.join(objectsDir, "ts-style.md"),

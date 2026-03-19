@@ -48,10 +48,10 @@
     libnotify
   ];
 
-  # VM dev share: mount host's ~/.workspace into /mnt/host-workspace via 9p virtfs.
+  # VM dev share: mount host's ~/.nixpi into /mnt/host-nixpi via 9p virtfs.
   # Requires QEMU -virtfs flag (see justfile). nofail means this is ignored on real hardware.
-  fileSystems."/mnt/host-workspace" = {
-    device = "host-workspace";
+  fileSystems."/mnt/host-nixpi" = {
+    device = "host-nixpi";
     fsType = "9p";
     options = [ "trans=virtio" "ro" "nofail" ];
   };

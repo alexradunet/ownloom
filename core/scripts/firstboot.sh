@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
 # firstboot.sh — Non-interactive first-boot preparation for nixPI.
 # Runs before getty via nixpi-firstboot.service as the primary nixPI user.
-# If ~/.workspace/prefill.env is present, first boot completes unattended; otherwise
+# If ~/.nixpi/prefill.env is present, first boot completes unattended; otherwise
 # it performs background preparation and leaves the interactive wizard pending.
 # On failure, exits 1 (non-fatal per SuccessExitStatus). User can re-run
 # setup-wizard.sh on next login to resume from the last incomplete checkpoint.
 set -euo pipefail
 
 # Logging setup - log to file for debugging
-FIRSTBOOT_LOG="$HOME/.workspace/firstboot.log"
+FIRSTBOOT_LOG="$HOME/.nixpi/firstboot.log"
 mkdir -p "$(dirname "$FIRSTBOOT_LOG")"
 exec > >(tee -a "$FIRSTBOOT_LOG") 2>&1
 
 echo "=== nixPI Firstboot Started: $(date) ==="
 
-WIZARD_STATE="$HOME/.workspace/wizard-state"
-SETUP_COMPLETE="$HOME/.workspace/.setup-complete"
-WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/Workspace}"
+WIZARD_STATE="$HOME/.nixpi/wizard-state"
+SETUP_COMPLETE="$HOME/.nixpi/.setup-complete"
+NIXPI_DIR="${NIXPI_DIR:-$HOME/nixPI}"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
-BLOOM_CONFIG="$HOME/.config/workspace"
+NIXPI_CONFIG="$HOME/.config/nixpi"
 PI_DIR="$HOME/.pi"
 MATRIX_HOMESERVER="http://localhost:6167"
 MATRIX_STATE_DIR="$WIZARD_STATE/matrix-state"
 
-PREFILL_FILE="$HOME/.workspace/prefill.env"
+PREFILL_FILE="$HOME/.nixpi/prefill.env"
 if [[ -f "$PREFILL_FILE" ]]; then
     # shellcheck source=/dev/null
     source "$PREFILL_FILE"
@@ -135,7 +135,7 @@ firstboot_ai_defaults() {
     cat > "$settings_path" <<'EOF'
 {
   "packages": [
-    "/usr/local/share/workspace"
+    "/usr/local/share/nixpi"
   ],
   "defaultProvider": "localai",
   "defaultModel": "omnicoder-9b-q4_k_m",
@@ -146,7 +146,7 @@ EOF
 }
 
 firstboot_repo_clone() {
-    local repo_dir="$HOME/.workspace/pi-workspace"
+    local repo_dir="$HOME/.nixpi/pi-nixpi"
     if [[ -d "$repo_dir/.git" ]]; then
         return 0
     fi
@@ -156,7 +156,7 @@ firstboot_repo_clone() {
         return 0
     fi
     if timeout 30 git clone --depth 1 https://github.com/alexradunet/piBloom.git "$repo_dir"; then
-        echo "nixpi-firstboot: cloned pi-workspace repo"
+        echo "nixpi-firstboot: cloned pi-nixpi repo"
     else
         echo "nixpi-firstboot: repo clone failed (non-fatal)" >&2
     fi

@@ -6,12 +6,12 @@
 #           built-in service runtime generation, and step_matrix.
 #
 # Required env vars (callers must set before sourcing):
-#   WIZARD_STATE        — path to checkpoint directory (e.g. ~/.workspace/wizard-state)
+#   WIZARD_STATE        — path to checkpoint directory (e.g. ~/.nixpi/wizard-state)
 #   MATRIX_STATE_DIR    — path to matrix state directory
 #   MATRIX_HOMESERVER   — Matrix homeserver URL (e.g. http://localhost:6167)
 #   PI_DIR              — path to Pi config dir (e.g. ~/.pi)
-#   BLOOM_CONFIG        — path to Workspace config dir (e.g. ~/.config/workspace)
-#   WORKSPACE_DIR           — path to Workspace home dir
+#   NIXPI_CONFIG        — path to nixPI config dir (e.g. ~/.config/nixpi)
+#   NIXPI_DIR           — path to nixPI home dir
 #   SYSTEMD_USER_DIR    — path to systemd user dir
 
 # --- Checkpoint helpers ---
@@ -175,14 +175,14 @@ write_service_home_runtime() {
 	page_url="http://${mesh_host}:8080"
 	generated_at=$(date -Iseconds)
 
-	mkdir -p "$BLOOM_CONFIG/home"
-	cat > "$BLOOM_CONFIG/home/index.html" <<-HTML
+	mkdir -p "$NIXPI_CONFIG/home"
+	cat > "$NIXPI_CONFIG/home/index.html" <<-HTML
 	<!doctype html>
 	<html lang="en">
 	<head>
 	  <meta charset="utf-8" />
 	  <meta name="viewport" content="width=device-width, initial-scale=1" />
-	  <title>Workspace Home</title>
+	  <title>nixPI Home</title>
 	  <style>
 	    :root {
 	      color-scheme: light;
@@ -444,10 +444,10 @@ nginx_prefix() {
 install_home_infrastructure() {
 	local prefix tmpdir
 	prefix=$(nginx_prefix)
-	tmpdir="$BLOOM_CONFIG/home/tmp"
-	mkdir -p "$BLOOM_CONFIG/home" "$tmpdir" "$SYSTEMD_USER_DIR"
+	tmpdir="$NIXPI_CONFIG/home/tmp"
+	mkdir -p "$NIXPI_CONFIG/home" "$tmpdir" "$SYSTEMD_USER_DIR"
 
-	cat > "$BLOOM_CONFIG/home/nginx.conf" <<-NGINX
+	cat > "$NIXPI_CONFIG/home/nginx.conf" <<-NGINX
 	daemon off;
 pid /run/user/${UID}/nixpi-home-nginx.pid;
 	error_log stderr;
@@ -459,7 +459,7 @@ pid /run/user/${UID}/nixpi-home-nginx.pid;
 	    client_body_temp_path ${tmpdir};
 	    server {
 	        listen 8080;
-	        root ${BLOOM_CONFIG}/home;
+	        root ${NIXPI_CONFIG}/home;
 	        try_files \$uri \$uri/ =404;
 	    }
 	}
@@ -480,10 +480,10 @@ write_fluffychat_runtime_config() {
 		primary_matrix_url="http://${primary_host}:6167"
 	fi
 
-	mkdir -p "$BLOOM_CONFIG/fluffychat"
-	cat > "$BLOOM_CONFIG/fluffychat/config.json" <<-CONFIG
+	mkdir -p "$NIXPI_CONFIG/chat"
+	cat > "$NIXPI_CONFIG/chat/config.json" <<-CONFIG
 	{
-	  "applicationName": "Workspace Web Chat",
+	  "applicationName": "nixPI Chat",
 	  "defaultHomeserver": "${primary_matrix_url}"
 	}
 	CONFIG

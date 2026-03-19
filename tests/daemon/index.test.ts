@@ -68,7 +68,7 @@ describe("daemon bootstrap", () => {
 				homeserver: "http://matrix",
 				botAccessToken: "token",
 				botPassword: "secret",
-				botUserId: "@pi:workspace",
+				botUserId: "@pi:nixpi",
 				registrationToken: "reg-token",
 			}),
 		);
@@ -100,11 +100,11 @@ describe("daemon bootstrap", () => {
 						id: "host",
 						name: "Pi",
 						instructionsPath: "<builtin>",
-						matrix: expect.objectContaining({ userId: "@pi:workspace" }),
+						matrix: expect.objectContaining({ userId: "@pi:nixpi" }),
 						respond: expect.objectContaining({ mode: "host" }),
 					}),
 				],
-				sessionBaseDir: `${homeDir}/.pi/agent/sessions/workspace-rooms`,
+				sessionBaseDir: `${homeDir}/.pi/agent/sessions/nixpi-rooms`,
 			}),
 		);
 		expect(startWithRetryMock).toHaveBeenCalledTimes(1);
@@ -129,7 +129,7 @@ describe("daemon bootstrap", () => {
 		expect(createMultiAgentRuntimeMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				agents: [{ id: "ops" }, { id: "support" }],
-				sessionBaseDir: `${homeDir}/.pi/agent/sessions/workspace-rooms`,
+				sessionBaseDir: `${homeDir}/.pi/agent/sessions/nixpi-rooms`,
 			}),
 		);
 		expect(startWithRetryMock).toHaveBeenCalledTimes(1);

@@ -103,12 +103,12 @@ export function seedBlueprints(workspaceDir: string, packageDir: string): void {
 		seedFile(src, dest, key, version, versions);
 	}
 
-	// Skills are intentionally NOT seeded to ~/Workspace/Skills/.
+	// Skills are intentionally NOT seeded to ~/nixPI/Skills/.
 	// The package path already exposes them to the agent via the `packages`
 	// setting in settings.json.  Seeding them here creates duplicate sources
 	// that cause "collision" warnings at startup (package = user priority,
-	// ~/Workspace/Skills/ = temp priority, same name → conflict).
-	// ~/Workspace/Skills/ is reserved for user-created custom skills only.
+	// ~/nixPI/Skills/ = temp priority, same name -> conflict).
+	// ~/nixPI/Skills/ is reserved for user-created custom skills only.
 
 	// Seed guardrails policy
 	seedFile(

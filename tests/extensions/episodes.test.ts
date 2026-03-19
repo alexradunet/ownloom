@@ -3,13 +3,13 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-nixpi.js";
+import { createTempNixpi, type TempNixpi } from "../helpers/temp-nixpi.js";
 
-let temp: TempWorkspace;
+let temp: TempNixpi;
 let api: MockExtensionAPI;
 
 beforeEach(async () => {
-	temp = createTempWorkspace();
+	temp = createTempNixpi();
 	api = createMockExtensionAPI();
 	const mod = await import("../../core/pi/extensions/episodes/index.js");
 	mod.default(api as never);
@@ -51,7 +51,7 @@ describe("episodes", () => {
 
 		expect(result.content[0].text).toContain("created episode/");
 
-		const episodesDir = path.join(temp.workspaceDir, "Episodes");
+		const episodesDir = path.join(temp.nixpiDir, "Episodes");
 		const files = fs.globSync("**/*.md", { cwd: episodesDir });
 		expect(files).toHaveLength(1);
 
@@ -83,14 +83,14 @@ describe("episodes", () => {
 
 		expect(promoteResult.content[0].text).toContain("promoted episode/");
 
-		const objectPath = path.join(temp.workspaceDir, "Objects", "ts-style.md");
+		const objectPath = path.join(temp.nixpiDir, "Objects", "ts-style.md");
 		expect(fs.existsSync(objectPath)).toBe(true);
 		const objectRaw = fs.readFileSync(objectPath, "utf-8");
 		expect(objectRaw).toContain("type: preference");
 		expect(objectRaw).toContain("episode/");
 
-		const episodeFiles = fs.globSync("**/*.md", { cwd: path.join(temp.workspaceDir, "Episodes") });
-		const episodeRaw = fs.readFileSync(path.join(temp.workspaceDir, "Episodes", episodeFiles[0]), "utf-8");
+		const episodeFiles = fs.globSync("**/*.md", { cwd: path.join(temp.nixpiDir, "Episodes") });
+		const episodeRaw = fs.readFileSync(path.join(temp.nixpiDir, "Episodes", episodeFiles[0]), "utf-8");
 		expect(episodeRaw).toContain("preference/ts-style");
 	});
 
@@ -119,7 +119,7 @@ describe("episodes", () => {
 		expect(result.content[0].text).toContain("created episode/");
 		expect(result.content[0].text).toContain("promoted episode/");
 
-		const objectPath = path.join(temp.workspaceDir, "Objects", "matrix-recovery.md");
+		const objectPath = path.join(temp.nixpiDir, "Objects", "matrix-recovery.md");
 		expect(fs.existsSync(objectPath)).toBe(true);
 		const objectRaw = fs.readFileSync(objectPath, "utf-8");
 		expect(objectRaw).toContain("scope: project");
@@ -153,7 +153,7 @@ describe("episodes", () => {
 		const applied = await consolidate("call-4", { mode: "apply", limit: 10 });
 		expect(applied.content[0].text).toContain("preference/cli-style-preference");
 
-		const objectPath = path.join(temp.workspaceDir, "Objects", "cli-style-preference.md");
+		const objectPath = path.join(temp.nixpiDir, "Objects", "cli-style-preference.md");
 		expect(fs.existsSync(objectPath)).toBe(true);
 	});
 
@@ -186,7 +186,7 @@ describe("episodes", () => {
 			createMockExtensionContext({ cwd: "/tmp/pi-workspace" }),
 		);
 
-		const objectPath = path.join(temp.workspaceDir, "Objects", "ops-room-preference.md");
+		const objectPath = path.join(temp.nixpiDir, "Objects", "ops-room-preference.md");
 		const objectRaw = fs.readFileSync(objectPath, "utf-8");
 		expect(objectRaw).toContain("scope: room");
 		expect(objectRaw).toContain("scope_value: ops-room");

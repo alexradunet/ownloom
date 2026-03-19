@@ -3,14 +3,14 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-nixpi.js";
+import { createTempNixpi, type TempNixpi } from "../helpers/temp-nixpi.js";
 
-let temp: TempWorkspace;
+let temp: TempNixpi;
 
 beforeEach(() => {
-	temp = createTempWorkspace();
+	temp = createTempNixpi();
 	// Seed persona files so loadPersona doesn't fail
-	const personaDir = join(temp.workspaceDir, "Persona");
+	const personaDir = join(temp.nixpiDir, "Persona");
 	mkdirSync(personaDir, { recursive: true });
 	for (const file of ["SOUL.md", "BODY.md", "FACULTY.md", "SKILL.md"]) {
 		writeFileSync(join(personaDir, file), `# ${file}\ntest content`);
@@ -23,8 +23,8 @@ afterEach(() => {
 
 async function setupPersonaExtension(guardrailsYaml?: string) {
 	if (guardrailsYaml) {
-		mkdirSync(temp.workspaceDir, { recursive: true });
-		writeFileSync(join(temp.workspaceDir, "guardrails.yaml"), guardrailsYaml);
+		mkdirSync(temp.nixpiDir, { recursive: true });
+		writeFileSync(join(temp.nixpiDir, "guardrails.yaml"), guardrailsYaml);
 	}
 
 	// Each mod.default(api) call creates fresh closures (guardrails starts undefined)

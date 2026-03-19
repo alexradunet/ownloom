@@ -1,35 +1,35 @@
 #!/usr/bin/env bash
-# setup-wizard.sh — First-boot setup wizard for Workspace OS.
+# setup-wizard.sh — First-boot setup wizard for nixPI.
 # Runs on first login before Pi starts. Uses read -p prompts.
-# Each completed step writes a checkpoint to ~/.workspace/wizard-state/.
+# Each completed step writes a checkpoint to ~/.nixpi/wizard-state/.
 # If interrupted (Ctrl+C), resumes from the last incomplete step on next login.
 set -euo pipefail
 
 # Logging setup - save wizard output for future reference
-WIZARD_LOG="$HOME/.workspace/wizard.log"
+WIZARD_LOG="$HOME/.nixpi/wizard.log"
 mkdir -p "$(dirname "$WIZARD_LOG")"
 exec > >(tee -a "$WIZARD_LOG") 2>&1
 
-echo "=== Workspace Wizard Started: $(date) ==="
+echo "=== nixPI Wizard Started: $(date) ==="
 
-WIZARD_STATE="$HOME/.workspace/wizard-state"
-SETUP_COMPLETE="$HOME/.workspace/.setup-complete"
-WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/Workspace}"
+WIZARD_STATE="$HOME/.nixpi/wizard-state"
+SETUP_COMPLETE="$HOME/.nixpi/.setup-complete"
+NIXPI_DIR="${NIXPI_DIR:-$HOME/nixPI}"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
-BLOOM_CONFIG="$HOME/.config/workspace"
+NIXPI_CONFIG="$HOME/.config/nixpi"
 PI_DIR="$HOME/.pi"
 MATRIX_HOMESERVER="http://localhost:6167"
 MATRIX_STATE_DIR="$WIZARD_STATE/matrix-state"
 
 # --- Prefill (for VM/dev use) ---
-# Create ~/.workspace/prefill.env on your host to skip manual prompts.
+# Create ~/.nixpi/prefill.env on your host to skip manual prompts.
 # When running in a VM via `just vm`, this file is shared into the VM automatically.
 # Supported vars: PREFILL_NETBIRD_KEY, PREFILL_NAME, PREFILL_EMAIL,
 #                 PREFILL_USERNAME, PREFILL_MATRIX_PASSWORD
-PREFILL_FILE="$HOME/.workspace/prefill.env"
+PREFILL_FILE="$HOME/.nixpi/prefill.env"
 # Fall back to host-shared mount (9p virtfs, available when running via `just vm`)
-if [[ ! -f "$PREFILL_FILE" && -f "/mnt/host-workspace/prefill.env" ]]; then
-	PREFILL_FILE="/mnt/host-workspace/prefill.env"
+if [[ ! -f "$PREFILL_FILE" && -f "/mnt/host-nixpi/prefill.env" ]]; then
+	PREFILL_FILE="/mnt/host-nixpi/prefill.env"
 fi
 if [[ -f "$PREFILL_FILE" ]]; then
 	# shellcheck source=/dev/null
@@ -56,7 +56,7 @@ write_pi_settings_defaults() {
 
 	if command -v jq >/dev/null 2>&1 && [[ -f "$settings_path" ]]; then
 		jq \
-			--arg package "/usr/local/share/workspace" \
+			--arg package "/usr/local/share/nixpi" \
 			--arg provider "$provider" \
 			--arg model "$model" \
 			'.packages = ((.packages // []) + [$package] | unique)
@@ -69,7 +69,7 @@ write_pi_settings_defaults() {
 		cat > "$settings_path" <<-SETTINGS
 		{
 		  "packages": [
-		    "/usr/local/share/workspace"
+		    "/usr/local/share/nixpi"
 		  ],
 		  "defaultProvider": "${provider}",
 		  "defaultModel": "${model}",
@@ -94,26 +94,26 @@ print_service_access_summary() {
 
 	echo "  Service access:"
 	if [[ -n "$mesh_host" ]]; then
-		echo "    Workspace Home   - http://${mesh_host}:8080"
+		echo "    nixPI Home   - http://${mesh_host}:8080"
 	fi
 	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-		echo "    Workspace Home   - http://${mesh_ip}:8080"
+		echo "    nixPI Home   - http://${mesh_ip}:8080"
 	fi
-	echo "    Share this   - send other NetBird peers the Workspace Home URL"
+	echo "    Share this   - send other NetBird peers the nixPI Home URL"
 	if [[ -n "$mesh_host" ]]; then
-		echo "    Workspace Web Chat - http://${mesh_host}:8081"
+		echo "    nixPI Chat - http://${mesh_host}:8081"
 	fi
 	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-		echo "    Workspace Web Chat - http://${mesh_ip}:8081"
+		echo "    nixPI Chat - http://${mesh_ip}:8081"
 		echo "    dufs/WebDAV  - http://${mesh_ip}:5000"
 		echo "    code-server  - http://${mesh_ip}:8443"
 	fi
-	echo "    FluffyChat   - preconfigured for this Workspace server"
+	echo "    FluffyChat   - preconfigured for this nixPI server"
 	if [[ -n "$mesh_host" ]]; then
 		echo "    dufs/WebDAV  - http://${mesh_host}:5000"
 		echo "    code-server  - http://${mesh_host}:8443"
 	fi
-	echo "    dufs path    - ~/Public/Workspace"
+	echo "    dufs path    - ~/Public/nixPI"
 
 	if [[ -n "$mesh_host" ]]; then
 		echo "    Matrix       - http://${mesh_host}:6167"
@@ -129,14 +129,14 @@ print_service_access_summary() {
 
 step_welcome() {
 	echo ""
-	echo "Welcome to Workspace OS."
+	echo "Welcome to nixPI."
 	echo "Let's configure your device. This takes a few minutes."
 	echo "Press Ctrl+C at any time to abort — you'll resume where you left off next login."
 	echo ""
 
 	# Set hostname (NixOS derives it from networking.hostName; this sets it at runtime)
-	if [[ "$(hostnamectl hostname 2>/dev/null)" != "workspace" ]]; then
-		sudo hostnamectl set-hostname workspace 2>/dev/null || true
+	if [[ "$(hostnamectl hostname 2>/dev/null)" != "nixpi" ]]; then
+		sudo hostnamectl set-hostname nixpi 2>/dev/null || true
 	fi
 
 	mark_done welcome
@@ -334,9 +334,9 @@ step_services() {
 	write_fluffychat_runtime_config
 	write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
 	if install_home_infrastructure; then
-		echo "  Workspace Home ready."
+		echo "  nixPI Home ready."
 	else
-		echo "  Workspace Home setup failed."
+		echo "  nixPI Home setup failed."
 	fi
 	systemctl --user restart nixpi-chat.service || echo "  chat restart failed."
 	systemctl --user restart nixpi-files.service || echo "  files restart failed."
@@ -348,10 +348,10 @@ step_services() {
 step_bootc_switch() {
 	echo ""
 	echo "--- System Updates ---"
-	echo "Workspace OS uses NixOS with automatic OTA updates."
+	echo "nixPI uses NixOS with automatic OTA updates."
 	echo "The nixpi-update timer checks for updates every 6 hours."
 	echo ""
-	echo "To update manually at any time: sudo nixos-rebuild switch --flake github:alexradunet/piBloom#workspace-x86_64"
+	echo "To update manually at any time: sudo nixos-rebuild switch --flake github:alexradunet/piBloom#nixpi-x86_64"
 	echo "To roll back:                   sudo nixos-rebuild switch --rollback"
 	echo ""
 	mark_done bootc_switch
@@ -405,7 +405,7 @@ finalize() {
 
 	[[ -n "$mesh_ip" ]] && echo "  Mesh IP: ${mesh_ip} (access from any NetBird peer)"
 	[[ -n "$mesh_fqdn" ]] && echo "  NetBird name: ${mesh_fqdn}"
-	[[ -n "$matrix_user" ]] && echo "  Matrix user: @${matrix_user}:workspace"
+	[[ -n "$matrix_user" ]] && echo "  Matrix user: @${matrix_user}:nixpi"
 	echo "  Built-in services: ${services:-fluffychat dufs code-server}"
 	echo ""
 	print_service_access_summary "$services" "$mesh_ip" "$mesh_fqdn"

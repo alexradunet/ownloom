@@ -14,7 +14,7 @@ import {
 } from "../../core/pi/extensions/nixpi/actions.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-nixpi.js";
+import { createTempNixpi, type TempNixpi } from "../helpers/temp-nixpi.js";
 
 let workspaceDir: string;
 
@@ -189,7 +189,7 @@ describe("handleAgentCreate", () => {
 					ok: true,
 					credentials: {
 						homeserver: "http://localhost:6167",
-						userId: "@planner:workspace",
+						userId: "@planner:nixpi",
 						accessToken: "planner-token",
 						password: "secret-pass",
 						username: "planner",
@@ -217,7 +217,7 @@ describe("handleAgentCreate", () => {
 			ok: true,
 			credentials: {
 				homeserver: "http://localhost:6167",
-				userId: "@critic:workspace",
+				userId: "@critic:nixpi",
 				accessToken: "critic-token",
 				password: "secret-pass",
 				username: "critic",
@@ -267,7 +267,7 @@ describe("handleAgentCreate", () => {
 					ok: true,
 					credentials: {
 						homeserver: "http://localhost:6167",
-						userId: "@cashus:workspace",
+						userId: "@cashus:nixpi",
 						accessToken: "cashus-token",
 						password: "secret-pass",
 						username: "cashus",
@@ -302,7 +302,7 @@ describe("handleAgentCreate", () => {
 					ok: true,
 					credentials: {
 						homeserver: "http://localhost:6167",
-						userId: "@planner:workspace",
+						userId: "@planner:nixpi",
 						accessToken: "planner-token",
 						password: "secret-pass",
 						username: "planner",
@@ -329,7 +329,7 @@ describe("handleAgentCreate", () => {
 					ok: true,
 					credentials: {
 						homeserver: "http://localhost:6167",
-						userId: "@planner:workspace",
+						userId: "@planner:nixpi",
 						accessToken: "planner-token",
 						password: "secret-pass",
 						username: "planner",
@@ -480,11 +480,11 @@ description: Memory manager
 			message: "Please remember that I prefer dark mode",
 		});
 
-		expect(result.content[0].text).toBe("@cookie:workspace Please remember that I prefer dark mode");
+		expect(result.content[0].text).toBe("@cookie:nixpi Please remember that I prefer dark mode");
 		expect(result.details).toMatchObject({
 			agentId: "cookie",
 			agentName: "Cookie",
-			userId: "@cookie:workspace",
+			userId: "@cookie:nixpi",
 		});
 	});
 
@@ -533,11 +533,11 @@ type NixpiStatusResult = { content: Array<{ type: string; text: string }>; detai
 type NixpiStatusExecute = () => Promise<NixpiStatusResult>;
 
 describe("nixpi_status tool execute", () => {
-	let temp: TempWorkspace;
+	let temp: TempNixpi;
 	let api: ReturnType<typeof createMockExtensionAPI>;
 
 	beforeEach(async () => {
-		temp = createTempWorkspace();
+		temp = createTempNixpi();
 		vi.resetModules();
 		api = createMockExtensionAPI();
 		const mod = await import("../../core/pi/extensions/nixpi/index.js");
@@ -564,7 +564,7 @@ describe("nixpi_status tool execute", () => {
 
 	it("includes the workspace dir path in the status text", async () => {
 		const result = await getNixpiStatusExecute()();
-		expect(result.content[0].text).toContain(temp.workspaceDir);
+		expect(result.content[0].text).toContain(temp.nixpiDir);
 	});
 
 	it("includes package version line in the status text", async () => {
@@ -582,11 +582,11 @@ describe("nixpi_status tool execute", () => {
 // /nixpi command handler subcommands
 // ---------------------------------------------------------------------------
 describe("/nixpi command handler", () => {
-	let temp: TempWorkspace;
+	let temp: TempNixpi;
 	let api: ReturnType<typeof createMockExtensionAPI>;
 
 	beforeEach(async () => {
-		temp = createTempWorkspace();
+		temp = createTempNixpi();
 		vi.resetModules();
 		api = createMockExtensionAPI();
 		const mod = await import("../../core/pi/extensions/nixpi/index.js");
@@ -628,7 +628,7 @@ describe("/nixpi command handler", () => {
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handler("init", ctx);
 		for (const dir of ["Persona", "Skills", "Evolutions", "Objects", "Episodes", "Agents", "audit"]) {
-			expect(fs.existsSync(path.join(temp.workspaceDir, dir))).toBe(true);
+			expect(fs.existsSync(path.join(temp.nixpiDir, dir))).toBe(true);
 		}
 	});
 

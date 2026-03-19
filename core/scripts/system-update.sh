@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # system-update.sh — NixOS OTA update + status-file writer.
 # Runs as root via nixpi-update.service. Writes status to the primary nixPI user's
-# ~/.workspace/update-status.json path.
+# ~/.nixpi/update-status.json path.
 set -euo pipefail
 
 FLAKE_REF="github:alexradunet/piBloom"
-HOST="workspace-x86_64"
+HOST="nixpi-x86_64"
 FLAKE="${FLAKE_REF}#${HOST}"
 BLOOM_USERNAME="${BLOOM_USERNAME:-pi}"
-STATUS_DIR="/home/${BLOOM_USERNAME}/.workspace"
+STATUS_DIR="/home/${BLOOM_USERNAME}/.nixpi"
 STATUS_FILE="$STATUS_DIR/update-status.json"
 CHECKED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 

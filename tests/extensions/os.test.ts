@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-nixpi.js";
+import { createTempNixpi, type TempNixpi } from "../helpers/temp-nixpi.js";
 
 vi.mock("../../core/lib/exec.js", () => ({
 	run: vi.fn(),
@@ -15,7 +15,7 @@ import {
 } from "../../core/pi/extensions/os/actions.js";
 import { handleSystemHealth } from "../../core/pi/extensions/os/actions-health.js";
 
-let temp: TempWorkspace;
+let temp: TempNixpi;
 let api: MockExtensionAPI;
 
 const EXPECTED_TOOL_NAMES = [
@@ -28,7 +28,7 @@ const EXPECTED_TOOL_NAMES = [
 ];
 
 beforeEach(async () => {
-	temp = createTempWorkspace();
+	temp = createTempNixpi();
 	api = createMockExtensionAPI();
 	const mod = await import("../../core/pi/extensions/os/index.js");
 	mod.default(api as never);
