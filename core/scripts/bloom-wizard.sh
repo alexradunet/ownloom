@@ -15,7 +15,6 @@ echo "=== Bloom Wizard Started: $(date) ==="
 WIZARD_STATE="$HOME/.bloom/wizard-state"
 SETUP_COMPLETE="$HOME/.bloom/.setup-complete"
 BLOOM_DIR="${BLOOM_DIR:-$HOME/Bloom}"
-BLOOM_SERVICES="/usr/local/share/bloom/services"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 BLOOM_CONFIG="$HOME/.config/bloom"
 PI_DIR="$HOME/.pi"
@@ -100,7 +99,7 @@ pi_ai_ready() {
 }
 
 print_service_access_summary() {
-	local installed_services="$1" mesh_ip="$2" mesh_fqdn="$3"
+	local _installed_services="$1" mesh_ip="$2" mesh_fqdn="$3"
 	local mesh_host="${mesh_fqdn:-$mesh_ip}"
 
 	echo "  Service access:"
@@ -111,27 +110,20 @@ print_service_access_summary() {
 		echo "    Bloom Home   - http://${mesh_ip}:8080"
 	fi
 	echo "    Share this   - send other NetBird peers the Bloom Home URL"
-	if [[ "$installed_services" == *"fluffychat"* ]]; then
-		if [[ -n "$mesh_host" ]]; then
-			echo "    Bloom Web Chat - http://${mesh_host}:8081"
-		fi
-		if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-			echo "    Bloom Web Chat - http://${mesh_ip}:8081"
-		fi
-		echo "    FluffyChat   - preconfigured for this Bloom server"
-	else
-		echo "    FluffyChat   - not installed on this box"
+	if [[ -n "$mesh_host" ]]; then
+		echo "    Bloom Web Chat - http://${mesh_host}:8081"
 	fi
-
-	if [[ "$installed_services" == *"dufs"* ]]; then
-		if [[ -n "$mesh_host" ]]; then
-			echo "    dufs/WebDAV  - http://${mesh_host}:5000"
-		fi
-		if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-			echo "    dufs/WebDAV  - http://${mesh_ip}:5000"
-		fi
-		echo "    dufs path    - ~/Public/Bloom"
+	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
+		echo "    Bloom Web Chat - http://${mesh_ip}:8081"
+		echo "    dufs/WebDAV  - http://${mesh_ip}:5000"
+		echo "    code-server  - http://${mesh_ip}:8443"
 	fi
+	echo "    FluffyChat   - preconfigured for this Bloom server"
+	if [[ -n "$mesh_host" ]]; then
+		echo "    dufs/WebDAV  - http://${mesh_host}:5000"
+		echo "    code-server  - http://${mesh_host}:8443"
+	fi
+	echo "    dufs path    - ~/Public/Bloom"
 
 	if [[ -n "$mesh_host" ]]; then
 		echo "    Matrix       - http://${mesh_host}:6167"
@@ -343,64 +335,24 @@ step_ai() {
 
 step_services() {
 	echo ""
-	echo "--- Services ---"
-	local installed=""
+	echo "--- Built-In Services ---"
 	local mesh_ip mesh_fqdn
 	mesh_ip=$(read_checkpoint_data netbird)
 	mesh_fqdn=$(netbird_fqdn)
 
-	echo "  Provisioning Bloom Home landing page..."
-	write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
+	echo "  Refreshing built-in service configs..."
+	write_fluffychat_runtime_config
+	write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
 	if install_home_infrastructure; then
 		echo "  Bloom Home ready."
 	else
 		echo "  Bloom Home setup failed."
 	fi
-
-	if [[ -n "${PREFILL_SERVICES:-}" ]]; then
-		# Non-interactive path: iterate comma-separated list from prefill.env
-		IFS=',' read -ra _svc_list <<< "$PREFILL_SERVICES"
-		for _svc in "${_svc_list[@]}"; do
-			_svc="$(echo "$_svc" | xargs)"
-			[[ -z "$_svc" ]] && continue
-			echo "  Installing ${_svc}..."
-			if install_service "$_svc"; then
-				echo "  ${_svc} installed."
-				installed="${installed} ${_svc}"
-				write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
-			else
-				echo "  ${_svc} installation failed."
-			fi
-		done
-	else
-		# Interactive path: ask for each optional service
-		read -rp "Install Bloom Web Chat? (FluffyChat web client for Matrix over NetBird) [y/N]: " fluffychat_answer
-		if [[ "${fluffychat_answer,,}" == "y" ]]; then
-			echo "  Installing FluffyChat..."
-			if install_service fluffychat; then
-				echo "  FluffyChat installed."
-				installed="${installed} fluffychat"
-				write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
-			else
-				echo "  FluffyChat installation failed."
-			fi
-		fi
-
-		read -rp "Install dufs file server? (access files from any device via WebDAV) [y/N]: " dufs_answer
-		if [[ "${dufs_answer,,}" == "y" ]]; then
-			echo "  Installing dufs..."
-			if install_service dufs; then
-				echo "  dufs installed."
-				installed="${installed} dufs"
-				write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
-			else
-				echo "  dufs installation failed."
-			fi
-		fi
-	fi
-
-	write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
-	mark_done_with services "${installed:-none}"
+	systemctl --user restart bloom-fluffychat.service || echo "  FluffyChat restart failed."
+	systemctl --user restart bloom-dufs.service || echo "  dufs restart failed."
+	systemctl --user restart bloom-code-server.service || echo "  code-server restart failed."
+	write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
+	mark_done_with services "fluffychat dufs code-server"
 }
 
 step_bootc_switch() {
@@ -464,7 +416,7 @@ finalize() {
 	[[ -n "$mesh_ip" ]] && echo "  Mesh IP: ${mesh_ip} (access from any NetBird peer)"
 	[[ -n "$mesh_fqdn" ]] && echo "  NetBird name: ${mesh_fqdn}"
 	[[ -n "$matrix_user" ]] && echo "  Matrix user: @${matrix_user}:bloom"
-	echo "  Services:${services:-none}"
+	echo "  Built-in services: ${services:-fluffychat dufs code-server}"
 	echo ""
 	print_service_access_summary "$services" "$mesh_ip" "$mesh_fqdn"
 	echo ""

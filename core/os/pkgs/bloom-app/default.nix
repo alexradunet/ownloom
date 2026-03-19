@@ -35,7 +35,6 @@ buildNpmPackage {
     cp -r dist package.json node_modules $out/share/bloom/
     cp -r core/pi-persona $out/share/bloom/core/pi-persona
     cp -r core/pi-skills  $out/share/bloom/core/pi-skills
-    cp -r services        $out/share/bloom/services
 
     mkdir -p $out/bin
     install -m 755 ${../../../scripts/bloom-lib.sh} $out/bin/bloom-lib.sh

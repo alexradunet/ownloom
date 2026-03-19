@@ -60,7 +60,6 @@ def run():
     matrix_user = username
     git_email   = ""
     netbird_key = ""
-    services    = ""
 
     # Home directory matches the username the installer will create.
     user_home = os.path.join(root, "home", username)
@@ -99,7 +98,6 @@ def run():
         f"PREFILL_USERNAME={_shell_quote(matrix_user)}\n"
         f"PREFILL_NAME={_shell_quote(prefill_name)}\n"
         f"PREFILL_EMAIL={_shell_quote(git_email)}\n"
-        f"PREFILL_SERVICES={_shell_quote(services)}\n"
         # Password was set in Calamares — tell the wizard to skip the password step.
         "PREFILL_PASSWORD_DONE='1'\n"
     )

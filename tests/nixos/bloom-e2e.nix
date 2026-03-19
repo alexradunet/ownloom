@@ -44,7 +44,6 @@ pkgs.testers.runNixOSTest {
         cat > /home/pi/.bloom/prefill.env << 'EOF'
     PREFILL_USERNAME=e2etest
     PREFILL_PASSWORD=e2etestpass123
-    PREFILL_SERVICES=
     EOF
         chown -R pi:pi /home/pi/.bloom
         chmod 755 /home/pi/.bloom

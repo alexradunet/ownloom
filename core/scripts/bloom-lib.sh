@@ -3,7 +3,7 @@
 # Source this file; do not execute directly.
 #
 # Provides: checkpoint management, NetBird utilities, Matrix API/state,
-#           service management, and step_matrix.
+#           built-in service runtime generation, and step_matrix.
 #
 # Required env vars (callers must set before sourcing):
 #   WIZARD_STATE        — path to checkpoint directory (e.g. ~/.bloom/wizard-state)
@@ -11,7 +11,6 @@
 #   MATRIX_HOMESERVER   — Matrix homeserver URL (e.g. http://localhost:6167)
 #   PI_DIR              — path to Pi config dir (e.g. ~/.pi)
 #   BLOOM_CONFIG        — path to Bloom config dir (e.g. ~/.config/bloom)
-#   BLOOM_SERVICES      — path to installed services dir
 #   BLOOM_DIR           — path to Bloom home dir
 #   SYSTEMD_USER_DIR    — path to systemd user dir
 
@@ -169,7 +168,7 @@ load_existing_matrix_credentials() {
 }
 
 write_service_home_runtime() {
-	local installed_services="$1" mesh_ip="$2" mesh_fqdn="$3"
+	local mesh_ip="$1" mesh_fqdn="$2"
 	local mesh_host page_url generated_at
 	mesh_host="${mesh_fqdn:-$mesh_ip}"
 	[[ -n "$mesh_host" ]] || mesh_host="localhost"
@@ -383,8 +382,7 @@ write_service_home_runtime() {
 	    </article>
 	HTML
 
-		if [[ "$installed_services" == *"fluffychat"* ]]; then
-			cat <<-HTML
+		cat <<-HTML
 	    <article class="service-card">
 	      <div class="service-head">
 	        <div class="service-icon">MX</div>
@@ -397,10 +395,8 @@ write_service_home_runtime() {
 	      <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="http://${mesh_host}:8081">http://${mesh_host}:8081</a></p>
 	    </article>
 	HTML
-		fi
 
-		if [[ "$installed_services" == *"dufs"* ]]; then
-			cat <<-HTML
+		cat <<-HTML
 	    <article class="service-card">
 	      <div class="service-head">
 	        <div class="service-icon">FS</div>
@@ -414,7 +410,20 @@ write_service_home_runtime() {
 	      <p class="service-meta"><span class="service-label">Path</span>~/Public/Bloom</p>
 	    </article>
 	HTML
-		fi
+
+		cat <<-HTML
+	    <article class="service-card">
+	      <div class="service-head">
+	        <div class="service-icon">CS</div>
+	        <div>
+	          <h2>Bloom Code</h2>
+	          <p class="service-description">Browser IDE for editing the local machine and reviewing Bloom changes</p>
+	        </div>
+	        <span class="service-status status-live">Running</span>
+	      </div>
+	      <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="http://${mesh_host}:8443">http://${mesh_host}:8443</a></p>
+	    </article>
+	HTML
 	} >> "$BLOOM_CONFIG/home/index.html"
 
 	cat >> "$BLOOM_CONFIG/home/index.html" <<-HTML
@@ -456,23 +465,8 @@ install_home_infrastructure() {
 	}
 	NGINX
 
-	cat > "$SYSTEMD_USER_DIR/bloom-home.service" <<-'UNIT'
-	[Unit]
-	Description=Bloom Home — service landing page
-	After=network-online.target
-	Wants=network-online.target
-
-	[Service]
-	ExecStart=/run/current-system/sw/bin/nginx -c %E/bloom/home/nginx.conf
-	Restart=on-failure
-	RestartSec=10
-
-	[Install]
-	WantedBy=default.target
-	UNIT
-
 	systemctl --user daemon-reload
-	systemctl --user enable --now bloom-home.service
+	systemctl --user restart bloom-home.service
 }
 
 write_fluffychat_runtime_config() {
@@ -493,113 +487,6 @@ write_fluffychat_runtime_config() {
 	  "defaultHomeserver": "${primary_matrix_url}"
 	}
 	CONFIG
-}
-
-# --- Service install helper ---
-
-# Install a service from the bundled package.
-# Usage: install_service <name>
-install_service() {
-	local name="$1"
-	local svc_dir="${BLOOM_SERVICES}/${name}"
-
-	if [[ ! -d "$svc_dir" ]]; then
-		echo "  Service package not found: ${svc_dir}" >&2
-		return 1
-	fi
-
-	mkdir -p "$SYSTEMD_USER_DIR"
-
-	case "$name" in
-		dufs)
-			mkdir -p "$HOME/Public/Bloom"
-			cat > "$SYSTEMD_USER_DIR/bloom-dufs.service" <<-'UNIT'
-			[Unit]
-			Description=Bloom Files — WebDAV file server
-			After=network-online.target
-			Wants=network-online.target
-
-			[Service]
-			ExecStart=/run/current-system/sw/bin/dufs %h/Public/Bloom -A -b 0.0.0.0 -p 5000
-			Restart=on-failure
-			RestartSec=10
-
-			[Install]
-			WantedBy=default.target
-			UNIT
-			;;
-		fluffychat)
-			write_fluffychat_runtime_config
-			local prefix tmpdir
-			prefix=$(nginx_prefix)
-			tmpdir="$BLOOM_CONFIG/fluffychat/tmp"
-			mkdir -p "$BLOOM_CONFIG/fluffychat" "$tmpdir"
-			cat > "$BLOOM_CONFIG/fluffychat/nginx.conf" <<-NGINX
-			daemon off;
-			pid /run/user/${UID}/bloom-fluffychat-nginx.pid;
-			error_log stderr;
-			events { worker_connections 64; }
-			http {
-			    include ${prefix}/conf/mime.types;
-			    default_type application/octet-stream;
-			    access_log off;
-			    client_body_temp_path ${tmpdir};
-			    server {
-			        listen 8081;
-			        location /config.json {
-			            alias ${BLOOM_CONFIG}/fluffychat/config.json;
-			        }
-			        location / {
-			            root /etc/bloom/fluffychat-web;
-			            try_files \$uri \$uri/ /index.html;
-			        }
-			    }
-			}
-			NGINX
-			cat > "$SYSTEMD_USER_DIR/bloom-fluffychat.service" <<-'UNIT'
-			[Unit]
-			Description=Bloom FluffyChat — web Matrix client
-			After=network-online.target
-			Wants=network-online.target
-
-			[Service]
-			ExecStart=/run/current-system/sw/bin/nginx -c %E/bloom/fluffychat/nginx.conf
-			Restart=on-failure
-			RestartSec=10
-
-			[Install]
-			WantedBy=default.target
-			UNIT
-			;;
-		code-server)
-			cat > "$SYSTEMD_USER_DIR/bloom-code-server.service" <<-'UNIT'
-			[Unit]
-			Description=Bloom code-server — browser code editor
-			After=network-online.target
-			Wants=network-online.target
-
-			[Service]
-			ExecStart=/run/current-system/sw/bin/code-server --bind-addr 0.0.0.0:8443 --auth none --disable-telemetry
-			Restart=on-failure
-			RestartSec=10
-
-			[Install]
-			WantedBy=default.target
-			UNIT
-			;;
-		*)
-			echo "  Unknown service: ${name}" >&2
-			return 1
-			;;
-	esac
-
-	# Copy SKILL.md
-	local skill_dir="$BLOOM_DIR/Skills/${name}"
-	mkdir -p "$skill_dir"
-	[[ -f "$svc_dir/SKILL.md" ]] && cp "$svc_dir/SKILL.md" "$skill_dir/"
-
-	systemctl --user daemon-reload
-	systemctl --user enable --now "bloom-${name}.service"
 }
 
 step_matrix() {

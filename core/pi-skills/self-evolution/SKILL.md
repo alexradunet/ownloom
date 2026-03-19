@@ -74,59 +74,8 @@ When Bloom identifies a code-level fix or improvement to its own OS/extensions, 
 - remote publish is always human- or controller-driven
 - rollout is always external to the node
 
-## Adding a Service Package
+## Adding A Built-In Service
 
-When Bloom identifies a need for a new packaged workload, treat it as maintainer-side package work rather than default runtime behavior.
+When Bloom identifies a need for a new user-facing service, treat it as base NixOS work rather than a packaged runtime feature.
 
-If the new service exposes a browser or HTTP UI, treat it as a Bloom Home entry as well: scaffold it with `web_service=true` and include the Home metadata (`title`, `icon_text`, `path_hint`, `access_path`) so the built-in landing page advertises it after install.
-
-### Directory Convention
-
-```
-services/{name}/
-├── quadlet/
-│   ├── bloom-{name}.container    # Podman Quadlet container unit
-│   ├── bloom-{name}.socket       # Optional socket activation unit
-│   └── bloom-{name}-*.volume     # Optional volume definitions
-└── SKILL.md                      # Pi skill file (frontmatter + docs)
-```
-
-### Quadlet Conventions
-
-- Container name: `bloom-{name}`
-- Network: host networking
-- Health checks: required (`HealthCmd`, `HealthInterval`, `HealthRetries`)
-- Logging: `LogDriver=journald`
-- Security: `NoNewPrivileges=true` minimum
-- Restart: `on-failure` with `RestartSec=10`
-- Optional: `.socket` unit for on-demand activation
-
-### SKILL.md Format
-
-Include frontmatter with `name` and `description`, then document:
-- What the service does
-- API endpoints (if any)
-- Setup instructions
-- Common commands
-- Troubleshooting
-
-### Installation
-
-```bash
-# Install from local package
-systemctl --user daemon-reload
-systemctl --user start bloom-{name}
-```
-
-### Testing
-
-1. Create the service directory with quadlet + SKILL.md
-2. Test locally: copy quadlet files to `~/.config/containers/systemd/`, run `systemctl --user daemon-reload && systemctl --user start bloom-{name}`
-3. Verify health: `systemctl --user status bloom-{name}`
-
-Reference package:
-- `services/dufs/quadlet/` (production HTTP service reference)
-
-### Maintainer Workflow
-
-Use direct repo edits and local testing for service work, then hand the resulting diff to the human for review and external publish.
+Use direct repo edits in the OS modules, add a bundled skill only if Pi needs service-specific operating guidance, validate locally, and hand the resulting diff to the human for review and external publish.

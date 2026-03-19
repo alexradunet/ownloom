@@ -16,7 +16,6 @@ echo "=== Bloom Firstboot Started: $(date) ==="
 WIZARD_STATE="$HOME/.bloom/wizard-state"
 SETUP_COMPLETE="$HOME/.bloom/.setup-complete"
 BLOOM_DIR="${BLOOM_DIR:-$HOME/Bloom}"
-BLOOM_SERVICES="/usr/local/share/bloom/services"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 BLOOM_CONFIG="$HOME/.config/bloom"
 PI_DIR="$HOME/.pi"
@@ -86,30 +85,16 @@ firstboot_matrix() {
 
 firstboot_services() {
     echo "bloom-firstboot: provisioning Bloom Home..."
-    local installed=""
     local mesh_ip mesh_fqdn
     mesh_ip=$(read_checkpoint_data netbird)
     mesh_fqdn=$(netbird_fqdn)
-    write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
+    write_fluffychat_runtime_config
+    write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
     install_home_infrastructure || echo "bloom-firstboot: Bloom Home setup failed (non-fatal)"
-
-    if [[ -n "${PREFILL_SERVICES:-}" ]]; then
-        IFS=',' read -ra svc_list <<< "$PREFILL_SERVICES"
-        for svc in "${svc_list[@]}"; do
-            svc="$(echo "$svc" | xargs)"
-            [[ -z "$svc" ]] && continue
-            echo "bloom-firstboot: installing service: $svc"
-            if install_service "$svc"; then
-                installed="${installed} ${svc}"
-                write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
-            else
-                echo "bloom-firstboot: service $svc failed (non-fatal)" >&2
-            fi
-        done
-    fi
-
-    write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
-    mark_done_with services "${installed:-none}"
+    systemctl --user restart bloom-fluffychat.service || echo "bloom-firstboot: fluffychat restart failed (non-fatal)" >&2
+    systemctl --user restart bloom-dufs.service || echo "bloom-firstboot: dufs restart failed (non-fatal)" >&2
+    systemctl --user restart bloom-code-server.service || echo "bloom-firstboot: code-server restart failed (non-fatal)" >&2
+    mark_done_with services "fluffychat dufs code-server"
 }
 
 firstboot_localai() {
