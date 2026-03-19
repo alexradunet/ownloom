@@ -70,7 +70,7 @@ export function listObjects(
 	};
 }
 
-/** Search markdown files in ~/Workspace/ for a pattern. */
+/** Search markdown files in ~/nixPI/ for a pattern. */
 export function searchObjects(params: { pattern: string }, signal?: AbortSignal) {
 	const workspaceDir = getNixpiDir();
 	const matches: string[] = [];
@@ -100,7 +100,7 @@ export function searchObjects(params: { pattern: string }, signal?: AbortSignal)
 	};
 }
 
-/** Query ranked object matches from ~/Workspace/Objects/. */
+/** Query ranked object matches from ~/nixPI/Objects/. */
 export function queryObjects(
 	params: {
 		text?: string;

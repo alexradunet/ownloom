@@ -9,9 +9,9 @@ nixPI ships these services as part of the base NixOS system. They are not option
 
 ## Always Available
 
-- `Workspace Home` on `:8080` — landing page with links to the built-in web services
-- `Workspace Web Chat` on `:8081` — FluffyChat web client for the local Workspace Matrix server
-- `Workspace Files` on `:5000` — dufs WebDAV/file browser for `~/Public/Workspace`
+- `nixPI Home` on `:8080` — landing page with links to the built-in web services
+- `nixPI Chat` on `:8081` — FluffyChat web client for the local nixPI Matrix server
+- `nixPI Files` on `:5000` — dufs WebDAV/file browser for `~/Public/nixPI`
 - `code-server` on `:8443` — browser IDE for working on the local machine
 
 ## Operational Notes

@@ -107,7 +107,7 @@
           boot = pkgsUnfree.testers.nixosTest {
             name = "boot";
 
-            nodes.workspace = { ... }: {
+            nodes.nixpi = { ... }: {
               imports = [
                 self.nixosModules.nixpi
                 self.nixosModules.firstboot
@@ -128,17 +128,17 @@
             };
 
             testScript = ''
-              workspace.start()
-              workspace.wait_for_unit("multi-user.target", timeout=300)
+              nixpi.start()
+              nixpi.wait_for_unit("multi-user.target", timeout=300)
 
               # Basic sanity: the pi user exists
-              workspace.succeed("id pi")
+              nixpi.succeed("id pi")
 
               # nixpi-firstboot was attempted (exit 0 or 1 both accepted by unit)
-              workspace.wait_for_unit("nixpi-firstboot.service", timeout=60)
+              nixpi.wait_for_unit("nixpi-firstboot.service", timeout=60)
 
               # NetworkManager is running
-              workspace.succeed("systemctl is-active NetworkManager")
+              nixpi.succeed("systemctl is-active NetworkManager")
             '';
           };
         }

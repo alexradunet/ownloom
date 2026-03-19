@@ -2,7 +2,7 @@
 # Test that the LocalAI inference service (llama-server) starts correctly
 # Note: Uses a tiny test model instead of the full 5GB model
 
-{ pkgs, lib, workspaceModules, workspaceModulesNoShell, piAgent, appPackage, mkWorkspaceNode, mkTestFilesystems }:
+{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems }:
 
 let
   # Tiny test model for CI/tests (SmolLM 135M - ~270MB)
@@ -14,7 +14,7 @@ pkgs.testers.runNixOSTest {
   name = "localai";
 
   nodes.server = { ... }: {
-    imports = workspaceModules ++ [ mkTestFilesystems ];
+    imports = nixpiModules ++ [ mkTestFilesystems ];
     _module.args = { inherit piAgent appPackage; };
 
     # VM configuration

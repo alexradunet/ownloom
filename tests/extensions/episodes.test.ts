@@ -113,7 +113,7 @@ describe("episodes", () => {
 			},
 			undefined,
 			undefined,
-			createMockExtensionContext({ cwd: "/tmp/pi-workspace" }),
+			createMockExtensionContext({ cwd: "/tmp/pi-nixpi" }),
 		);
 
 		expect(result.content[0].text).toContain("created episode/");
@@ -123,7 +123,7 @@ describe("episodes", () => {
 		expect(fs.existsSync(objectPath)).toBe(true);
 		const objectRaw = fs.readFileSync(objectPath, "utf-8");
 		expect(objectRaw).toContain("scope: project");
-		expect(objectRaw).toContain("scope_value: pi-workspace");
+		expect(objectRaw).toContain("scope_value: pi-nixpi");
 	});
 
 	it("proposes and applies conservative episode consolidation", async () => {
@@ -183,7 +183,7 @@ describe("episodes", () => {
 			},
 			undefined,
 			undefined,
-			createMockExtensionContext({ cwd: "/tmp/pi-workspace" }),
+			createMockExtensionContext({ cwd: "/tmp/pi-nixpi" }),
 		);
 
 		const objectPath = path.join(temp.nixpiDir, "Objects", "ops-room-preference.md");

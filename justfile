@@ -1,4 +1,4 @@
-# Workspace OS — build, test, and develop
+# nixPI — build, test, and develop
 
 system    := "x86_64-linux"
 flake     := "."
@@ -7,7 +7,7 @@ output    := "result"
 ovmf      := "/usr/share/edk2/ovmf/OVMF_CODE.fd"
 ovmf_vars := "/usr/share/edk2/ovmf/OVMF_VARS.fd"
 
-# Build Workspace TypeScript app derivation only
+# Build nixPI TypeScript app derivation only
 build:
     nix build {{ flake }}#app
 
@@ -48,7 +48,7 @@ vm-daemon: qcow2
 # SSH into the running VM
 vm-ssh:
     #!/usr/bin/env bash
-    if ! pgrep -f "[q]emu-system-x86_64.*workspace-vm-disk" > /dev/null; then
+    if ! pgrep -f "[q]emu-system-x86_64.*nixpi-vm-disk" > /dev/null; then
         echo "No VM running. Start with: just vm-daemon"
         exit 1
     fi
@@ -57,12 +57,12 @@ vm-ssh:
 
 # Show VM log (for vm-daemon)
 vm-logs:
-    tail -f /tmp/workspace-vm.log
+    tail -f /tmp/nixpi-vm.log
 
 # Stop the running VM (graceful if possible, otherwise kill)
 vm-stop:
     #!/usr/bin/env bash
-    pid=$(pgrep -f "[q]emu-system-x86_64.*workspace-vm-disk" || true)
+    pid=$(pgrep -f "[q]emu-system-x86_64.*nixpi-vm-disk" || true)
     if [ -z "$pid" ]; then
         echo "No VM running"
         exit 0
@@ -82,7 +82,7 @@ vm-kill: vm-stop
 # Remove build results and VM disk
 clean:
     rm -f result result-*
-    rm -f /tmp/workspace-vm-disk.qcow2 /tmp/workspace-ovmf-vars.fd
+    rm -f /tmp/nixpi-vm-disk.qcow2 /tmp/nixpi-ovmf-vars.fd
 
 # Install host dependencies (Fedora build host; NixOS devs use nix develop)
 deps:

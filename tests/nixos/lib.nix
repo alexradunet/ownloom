@@ -1,19 +1,19 @@
 # tests/nixos/lib.nix
-# Shared helpers for Workspace OS NixOS integration tests
+# Shared helpers for nixPI NixOS integration tests
 
 { pkgs, lib }:
 
 {
-  # Common test configuration for Workspace OS nodes
-  mkWorkspaceNode = { workspaceModules, piAgent, appPackage, extraConfig ? {} }: {
-    imports = workspaceModules ++ [ extraConfig ];
+  # Common test configuration for nixPI nodes
+  mkNixpiNode = { nixpiModules, piAgent, appPackage, extraConfig ? {} }: {
+    imports = nixpiModules ++ [ extraConfig ];
     _module.args = { inherit piAgent appPackage; };
     
     # Common VM settings for tests
     virtualisation.diskSize = 20480;  # 20 GB
     virtualisation.memorySize = 4096;
     
-    # Standard Workspace configuration
+    # Standard nixPI configuration
     boot.loader.systemd-boot.enable = true;
     boot.loader.efi.canTouchEfiVariables = true;
     networking.hostName = lib.mkDefault "nixos";
@@ -29,8 +29,8 @@
     fileSystems."/boot" = { device = "/dev/vda1"; fsType = "vfat"; };
   };
 
-  # Standard Workspace modules list
-  workspaceModules = [
+  # Standard nixPI modules list
+  nixpiModules = [
     ../../core/os/modules/app.nix
     ../../core/os/modules/llm.nix
     ../../core/os/modules/matrix.nix
@@ -39,8 +39,8 @@
     ../../core/os/modules/update.nix
   ];
 
-  # Workspace modules without workspace-shell (for tests that define their own user)
-  workspaceModulesNoShell = [
+  #  nixPI modules without nixpi-shell (for tests that define their own user)
+  nixpiModulesNoShell = [
     ../../core/os/modules/options.nix
     ../../core/os/modules/app.nix
     ../../core/os/modules/llm.nix
@@ -50,7 +50,7 @@
   ];
 
   # Test utilities package
-  testUtils = pkgs.writeShellScriptBin "workspace-test-utils" ''
+  testUtils = pkgs.writeShellScriptBin "nixpi-test-utils" ''
     # Wait for a systemd unit to be active on the user bus
     wait_for_user_unit() {
       local user="$1"

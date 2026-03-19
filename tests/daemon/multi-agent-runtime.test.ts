@@ -11,7 +11,7 @@ function makeAgent(id: string): AgentDefinition {
 		instructionsBody: `# ${id}`,
 		matrix: {
 			username: id,
-			userId: `@${id}:workspace`,
+			userId: `@${id}:nixpi`,
 			autojoin: true,
 		},
 		respond: {
@@ -31,7 +31,7 @@ describe("createMultiAgentRuntime", () => {
 			stop: vi.fn(),
 			sendText: vi.fn(async () => undefined),
 			setTyping: vi.fn(async () => undefined),
-			getRoomAlias: vi.fn(async () => "#room:workspace"),
+			getRoomAlias: vi.fn(async () => "#room:nixpi"),
 		};
 		const supervisor = {
 			handleEnvelope: vi.fn(),
@@ -45,7 +45,7 @@ describe("createMultiAgentRuntime", () => {
 			idleTimeoutMs: 60_000,
 			loadAgentCredentials: () => ({
 				homeserver: "http://localhost:6167",
-				userId: "@host:workspace",
+				userId: "@host:nixpi",
 				accessToken: "token",
 				password: "secret",
 				username: "host",
@@ -75,7 +75,7 @@ describe("createMultiAgentRuntime", () => {
 				{
 					id: "daily-heartbeat",
 					kind: "heartbeat",
-					room: "!ops:workspace",
+					room: "!ops:nixpi",
 					intervalMinutes: 1440,
 					prompt: "Heartbeat",
 				},
@@ -87,7 +87,7 @@ describe("createMultiAgentRuntime", () => {
 			stop: vi.fn(),
 			sendText: vi.fn(async () => undefined),
 			setTyping: vi.fn(async () => undefined),
-			getRoomAlias: vi.fn(async () => "#room:workspace"),
+			getRoomAlias: vi.fn(async () => "#room:nixpi"),
 		};
 		const supervisor = {
 			handleEnvelope: vi.fn(),
@@ -104,7 +104,7 @@ describe("createMultiAgentRuntime", () => {
 			idleTimeoutMs: 60_000,
 			loadAgentCredentials: () => ({
 				homeserver: "http://localhost:6167",
-				userId: "@host:workspace",
+				userId: "@host:nixpi",
 				accessToken: "token",
 				password: "secret",
 				username: "host",
@@ -132,7 +132,7 @@ describe("createMultiAgentRuntime", () => {
 				{
 					id: "daily-heartbeat",
 					kind: "heartbeat",
-					room: "!ops:workspace",
+					room: "!ops:nixpi",
 					intervalMinutes: 1440,
 					prompt: "Heartbeat",
 				},
@@ -146,7 +146,7 @@ describe("createMultiAgentRuntime", () => {
 			stop: vi.fn(),
 			sendText: vi.fn(async () => undefined),
 			setTyping: vi.fn(async () => undefined),
-			getRoomAlias: vi.fn(async () => "#room:workspace"),
+			getRoomAlias: vi.fn(async () => "#room:nixpi"),
 		};
 		const supervisor = {
 			handleEnvelope: vi.fn(),
@@ -163,7 +163,7 @@ describe("createMultiAgentRuntime", () => {
 			idleTimeoutMs: 60_000,
 			loadAgentCredentials: () => ({
 				homeserver: "http://localhost:6167",
-				userId: "@host:workspace",
+				userId: "@host:nixpi",
 				accessToken: "token",
 				password: "secret",
 				username: "host",
@@ -198,7 +198,7 @@ describe("createMultiAgentRuntime", () => {
 			stop: vi.fn(),
 			sendText: vi.fn(async () => undefined),
 			setTyping: vi.fn(async () => undefined),
-			getRoomAlias: vi.fn(async () => "#room:workspace"),
+			getRoomAlias: vi.fn(async () => "#room:nixpi"),
 		};
 		const supervisor = {
 			handleEnvelope: vi.fn(),
@@ -211,7 +211,7 @@ describe("createMultiAgentRuntime", () => {
 			idleTimeoutMs: 60_000,
 			loadAgentCredentials: () => ({
 				homeserver: "http://localhost:6167",
-				userId: "@host:workspace",
+				userId: "@host:nixpi",
 				accessToken: "token",
 				password: "secret",
 				username: "host",
@@ -225,17 +225,17 @@ describe("createMultiAgentRuntime", () => {
 
 		await runtime.start();
 		textHandler?.("host", {
-			roomId: "!room:workspace",
+			roomId: "!room:nixpi",
 			eventId: "$evt1",
-			senderUserId: "@alex:workspace",
+			senderUserId: "@alex:nixpi",
 			body: "hello",
 			timestamp: 1_000,
 		});
 
 		expect(supervisor.handleEnvelope).toHaveBeenCalledWith({
-			roomId: "!room:workspace",
+			roomId: "!room:nixpi",
 			eventId: "$evt1",
-			senderUserId: "@alex:workspace",
+			senderUserId: "@alex:nixpi",
 			body: "hello",
 			senderKind: "human",
 			mentions: [],

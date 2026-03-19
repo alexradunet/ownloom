@@ -19,12 +19,12 @@ The goal is to keep memory:
 
 nixPI has two persistent layers:
 
-- `~/Workspace/Objects/` for durable long-term memory
-- `~/Workspace/Episodes/` for append-only episodic capture
+- `~/nixPI/Objects/` for durable long-term memory
+- `~/nixPI/Episodes/` for append-only episodic capture
 
 ### Working Memory
 
-Short-term continuity lives in `~/.pi/workspace-context.json` and normal Pi session compaction.
+Short-term continuity lives in `~/.pi/nixpi-context.json` and normal Pi session compaction.
 
 Use this for:
 
@@ -36,7 +36,7 @@ Do not treat working memory as canonical long-term truth.
 
 ### Episodic Memory
 
-Episodes are raw observations stored under `~/Workspace/Episodes/YYYY-MM-DD/*.md`.
+Episodes are raw observations stored under `~/nixPI/Episodes/YYYY-MM-DD/*.md`.
 
 Use episodes for:
 
@@ -50,7 +50,7 @@ Episodes are cheap to write and should remain append-only.
 
 ### Durable Memory
 
-Durable objects live in `~/Workspace/Objects/*.md`.
+Durable objects live in `~/nixPI/Objects/*.md`.
 
 Use durable objects for:
 

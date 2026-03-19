@@ -48,7 +48,7 @@ describe("runtime package extension list", () => {
 });
 
 // ---------------------------------------------------------------------------
-// workspace
+// nixpi
 // ---------------------------------------------------------------------------
 describe("nixpi registration", () => {
 	it("registers expected tools, commands, and events", async () => {

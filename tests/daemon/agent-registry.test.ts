@@ -16,7 +16,7 @@ describe("loadAgentDefinitions", () => {
 	});
 
 	function makeNixpiDir(): string {
-		const dir = mkdtempSync(join(tmpdir(), "workspace-agents-"));
+		const dir = mkdtempSync(join(tmpdir(), "nixpi-agents-"));
 		tempDirs.push(dir);
 		mkdirSync(join(dir, "Agents"), { recursive: true });
 		return dir;
@@ -268,14 +268,14 @@ proactive:
   jobs:
     - id: daily-heartbeat
       kind: heartbeat
-      room: "!ops:workspace"
+      room: "!ops:nixpi"
       interval_minutes: 1440
       prompt: Review the room and host state. Reply HEARTBEAT_OK if nothing needs surfacing.
       quiet_if_noop: true
       no_op_token: HEARTBEAT_OK
     - id: morning-check
       kind: cron
-      room: "!ops:workspace"
+      room: "!ops:nixpi"
       cron: "0 9 * * *"
       prompt: Send the morning operational check-in.
 ---
@@ -288,7 +288,7 @@ proactive:
 			{
 				id: "daily-heartbeat",
 				kind: "heartbeat",
-				room: "!ops:workspace",
+				room: "!ops:nixpi",
 				intervalMinutes: 1440,
 				prompt: "Review the room and host state. Reply HEARTBEAT_OK if nothing needs surfacing.",
 				quietIfNoop: true,
@@ -297,7 +297,7 @@ proactive:
 			{
 				id: "morning-check",
 				kind: "cron",
-				room: "!ops:workspace",
+				room: "!ops:nixpi",
 				cron: "0 9 * * *",
 				prompt: "Send the morning operational check-in.",
 			},
@@ -318,7 +318,7 @@ proactive:
   jobs:
     - id: bad-heartbeat
       kind: heartbeat
-      room: "!ops:workspace"
+      room: "!ops:nixpi"
       interval_minutes: 0
       prompt: Invalid
 ---
@@ -345,7 +345,7 @@ proactive:
   jobs:
     - id: bad-cron
       kind: cron
-      room: "!ops:workspace"
+      room: "!ops:nixpi"
       cron: "*/5 * * * *"
       prompt: Invalid
 ---
@@ -372,12 +372,12 @@ proactive:
   jobs:
     - id: daily-heartbeat
       kind: heartbeat
-      room: "!ops:workspace"
+      room: "!ops:nixpi"
       interval_minutes: 1440
       prompt: First
     - id: daily-heartbeat
       kind: cron
-      room: "!ops:workspace"
+      room: "!ops:nixpi"
       cron: "0 9 * * *"
       prompt: Second
 ---

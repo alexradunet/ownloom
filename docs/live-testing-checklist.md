@@ -33,13 +33,13 @@ Pi resumes cleanly after reboot and does not require manual cleanup of partial w
 
 1. Confirm `pi-daemon.service` is active in the user session.
 2. Confirm `matrix-synapse.service` is active.
-3. Verify the `#general:workspace` room exists and Pi replies to a message.
+3. Verify the `#general:nixpi` room exists and Pi replies to a message.
 4. If agent overlays exist, confirm malformed overlays are skipped without killing the daemon.
 
 ### Recovery Cases
 
 1. Interrupt the wizard during Matrix setup, log back in, and confirm setup resumes instead of re-registering from scratch.
-2. Corrupt `~/Workspace/guardrails.yaml` and confirm nixPI falls back to the packaged defaults instead of crashing the session startup path.
+2. Corrupt `~/nixPI/guardrails.yaml` and confirm nixPI falls back to the packaged defaults instead of crashing the session startup path.
 
 ## 📚 Reference
 

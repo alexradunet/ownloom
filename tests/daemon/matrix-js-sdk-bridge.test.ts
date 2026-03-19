@@ -135,14 +135,14 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 					autojoin: true,
 				},
 				{
 					id: "planner",
-					userId: "@planner:workspace",
+					userId: "@planner:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "planner-token",
 					autojoin: true,
@@ -159,8 +159,8 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.message",
-				roomId: "!room:workspace",
-				sender: "@alex:workspace",
+				roomId: "!room:nixpi",
+				sender: "@alex:nixpi",
 				eventId: "$evt1",
 				timestamp: 1_000,
 				content: { msgtype: "m.text", body: "hello" },
@@ -168,9 +168,9 @@ describe("MatrixJsSdkBridge", () => {
 		);
 		await flushAsyncWork();
 		expect(onTextEvent).toHaveBeenCalledWith("host", {
-			roomId: "!room:workspace",
+			roomId: "!room:nixpi",
 			eventId: "$evt1",
-			senderUserId: "@alex:workspace",
+			senderUserId: "@alex:nixpi",
 			body: "hello",
 			timestamp: 1_000,
 		});
@@ -186,8 +186,8 @@ describe("MatrixJsSdkBridge", () => {
 						"event",
 						new MockMatrixEvent({
 							type: "m.room.message",
-							roomId: "!room:workspace",
-							sender: "@alex:workspace",
+							roomId: "!room:nixpi",
+							sender: "@alex:nixpi",
 							eventId: "$evt-race",
 							timestamp: 1_000,
 							content: { msgtype: "m.text", body: "hello during startup" },
@@ -203,7 +203,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
@@ -214,7 +214,7 @@ describe("MatrixJsSdkBridge", () => {
 		});
 
 		await expect(bridge.start()).resolves.toBeUndefined();
-		expect(mockClients[0]?.sendTyping).toHaveBeenCalledWith("!room:workspace", true, 30_000);
+		expect(mockClients[0]?.sendTyping).toHaveBeenCalledWith("!room:nixpi", true, 30_000);
 	});
 
 	it("dedupes the same event seen by multiple identity clients", async () => {
@@ -222,13 +222,13 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
 				{
 					id: "planner",
-					userId: "@planner:workspace",
+					userId: "@planner:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "planner-token",
 				},
@@ -241,8 +241,8 @@ describe("MatrixJsSdkBridge", () => {
 
 		const event = new MockMatrixEvent({
 			type: "m.room.message",
-			roomId: "!room:workspace",
-			sender: "@alex:workspace",
+			roomId: "!room:nixpi",
+			sender: "@alex:nixpi",
 			eventId: "$evt1",
 			timestamp: 1_000,
 			content: { msgtype: "m.text", body: "hello" },
@@ -260,7 +260,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 					autojoin: true,
@@ -274,17 +274,17 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.member",
-				roomId: "!invite:workspace",
-				sender: "@admin:workspace",
+				roomId: "!invite:nixpi",
+				sender: "@admin:nixpi",
 				eventId: "$evt2",
 				timestamp: 1_000,
 				content: { membership: "invite" },
-				stateKey: "@pi:workspace",
+				stateKey: "@pi:nixpi",
 			}),
 		);
 		await flushAsyncWork();
 
-		expect(mockClients[0]?.joinRoom).toHaveBeenCalledWith("!invite:workspace");
+		expect(mockClients[0]?.joinRoom).toHaveBeenCalledWith("!invite:nixpi");
 	});
 
 	it("routes sendText, typing, and alias lookup through the correct identity client", async () => {
@@ -292,13 +292,13 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
 				{
 					id: "planner",
-					userId: "@planner:workspace",
+					userId: "@planner:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "planner-token",
 				},
@@ -306,19 +306,19 @@ describe("MatrixJsSdkBridge", () => {
 		});
 
 		await bridge.start();
-		mockClients[1]?.getRoom.mockReturnValue(new MockRoom("#general:workspace"));
+		mockClients[1]?.getRoom.mockReturnValue(new MockRoom("#general:nixpi"));
 
-		await bridge.sendText("planner", "!room:workspace", "# Hello\n\nThis is **bold** and `code`.");
-		await bridge.setTyping("host", "!room:workspace", true, 15_000);
-		const alias = await bridge.getRoomAlias("planner", "!room:workspace");
+		await bridge.sendText("planner", "!room:nixpi", "# Hello\n\nThis is **bold** and `code`.");
+		await bridge.setTyping("host", "!room:nixpi", true, 15_000);
+		const alias = await bridge.getRoomAlias("planner", "!room:nixpi");
 
 		expect(mockClients[1]?.sendHtmlMessage).toHaveBeenCalledWith(
-			"!room:workspace",
+			"!room:nixpi",
 			"# Hello\n\nThis is **bold** and `code`.",
 			"<h1>Hello</h1><p>This is <strong>bold</strong> and <code>code</code>.</p>",
 		);
-		expect(mockClients[0]?.sendTyping).toHaveBeenCalledWith("!room:workspace", true, 15_000);
-		expect(alias).toBe("#general:workspace");
+		expect(mockClients[0]?.sendTyping).toHaveBeenCalledWith("!room:nixpi", true, 15_000);
+		expect(alias).toBe("#general:nixpi");
 	});
 
 	it("falls back from canonical alias to alt alias to room id", async () => {
@@ -326,7 +326,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
@@ -335,15 +335,15 @@ describe("MatrixJsSdkBridge", () => {
 
 		await bridge.start();
 
-		mockClients[0]?.getRoom.mockReturnValueOnce(new MockRoom("#canonical:workspace"));
-		await expect(bridge.getRoomAlias("host", "!room:workspace")).resolves.toBe("#canonical:workspace");
+		mockClients[0]?.getRoom.mockReturnValueOnce(new MockRoom("#canonical:nixpi"));
+		await expect(bridge.getRoomAlias("host", "!room:nixpi")).resolves.toBe("#canonical:nixpi");
 
-		mockClients[0]?.getRoom.mockReturnValueOnce(new MockRoom(null, ["#alt:workspace"]));
-		await expect(bridge.getRoomAlias("host", "!room:workspace")).resolves.toBe("#alt:workspace");
+		mockClients[0]?.getRoom.mockReturnValueOnce(new MockRoom(null, ["#alt:nixpi"]));
+		await expect(bridge.getRoomAlias("host", "!room:nixpi")).resolves.toBe("#alt:nixpi");
 
 		mockClients[0]?.getRoom.mockReturnValueOnce(null);
 		mockClients[0]?.getLocalAliases.mockRejectedValueOnce(new Error("no aliases"));
-		await expect(bridge.getRoomAlias("host", "!room:workspace")).resolves.toBe("!room:workspace");
+		await expect(bridge.getRoomAlias("host", "!room:nixpi")).resolves.toBe("!room:nixpi");
 	});
 
 	it("ignores events from self", async () => {
@@ -351,7 +351,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
@@ -366,8 +366,8 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.message",
-				roomId: "!room:workspace",
-				sender: "@pi:workspace", // Self
+				roomId: "!room:nixpi",
+				sender: "@pi:nixpi", // Self
 				eventId: "$evt-self",
 				timestamp: 1_000,
 				content: { msgtype: "m.text", body: "hello" },
@@ -383,7 +383,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
@@ -399,7 +399,7 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.message",
-				sender: "@alex:workspace",
+				sender: "@alex:nixpi",
 				eventId: "$evt1",
 				timestamp: 1_000,
 				content: { msgtype: "m.text", body: "hello" },
@@ -412,7 +412,7 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.message",
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt2",
 				timestamp: 1_000,
 				content: { msgtype: "m.text", body: "hello" },
@@ -428,7 +428,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
@@ -444,8 +444,8 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.message",
-				roomId: "!room:workspace",
-				sender: "@alex:workspace",
+				roomId: "!room:nixpi",
+				sender: "@alex:nixpi",
 				eventId: "$evt-image",
 				timestamp: 1_000,
 				content: { msgtype: "m.image", url: "mxc://..." },
@@ -458,8 +458,8 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.topic",
-				roomId: "!room:workspace",
-				sender: "@alex:workspace",
+				roomId: "!room:nixpi",
+				sender: "@alex:nixpi",
 				eventId: "$evt-topic",
 				timestamp: 1_000,
 				content: { topic: "New topic" },
@@ -475,7 +475,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
@@ -491,7 +491,7 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.message",
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				sender: "invalid-sender",
 				eventId: "$evt1",
 				timestamp: 1_000,
@@ -508,7 +508,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 					autojoin: false,
@@ -522,12 +522,12 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.member",
-				roomId: "!invite:workspace",
-				sender: "@admin:workspace",
+				roomId: "!invite:nixpi",
+				sender: "@admin:nixpi",
 				eventId: "$evt2",
 				timestamp: 1_000,
 				content: { membership: "invite" },
-				stateKey: "@pi:workspace",
+				stateKey: "@pi:nixpi",
 			}),
 		);
 		await flushAsyncWork();
@@ -540,7 +540,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 					autojoin: true,
@@ -555,12 +555,12 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.member",
-				roomId: "!invite:workspace",
-				sender: "@admin:workspace",
+				roomId: "!invite:nixpi",
+				sender: "@admin:nixpi",
 				eventId: "$evt2",
 				timestamp: 1_000,
 				content: { membership: "invite" },
-				stateKey: "@other:workspace",
+				stateKey: "@other:nixpi",
 			}),
 		);
 		await flushAsyncWork();
@@ -573,7 +573,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 					autojoin: true,
@@ -588,12 +588,12 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.member",
-				roomId: "!room:workspace",
-				sender: "@admin:workspace",
+				roomId: "!room:nixpi",
+				sender: "@admin:nixpi",
 				eventId: "$evt2",
 				timestamp: 1_000,
 				content: { membership: "join" },
-				stateKey: "@pi:workspace",
+				stateKey: "@pi:nixpi",
 			}),
 		);
 		await flushAsyncWork();
@@ -606,7 +606,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
@@ -615,11 +615,11 @@ describe("MatrixJsSdkBridge", () => {
 
 		await bridge.start();
 
-		await expect(bridge.sendText("unknown", "!room:workspace", "hello")).rejects.toThrow(
+		await expect(bridge.sendText("unknown", "!room:nixpi", "hello")).rejects.toThrow(
 			"Unknown Matrix identity: unknown",
 		);
-		await expect(bridge.setTyping("unknown", "!room:workspace", true)).rejects.toThrow("Unknown Matrix identity: unknown");
-		await expect(bridge.getRoomAlias("unknown", "!room:workspace")).rejects.toThrow("Unknown Matrix identity: unknown");
+		await expect(bridge.setTyping("unknown", "!room:nixpi", true)).rejects.toThrow("Unknown Matrix identity: unknown");
+		await expect(bridge.getRoomAlias("unknown", "!room:nixpi")).rejects.toThrow("Unknown Matrix identity: unknown");
 	});
 
 	it("stops all clients on stop", async () => {
@@ -627,13 +627,13 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
 				{
 					id: "planner",
-					userId: "@planner:workspace",
+					userId: "@planner:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "planner-token",
 				},
@@ -652,7 +652,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
@@ -667,8 +667,8 @@ describe("MatrixJsSdkBridge", () => {
 			"event",
 			new MockMatrixEvent({
 				type: "m.room.message",
-				roomId: "!room:workspace",
-				sender: "@alex:workspace",
+				roomId: "!room:nixpi",
+				sender: "@alex:nixpi",
 				// eventId is undefined
 				timestamp: 1_000,
 				content: { msgtype: "m.text", body: "hello" },
@@ -689,7 +689,7 @@ describe("MatrixJsSdkBridge", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
@@ -699,9 +699,9 @@ describe("MatrixJsSdkBridge", () => {
 		await bridge.start();
 
 		mockClients[0]?.getRoom.mockReturnValue(new MockRoom(null, []));
-		mockClients[0]?.getLocalAliases.mockResolvedValue({ aliases: ["#local:workspace"] });
+		mockClients[0]?.getLocalAliases.mockResolvedValue({ aliases: ["#local:nixpi"] });
 
-		const alias = await bridge.getRoomAlias("host", "!room:workspace");
-		expect(alias).toBe("#local:workspace");
+		const alias = await bridge.getRoomAlias("host", "!room:nixpi");
+		expect(alias).toBe("#local:nixpi");
 	});
 });

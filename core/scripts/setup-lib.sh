@@ -350,8 +350,8 @@ write_service_home_runtime() {
 	<body>
 	  <main>
 	    <section class="hero">
-	      <p class="eyebrow">Workspace Home</p>
-	      <h1>Service access for this Workspace node</h1>
+	      <p class="eyebrow">nixPI Home</p>
+	      <h1>Service access for this nixPI node</h1>
 	      <p>Use this page to remember which NetBird URL to open, which hostname or IP to share with other peers, and which local path each service exposes.</p>
 	      <div class="share-grid">
 	        <div class="share-card">
@@ -373,7 +373,7 @@ write_service_home_runtime() {
 	      <div class="service-head">
 	        <div class="service-icon">HM</div>
 	        <div>
-	          <h2>Workspace Home</h2>
+	          <h2>nixPI Home</h2>
 	          <p class="service-description">NetBird landing page showing installed services and shareable access URLs</p>
 	        </div>
 	        <span class="service-status status-live">Running</span>
@@ -387,8 +387,8 @@ write_service_home_runtime() {
 	      <div class="service-head">
 	        <div class="service-icon">MX</div>
 	        <div>
-	          <h2>Workspace Web Chat</h2>
-	          <p class="service-description">Browser Matrix client preconfigured for this Workspace node</p>
+	          <h2>nixPI Chat</h2>
+	          <p class="service-description">Browser Matrix client preconfigured for this nixPI node</p>
 	        </div>
 	        <span class="service-status status-live">Running</span>
 	      </div>
@@ -401,13 +401,13 @@ write_service_home_runtime() {
 	      <div class="service-head">
 	        <div class="service-icon">FS</div>
 	        <div>
-	          <h2>Workspace Files</h2>
-	          <p class="service-description">WebDAV share for the intentional cross-device Workspace folder</p>
+	          <h2>nixPI Files</h2>
+	          <p class="service-description">WebDAV share for the intentional cross-device nixPI folder</p>
 	        </div>
 	        <span class="service-status status-live">Running</span>
 	      </div>
 	      <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="http://${mesh_host}:5000">http://${mesh_host}:5000</a></p>
-	      <p class="service-meta"><span class="service-label">Path</span>~/Public/Workspace</p>
+	      <p class="service-meta"><span class="service-label">Path</span>~/Public/nixPI</p>
 	    </article>
 	HTML
 
@@ -416,8 +416,8 @@ write_service_home_runtime() {
 	      <div class="service-head">
 	        <div class="service-icon">CS</div>
 	        <div>
-	          <h2>Workspace Code</h2>
-	          <p class="service-description">Browser IDE for editing the local machine and reviewing Workspace changes</p>
+	          <h2>nixPI Code</h2>
+	          <p class="service-description">Browser IDE for editing the local machine and reviewing nixPI changes</p>
 	        </div>
 	        <span class="service-status status-live">Running</span>
 	      </div>
@@ -543,7 +543,7 @@ step_matrix() {
 			done
 		fi
 	else
-		echo "Resuming Matrix setup for @${username}:workspace"
+		echo "Resuming Matrix setup for @${username}:nixpi"
 	fi
 
 	# Register bot account
@@ -571,7 +571,7 @@ step_matrix() {
 		fi
 		if [[ -z "$bot_result" ]]; then
 			bot_result=$(matrix_register "pi" "$bot_password" "$reg_token") || {
-				echo "ERROR: Failed to register or recover @pi:workspace bot account." >&2
+				echo "ERROR: Failed to register or recover @pi:nixpi bot account." >&2
 				return 1
 			}
 		fi
@@ -595,11 +595,11 @@ step_matrix() {
 		matrix_state_set user_password "$user_password"
 	fi
 	if [[ -z "$user_token" || -z "$user_user_id" ]]; then
-		echo "Creating or resuming your account (@${username}:workspace)..."
+		echo "Creating or resuming your account (@${username}:nixpi)..."
 		user_result=$(matrix_login "$username" "$user_password" 2>/dev/null || true)
 		if [[ -z "$user_result" ]]; then
 			user_result=$(matrix_register "$username" "$user_password" "$reg_token") || {
-				echo "ERROR: Failed to register or recover @${username}:workspace account." >&2
+				echo "ERROR: Failed to register or recover @${username}:nixpi account." >&2
 				return 1
 			}
 		fi
@@ -624,8 +624,8 @@ step_matrix() {
 	CREDS
 	chmod 600 "$PI_DIR/matrix-credentials.json"
 
-	# Create #general:workspace room (bot creates, invites user)
-	echo "Creating #general:workspace room..."
+	# Create #general:nixpi room (bot creates, invites user)
+	echo "Creating #general:nixpi room..."
 	curl -sf -X POST "${MATRIX_HOMESERVER}/_matrix/client/v3/createRoom" \
 		-H "Authorization: Bearer ${bot_token}" \
 		-H "Content-Type: application/json" \

@@ -1,14 +1,14 @@
 # tests/nixos/default.nix
-# NixOS integration test suite for Workspace OS
+# NixOS integration test suite for nixPI
 #
 # Usage:
-#   nix build .#checks.x86_64-linux.workspace-matrix
-#   nix build .#checks.x86_64-linux.workspace-firstboot
+#   nix build .#checks.x86_64-linux.nixpi-matrix
+#   nix build .#checks.x86_64-linux.nixpi-firstboot
 #   nix build .#checks.x86_64-linux.localai
-#   nix build .#checks.x86_64-linux.workspace-network
-#   nix build .#checks.x86_64-linux.workspace-daemon
-#   nix build .#checks.x86_64-linux.workspace-e2e
-#   nix build .#checks.x86_64-linux.workspace-home
+#   nix build .#checks.x86_64-linux.nixpi-network
+#   nix build .#checks.x86_64-linux.nixpi-daemon
+#   nix build .#checks.x86_64-linux.nixpi-e2e
+#   nix build .#checks.x86_64-linux.nixpi-home
 #
 # Or run all: nix flake check
 
@@ -18,32 +18,32 @@ let
   # Import shared helpers
   testLib = import ./lib.nix { inherit pkgs lib; };
   
-  inherit (testLib) workspaceModules workspaceModulesNoShell mkWorkspaceNode mkTestFilesystems;
+  inherit (testLib) nixpiModules nixpiModulesNoShell mkNixpiNode mkTestFilesystems;
   
   # Test function with common dependencies
   mkTest = testFile: import testFile {
-    inherit pkgs lib workspaceModules workspaceModulesNoShell piAgent appPackage mkWorkspaceNode mkTestFilesystems;
+    inherit pkgs lib nixpiModules nixpiModulesNoShell piAgent appPackage mkNixpiNode mkTestFilesystems;
   };
 in
 {
   # Matrix homeserver test
-  workspace-matrix = mkTest ./workspace-matrix.nix;
+  nixpi-matrix = mkTest ./nixpi-matrix.nix;
   
   # First-boot wizard test
-  workspace-firstboot = mkTest ./workspace-firstboot.nix;
+  nixpi-firstboot = mkTest ./nixpi-firstboot.nix;
   
   # LocalAI inference test (with test model)
   localai = mkTest ./localai.nix;
   
   # Network connectivity test
-  workspace-network = mkTest ./workspace-network.nix;
+  nixpi-network = mkTest ./nixpi-network.nix;
   
   # Pi daemon test
-  workspace-daemon = mkTest ./workspace-daemon.nix;
+  nixpi-daemon = mkTest ./nixpi-daemon.nix;
   
   # End-to-end integration test
-  workspace-e2e = mkTest ./workspace-e2e.nix;
+  nixpi-e2e = mkTest ./nixpi-e2e.nix;
 
-  # Workspace Home landing page and user service test
-  workspace-home = mkTest ./workspace-home.nix;
+  # nixPI Home landing page and user service test
+  nixpi-home = mkTest ./nixpi-home.nix;
 }

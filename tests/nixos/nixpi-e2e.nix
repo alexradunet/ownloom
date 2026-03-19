@@ -1,18 +1,18 @@
-# tests/nixos/workspace-e2e.nix
-# End-to-end integration test - full Workspace OS stack validation
+# tests/nixos/nixpi-e2e.nix
+# End-to-end integration test - full nixPI stack validation
 
-{ pkgs, lib, workspaceModules, workspaceModulesNoShell, piAgent, appPackage, mkWorkspaceNode, mkTestFilesystems }:
+{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems }:
 
 pkgs.testers.runNixOSTest {
-  name = "workspace-e2e";
+  name = "nixpi-e2e";
 
   nodes = {
-    # Main Workspace OS server
-    workspace = { ... }: let
-      username = "workspace";
+    # Main nixPI server
+    nixpi = { ... }: let
+      username = "pi";
       homeDir = "/home/${username}";
     in {
-      imports = workspaceModulesNoShell ++ [ 
+      imports = nixpiModulesNoShell ++ [ 
         ../../core/os/modules/firstboot.nix
         mkTestFilesystems 
       ];
@@ -22,7 +22,7 @@ pkgs.testers.runNixOSTest {
       virtualisation.diskSize = 20480;
       virtualisation.memorySize = 4096;
 
-      networking.hostName = "workspace";
+      networking.hostName = "pi";
       time.timeZone = "UTC";
       i18n.defaultLocale = "en_US.UTF-8";
       networking.networkmanager.enable = true;
@@ -32,7 +32,7 @@ pkgs.testers.runNixOSTest {
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
 
-      # Ensure the primary Workspace user exists
+      # Ensure the primary nixPI user exists
       users.users.${username} = {
         isNormalUser = true;
         group = username;
@@ -43,15 +43,15 @@ pkgs.testers.runNixOSTest {
       users.groups.${username} = {};
 
       # Pre-create prefill.env for automated setup
-      system.activationScripts.workspace-e2e-prefill = lib.stringAfter [ "users" ] ''
-      mkdir -p ${homeDir}/.workspace
-      cat > ${homeDir}/.workspace/prefill.env << 'EOF'
+      system.activationScripts.nixpi-e2e-prefill = lib.stringAfter [ "users" ] ''
+      mkdir -p ${homeDir}/.nixpi
+      cat > ${homeDir}/.nixpi/prefill.env << 'EOF'
     PREFILL_USERNAME=e2etest
     PREFILL_MATRIX_PASSWORD=e2etestpass123
     EOF
-        chown -R ${username}:${username} ${homeDir}/.workspace
-        chmod 755 ${homeDir}/.workspace
-        chmod 644 ${homeDir}/.workspace/prefill.env
+        chown -R ${username}:${username} ${homeDir}/.nixpi
+        chmod 755 ${homeDir}/.nixpi
+        chmod 644 ${homeDir}/.nixpi/prefill.env
       '';
     };
 
@@ -82,35 +82,35 @@ pkgs.testers.runNixOSTest {
 
   testScript = { nodes, ... }: ''
     import time
-    username = "workspace"
-    home = "/home/workspace"
+    username = "pi"
+    home = "/home/pi"
     
-    # Start the Workspace server
-    workspace.start()
-    workspace.wait_for_unit("multi-user.target", timeout=300)
-    workspace.wait_for_unit("network-online.target", timeout=60)
+    # Start the nixPI server
+    nixpi.start()
+    nixpi.wait_for_unit("multi-user.target", timeout=300)
+    nixpi.wait_for_unit("network-online.target", timeout=60)
     
     # Start the client
     client.start()
     client.wait_for_unit("network-online.target", timeout=60)
     
-    # E2E Test 1: Workspace server is accessible from client
-    client.succeed("ping -c 3 workspace")
+    # E2E Test 1: nixPI server is accessible from client
+    client.succeed("ping -c 3 nixpi")
     
     # E2E Test 2: Matrix homeserver is accessible externally
-    workspace.wait_for_unit("matrix-synapse.service", timeout=60)
-    client.succeed("curl -sf http://workspace:6167/_matrix/client/versions")
+    nixpi.wait_for_unit("matrix-synapse.service", timeout=60)
+    client.succeed("curl -sf http://nixpi:6167/_matrix/client/versions")
     
     # E2E Test 3: Can register a user via external client
     client.succeed("""
-      curl -sf -X POST http://workspace:6167/_matrix/client/v3/register \
+      curl -sf -X POST http://nixpi:6167/_matrix/client/v3/register \
         -H "Content-Type: application/json" \
         -d '{"username":"e2euser","password":"e2epass123","type":"m.login.dummy"}'
     """)
     
     # E2E Test 4: Can login from external client
     login_resp = client.succeed("""
-      curl -sf -X POST http://workspace:6167/_matrix/client/v3/login \
+      curl -sf -X POST http://nixpi:6167/_matrix/client/v3/login \
         -H "Content-Type: application/json" \
         -d '{"type":"m.login.password","user":"e2euser","password":"e2epass123"}'
     """)
@@ -126,67 +126,67 @@ pkgs.testers.runNixOSTest {
         print("Warning: Could not parse login response: " + str(e))
     
     # E2E Test 5: SSH is accessible from client
-    workspace.wait_for_unit("sshd.service", timeout=60)
+    nixpi.wait_for_unit("sshd.service", timeout=60)
     
     # Set up SSH key auth for test
     client.succeed("mkdir -p /root/.ssh")
     client.succeed("ssh-keygen -t ed25519 -N '''' -f /root/.ssh/id_ed25519")
     pub_key = client.succeed("cat /root/.ssh/id_ed25519.pub").strip()
     
-    workspace.succeed("mkdir -p " + home + "/.ssh")
-    workspace.succeed("echo '" + pub_key + "' > " + home + "/.ssh/authorized_keys")
-    workspace.succeed("chown -R " + username + ":" + username + " " + home + "/.ssh && chmod 700 " + home + "/.ssh && chmod 600 " + home + "/.ssh/authorized_keys")
+    nixpi.succeed("mkdir -p " + home + "/.ssh")
+    nixpi.succeed("echo '" + pub_key + "' > " + home + "/.ssh/authorized_keys")
+    nixpi.succeed("chown -R " + username + ":" + username + " " + home + "/.ssh && chmod 700 " + home + "/.ssh && chmod 600 " + home + "/.ssh/authorized_keys")
     
     # Test SSH connection (may need password auth initially)
-    client.succeed('ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 workspace@workspace "echo SSH_OK"')
+    client.succeed('ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 pi@pi "echo SSH_OK"')
     
     # E2E Test 6: Firstboot completes successfully
-    workspace.wait_for_unit("nixpi-firstboot.service", timeout=120)
-    workspace.succeed("test -f " + home + "/.workspace/.setup-complete")
+    nixpi.wait_for_unit("nixpi-firstboot.service", timeout=120)
+    nixpi.succeed("test -f " + home + "/.nixpi/.setup-complete")
     
     # E2E Test 7: All expected services are running
     services = ["matrix-synapse", "netbird", "NetworkManager", "sshd"]
     for svc in services:
-        workspace.succeed("systemctl is-active " + svc + ".service")
+        nixpi.succeed("systemctl is-active " + svc + ".service")
     
     # E2E Test 8: LocalAI download service status (may be activating or active)
-    localai_status = workspace.succeed("systemctl is-active localai-download.service || true").strip()
+    localai_status = nixpi.succeed("systemctl is-active localai-download.service || true").strip()
     print("LocalAI download status: " + localai_status)
     assert localai_status in ["active", "activating", ""], "LocalAI download in unexpected state: " + localai_status
     
-    # E2E Test 9: Workspace directories are correctly set up
-    workspace.succeed("test -d " + home + "/Workspace")
-    workspace.succeed("test -d " + home + "/.workspace")
-    workspace.succeed("test -d " + home + "/.pi")
-    workspace.succeed("test -d /usr/local/share/workspace")
+    # E2E Test 9: nixPI directories are correctly set up
+    nixpi.succeed("test -d " + home + "/nixPI")
+    nixpi.succeed("test -d " + home + "/.nixpi")
+    nixpi.succeed("test -d " + home + "/.pi")
+    nixpi.succeed("test -d /usr/local/share/nixpi")
     
     # E2E Test 10: User has correct groups
-    groups = workspace.succeed("groups " + username).strip()
+    groups = nixpi.succeed("groups " + username).strip()
     assert "wheel" in groups, "User not in wheel group: " + groups
     assert "networkmanager" in groups, "User not in networkmanager group: " + groups
     
     # E2E Test 11: NetBird mesh interface exists or can be created
     # wt0 is the NetBird wireguard interface
-    interfaces = workspace.succeed("ip link show").strip()
+    interfaces = nixpi.succeed("ip link show").strip()
     # Interface may not exist without valid setup key, but service should be running
-    workspace.succeed("systemctl is-active netbird.service")
+    nixpi.succeed("systemctl is-active netbird.service")
     
     # E2E Test 12: Firewall configuration allows expected traffic
     # Check that we can reach Matrix from client
-    client.succeed("nc -z workspace 6167")
-    client.succeed("nc -z workspace 22")
+    client.succeed("nc -z pi 6167")
+    client.succeed("nc -z pi 22")
     
-    # E2E Test 13: Primary Workspace user can run sudo commands
-    workspace.succeed("su - " + username + " -c 'sudo -n whoami' | grep -q root")
+    # E2E Test 13: Primary nixPI user can run sudo commands
+    nixpi.succeed("su - " + username + " -c 'sudo -n whoami' | grep -q root")
     
     # E2E Test 14: Required system packages are available
     packages = ["git", "curl", "jq", "htop", "netbird", "chromium"]
     for pkg in packages:
-        workspace.succeed("which " + pkg + " || true")  # Some may be in different paths
+        nixpi.succeed("which " + pkg + " || true")  # Some may be in different paths
     
     # E2E Test 15: System can resolve DNS
-    workspace.succeed("getent hosts workspace")
-    workspace.succeed("getent hosts client")
+    nixpi.succeed("getent hosts nixpi")
+    nixpi.succeed("getent hosts client")
     
     print("=" * 60)
     print("All E2E tests passed!")

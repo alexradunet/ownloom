@@ -78,7 +78,7 @@ describe("Matrix Bridge Resilience", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},
@@ -102,7 +102,7 @@ describe("Matrix Bridge Resilience", () => {
 			identities: [
 				{
 					id: "host",
-					userId: "@pi:workspace",
+					userId: "@pi:nixpi",
 					homeserver: "http://localhost:6167",
 					accessToken: "host-token",
 				},

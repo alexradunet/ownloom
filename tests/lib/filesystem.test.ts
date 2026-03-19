@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getNixpiDir, safePath } from "../../core/lib/filesystem.js";
 
-const ROOT = path.join(os.tmpdir(), "workspace-fs-test-root");
+const ROOT = path.join(os.tmpdir(), "nixpi-fs-test-root");
 
 // ---------------------------------------------------------------------------
 // safePath

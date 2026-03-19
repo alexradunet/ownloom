@@ -28,7 +28,7 @@ describe("provisionMatrixAgentAccount", () => {
 	it("returns credentials on successful registration", async () => {
 		const register = vi.fn().mockResolvedValue({
 			ok: true,
-			userId: "@planner:workspace",
+			userId: "@planner:nixpi",
 			accessToken: "planner-token",
 		});
 
@@ -45,7 +45,7 @@ describe("provisionMatrixAgentAccount", () => {
 			ok: true,
 			credentials: {
 				homeserver: "http://localhost:6167",
-				userId: "@planner:workspace",
+				userId: "@planner:nixpi",
 				accessToken: "planner-token",
 				password: "secret-pass",
 				username: "planner",

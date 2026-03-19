@@ -4,13 +4,13 @@
 let
   u = config.nixpi.username;
 
-  bashrc = pkgs.writeText "workspace-bashrc" ''
+  bashrc = pkgs.writeText "nixpi-bashrc" ''
     export NIXPI_DIR="$HOME/nixPI"
     export BROWSER="chromium"
     export PATH="/usr/local/share/nixpi/node_modules/.bin:$PATH"
   '';
 
-  bashProfile = pkgs.writeText "workspace-bash_profile" ''
+  bashProfile = pkgs.writeText "nixpi-bash_profile" ''
     # Source .bashrc for env vars (NIXPI_DIR, PATH, etc.)
     [ -f ~/.bashrc ] && . ~/.bashrc
 
@@ -75,7 +75,7 @@ in
     "skel/.bash_profile".source = bashProfile;
     "issue".text = "nixPI\n";
     "xdg/sway/config".text = ''
-      # Workspace OS Sway Configuration
+      # nixPI Sway Configuration
       set $mod Mod4
       set $term foot
       set $menu wmenu-run

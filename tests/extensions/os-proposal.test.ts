@@ -17,7 +17,7 @@ describe("os local Nix proposal handler", () => {
 	beforeEach(() => {
 		vi.resetModules();
 		runMock.mockReset();
-		repoDir = fs.mkdtempSync(path.join(os.tmpdir(), "workspace-repo-"));
+		repoDir = fs.mkdtempSync(path.join(os.tmpdir(), "nixpi-repo-"));
 		process.env.NIXPI_REPO_DIR = repoDir;
 	});
 

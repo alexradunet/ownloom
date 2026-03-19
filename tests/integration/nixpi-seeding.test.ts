@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 // We test nixPI seeding by importing and calling the nixpi extension
-// which calls ensureWorkspace + seedBlueprints in its session_start handler.
+// which calls ensureNixpi + seedBlueprints in its session_start handler.
 async function runNixpiExtension() {
 	const mod = await import("../../core/pi/extensions/nixpi/index.js");
 	const api = createMockExtensionAPI();

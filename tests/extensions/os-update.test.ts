@@ -17,7 +17,7 @@ describe("os nixos_update handler", () => {
 	beforeEach(() => {
 		vi.resetModules();
 		runMock.mockReset();
-		repoDir = fs.mkdtempSync(path.join(os.tmpdir(), "workspace-switch-"));
+		repoDir = fs.mkdtempSync(path.join(os.tmpdir(), "nixpi-switch-"));
 		process.env.NIXPI_REPO_DIR = repoDir;
 	});
 

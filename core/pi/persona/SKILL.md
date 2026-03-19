@@ -1,22 +1,22 @@
 # Skill
 
-This layer defines Workspace's current competency inventory.
+This layer defines nixPI's current competency inventory.
 
 ## Current Capabilities
 
 ### Object Management
 
-- Create, read, list, search, and link objects in `~/Workspace/Objects/`.
+- Create, read, list, search, and link objects in `~/nixPI/Objects/`.
 - Supported object types: task, note, evolution, and custom types.
 - Flat directory — type lives in frontmatter, not directory structure.
 - Bidirectional linking between objects.
-- Storage: `~/Workspace/Objects/{slug}.md`
+- Storage: `~/nixPI/Objects/{slug}.md`
 
-### Workspace Directory Management
+### nixPI Directory Management
 
-- Workspace directory at `~/Workspace/` — accessible via dufs WebDAV, editable with any tool.
-- Blueprint seeding: persona and skills copied from package to `~/Workspace/`.
-- Persona and skills are user-editable at `~/Workspace/Persona/` and `~/Workspace/Skills/`.
+- nixPI directory at `~/nixPI/` — accessible via dufs WebDAV, editable with any tool.
+- Blueprint seeding: persona and skills copied from package to `~/nixPI/`.
+- Persona and skills are user-editable at `~/nixPI/Persona/` and `~/nixPI/Skills/`.
 
 ### Communication Channels
 
@@ -26,7 +26,7 @@ This layer defines Workspace's current competency inventory.
 ### Service Management
 
 - Install, remove, and manage containerized service packages.
-- Services discovered from ~/Workspace/Skills/ at session start.
+- Services discovered from ~/nixPI/Skills/ at session start.
 - Interaction via HTTP APIs and bash, guided by service skill files.
 
 ### System Operations

@@ -43,18 +43,18 @@ export function getPackageVersion(packageDir: string): string {
 
 // --- Directory setup ---
 
-export function ensureWorkspace(workspaceDir: string): void {
+export function ensureNixpi(nixpiDir: string): void {
 	for (const dir of NIXPI_DIRS) {
-		fs.mkdirSync(path.join(workspaceDir, dir), { recursive: true });
+		fs.mkdirSync(path.join(nixpiDir, dir), { recursive: true });
 	}
 }
 
 // --- Tool handlers ---
 
-export function handleWorkspaceStatus(workspaceDir: string) {
-	const lines: string[] = [`nixPI: ${workspaceDir}`, ""];
+export function handleNixpiStatus(nixpiDir: string) {
+	const lines: string[] = [`nixPI: ${nixpiDir}`, ""];
 
-	const versions = readBlueprintVersions(workspaceDir);
+	const versions = readBlueprintVersions(nixpiDir);
 	lines.push(`Package version: ${versions.packageVersion}`);
 	lines.push(`Seeded blueprints: ${Object.keys(versions.seeded).length}`);
 

@@ -14,11 +14,11 @@ describe("registerMatrixAccount", () => {
 		mockFetch.mockResolvedValueOnce({
 			ok: true,
 			status: 200,
-			json: async () => ({ user_id: "@test:workspace", access_token: "tok123" }),
+			json: async () => ({ user_id: "@test:nixpi", access_token: "tok123" }),
 		});
 
 		const result = await registerMatrixAccount("http://localhost:6167", "test", "pass", "token");
-		expect(result).toEqual({ ok: true, userId: "@test:workspace", accessToken: "tok123" });
+		expect(result).toEqual({ ok: true, userId: "@test:nixpi", accessToken: "tok123" });
 	});
 
 	it("handles UIA 401 flow with registration token", async () => {
@@ -30,11 +30,11 @@ describe("registerMatrixAccount", () => {
 		mockFetch.mockResolvedValueOnce({
 			ok: true,
 			status: 200,
-			json: async () => ({ user_id: "@test:workspace", access_token: "tok456" }),
+			json: async () => ({ user_id: "@test:nixpi", access_token: "tok456" }),
 		});
 
 		const result = await registerMatrixAccount("http://localhost:6167", "test", "pass", "token");
-		expect(result).toEqual({ ok: true, userId: "@test:workspace", accessToken: "tok456" });
+		expect(result).toEqual({ ok: true, userId: "@test:nixpi", accessToken: "tok456" });
 		expect(mockFetch).toHaveBeenNthCalledWith(
 			1,
 			"http://localhost:6167/_matrix/client/v3/register",

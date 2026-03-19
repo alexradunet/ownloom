@@ -14,7 +14,7 @@ function makeAgent(id: string): AgentDefinition {
 		instructionsBody: `# ${id}`,
 		matrix: {
 			username: id,
-			userId: `@${id}:workspace`,
+			userId: `@${id}:nixpi`,
 			autojoin: true,
 		},
 		respond: {
@@ -42,7 +42,7 @@ describe("proactive daemon helpers", () => {
 				{
 					id: "daily-heartbeat",
 					kind: "heartbeat",
-					room: "!ops:workspace",
+					room: "!ops:nixpi",
 					intervalMinutes: 1440,
 					prompt: "Heartbeat",
 					quietIfNoop: true,
@@ -56,7 +56,7 @@ describe("proactive daemon helpers", () => {
 				{
 					id: "morning-check",
 					kind: "cron",
-					room: "!planning:workspace",
+					room: "!planning:nixpi",
 					cron: "0 9 * * *",
 					prompt: "Morning check",
 				},
@@ -67,7 +67,7 @@ describe("proactive daemon helpers", () => {
 			{
 				id: "daily-heartbeat",
 				agentId: "host",
-				roomId: "!ops:workspace",
+				roomId: "!ops:nixpi",
 				kind: "heartbeat",
 				intervalMinutes: 1440,
 				prompt: "Heartbeat",
@@ -77,7 +77,7 @@ describe("proactive daemon helpers", () => {
 			{
 				id: "morning-check",
 				agentId: "planner",
-				roomId: "!planning:workspace",
+				roomId: "!planning:nixpi",
 				kind: "cron",
 				cron: "0 9 * * *",
 				prompt: "Morning check",
@@ -86,7 +86,7 @@ describe("proactive daemon helpers", () => {
 	});
 
 	it("loads empty scheduler state when the file is missing or malformed", () => {
-		const dir = mkdtempSync(join(tmpdir(), "workspace-proactive-"));
+		const dir = mkdtempSync(join(tmpdir(), "nixpi-proactive-"));
 		tempDirs.push(dir);
 		const missingPath = join(dir, "scheduler-state.json");
 		expect(loadSchedulerState(missingPath)).toEqual({});
@@ -95,23 +95,23 @@ describe("proactive daemon helpers", () => {
 		expect(loadSchedulerState(missingPath)).toEqual({});
 
 		saveSchedulerState(missingPath, {
-			"host::!ops:workspace::daily-heartbeat": { lastRunAt: 123 },
+			"host::!ops:nixpi::daily-heartbeat": { lastRunAt: 123 },
 		});
 		expect(loadSchedulerState(missingPath)).toEqual({
-			"host::!ops:workspace::daily-heartbeat": { lastRunAt: 123 },
+			"host::!ops:nixpi::daily-heartbeat": { lastRunAt: 123 },
 		});
 	});
 
 	it("writes scheduler state as formatted json", () => {
-		const dir = mkdtempSync(join(tmpdir(), "workspace-proactive-"));
+		const dir = mkdtempSync(join(tmpdir(), "nixpi-proactive-"));
 		tempDirs.push(dir);
 		const statePath = join(dir, "nested", "scheduler-state.json");
 
 		saveSchedulerState(statePath, {
-			"host::!ops:workspace::daily-heartbeat": { lastRunAt: 456 },
+			"host::!ops:nixpi::daily-heartbeat": { lastRunAt: 456 },
 		});
 
-		expect(readFileSync(statePath, "utf-8")).toContain('"host::!ops:workspace::daily-heartbeat"');
+		expect(readFileSync(statePath, "utf-8")).toContain('"host::!ops:nixpi::daily-heartbeat"');
 		expect(readFileSync(statePath, "utf-8")).toContain('"lastRunAt": 456');
 	});
 });

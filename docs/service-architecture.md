@@ -23,7 +23,7 @@ These are declared as user systemd services in the OS modules and are expected t
 
 - Home is the landing page for the service surface
 - FluffyChat is preconfigured for the local nixPI Matrix server
-- dufs exposes `~/Public/Workspace`
+- dufs exposes `~/Public/nixPI`
 - code-server is always available as the browser IDE
 - use `systemd_control` to inspect and restart these units
 

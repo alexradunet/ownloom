@@ -1,14 +1,14 @@
-# tests/nixos/workspace-network.nix
+# tests/nixos/nixpi-network.nix
 # Test network connectivity, SSH, and NetBird mesh setup between nodes
 
-{ pkgs, lib, workspaceModules, workspaceModulesNoShell, piAgent, appPackage, mkWorkspaceNode, mkTestFilesystems }:
+{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems }:
 
 pkgs.testers.runNixOSTest {
-  name = "workspace-network";
+  name = "nixpi-network";
 
   nodes = {
     bloom1 = { ... }: {
-      imports = workspaceModules ++ [ mkTestFilesystems ];
+      imports = nixpiModules ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
 
       virtualisation.diskSize = 10240;
@@ -27,7 +27,7 @@ pkgs.testers.runNixOSTest {
     };
 
     bloom2 = { ... }: {
-      imports = workspaceModules ++ [ mkTestFilesystems ];
+      imports = nixpiModules ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
 
       virtualisation.diskSize = 10240;
@@ -118,6 +118,6 @@ pkgs.testers.runNixOSTest {
     response = bloom1.succeed("curl -sf http://bloom2:8080/test.html")
     assert "TEST_RESPONSE" in response, "Unexpected HTTP response: " + response
     
-    print("All workspace-network tests passed!")
+    print("All nixpi-network tests passed!")
   '';
 }

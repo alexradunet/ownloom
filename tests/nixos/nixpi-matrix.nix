@@ -1,13 +1,13 @@
-# tests/nixos/workspace-matrix.nix
-# Test that the Workspace Matrix homeserver (Conduwuity) starts and accepts connections
+# tests/nixos/nixpi-matrix.nix
+# Test that the nixPI Matrix homeserver (Conduwuity) starts and accepts connections
 
-{ pkgs, lib, workspaceModules, workspaceModulesNoShell, piAgent, appPackage, mkWorkspaceNode, mkTestFilesystems }:
+{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems }:
 
 pkgs.testers.runNixOSTest {
-  name = "workspace-matrix";
+  name = "nixpi-matrix";
 
   nodes.server = { ... }: {
-    imports = workspaceModules ++ [ mkTestFilesystems ];
+    imports = nixpiModules ++ [ mkTestFilesystems ];
     _module.args = { inherit piAgent appPackage; };
 
     # VM configuration
@@ -17,7 +17,7 @@ pkgs.testers.runNixOSTest {
     # Standard system config
     boot.loader.systemd-boot.enable = true;
     boot.loader.efi.canTouchEfiVariables = true;
-    networking.hostName = "workspace-matrix-test";
+    networking.hostName = "nixpi-matrix-test";
     time.timeZone = "UTC";
     i18n.defaultLocale = "en_US.UTF-8";
     networking.networkmanager.enable = true;
@@ -55,8 +55,8 @@ pkgs.testers.runNixOSTest {
     assert len(token) > 0, "Registration token is empty"
     
     # Test 6: Matrix config file exists and is valid
-    server.succeed("test -f /etc/workspace/matrix.toml")
-    config_content = server.succeed("cat /etc/workspace/matrix.toml")
+    server.succeed("test -f /etc/pi/matrix.toml")
+    config_content = server.succeed("cat /etc/pi/matrix.toml")
     assert "port = [6167]" in config_content, "Matrix config missing expected port"
     assert "allow_registration = true" in config_content, "Matrix config should allow registration"
     
@@ -75,6 +75,6 @@ pkgs.testers.runNixOSTest {
     # Test 10: Service is in wantedBy multi-user.target
     server.succeed("systemctl list-dependencies multi-user.target | grep -q matrix-synapse")
     
-    print("All workspace-matrix tests passed!")
+    print("All nixpi-matrix tests passed!")
   '';
 }

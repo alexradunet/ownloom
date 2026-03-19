@@ -5,26 +5,26 @@ description: Inspect, manage, and remediate the nixPI system — NixOS updates, 
 
 # OS Operations Skill
 
-Use this skill when the user asks about Workspace OS health/state, or when an error suggests infrastructure inspection.
+Use this skill when the user asks about nixPI health/state, or when an error suggests infrastructure inspection.
 
-## Workspace OS Architecture
+## nixPI Architecture
 
-Workspace runs on **NixOS** (declarative, flake-based):
+nixPI runs on **NixOS** (declarative, flake-based):
 
 - `/run/current-system` — immutable OS content, updated via `nixos-rebuild switch`
 - `/etc` — generated host configuration
 - `/var` — persistent runtime/user state
 
-Workspace services are **systemd units** managed by `systemd` (system) and `systemd --user` (Pi agent).
+nixPI services are **systemd units** managed by `systemd` (system) and `systemd --user` (Pi agent).
 
 ## Use Tools First
 
-Prefer Workspace extension tools over raw shell commands:
+Prefer nixPI extension tools over raw shell commands:
 
 - `system_health` — broad health snapshot
 - `nixos_update(action, source)` — status, apply from `remote` or `local`, rollback for NixOS generation
 - `nix_config_proposal(action)` — inspect the local proposal repo, validate Nix config, or refresh `flake.lock`
-- `systemd_control` — start/stop/restart/status for Workspace user services
+- `systemd_control` — start/stop/restart/status for nixPI user services
 
 ## Standard Triage Flow
 

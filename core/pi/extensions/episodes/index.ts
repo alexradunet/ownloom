@@ -1,6 +1,6 @@
 import path from "node:path";
 /**
- * episodes — Append-only episodic memory in ~/Workspace/Episodes/.
+ * episodes — Append-only episodic memory in ~/nixPI/Episodes/.
  *
  * @tools episode_create, episode_list, episode_promote, episode_consolidate
  * @see {@link ../../AGENTS.md#episodes} Extension reference
@@ -29,7 +29,7 @@ export default function (pi: ExtensionAPI) {
 		defineTool({
 			name: "episode_create",
 			label: "Episode Create",
-			description: "Append a markdown episode under ~/Workspace/Episodes/ for later memory consolidation.",
+			description: "Append a markdown episode under ~/nixPI/Episodes/ for later memory consolidation.",
 			parameters: Type.Object({
 				title: Type.String({ description: "Short episode title" }),
 				body: Type.String({ description: "Markdown body for the episode" }),
@@ -90,7 +90,7 @@ export default function (pi: ExtensionAPI) {
 		defineTool({
 			name: "episode_list",
 			label: "Episode List",
-			description: "List stored markdown episodes under ~/Workspace/Episodes/.",
+			description: "List stored markdown episodes under ~/nixPI/Episodes/.",
 			parameters: Type.Object({
 				day: Type.Optional(Type.String({ description: "Optional day filter in YYYY-MM-DD" })),
 				kind: Type.Optional(Type.String({ description: "Optional episode kind filter" })),
@@ -108,7 +108,7 @@ export default function (pi: ExtensionAPI) {
 		defineTool({
 			name: "episode_promote",
 			label: "Episode Promote",
-			description: "Promote a stored episode into a durable memory object in ~/Workspace/Objects/.",
+			description: "Promote a stored episode into a durable memory object in ~/nixPI/Objects/.",
 			parameters: Type.Object({
 				episode_id: Type.String({ description: "Episode id, e.g. 2026-03-14T10-12-33Z-room-abc" }),
 				mode: Type.Optional(Type.Union([Type.Literal("upsert"), Type.Literal("create")])),

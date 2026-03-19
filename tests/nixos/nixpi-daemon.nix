@@ -1,21 +1,21 @@
-# tests/nixos/workspace-daemon.nix
+# tests/nixos/nixpi-daemon.nix
 # Test that the Pi Daemon Matrix agent starts and connects to homeserver
 
-{ pkgs, lib, workspaceModules, workspaceModulesNoShell, piAgent, appPackage, mkWorkspaceNode, mkTestFilesystems }:
+{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems }:
 
 pkgs.testers.runNixOSTest {
-  name = "workspace-daemon";
+  name = "nixpi-daemon";
 
   nodes = {
     # Matrix homeserver node
     server = { ... }: {
-      imports = workspaceModulesNoShell ++ [ mkTestFilesystems ];
+      imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
 
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
 
-      networking.hostName = "workspace-server";
+      networking.hostName = "nixpi-server";
       time.timeZone = "UTC";
       i18n.defaultLocale = "en_US.UTF-8";
       networking.networkmanager.enable = true;
@@ -28,17 +28,17 @@ pkgs.testers.runNixOSTest {
 
     # Agent node running pi-daemon
     agent = { ... }: let
-      username = "workspace";
+      username = "pi";
       homeDir = "/home/${username}";
     in {
-      imports = workspaceModulesNoShell ++ [ mkTestFilesystems ];
+      imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
       nixpi.username = username;
 
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
 
-      networking.hostName = "workspace-agent";
+      networking.hostName = "nixpi-agent";
       time.timeZone = "UTC";
       i18n.defaultLocale = "en_US.UTF-8";
       networking.networkmanager.enable = true;
@@ -48,7 +48,7 @@ pkgs.testers.runNixOSTest {
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
 
-      # Ensure the primary Workspace user exists with proper setup
+      # Ensure the primary nixPI user exists with proper setup
       users.users.${username} = {
         isNormalUser = true;
         group = username;
@@ -60,12 +60,12 @@ pkgs.testers.runNixOSTest {
 
       # Pre-create setup-complete to skip wizard
       systemd.tmpfiles.rules = [
-        "d ${homeDir}/.workspace 0755 ${username} ${username} -"
-        "f ${homeDir}/.workspace/.setup-complete 0644 ${username} ${username} -"
+        "d ${homeDir}/.nixpi 0755 ${username} ${username} -"
+        "f ${homeDir}/.nixpi/.setup-complete 0644 ${username} ${username} -"
       ];
 
       # Create Matrix credentials file for daemon
-      system.activationScripts.workspace-daemon-creds = lib.stringAfter [ "users" ] ''
+      system.activationScripts.nixpi-daemon-creds = lib.stringAfter [ "users" ] ''
         mkdir -p ${homeDir}/.pi
         # Credentials will be created after we know the server is ready
         chown -R ${username}:${username} ${homeDir}/.pi
@@ -74,8 +74,8 @@ pkgs.testers.runNixOSTest {
   };
 
   testScript = { nodes, ... }: ''
-    username = "workspace"
-    home = "/home/workspace"
+    username = "pi"
+    home = "/home/pi"
 
     # Start the homeserver first
     server.start()
@@ -111,13 +111,13 @@ pkgs.testers.runNixOSTest {
     try:
         login_data = json.loads(login_response)
         access_token = login_data.get("access_token", "")
-        user_id = login_data.get("user_id", "@daemon:workspace")
+        user_id = login_data.get("user_id", "@daemon:nixpi")
     except json.JSONDecodeError:
         # Fallback to regex
         token_match = re.search(r'"access_token":"([^"]+)"', login_response)
         access_token = token_match.group(1) if token_match else ""
         user_match = re.search(r'"user_id":"([^"]+)"', login_response)
-        user_id = user_match.group(1) if user_match else "@daemon:workspace"
+        user_id = user_match.group(1) if user_match else "@daemon:nixpi"
     
     print(f"User ID: {user_id}")
     print(f"Access token: {access_token[:16]}...")
@@ -140,14 +140,14 @@ CREDS
     """)
     agent.succeed("chown -R " + username + ":" + username + " " + home + "/.pi")
     
-    # Enable linger for the primary Workspace user so user services can run
+    # Enable linger for the primary nixPI user so user services can run
     agent.succeed("mkdir -p /var/lib/systemd/linger && touch /var/lib/systemd/linger/" + username)
     
     # Ensure setup-complete marker exists
-    agent.succeed("touch " + home + "/.workspace/.setup-complete && chown " + username + ":" + username + " " + home + "/.workspace/.setup-complete")
+    agent.succeed("touch " + home + "/.nixpi/.setup-complete && chown " + username + ":" + username + " " + home + "/.nixpi/.setup-complete")
     
-    # Create Workspace directory
-    agent.succeed("mkdir -p " + home + "/Workspace && chown -R " + username + ":" + username + " " + home + "/Workspace")
+    # Create nixPI directory
+    agent.succeed("mkdir -p " + home + "/nixPI && chown -R " + username + ":" + username + " " + home + "/nixPI")
     
     # Start the user service
     agent.succeed("systemctl --user -M " + username + "@ daemon-reload || true")
@@ -156,9 +156,9 @@ CREDS
     # Test 1: pi-daemon service is enabled (in unit files)
     agent.succeed("test -f /etc/systemd/user/pi-daemon.service")
     
-    # Test 2: Workspace app files are available
-    agent.succeed("test -d /usr/local/share/workspace")
-    agent.succeed("test -f /usr/local/share/workspace/dist/core/daemon/index.js")
+    # Test 2: nixPI app files are available
+    agent.succeed("test -d /usr/local/share/nixpi")
+    agent.succeed("test -f /usr/local/share/nixpi/dist/core/daemon/index.js")
     
     # Test 3: Service starts without immediate crash (check journal for errors)
     # Wait a moment for service to attempt startup
@@ -175,11 +175,11 @@ CREDS
     
     # Test 5: Verify app and pi-agent binaries are available
     agent.succeed("which pi || true")  # pi binary may be in different location
-    agent.succeed("ls -la /usr/local/share/workspace/")
+    agent.succeed("ls -la /usr/local/share/nixpi/")
     
     # Test 6: Verify environment variables are set correctly in service
     service_env = agent.succeed("systemctl --user -M " + username + "@ show-environment || true")
-    assert "WORKSPACE_DIR" in service_env or "HOME" in service_env, \
+    assert "NIXPI_DIR" in service_env or "HOME" in service_env, \
         f"Expected environment variables not found: {service_env}"
     
     # Test 7: Test that the daemon can parse its credentials
@@ -188,7 +188,7 @@ CREDS
     assert "homeserver" in creds, "Credentials missing homeserver"
     assert "accessToken" in creds, "Credentials missing accessToken"
     
-    print("All workspace-daemon tests passed!")
+    print("All nixpi-daemon tests passed!")
     print("Note: Full daemon connection test requires complete Matrix network setup")
   '';
 }

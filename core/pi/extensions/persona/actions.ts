@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import jsYaml from "js-yaml";
 import { getNixpiDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
 import { createLogger } from "../../../lib/shared.js";
-import type { WorkspaceContext, GuardrailsConfig } from "./types.js";
+import type { NixpiContext, GuardrailsConfig } from "./types.js";
 
 const log = createLogger("persona");
 
@@ -69,7 +69,7 @@ export function getContextFile(): string {
 }
 
 /** Save context state for cross-compaction continuity. */
-export function saveContext(ctx: WorkspaceContext): void {
+export function saveContext(ctx: NixpiContext): void {
 	try {
 		mkdirSync(join(os.homedir(), ".pi"), { recursive: true });
 		writeFileSync(getContextFile(), JSON.stringify(ctx, null, 2));
@@ -79,11 +79,11 @@ export function saveContext(ctx: WorkspaceContext): void {
 }
 
 /** Load previously saved context state. */
-export function loadContext(): WorkspaceContext | null {
+export function loadContext(): NixpiContext | null {
 	try {
 		const contextFile = getContextFile();
 		if (!existsSync(contextFile)) return null;
-		return JSON.parse(readFileSync(contextFile, "utf-8")) as WorkspaceContext;
+		return JSON.parse(readFileSync(contextFile, "utf-8")) as NixpiContext;
 	} catch {
 		return null;
 	}
@@ -102,7 +102,7 @@ export function checkUpdateAvailable(): boolean {
 }
 
 /** Build the restored-context system prompt block from persisted compaction state. */
-export function buildRestoredContextBlock(ctx: WorkspaceContext): string {
+export function buildRestoredContextBlock(ctx: NixpiContext): string {
 	const lines = ["\n\n[RESTORED CONTEXT]"];
 	if (ctx.updateAvailable) lines.push("OS update available — inform user if not already done.");
 	lines.push(`Context saved at: ${ctx.savedAt}`);

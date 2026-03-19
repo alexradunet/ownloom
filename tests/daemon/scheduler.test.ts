@@ -12,7 +12,7 @@ describe("computeNextRunAt", () => {
 		const job: ScheduledJob = {
 			id: "daily-heartbeat",
 			agentId: "host",
-			roomId: "!ops:workspace",
+			roomId: "!ops:nixpi",
 			kind: "heartbeat",
 			intervalMinutes: 1440,
 			prompt: "Heartbeat",
@@ -27,7 +27,7 @@ describe("computeNextRunAt", () => {
 		const job: ScheduledJob = {
 			id: "daily-heartbeat",
 			agentId: "host",
-			roomId: "!ops:workspace",
+			roomId: "!ops:nixpi",
 			kind: "heartbeat",
 			intervalMinutes: 1440,
 			prompt: "Heartbeat",
@@ -42,7 +42,7 @@ describe("computeNextRunAt", () => {
 		const job: ScheduledJob = {
 			id: "morning-check",
 			agentId: "host",
-			roomId: "!ops:workspace",
+			roomId: "!ops:nixpi",
 			kind: "cron",
 			cron: "0 9 * * *",
 			prompt: "Morning check",
@@ -56,7 +56,7 @@ describe("computeNextRunAt", () => {
 		const job: ScheduledJob = {
 			id: "hourly-check",
 			agentId: "host",
-			roomId: "!ops:workspace",
+			roomId: "!ops:nixpi",
 			kind: "cron",
 			cron: "@hourly",
 			prompt: "Hourly check",
@@ -69,7 +69,7 @@ describe("computeNextRunAt", () => {
 		const job: ScheduledJob = {
 			id: "weekly-check",
 			agentId: "host",
-			roomId: "!ops:workspace",
+			roomId: "!ops:nixpi",
 			kind: "cron",
 			cron: "@weekly",
 			prompt: "Weekly check",
@@ -84,7 +84,7 @@ describe("computeNextRunAt", () => {
 		const job: ScheduledJob = {
 			id: "monday-check",
 			agentId: "host",
-			roomId: "!ops:workspace",
+			roomId: "!ops:nixpi",
 			kind: "cron",
 			cron: "0 9 * * 1", // Mondays at 9 AM
 			prompt: "Monday check",
@@ -104,7 +104,7 @@ describe("computeNextRunAt", () => {
 });
 
 describe("isSupportedCronExpression", () => {
-	it("accepts the small cron subset used by Workspace", () => {
+	it("accepts the small cron subset used by nixPI", () => {
 		expect(isSupportedCronExpression("@daily")).toBe(true);
 		expect(isSupportedCronExpression("@hourly")).toBe(true);
 		expect(isSupportedCronExpression("@weekly")).toBe(true);
@@ -137,7 +137,7 @@ describe("Scheduler", () => {
 			{
 				id: "daily-heartbeat",
 				agentId: "host",
-				roomId: "!ops:workspace",
+				roomId: "!ops:nixpi",
 				kind: "heartbeat",
 				intervalMinutes: 1440,
 				prompt: "Heartbeat",
@@ -148,7 +148,7 @@ describe("Scheduler", () => {
 			now: () => Date.UTC(2026, 2, 14, 12, 0, 0),
 			onTrigger: callback,
 			loadState: () => ({
-				"host::!ops:workspace::daily-heartbeat": {
+				"host::!ops:nixpi::daily-heartbeat": {
 					lastRunAt: Date.UTC(2026, 2, 13, 12, 0, 0),
 				},
 			}),
@@ -164,12 +164,12 @@ describe("Scheduler", () => {
 			expect.objectContaining({
 				jobId: "daily-heartbeat",
 				agentId: "host",
-				roomId: "!ops:workspace",
+				roomId: "!ops:nixpi",
 				kind: "heartbeat",
 			}),
 		);
 		expect(persistState).toHaveBeenCalledWith({
-			"host::!ops:workspace::daily-heartbeat": {
+			"host::!ops:nixpi::daily-heartbeat": {
 				lastRunAt: Date.UTC(2026, 2, 14, 12, 0, 0),
 			},
 		});
@@ -194,7 +194,7 @@ describe("Scheduler", () => {
 				{
 					id: "daily-heartbeat",
 					agentId: "host",
-					roomId: "!ops:workspace",
+					roomId: "!ops:nixpi",
 					kind: "heartbeat",
 					intervalMinutes: 1440,
 					prompt: "Heartbeat",
@@ -213,7 +213,7 @@ describe("Scheduler", () => {
 
 		expect(callback).toHaveBeenCalledTimes(1);
 		expect(persistState).toHaveBeenCalledWith({
-			"host::!ops:workspace::daily-heartbeat": {
+			"host::!ops:nixpi::daily-heartbeat": {
 				lastFailureAt: Date.UTC(2026, 2, 14, 12, 0, 0),
 			},
 		});
@@ -237,7 +237,7 @@ describe("Scheduler", () => {
 				{
 					id: "failing-job",
 					agentId: "host",
-					roomId: "!ops:workspace",
+					roomId: "!ops:nixpi",
 					kind: "heartbeat",
 					intervalMinutes: 60,
 					prompt: "Test",
@@ -260,7 +260,7 @@ describe("Scheduler", () => {
 			expect.objectContaining({
 				jobId: "failing-job",
 				agentId: "host",
-				roomId: "!ops:workspace",
+				roomId: "!ops:nixpi",
 			}),
 			error,
 		);
@@ -295,7 +295,7 @@ describe("Scheduler", () => {
 				{
 					id: "test-job",
 					agentId: "host",
-					roomId: "!ops:workspace",
+					roomId: "!ops:nixpi",
 					kind: "heartbeat",
 					intervalMinutes: 60,
 					prompt: "Test",
@@ -329,7 +329,7 @@ describe("Scheduler", () => {
 				{
 					id: "test-job",
 					agentId: "host",
-					roomId: "!ops:workspace",
+					roomId: "!ops:nixpi",
 					kind: "heartbeat",
 					intervalMinutes: 60,
 					prompt: "Test",
@@ -365,7 +365,7 @@ describe("Scheduler", () => {
 				{
 					id: "hourly-job",
 					agentId: "host",
-					roomId: "!room1:workspace",
+					roomId: "!room1:nixpi",
 					kind: "heartbeat",
 					intervalMinutes: 60,
 					prompt: "Hourly",
@@ -373,7 +373,7 @@ describe("Scheduler", () => {
 				{
 					id: "daily-job",
 					agentId: "host",
-					roomId: "!room2:workspace",
+					roomId: "!room2:nixpi",
 					kind: "cron",
 					cron: "0 9 * * *",
 					prompt: "Daily",
@@ -385,7 +385,7 @@ describe("Scheduler", () => {
 				return callbacks.daily();
 			},
 			loadState: () => ({
-				"host::!room1:workspace::hourly-job": { lastRunAt: Date.UTC(2026, 2, 14, 7, 0, 0) },
+				"host::!room1:nixpi::hourly-job": { lastRunAt: Date.UTC(2026, 2, 14, 7, 0, 0) },
 			}),
 			saveState: vi.fn(),
 			setTimeoutImpl: setTimeoutImpl as unknown as typeof setTimeout,
@@ -415,7 +415,7 @@ describe("Scheduler", () => {
 				{
 					id: "test-job",
 					agentId: "host",
-					roomId: "!ops:workspace",
+					roomId: "!ops:nixpi",
 					kind: "heartbeat",
 					intervalMinutes: 60,
 					prompt: "Test",
@@ -457,7 +457,7 @@ describe("Scheduler", () => {
 				{
 					id: "test-job",
 					agentId: "host",
-					roomId: "!ops:workspace",
+					roomId: "!ops:nixpi",
 					kind: "heartbeat",
 					intervalMinutes: 60,
 					prompt: "Test",
@@ -467,7 +467,7 @@ describe("Scheduler", () => {
 			onTrigger: callback,
 			loadState: () => ({
 				// Corrupted state with invalid values
-				"host::!ops:workspace::test-job": { lastRunAt: Number.NaN, lastFailureAt: Number.NaN },
+				"host::!ops:nixpi::test-job": { lastRunAt: Number.NaN, lastFailureAt: Number.NaN },
 			}),
 			saveState: vi.fn(),
 			setTimeoutImpl: setTimeoutImpl as unknown as typeof setTimeout,

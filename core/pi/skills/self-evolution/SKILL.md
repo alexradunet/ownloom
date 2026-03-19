@@ -5,7 +5,7 @@ description: Detect improvement opportunities and propose system changes through
 
 # Self-Evolution Skill
 
-Use this skill when Workspace detects a capability gap or the user requests a system change.
+Use this skill when nixPI detects a capability gap or the user requests a system change.
 
 ## Choosing the Right Mechanism
 
@@ -22,7 +22,7 @@ When extending capabilities, prefer the lightest option: **Skill â†’ Extension â
 1. **Detect**: Recognize a capability gap or improvement opportunity
 2. **Propose**: Create an evolution object using `memory_create`
 3. **Plan**: Design the implementation approach
-4. **Implement**: Make the changes locally in the repo or Workspace directory
+4. **Implement**: Make the changes locally in the repo or nixPI directory
 5. **Verify**: Test and validate
 6. **Review**: Have the human inspect the resulting diff before any external publish
 
@@ -49,16 +49,16 @@ When extending capabilities, prefer the lightest option: **Skill â†’ Extension â
 
 ## Code Evolution Workflow
 
-When Workspace identifies a code-level fix or improvement to its own OS/extensions, it should prepare the change locally for human review.
+When nixPI identifies a code-level fix or improvement to its own OS/extensions, it should prepare the change locally for human review.
 
-**Local repo path**: `~/.workspace/pi-workspace`
+**Local repo path**: `~/.nixpi/pi-nixpi`
 
 ### Process
 
 1. **Detect + Plan**
    - Describe the issue and proposed fix in plain language.
 2. **Implement locally**
-   - Edit the local repo or Workspace files.
+   - Edit the local repo or nixPI files.
 3. **Validate**
    - Run local checks such as `npm run build`, `npm run test:unit`, `npm run test:integration`, and `npm run test:e2e` when relevant.
 4. **Prepare review**
@@ -66,16 +66,16 @@ When Workspace identifies a code-level fix or improvement to its own OS/extensio
 5. **Human review**
    - The user reviews the local diff in VS Code or another editor.
 6. **External publish**
-   - Commit, push, PR creation, merge, and rollout happen outside Workspace.
+   - Commit, push, PR creation, merge, and rollout happen outside nixPI.
 
 ### Safety
 
-- Workspace prepares local proposals only
+- nixPI prepares local proposals only
 - remote publish is always human- or controller-driven
 - rollout is always external to the node
 
 ## Adding A Built-In Service
 
-When Workspace identifies a need for a new user-facing service, treat it as base NixOS work rather than a packaged runtime feature.
+When nixPI identifies a need for a new user-facing service, treat it as base NixOS work rather than a packaged runtime feature.
 
 Use direct repo edits in the OS modules, add a bundled skill only if Pi needs service-specific operating guidance, validate locally, and hand the resulting diff to the human for review and external publish.

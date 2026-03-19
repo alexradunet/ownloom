@@ -93,7 +93,7 @@ describe("persona session_start", () => {
 					summary: "Project-specific recovery path.",
 					status: "active",
 					scope: "project",
-					scope_value: "pi-workspace",
+					scope_value: "pi-nixpi",
 					salience: 0.4,
 				},
 				"# Project Recovery\n",
@@ -105,7 +105,7 @@ describe("persona session_start", () => {
 			{
 				systemPrompt: "BASE",
 			},
-			createMockExtensionContext({ cwd: "/tmp/pi-workspace" }),
+			createMockExtensionContext({ cwd: "/tmp/pi-nixpi" }),
 		)) as { systemPrompt: string };
 
 		expect(result.systemPrompt).toContain("[WORKSPACE MEMORY DIGEST]");

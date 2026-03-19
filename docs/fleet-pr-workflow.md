@@ -25,7 +25,7 @@ while forcing the approval boundary to stay with the human and the external cont
 
 nixPI assumes the local working clone lives at:
 
-- `~/.workspace/pi-workspace`
+- `~/.nixpi/pi-nixpi`
 
 Recommended workflow:
 
@@ -37,7 +37,7 @@ Recommended workflow:
    - `npm run test:e2e`
 3. Review the resulting diff in VS Code.
 4. Decide whether to keep, revise, commit, or discard the change.
-5. Use your normal git/GitHub workflow outside Workspace to publish the change.
+5. Use your normal git/GitHub workflow outside nixPI to publish the change.
 
 ## 📚 Reference
 
@@ -57,7 +57,7 @@ nixPI does not publish in this model:
 
 Current repo assumptions:
 
-- local path is `~/.workspace/pi-workspace`
+- local path is `~/.nixpi/pi-nixpi`
 - the clone is a working area for proposals and review
 - remote publishing is handled by the human or an external controller
 

@@ -11,10 +11,10 @@ describe("sanitizeRoomAlias", () => {
 	});
 
 	it("handles alias with subdomain", () => {
-		expect(sanitizeRoomAlias("#dev:workspace")).toBe("dev_workspace");
+		expect(sanitizeRoomAlias("#dev:nixpi")).toBe("dev_nixpi");
 	});
 
 	it("passes through already-clean strings", () => {
-		expect(sanitizeRoomAlias("general_workspace")).toBe("general_workspace");
+		expect(sanitizeRoomAlias("general_nixpi")).toBe("general_nixpi");
 	});
 });

@@ -24,47 +24,47 @@ function makeAgent(id: string, userId: string, mode: AgentDefinition["respond"][
 	};
 }
 
-const host = makeAgent("host", "@pi:workspace", "host");
-const planner = makeAgent("planner", "@planner:workspace", "mentioned");
-const critic = makeAgent("critic", "@critic:workspace", "mentioned");
-const silent = makeAgent("silent", "@silent:workspace", "silent");
+const host = makeAgent("host", "@pi:nixpi", "host");
+const planner = makeAgent("planner", "@planner:nixpi", "mentioned");
+const critic = makeAgent("critic", "@critic:nixpi", "mentioned");
+const silent = makeAgent("silent", "@silent:nixpi", "silent");
 const agents = [host, planner, critic, silent];
 
 describe("extractMentions", () => {
 	it("finds explicit Matrix user id mentions", () => {
-		expect(extractMentions("hey @planner:workspace and @critic:workspace", agents)).toEqual([
-			"@planner:workspace",
-			"@critic:workspace",
+		expect(extractMentions("hey @planner:nixpi and @critic:nixpi", agents)).toEqual([
+			"@planner:nixpi",
+			"@critic:nixpi",
 		]);
 	});
 
 	it("preserves mention order from the message body instead of agent registry order", () => {
 		const registryOrderedAgents = [critic, host, planner, silent];
-		expect(extractMentions("@planner:workspace first, then @critic:workspace", registryOrderedAgents)).toEqual([
-			"@planner:workspace",
-			"@critic:workspace",
+		expect(extractMentions("@planner:nixpi first, then @critic:nixpi", registryOrderedAgents)).toEqual([
+			"@planner:nixpi",
+			"@critic:nixpi",
 		]);
 	});
 
 	it("does not return duplicate mentions", () => {
-		expect(extractMentions("@planner:workspace @planner:workspace", agents)).toEqual(["@planner:workspace"]);
+		expect(extractMentions("@planner:nixpi @planner:nixpi", agents)).toEqual(["@planner:nixpi"]);
 	});
 });
 
 describe("classifySender", () => {
 	it("classifies self messages", () => {
-		expect(classifySender("@pi:workspace", "@pi:workspace", agents)).toEqual({ senderKind: "self" });
+		expect(classifySender("@pi:nixpi", "@pi:nixpi", agents)).toEqual({ senderKind: "self" });
 	});
 
 	it("classifies known agents", () => {
-		expect(classifySender("@planner:workspace", "@pi:workspace", agents)).toEqual({
+		expect(classifySender("@planner:nixpi", "@pi:nixpi", agents)).toEqual({
 			senderKind: "agent",
 			senderAgentId: "planner",
 		});
 	});
 
 	it("classifies non-agent users as human", () => {
-		expect(classifySender("@alex:workspace", "@pi:workspace", agents)).toEqual({ senderKind: "human" });
+		expect(classifySender("@alex:nixpi", "@pi:nixpi", agents)).toEqual({ senderKind: "human" });
 	});
 });
 
@@ -73,9 +73,9 @@ describe("routeRoomEnvelope", () => {
 		const state = createRoomState();
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt1",
-				senderUserId: "@alex:workspace",
+				senderUserId: "@alex:nixpi",
 				body: "hello there",
 				senderKind: "human",
 				mentions: [],
@@ -92,12 +92,12 @@ describe("routeRoomEnvelope", () => {
 		const state = createRoomState();
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt2",
-				senderUserId: "@alex:workspace",
-				body: "@planner:workspace help me",
+				senderUserId: "@alex:nixpi",
+				body: "@planner:nixpi help me",
 				senderKind: "human",
-				mentions: ["@planner:workspace"],
+				mentions: ["@planner:nixpi"],
 				timestamp: 1_000,
 			},
 			agents,
@@ -111,12 +111,12 @@ describe("routeRoomEnvelope", () => {
 		const state = createRoomState();
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt3",
-				senderUserId: "@alex:workspace",
-				body: "@planner:workspace and @critic:workspace weigh in",
+				senderUserId: "@alex:nixpi",
+				body: "@planner:nixpi and @critic:nixpi weigh in",
 				senderKind: "human",
-				mentions: ["@planner:workspace", "@critic:workspace"],
+				mentions: ["@planner:nixpi", "@critic:nixpi"],
 				timestamp: 1_000,
 			},
 			agents,
@@ -130,12 +130,12 @@ describe("routeRoomEnvelope", () => {
 		const state = createRoomState();
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt4",
-				senderUserId: "@alex:workspace",
-				body: "@silent:workspace speak",
+				senderUserId: "@alex:nixpi",
+				body: "@silent:nixpi speak",
 				senderKind: "human",
-				mentions: ["@silent:workspace"],
+				mentions: ["@silent:nixpi"],
 				timestamp: 1_000,
 			},
 			agents,
@@ -149,9 +149,9 @@ describe("routeRoomEnvelope", () => {
 		const state = createRoomState();
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt5",
-				senderUserId: "@planner:workspace",
+				senderUserId: "@planner:nixpi",
 				body: "I have thoughts",
 				senderKind: "agent",
 				senderAgentId: "planner",
@@ -169,13 +169,13 @@ describe("routeRoomEnvelope", () => {
 		const state = createRoomState();
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt6",
-				senderUserId: "@planner:workspace",
-				body: "@critic:workspace please review",
+				senderUserId: "@planner:nixpi",
+				body: "@critic:nixpi please review",
 				senderKind: "agent",
 				senderAgentId: "planner",
-				mentions: ["@critic:workspace"],
+				mentions: ["@critic:nixpi"],
 				timestamp: 1_000,
 			},
 			agents,
@@ -188,9 +188,9 @@ describe("routeRoomEnvelope", () => {
 	it("rejects duplicate event ids", () => {
 		const state = createRoomState();
 		const envelope = {
-			roomId: "!room:workspace",
+			roomId: "!room:nixpi",
 			eventId: "$evt7",
-			senderUserId: "@alex:workspace",
+			senderUserId: "@alex:nixpi",
 			body: "hello",
 			senderKind: "human" as const,
 			mentions: [],
@@ -212,9 +212,9 @@ describe("routeRoomEnvelope", () => {
 		expect(
 			routeRoomEnvelope(
 				{
-					roomId: "!room:workspace",
+					roomId: "!room:nixpi",
 					eventId: "$evt8",
-					senderUserId: "@alex:workspace",
+					senderUserId: "@alex:nixpi",
 					body: "hello",
 					senderKind: "human",
 					mentions: [],
@@ -228,9 +228,9 @@ describe("routeRoomEnvelope", () => {
 		expect(
 			routeRoomEnvelope(
 				{
-					roomId: "!room:workspace",
+					roomId: "!room:nixpi",
 					eventId: "$evt9",
-					senderUserId: "@alex:workspace",
+					senderUserId: "@alex:nixpi",
 					body: "hello again",
 					senderKind: "human",
 					mentions: [],
@@ -245,11 +245,11 @@ describe("routeRoomEnvelope", () => {
 	it("blocks replies when the per-root budget is exhausted", () => {
 		const state = createRoomState();
 		const baseEnvelope = {
-			roomId: "!room:workspace",
-			senderUserId: "@alex:workspace",
-			body: "@planner:workspace help",
+			roomId: "!room:nixpi",
+			senderUserId: "@alex:nixpi",
+			body: "@planner:nixpi help",
 			senderKind: "human" as const,
-			mentions: ["@planner:workspace"],
+			mentions: ["@planner:nixpi"],
 		};
 
 		expect(
@@ -273,9 +273,9 @@ describe("routeRoomEnvelope", () => {
 		const state = createRoomState();
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt-self",
-				senderUserId: "@pi:workspace",
+				senderUserId: "@pi:nixpi",
 				body: "I am the bot",
 				senderKind: "self",
 				mentions: [],
@@ -292,13 +292,13 @@ describe("routeRoomEnvelope", () => {
 		const state = createRoomState();
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt13",
-				senderUserId: "@planner:workspace",
-				body: "@planner:workspace talk to myself",
+				senderUserId: "@planner:nixpi",
+				body: "@planner:nixpi talk to myself",
 				senderKind: "agent",
 				senderAgentId: "planner",
-				mentions: ["@planner:workspace"],
+				mentions: ["@planner:nixpi"],
 				timestamp: 1_000,
 			},
 			agents,
@@ -313,9 +313,9 @@ describe("routeRoomEnvelope", () => {
 		const state = createRoomState();
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt14",
-				senderUserId: "@unknown:workspace",
+				senderUserId: "@unknown:nixpi",
 				body: "hello",
 				senderKind: "unknown" as const,
 				mentions: [],
@@ -331,8 +331,8 @@ describe("routeRoomEnvelope", () => {
 	it("allows routing after cooldown expires", () => {
 		const state = createRoomState();
 		const baseEnvelope = {
-			roomId: "!room:workspace",
-			senderUserId: "@alex:workspace",
+			roomId: "!room:nixpi",
+			senderUserId: "@alex:nixpi",
 			body: "hello",
 			senderKind: "human" as const,
 			mentions: [] as string[],
@@ -360,8 +360,8 @@ describe("routeRoomEnvelope", () => {
 	it("respects custom total reply budget", () => {
 		const state = createRoomState();
 		const baseEnvelope = {
-			roomId: "!room:workspace",
-			senderUserId: "@alex:workspace",
+			roomId: "!room:nixpi",
+			senderUserId: "@alex:nixpi",
 			body: "hello",
 			senderKind: "human" as const,
 			mentions: [] as string[],
@@ -394,13 +394,13 @@ describe("routeRoomEnvelope", () => {
 
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt20",
-				senderUserId: "@planner:workspace",
-				body: "@critic:workspace please review",
+				senderUserId: "@planner:nixpi",
+				body: "@critic:nixpi please review",
 				senderKind: "agent",
 				senderAgentId: "planner",
-				mentions: ["@critic:workspace"],
+				mentions: ["@critic:nixpi"],
 				timestamp: 1_000,
 			},
 			restrictedAgents,
@@ -416,9 +416,9 @@ describe("routeRoomEnvelope", () => {
 
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt21",
-				senderUserId: "@alex:workspace",
+				senderUserId: "@alex:nixpi",
 				body: "hello",
 				senderKind: "human",
 				mentions: [],
@@ -436,9 +436,9 @@ describe("routeRoomEnvelope", () => {
 
 		const result = routeRoomEnvelope(
 			{
-				roomId: "!room:workspace",
+				roomId: "!room:nixpi",
 				eventId: "$evt22",
-				senderUserId: "@alex:workspace",
+				senderUserId: "@alex:nixpi",
 				body: "hello",
 				senderKind: "human",
 				mentions: [],

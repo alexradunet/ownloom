@@ -25,7 +25,7 @@ nixPI runs through one supervisor/runtime path:
 
 At startup:
 
-1. nixPI loads `~/Workspace/Agents/*/AGENTS.md`
+1. nixPI loads `~/nixPI/Agents/*/AGENTS.md`
 2. if no valid overlays exist, the daemon synthesizes a default host agent from the primary Pi credentials
 3. malformed overlays are skipped with warnings instead of aborting startup
 
@@ -54,7 +54,7 @@ proactive:
   jobs:
     - id: daily-heartbeat
       kind: heartbeat
-      room: "!ops:workspace"
+      room: "!ops:nixpi"
       interval_minutes: 1440
       prompt: |
         Review the room and host state.
@@ -63,7 +63,7 @@ proactive:
       no_op_token: HEARTBEAT_OK
     - id: morning-check
       kind: cron
-      room: "!ops:workspace"
+      room: "!ops:nixpi"
       cron: "0 9 * * *"
       prompt: Send the morning operational check-in.
 ```

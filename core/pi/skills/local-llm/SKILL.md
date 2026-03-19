@@ -5,7 +5,7 @@ description: Use local LLM inference (llama-server) — OpenAI-compatible LLM AP
 
 # Local LLM (llama-server)
 
-llama-server runs on every Workspace OS instance and is always available at boot. It provides an OpenAI-compatible API for LLM inference.
+llama-server runs on every nixPI instance and is always available at boot. It provides an OpenAI-compatible API for LLM inference.
 
 ## Service
 
@@ -42,7 +42,7 @@ curl http://localhost:11435/v1/chat/completions \
 
 llama-server loads a single model at startup specified via `--model` in the systemd service. The default is `Qwen3.5-4B-Q4_K_M.gguf`.
 
-To switch models, update `core/os/modules/llm.nix` in the Workspace repo:
+To switch models, update `core/os/modules/llm.nix` in the nixPI repo:
 - Change `modelFileName` to the new GGUF filename
 - Update the `pkgs.fetchurl` URL and SHA256
 - Rebuild the OS: `sudo nixos-rebuild switch --flake <flake>`

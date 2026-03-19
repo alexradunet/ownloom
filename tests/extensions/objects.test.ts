@@ -209,7 +209,7 @@ describe("memory_create and memory_read execution", () => {
 				title: "Recovery Procedure Project",
 				summary: "Project-specific recovery procedure",
 				scope: "project",
-				scope_value: "pi-workspace",
+				scope_value: "pi-nixpi",
 				salience: 0.5,
 			},
 		});
@@ -217,7 +217,7 @@ describe("memory_create and memory_read execution", () => {
 		const queryResult = await query("call-3", {
 			type: "procedure",
 			text: "recovery",
-			preferred_scopes: [{ scope: "project", value: "pi-workspace" }, { scope: "global" }],
+			preferred_scopes: [{ scope: "project", value: "pi-nixpi" }, { scope: "global" }],
 		});
 
 		const lines = queryResult.content[0].text.split("\n");

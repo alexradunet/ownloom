@@ -10,7 +10,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { defineTool, type RegisteredExtensionTool, registerTools } from "../../../lib/extension-tools.js";
 import { getNixpiDir } from "../../../lib/filesystem.js";
-import { discoverSkillPaths, ensureWorkspace, getPackageDir, handleWorkspaceStatus } from "./actions.js";
+import { discoverSkillPaths, ensureNixpi, getPackageDir, handleNixpiStatus } from "./actions.js";
 import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
 
 type NixpiCommandContext = Parameters<Parameters<ExtensionAPI["registerCommand"]>[1]["handler"]>[1];
@@ -25,14 +25,14 @@ export default function (pi: ExtensionAPI) {
 			description: "Show nixPI directory location and blueprint state",
 			parameters: Type.Object({}),
 			async execute() {
-				return handleWorkspaceStatus(nixpiDir);
+				return handleNixpiStatus(nixpiDir);
 			},
 		}),
 	];
 	registerTools(pi, tools);
 
 	pi.on("session_start", (_event, ctx) => {
-		ensureWorkspace(nixpiDir);
+		ensureNixpi(nixpiDir);
 		seedBlueprints(nixpiDir, packageDir);
 
 		const versions = readBlueprintVersions(nixpiDir);
@@ -73,7 +73,7 @@ async function handleNixpiCommand(
 
 	switch (subcommand) {
 		case "init":
-			ensureWorkspace(nixpiDir);
+			ensureNixpi(nixpiDir);
 			seedBlueprints(nixpiDir, packageDir);
 			ctx.ui.notify("nixPI initialized", "info");
 			return;

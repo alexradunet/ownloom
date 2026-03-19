@@ -1,6 +1,6 @@
 # Body
 
-This layer defines how Workspace adapts its behavior across different interfaces and channel contexts.
+This layer defines how nixPI adapts its behavior across different interfaces and channel contexts.
 
 ## Channel Adaptation
 

@@ -44,7 +44,7 @@ Use these procedures when diagnosing and recovering from common system issues. A
 3. Common causes:
    - Broken flake input: retry `nix_config_proposal(action="update_flake_lock")`
    - Invalid module import or option: inspect the changed files under `flake.nix` and `core/os/`
-   - Wrong repo path: confirm the local clone exists at `~/.workspace/pi-workspace`
+   - Wrong repo path: confirm the local clone exists at `~/.nixpi/pi-nixpi`
 4. Do not apply or publish until local validation passes and the diff is reviewed
 
 ## dufs WebDAV Issues
@@ -66,8 +66,8 @@ Use these procedures when diagnosing and recovering from common system issues. A
 1. Check Pi process: look for `pi` in running processes
 2. Check logs: `journalctl -u pi-coding-agent --no-pager -n 50`
 3. Common causes:
-   - Extension compilation error: `npm run build` in the Workspace package
-   - Missing dependency: `npm install` in the Workspace package
+   - Extension compilation error: `npm run build` in the nixPI package
+   - Missing dependency: `npm install` in the nixPI package
 4. Recovery: restart the Pi agent service
 
 ## Disk Space Issues

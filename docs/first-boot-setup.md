@@ -71,10 +71,10 @@ Pi injects setup guidance until that step is marked complete.
 
 During that Pi-side first conversation, Pi should also orient the user to the platform:
 
-- nixPI keeps durable state in `~/Workspace/` using inspectable files
+- nixPI keeps durable state in `~/nixPI/` using inspectable files
 - nixPI can propose persona or workflow changes through tracked evolutions instead of silently changing itself
 - Matrix is the native messaging surface, with `pi-daemon.service` keeping Pi active in rooms outside the local terminal session
-- multi-agent rooms are optional and activate when valid overlays exist in `~/Workspace/Agents/*/AGENTS.md`
+- multi-agent rooms are optional and activate when valid overlays exist in `~/nixPI/Agents/*/AGENTS.md`
 
 ### Recovery
 
@@ -97,9 +97,9 @@ Relevant files:
 
 | Path | Purpose |
 |------|---------|
-| `~/.workspace/.setup-complete` | wizard complete sentinel |
-| `~/.workspace/setup-state.json` | Pi-side setup state |
-| `~/.workspace/wizard-state/persona-done` | persona step complete marker |
+| `~/.nixpi/.setup-complete` | wizard complete sentinel |
+| `~/.nixpi/setup-state.json` | Pi-side setup state |
+| `~/.nixpi/wizard-state/persona-done` | persona step complete marker |
 | `~/.pi/matrix-credentials.json` | primary Matrix credentials |
 
 Current tool surface:

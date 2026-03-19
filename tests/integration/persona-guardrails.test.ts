@@ -118,8 +118,8 @@ describe("persona guardrail blocking via tool_call handler", () => {
 		expect(result).toEqual({ block: true, reason: "Blocked dangerous command: rm -rf /" });
 	});
 
-	it("falls back to package guardrails.yaml when workspace copy missing", async () => {
-		// Don't seed guardrails in workspace — extension should fall back to package root
+	it("falls back to package guardrails.yaml when nixPI copy missing", async () => {
+		// Don't seed guardrails in nixPI — extension should fall back to package root
 		const { api } = await setupPersonaExtension();
 		const result = await api.fireEvent("tool_call", {
 			toolName: "bash",

@@ -1,6 +1,6 @@
-# NixOS Integration Tests for Workspace OS
+# NixOS Integration Tests for nixPI
 
-This directory contains NixOS integration tests for the Workspace OS platform. These tests use the `pkgs.testers.runNixOSTest` framework to spin up QEMU VMs and verify that Workspace services work correctly together.
+This directory contains NixOS integration tests for the nixPI platform. These tests use the `pkgs.testers.runNixOSTest` framework to spin up QEMU VMs and verify that nixPI services work correctly together.
 
 ## Test Suite
 
@@ -8,13 +8,13 @@ This directory contains NixOS integration tests for the Workspace OS platform. T
 |------|-------------|----------|-------|
 | `config` | Fast build test of the default installed system closure | ~1 min | None |
 | `boot` | Basic VM boot and service startup test | ~3 min | 1 |
-| `workspace-matrix` | Matrix homeserver (Conduwuity) functionality | ~3 min | 1 |
-| `workspace-firstboot` | First-boot preparation and unattended prefill automation | ~5 min | 1 |
+| `nixpi-matrix` | Matrix homeserver (Conduwuity) functionality | ~3 min | 1 |
+| `nixpi-firstboot` | First-boot preparation and unattended prefill automation | ~5 min | 1 |
 | `localai` | LocalAI inference service with test model | ~10 min | 1 |
-| `workspace-network` | Network connectivity and SSH between nodes | ~5 min | 2 |
-| `workspace-daemon` | Pi daemon Matrix agent connection | ~5 min | 2 |
-| `workspace-e2e` | Full end-to-end integration test | ~10 min | 2 |
-| `workspace-home` | Workspace Home plus built-in user web services | ~5 min | 1 |
+| `nixpi-network` | Network connectivity and SSH between nodes | ~5 min | 2 |
+| `nixpi-daemon` | Pi daemon Matrix agent connection | ~5 min | 2 |
+| `nixpi-e2e` | Full end-to-end integration test | ~10 min | 2 |
+| `nixpi-home` | nixPI Home plus built-in user web services | ~5 min | 1 |
 
 ## Running Tests
 
@@ -25,14 +25,14 @@ nix flake check
 
 ### Run a specific test
 ```bash
-nix build .#checks.x86_64-linux.workspace-matrix --no-link -L
+nix build .#checks.x86_64-linux.nixpi-matrix --no-link -L
 ```
 
 ### Interactive test driver
 ```bash
-$(nix-build -A checks.x86_64-linux.workspace-matrix.driverInteractive)/bin/nixos-test-driver
->>> workspace.start()
->>> workspace.shell_interact()
+$(nix-build -A checks.x86_64-linux.nixpi-matrix.driverInteractive)/bin/nixos-test-driver
+>>> nixpi.start()
+>>> nixpi.shell_interact()
 ```
 
 ## Test Structure
@@ -41,13 +41,13 @@ $(nix-build -A checks.x86_64-linux.workspace-matrix.driverInteractive)/bin/nixos
 tests/nixos/
 ├── lib.nix              # Shared test helpers and module lists
 ├── default.nix          # Test suite entry point
-├── workspace-matrix.nix     # Matrix homeserver test
-├── workspace-firstboot.nix  # First-boot wizard test
+├── nixpi-matrix.nix     # Matrix homeserver test
+├── nixpi-firstboot.nix  # First-boot wizard test
 ├── localai.nix    # LocalAI inference test
-├── workspace-network.nix    # Network/mesh test
-├── workspace-daemon.nix     # Pi daemon test
-├── workspace-e2e.nix        # End-to-end integration test
-├── workspace-home.nix       # Workspace Home and built-in user services test
+├── nixpi-network.nix    # Network/mesh test
+├── nixpi-daemon.nix     # Pi daemon test
+├── nixpi-e2e.nix        # End-to-end integration test
+├── nixpi-home.nix       # nixPI Home and built-in user services test
 └── README.md            # This file
 ```
 
@@ -61,21 +61,21 @@ When writing new NixOS tests:
 
 3. **Escape `${` in test scripts** - Nix interprets `${` as antiquotation. Escape it as `''${` inside indented strings.
 
-4. **Use `bloomModulesNoShell` when defining your own user** - The `workspace-shell.nix` module defines the primary Workspace user from `workspace.username`, so tests that define their own should use `bloomModulesNoShell` instead of `bloomModules`.
+4. **Use `nixpiModulesNoShell` when defining your own user** - The shell module defines the primary nixPI user from `nixpi.username`, so tests that define their own should use `nixpiModulesNoShell` instead of `nixpiModules`.
 
 Example:
 ```nix
-{ pkgs, lib, bloomModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
+{ pkgs, lib, nixpiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "my-test";
   
   nodes.server = { ... }: {
-    imports = bloomModulesNoShell ++ [ mkTestFilesystems ];
+    imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
     _module.args = { inherit piAgent appPackage; };
     
-    workspace.username = "workspace";
-    users.users.workspace = { ... };
+    nixpi.username = "pi";
+    users.users.pi = { ... };
   };
   
   testScript = ''
@@ -110,14 +110,14 @@ When a test fails, you can:
 
 1. **Check the test log**: The `-L` flag shows full test output
    ```bash
-   nix build .#checks.x86_64-linux.workspace-matrix -L
+   nix build .#checks.x86_64-linux.nixpi-matrix -L
    ```
 
 2. **Run interactively**: Use the interactive driver to debug
    ```bash
-   $(nix-build -A checks.x86_64-linux.workspace-matrix.driverInteractive)/bin/nixos-test-driver
+   $(nix-build -A checks.x86_64-linux.nixpi-matrix.driverInteractive)/bin/nixos-test-driver
    >>> server.start()
-   >>> server.execute("systemctl status workspace-matrix")
+   >>> server.execute("systemctl status nixpi-matrix")
    >>> server.shell_interact()  # Get a shell
    ```
 
