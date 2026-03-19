@@ -102,14 +102,20 @@ pkgs.testers.runNixOSTest {
     result = bloom.succeed("systemctl --user -M pi@ list-unit-files | grep pi-daemon || true")
     # Note: The service may not be fully enabled if setup was interrupted, but should exist
     
-    # Test 10: Bloom directory structure exists
+    # Test 10: Built-in user services are enabled and runtime configs exist
+    bloom.succeed("test -f /home/pi/.config/bloom/home/index.html")
+    bloom.succeed("test -f /home/pi/.config/bloom/fluffychat/config.json")
+    bloom.succeed("test -d /home/pi/.config/code-server")
+
+    # Test 11: Bloom directory structure exists
     bloom.succeed("test -d /home/pi/Bloom")
     
-    # Test 11: Checkpoints exist in wizard-state
+    # Test 12: Checkpoints exist in wizard-state
     checkpoints = bloom.succeed("ls /home/pi/.bloom/wizard-state/").strip().split('\n')
     # At minimum, localai step should be marked done
     assert "localai" in checkpoints, f"localai checkpoint missing. Found: {checkpoints}"
-    
+    assert "services" in checkpoints, f"services checkpoint missing. Found: {checkpoints}"
+
     print("All bloom-firstboot tests passed!")
   '';
 }

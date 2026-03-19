@@ -161,7 +161,82 @@ in
       "d /home/${u}/.config/bloom 0755 ${u} ${u} -"
       "d /home/${u}/.config/bloom/home 0755 ${u} ${u} -"
       "d /home/${u}/.config/bloom/fluffychat 0755 ${u} ${u} -"
+      "d /home/${u}/.config/code-server 0755 ${u} ${u} -"
       "d /home/${u}/Public/Bloom 0755 ${u} ${u} -"
     ];
+
+    system.activationScripts.bloom-builtins = lib.stringAfter [ "users" ] ''
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/bloom/home
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/bloom/home/tmp
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/bloom/fluffychat
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/bloom/fluffychat/tmp
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/code-server
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/Public/Bloom
+
+      cat > /home/${u}/.config/bloom/home/index.html <<'HTML'
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bloom Home</title></head>
+<body>
+  <h1>Bloom Home</h1>
+  <ul>
+    <li><a href="http://localhost:8081">Bloom Web Chat</a></li>
+    <li><a href="http://localhost:5000">Bloom Files</a></li>
+    <li><a href="http://localhost:8443">Bloom Code</a></li>
+  </ul>
+</body>
+</html>
+HTML
+
+      cat > /home/${u}/.config/bloom/home/nginx.conf <<'NGINX'
+daemon off;
+pid /run/user/1000/bloom-home-nginx.pid;
+error_log stderr;
+events { worker_connections 64; }
+http {
+    include ${pkgs.nginx}/conf/mime.types;
+    default_type application/octet-stream;
+    access_log off;
+    client_body_temp_path /home/${u}/.config/bloom/home/tmp;
+    server {
+        listen 8080;
+        root /home/${u}/.config/bloom/home;
+        try_files $uri $uri/ =404;
+    }
+}
+NGINX
+
+      cat > /home/${u}/.config/bloom/fluffychat/config.json <<'CONFIG'
+{
+  "applicationName": "Bloom Web Chat",
+  "defaultHomeserver": "http://localhost:6167"
+}
+CONFIG
+
+      cat > /home/${u}/.config/bloom/fluffychat/nginx.conf <<'NGINX'
+daemon off;
+pid /run/user/1000/bloom-fluffychat-nginx.pid;
+error_log stderr;
+events { worker_connections 64; }
+http {
+    include ${pkgs.nginx}/conf/mime.types;
+    default_type application/octet-stream;
+    access_log off;
+    client_body_temp_path /home/${u}/.config/bloom/fluffychat/tmp;
+    server {
+        listen 8081;
+        location /config.json {
+            alias /home/${u}/.config/bloom/fluffychat/config.json;
+        }
+        location / {
+            root /etc/bloom/fluffychat-web;
+            try_files $uri $uri/ /index.html;
+        }
+    }
+}
+NGINX
+
+      chown -R ${u}:${u} /home/${u}/.config/bloom /home/${u}/.config/code-server /home/${u}/Public/Bloom
+    '';
   };
 }
