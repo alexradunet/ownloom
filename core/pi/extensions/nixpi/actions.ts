@@ -242,7 +242,7 @@ function validateAgentCreateTarget(
 }
 
 async function restartPiDaemon(): Promise<{ ok: true } | { ok: false; error: string }> {
-	const result = await run("systemctl", ["--user", "restart", "pi-daemon.service"]);
+	const result = await run("sudo", ["systemctl", "restart", "pi-daemon.service"]);
 	return result.exitCode === 0 ? { ok: true } : { ok: false, error: result.stderr || result.stdout };
 }
 

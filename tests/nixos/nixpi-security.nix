@@ -18,7 +18,7 @@ pkgs.testers.runNixOSTest {
       ];
       _module.args = { inherit piAgent appPackage; };
 
-      nixpi.username = username;
+      nixpi.primaryUser = username;
       nixpi.security.enforceServiceFirewall = true;
 
       virtualisation.diskSize = 20480;

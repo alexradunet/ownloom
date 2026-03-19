@@ -1,8 +1,13 @@
 # core/os/modules/firstboot.nix
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 let
-  u = config.nixpi.username;
+  primaryUser = config.nixpi.primaryUser;
+  primaryHome =
+    if config.nixpi.primaryHome != ""
+    then config.nixpi.primaryHome
+    else "/home/${primaryUser}";
+  stateDir = config.nixpi.stateDir;
 in
 {
   imports = [ ./options.nix ];
@@ -10,51 +15,59 @@ in
   systemd.services.nixpi-firstboot = {
     description = "nixPI First-Boot Setup";
     wantedBy = [ "multi-user.target" ];
-    # getty.target blocks all console logins until this completes.
-    before = [ "getty.target" ];
     after = [
       "network-online.target"
       "matrix-synapse.service"
       "netbird.service"
-      "user@1000.service"
+      "pi-daemon.service"
+      "nixpi-home.service"
+      "nixpi-chat.service"
+      "nixpi-files.service"
+      "nixpi-code.service"
     ];
     wants = [
       "network-online.target"
       "matrix-synapse.service"
       "netbird.service"
-      "user@1000.service"
+      "pi-daemon.service"
+      "nixpi-home.service"
+      "nixpi-chat.service"
+      "nixpi-files.service"
+      "nixpi-code.service"
     ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      User = u;
+      User = primaryUser;
       ExecStart = "${pkgs.bash}/bin/bash ${../../scripts/firstboot.sh}";
       StandardOutput = "journal";
       StandardError = "journal";
-      # systemctl --user needs XDG_RUNTIME_DIR to reach the user bus socket.
-      # UID 1000 is deterministic for the first normal user in NixOS.
-      Environment = "XDG_RUNTIME_DIR=/run/user/1000";
-      # Exit 1 = non-fatal partial failure; user can recover via setup-wizard.sh.
+      Environment = [
+        "HOME=${primaryHome}"
+        "NIXPI_DIR=${primaryHome}/nixPI"
+        "NIXPI_STATE_DIR=${stateDir}"
+        "NIXPI_PI_DIR=${stateDir}/agent"
+        "NIXPI_CONFIG_DIR=${stateDir}/services"
+      ];
       SuccessExitStatus = "0 1";
     };
-    unitConfig.ConditionPathExists = "!/home/${u}/.nixpi/.setup-complete";
+    unitConfig.ConditionPathExists = "!${primaryHome}/.nixpi/.setup-complete";
   };
 
-  # Narrow sudo rules for commands firstboot.sh needs in a non-TTY context.
-  # NOTE: shell.nix already grants the primary user full NOPASSWD sudo,
-  # making these rules currently redundant. Kept for future hardening documentation.
   security.sudo.extraRules = [
     {
-      users = [ u ];
+      users = [ primaryUser ];
       commands = [
         { command = "/run/current-system/sw/bin/cat /var/lib/matrix-synapse/registration_shared_secret"; options = [ "NOPASSWD" ]; }
         { command = "/run/current-system/sw/bin/journalctl -u matrix-synapse --no-pager"; options = [ "NOPASSWD" ]; }
         { command = "/run/current-system/sw/bin/netbird up --setup-key *"; options = [ "NOPASSWD" ]; }
-        { command = "/run/current-system/sw/bin/systemctl start netbird.service"; options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/systemctl * netbird.service"; options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/systemctl * pi-daemon.service"; options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/systemctl * nixpi-home.service"; options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/systemctl * nixpi-chat.service"; options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/systemctl * nixpi-files.service"; options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/systemctl * nixpi-code.service"; options = [ "NOPASSWD" ]; }
       ];
     }
   ];
-
-  # Enable linger for the primary user via tmpfiles to avoid polkit dependency at runtime.
-  systemd.tmpfiles.rules = [ "f+ /var/lib/systemd/linger/${u} - - - -" ];
 }

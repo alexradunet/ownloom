@@ -9,10 +9,9 @@
 #   WIZARD_STATE        — path to checkpoint directory (e.g. ~/.nixpi/wizard-state)
 #   MATRIX_STATE_DIR    — path to matrix state directory
 #   MATRIX_HOMESERVER   — Matrix homeserver URL (e.g. http://localhost:6167)
-#   PI_DIR              — path to Pi config dir (e.g. ~/.pi)
-#   NIXPI_CONFIG        — path to nixPI config dir (e.g. ~/.config/nixpi)
+#   PI_DIR              — path to Pi config dir (e.g. /var/lib/nixpi/agent or ~/.pi)
+#   NIXPI_CONFIG        — path to nixPI service config dir
 #   NIXPI_DIR           — path to nixPI home dir
-#   SYSTEMD_USER_DIR    — path to systemd user dir
 
 # --- Checkpoint helpers ---
 
@@ -438,11 +437,11 @@ install_home_infrastructure() {
 	local prefix tmpdir
 	prefix=$(nginx_prefix)
 	tmpdir="$NIXPI_CONFIG/home/tmp"
-	mkdir -p "$NIXPI_CONFIG/home" "$tmpdir" "$SYSTEMD_USER_DIR"
+	mkdir -p "$NIXPI_CONFIG/home" "$tmpdir"
 
 	cat > "$NIXPI_CONFIG/home/nginx.conf" <<-NGINX
 	daemon off;
-pid /run/user/${UID}/nixpi-home-nginx.pid;
+pid /run/nixpi-home-nginx.pid;
 	error_log stderr;
 	events { worker_connections 64; }
 	http {
@@ -458,8 +457,7 @@ pid /run/user/${UID}/nixpi-home-nginx.pid;
 	}
 	NGINX
 
-	systemctl --user daemon-reload
-	systemctl --user restart nixpi-home.service
+	sudo systemctl restart nixpi-home.service
 }
 
 write_fluffychat_runtime_config() {

@@ -59,7 +59,7 @@ export class PiRoomSession implements AgentSessionLike {
 	async spawn(): Promise<void> {
 		const { resourceLoader } = await getSharedResources();
 		// Create a fresh SettingsManager per spawn so model/provider changes
-		// made in the TUI (written to ~/.pi/agent/settings.json) are always
+		// made in the TUI (written to the Pi runtime settings file) are always
 		// picked up when a new room session starts.
 		const settingsManager = SettingsManager.create(REPO_ROOT);
 		const { session } = await createAgentSession({

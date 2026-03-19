@@ -76,8 +76,8 @@ export async function handleSystemdControl(
 		const denied = await requireConfirmation(ctx, `systemctl ${action} ${unit}`);
 		if (denied) return errorResult(denied);
 	}
-	const result = await run("systemctl", ["--user", action, unit], signal);
-	const text = truncate(result.stdout || result.stderr || `systemctl --user ${action} ${unit} completed.`);
+	const result = await run("sudo", ["systemctl", action, unit], signal);
+	const text = truncate(result.stdout || result.stderr || `sudo systemctl ${action} ${unit} completed.`);
 	return {
 		content: [{ type: "text" as const, text }],
 		details: { exitCode: result.exitCode },

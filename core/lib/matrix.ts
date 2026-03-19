@@ -5,11 +5,12 @@
 import { randomBytes } from "node:crypto";
 import os from "node:os";
 import { join } from "node:path";
+import { getPiDir } from "./filesystem.js";
 import { stringifyFrontmatter } from "./frontmatter.js";
 
 /** Path to stored Matrix credentials. */
 export function matrixCredentialsPath(): string {
-	return join(os.homedir(), ".pi", "matrix-credentials.json");
+	return join(getPiDir(), "matrix-credentials.json");
 }
 
 /** Generate a secure random password (base64url, 24 bytes = 32 chars). */
@@ -39,7 +40,7 @@ export interface MatrixAgentCredentials {
 
 /** Path to the per-agent Matrix credentials directory. */
 export function matrixAgentCredentialsDir(homeDir = os.homedir()): string {
-	return join(homeDir, ".pi", "matrix-agents");
+	return process.env.NIXPI_PI_DIR ? join(getPiDir(), "matrix-agents") : join(homeDir, ".pi", "matrix-agents");
 }
 
 /** Path to the per-agent Matrix credentials file. */

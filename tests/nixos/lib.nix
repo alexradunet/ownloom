@@ -39,7 +39,7 @@
     ../../core/os/modules/update.nix
   ];
 
-  #  nixPI modules without nixpi-shell (for tests that define their own user)
+  # nixPI modules without nixpi-shell (for tests that define their own operator user)
   nixpiModulesNoShell = [
     ../../core/os/modules/options.nix
     ../../core/os/modules/app.nix
@@ -51,18 +51,17 @@
 
   # Test utilities package
   testUtils = pkgs.writeShellScriptBin "nixpi-test-utils" ''
-    # Wait for a systemd unit to be active on the user bus
-    wait_for_user_unit() {
-      local user="$1"
-      local unit="$2"
-      local timeout="''${3:-30}"
+    # Wait for a systemd unit to be active on the system bus
+    wait_for_unit_active() {
+      local unit="$1"
+      local timeout="''${2:-30}"
       local elapsed=0
       
-      while ! systemctl --user -M "$user@" is-active "$unit" 2>/dev/null | grep -q active; do
+      while ! systemctl is-active "$unit" 2>/dev/null | grep -q active; do
         sleep 1
         elapsed=$((elapsed + 1))
         if [ "$elapsed" -ge "$timeout" ]; then
-          echo "Timeout waiting for user unit $unit"
+          echo "Timeout waiting for unit $unit"
           return 1
         fi
       done

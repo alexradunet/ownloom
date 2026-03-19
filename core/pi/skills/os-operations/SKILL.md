@@ -51,5 +51,5 @@ Prefer nixPI extension tools over raw shell commands:
 
 - mutation operations require explicit user confirmation
 - only manage `nixpi-*` services
-- prefer user-scope service management (`systemctl --user`)
+- prefer system-scope service management for nixPI-managed units (`sudo systemctl`)
 - re-check health after every mutation

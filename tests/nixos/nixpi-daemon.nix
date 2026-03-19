@@ -35,7 +35,7 @@ pkgs.testers.runNixOSTest {
     in {
       imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
-      nixpi.username = username;
+      nixpi.primaryUser = username;
 
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
@@ -71,9 +71,8 @@ pkgs.testers.runNixOSTest {
 
       # Create Matrix credentials file for daemon
       system.activationScripts.nixpi-daemon-creds = lib.stringAfter [ "users" ] ''
-        mkdir -p ${homeDir}/.pi
-        # Credentials will be created after we know the server is ready
-        chown -R ${username}:${username} ${homeDir}/.pi
+        mkdir -p /var/lib/nixpi/agent
+        chown -R agent:agent /var/lib/nixpi/agent
       '';
     };
   };
@@ -128,11 +127,10 @@ pkgs.testers.runNixOSTest {
     agent.start()
     agent.wait_for_unit("multi-user.target", timeout=300)
 
-    agent.succeed("mkdir -p " + home + "/.pi")
+    agent.succeed("mkdir -p /var/lib/nixpi/agent")
     agent.succeed(
         "cat > "
-        + home
-        + "/.pi/matrix-credentials.json <<'CREDS'\n"
+        + "/var/lib/nixpi/agent/matrix-credentials.json <<'CREDS'\n"
         + "{\n"
         + '  "homeserver": "http://server:6167",\n'
         + '  "botUserId": "'
@@ -145,44 +143,34 @@ pkgs.testers.runNixOSTest {
         + "}\n"
         + "CREDS"
     )
-    agent.succeed("chown -R " + username + ":" + username + " " + home + "/.pi")
+    agent.succeed("chown -R agent:agent /var/lib/nixpi/agent")
 
-    agent.succeed("mkdir -p /var/lib/systemd/linger && touch /var/lib/systemd/linger/" + username)
     agent.succeed(
         "touch " + home + "/.nixpi/.setup-complete && chown "
         + username + ":" + username + " " + home + "/.nixpi/.setup-complete"
     )
     agent.succeed("mkdir -p " + home + "/nixPI && chown -R " + username + ":" + username + " " + home + "/nixPI")
 
-    agent.succeed("systemctl --user -M " + username + "@ daemon-reload || true")
-    agent.succeed("systemctl --user -M " + username + "@ start pi-daemon.service || true")
+    agent.succeed("systemctl start pi-daemon.service || true")
 
-    agent.succeed("test -f /etc/systemd/user/pi-daemon.service")
+    agent.succeed("test -f /etc/systemd/system/pi-daemon.service")
     agent.succeed("test -d /usr/local/share/nixpi")
     agent.succeed("test -f /usr/local/share/nixpi/dist/core/daemon/index.js")
 
     time.sleep(5)
-    daemon_status = agent.succeed(
-        "su - "
-        + username
-        + " -c 'XDG_RUNTIME_DIR=/run/user/$(id -u) systemctl --user is-active pi-daemon || true'"
-    ).strip()
-    journal = agent.succeed(
-        "su - "
-        + username
-        + " -c 'XDG_RUNTIME_DIR=/run/user/$(id -u) journalctl --user -u pi-daemon -n 20 --no-pager || true'"
-    )
+    daemon_status = agent.succeed("systemctl is-active pi-daemon.service || true").strip()
+    journal = agent.succeed("journalctl -u pi-daemon.service -n 20 --no-pager || true")
     print("Pi-daemon status: " + daemon_status)
     print("Pi-daemon journal: " + journal)
     assert daemon_status in ["active", "activating"], "Unexpected pi-daemon status: " + daemon_status
 
-    service_unit = agent.succeed("cat /etc/systemd/user/pi-daemon.service")
+    service_unit = agent.succeed("cat /etc/systemd/system/pi-daemon.service")
     assert "/bin/node /usr/local/share/nixpi/dist/core/daemon/index.js" in service_unit, "Unexpected ExecStart in pi-daemon service"
-    assert "NIXPI_DIR=%h/nixPI" in service_unit, "Expected NIXPI_DIR environment in pi-daemon service"
+    assert "NIXPI_DIR=/home/pi/nixPI" in service_unit, "Expected NIXPI_DIR environment in pi-daemon service"
     agent.succeed("ls -la /usr/local/share/nixpi/")
 
-    agent.succeed("test -f " + home + "/.pi/matrix-credentials.json")
-    creds = agent.succeed("cat " + home + "/.pi/matrix-credentials.json")
+    agent.succeed("test -f /var/lib/nixpi/agent/matrix-credentials.json")
+    creds = agent.succeed("cat /var/lib/nixpi/agent/matrix-credentials.json")
     assert "homeserver" in creds, "Credentials missing homeserver"
     assert "botAccessToken" in creds, "Credentials missing botAccessToken"
 

@@ -14,7 +14,7 @@ This directory contains NixOS integration tests for the nixPI platform. These te
 | `nixpi-network` | Network connectivity and SSH between nodes | ~5 min | 2 |
 | `nixpi-daemon` | Pi daemon Matrix agent connection | ~5 min | 2 |
 | `nixpi-e2e` | Full end-to-end integration test | ~10 min | 2 |
-| `nixpi-home` | nixPI Home plus built-in user web services | ~5 min | 1 |
+| `nixpi-home` | nixPI Home plus built-in system web services | ~5 min | 1 |
 
 ## Running Tests
 
@@ -47,7 +47,7 @@ tests/nixos/
 ├── nixpi-network.nix    # Network/mesh test
 ├── nixpi-daemon.nix     # Pi daemon test
 ├── nixpi-e2e.nix        # End-to-end integration test
-├── nixpi-home.nix       # nixPI Home and built-in user services test
+├── nixpi-home.nix       # nixPI Home and built-in system services test
 └── README.md            # This file
 ```
 
@@ -61,7 +61,7 @@ When writing new NixOS tests:
 
 3. **Escape `${` in test scripts** - Nix interprets `${` as antiquotation. Escape it as `''${` inside indented strings.
 
-4. **Use `nixpiModulesNoShell` when defining your own user** - The shell module defines the primary nixPI user from `nixpi.username`, so tests that define their own should use `nixpiModulesNoShell` instead of `nixpiModules`.
+4. **Use `nixpiModulesNoShell` when defining your own user** - The shell module defines the primary nixPI operator user from `nixpi.primaryUser`, so tests that define their own should use `nixpiModulesNoShell` instead of `nixpiModules`.
 
 Example:
 ```nix
@@ -74,7 +74,7 @@ pkgs.testers.runNixOSTest {
     imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
     _module.args = { inherit piAgent appPackage; };
     
-    nixpi.username = "pi";
+    nixpi.primaryUser = "pi";
     users.users.pi = { ... };
   };
   

@@ -11,12 +11,46 @@ let
 in
 {
   options.nixpi = {
-    username = lib.mkOption {
+    primaryUser = lib.mkOption {
       type = lib.types.str;
       default = "pi";
       description = ''
-        Primary system user for the nixPI machine. All nixPI modules
-        derive the user name, home directory, and service ownership from it.
+        Primary human/operator account for the nixPI machine.
+      '';
+    };
+
+    primaryHome = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      description = ''
+        Home directory for the primary nixPI operator account. When left empty,
+        nixPI defaults to `/home/<primaryUser>`.
+      '';
+    };
+
+    createPrimaryUser = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Whether nixPI should create and manage the primary operator account.
+        Disable this when layering nixPI onto an existing NixOS user.
+      '';
+    };
+
+    serviceUser = lib.mkOption {
+      type = lib.types.str;
+      default = "agent";
+      description = ''
+        Dedicated system account that owns the always-on Pi agent runtime and
+        other service-managed state.
+      '';
+    };
+
+    stateDir = lib.mkOption {
+      type = lib.types.str;
+      default = "/var/lib/nixpi";
+      description = ''
+        Root directory for service-owned nixPI state.
       '';
     };
 

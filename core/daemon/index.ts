@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
  */
 import os from "node:os";
 import { join } from "node:path";
+import { getDaemonStateDir, getPiDir } from "../lib/filesystem.js";
 import {
 	type MatrixAgentCredentials,
 	type MatrixCredentials,
@@ -23,8 +24,8 @@ import { loadSchedulerState, saveSchedulerState } from "./proactive.js";
 const log = createLogger("pi-daemon");
 
 const config = loadDaemonConfig();
-const ROOM_SESSION_BASE = join(os.homedir(), ".pi", "agent", "sessions", "nixpi-rooms");
-const SCHEDULER_STATE_PATH = join(os.homedir(), ".pi", "pi-daemon", "scheduler-state.json");
+const ROOM_SESSION_BASE = join(getPiDir(), "agent", "sessions", "nixpi-rooms");
+const SCHEDULER_STATE_PATH = join(getDaemonStateDir(), "scheduler-state.json");
 
 async function main(): Promise<void> {
 	log.info("starting pi-daemon", { idleTimeoutMs: config.idleTimeoutMs });

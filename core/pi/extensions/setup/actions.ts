@@ -67,7 +67,7 @@ export function isSetupDone(): boolean {
 }
 
 async function reconcilePiDaemon(): Promise<"enabled" | "failed"> {
-	const enable = await run("systemctl", ["--user", "enable", "--now", "pi-daemon.service"]);
+	const enable = await run("sudo", ["systemctl", "enable", "--now", "pi-daemon.service"]);
 	if (enable.exitCode === 0) {
 		log.info("enabled pi-daemon after setup completion");
 		return "enabled";

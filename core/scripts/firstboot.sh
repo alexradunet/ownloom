@@ -17,9 +17,8 @@ echo "=== nixPI Firstboot Started: $(date) ==="
 WIZARD_STATE="$HOME/.nixpi/wizard-state"
 SETUP_COMPLETE="$HOME/.nixpi/.setup-complete"
 NIXPI_DIR="${NIXPI_DIR:-$HOME/nixPI}"
-SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
-NIXPI_CONFIG="$HOME/.config/nixpi"
-PI_DIR="$HOME/.pi"
+NIXPI_CONFIG="${NIXPI_CONFIG_DIR:-${NIXPI_STATE_DIR:-$HOME/.config/nixpi}/services}"
+PI_DIR="${NIXPI_PI_DIR:-$HOME/.pi}"
 MATRIX_HOMESERVER="http://localhost:6167"
 MATRIX_STATE_DIR="$WIZARD_STATE/matrix-state"
 
@@ -112,9 +111,10 @@ firstboot_services() {
     write_fluffychat_runtime_config
     write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
     install_home_infrastructure || echo "nixpi-firstboot: Home setup failed (non-fatal)"
-    systemctl --user restart nixpi-chat.service || echo "nixpi-firstboot: chat restart failed (non-fatal)" >&2
-    systemctl --user restart nixpi-files.service || echo "nixpi-firstboot: files restart failed (non-fatal)" >&2
-    systemctl --user restart nixpi-code.service || echo "nixpi-firstboot: code-server restart failed (non-fatal)" >&2
+    run_root_command systemctl restart nixpi-home.service || echo "nixpi-firstboot: home restart failed (non-fatal)" >&2
+    run_root_command systemctl restart nixpi-chat.service || echo "nixpi-firstboot: chat restart failed (non-fatal)" >&2
+    run_root_command systemctl restart nixpi-files.service || echo "nixpi-firstboot: files restart failed (non-fatal)" >&2
+    run_root_command systemctl restart nixpi-code.service || echo "nixpi-firstboot: code-server restart failed (non-fatal)" >&2
     mark_done_with services "chat files code"
 }
 
@@ -197,8 +197,7 @@ firstboot_finalize() {
         echo "nixpi-firstboot: interactive setup remains pending"
         return 0
     fi
-    # linger is enabled statically via systemd.tmpfiles.rules in the firstboot module
-    systemctl --user enable --now pi-daemon.service || \
+    run_root_command systemctl enable --now pi-daemon.service || \
         echo "nixpi-firstboot: pi-daemon enable failed (non-fatal)" >&2
     touch "$SETUP_COMPLETE"
     echo "nixpi-firstboot: setup complete"

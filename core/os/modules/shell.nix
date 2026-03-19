@@ -2,36 +2,30 @@
 { pkgs, lib, config, ... }:
 
 let
-  u = config.nixpi.username;
+  primaryUser = config.nixpi.primaryUser;
+  primaryHome =
+    if config.nixpi.primaryHome != ""
+    then config.nixpi.primaryHome
+    else "/home/${primaryUser}";
+  serviceUser = config.nixpi.serviceUser;
+  stateDir = config.nixpi.stateDir;
 
   bashrc = pkgs.writeText "nixpi-bashrc" ''
-    export NIXPI_DIR="$HOME/nixPI"
+    export NIXPI_DIR="${primaryHome}/nixPI"
+    export NIXPI_STATE_DIR="${stateDir}"
+    export NIXPI_PI_DIR="${stateDir}/agent"
+    export NIXPI_CONFIG_DIR="${stateDir}/services"
     export BROWSER="chromium"
     export PATH="/usr/local/share/nixpi/node_modules/.bin:$PATH"
   '';
 
   bashProfile = pkgs.writeText "nixpi-bash_profile" ''
-    # Source .bashrc for env vars (NIXPI_DIR, PATH, etc.)
     [ -f ~/.bashrc ] && . ~/.bashrc
 
-    # First-boot wizard — loop until complete, Ctrl+C restarts it
     while [ -t 0 ] && [ ! -f "$HOME/.nixpi/.setup-complete" ]; do
       setup-wizard.sh || true
     done
 
-    # On TTY1 with setup complete, start Sway window manager
-    if [ "$(tty)" = "/dev/tty1" ] && [ -f "$HOME/.nixpi/.setup-complete" ]; then
-      export XDG_SESSION_TYPE=wayland
-      export XDG_CURRENT_DESKTOP=sway
-      export MOZ_ENABLE_WAYLAND=1
-      export QT_QPA_PLATFORM=wayland
-      export SDL_VIDEODRIVER=wayland
-      export _JAVA_AWT_WM_NONREPARENTING=1
-
-      exec sway
-    fi
-
-    # Start Pi on interactive login (only after setup, only one instance — atomic mkdir lock)
     if [ -t 0 ] && [ -f "$HOME/.nixpi/.setup-complete" ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.nixpi-pi-session 2>/dev/null; then
       trap 'rmdir /tmp/.nixpi-pi-session 2>/dev/null' EXIT
       export PI_SESSION=1
@@ -43,152 +37,77 @@ in
 {
   imports = [ ./options.nix ];
 
-  users.users.${u} = {
-    isNormalUser = true;
-    group        = u;
-    extraGroups  = [ "wheel" "networkmanager" ];
-    home         = "/home/${u}";
-    shell        = pkgs.bash;
-    # No initial password — set interactively by setup-wizard.sh on first boot.
-  };
-  users.groups.${u} = {};
+  assertions = [
+    {
+      assertion = primaryUser != "";
+      message = "nixpi.primaryUser must not be empty.";
+    }
+    {
+      assertion = primaryHome != "";
+      message = "nixpi.primaryHome must not be empty.";
+    }
+    {
+      assertion = serviceUser != "";
+      message = "nixpi.serviceUser must not be empty.";
+    }
+    {
+      assertion = serviceUser != primaryUser;
+      message = "nixpi.serviceUser must be distinct from nixpi.primaryUser.";
+    }
+    {
+      assertion = config.nixpi.createPrimaryUser || builtins.hasAttr primaryUser config.users.users;
+      message = "nixpi.createPrimaryUser is false, but the primary user is not defined elsewhere.";
+    }
+  ];
+
+  users.users.${primaryUser} = lib.mkMerge [
+    (lib.mkIf config.nixpi.createPrimaryUser {
+      isNormalUser = true;
+      group = primaryUser;
+      extraGroups = [ "wheel" "networkmanager" serviceUser ];
+      home = primaryHome;
+      createHome = true;
+      shell = pkgs.bash;
+    })
+    (lib.mkIf (!config.nixpi.createPrimaryUser && builtins.hasAttr primaryUser config.users.users) {
+      extraGroups = lib.mkAfter [ serviceUser ];
+    })
+  ];
+
+  users.groups.${primaryUser} = lib.mkIf config.nixpi.createPrimaryUser {};
 
   security.sudo.extraRules = lib.mkIf config.nixpi.security.passwordlessSudo.enable [
     {
-      users = [ u ];
+      users = [ primaryUser ];
       commands = [ { command = "ALL"; options = [ "NOPASSWD" ]; } ];
     }
   ];
 
-  services.getty.autologinUser = lib.mkForce u;
-
-  systemd.services."serial-getty@ttyS0" = {
-    overrideStrategy = "asDropin";
-    serviceConfig.ExecStart = lib.mkForce [
-      ""
-      "${pkgs.util-linux}/sbin/agetty --autologin ${u} --keep-baud 115200,57600,38400,9600 ttyS0 $TERM"
-    ];
-  };
-
   environment.etc = {
-    "skel/.bashrc".source       = bashrc;
+    "skel/.bashrc".source = bashrc;
     "skel/.bash_profile".source = bashProfile;
     "issue".text = "nixPI\n";
-    "xdg/sway/config".text = ''
-      # nixPI Sway Configuration
-      set $mod Mod4
-      set $term foot
-      set $menu wmenu-run
-
-      # Font for window titles
-      font pango:monospace 10
-
-      # Use Mouse+$mod to drag floating windows
-      floating_modifier $mod normal
-
-      # Start terminal
-      bindsym $mod+Return exec $term
-
-      # Kill focused window
-      bindsym $mod+Shift+q kill
-
-      # Start launcher
-      bindsym $mod+d exec $menu
-
-      # Reload configuration
-      bindsym $mod+Shift+c reload
-
-      # Exit Sway
-      bindsym $mod+Shift+e exec swaynag -t warning -m 'Exit Sway?' -B 'Yes' 'swaymsg exit'
-
-      # Move focus
-      bindsym $mod+h focus left
-      bindsym $mod+j focus down
-      bindsym $mod+k focus up
-      bindsym $mod+l focus right
-
-      # Move windows
-      bindsym $mod+Shift+h move left
-      bindsym $mod+Shift+j move down
-      bindsym $mod+Shift+k move up
-      bindsym $mod+Shift+l move right
-
-      # Workspaces
-      bindsym $mod+1 workspace number 1
-      bindsym $mod+2 workspace number 2
-      bindsym $mod+3 workspace number 3
-      bindsym $mod+4 workspace number 4
-      bindsym $mod+5 workspace number 5
-
-      # Move to workspace
-      bindsym $mod+Shift+1 move container to workspace number 1
-      bindsym $mod+Shift+2 move container to workspace number 2
-      bindsym $mod+Shift+3 move container to workspace number 3
-      bindsym $mod+Shift+4 move container to workspace number 4
-      bindsym $mod+Shift+5 move container to workspace number 5
-
-      # Layout
-      bindsym $mod+b splith
-      bindsym $mod+v splitv
-      bindsym $mod+s layout stacking
-      bindsym $mod+w layout tabbed
-      bindsym $mod+e layout toggle split
-
-      # Fullscreen
-      bindsym $mod+f fullscreen toggle
-
-      # Floating
-      bindsym $mod+Shift+space floating toggle
-      bindsym $mod+space focus mode_toggle
-
-      # Resize mode
-      mode "resize" {
-          bindsym h resize shrink width 10px
-          bindsym j resize grow height 10px
-          bindsym k resize shrink height 10px
-          bindsym l resize grow width 10px
-          bindsym Return mode "default"
-          bindsym Escape mode "default"
-      }
-      bindsym $mod+r mode "resize"
-
-      # Brightness and volume keys
-      bindsym XF86MonBrightnessUp exec brightnessctl set +5%
-      bindsym XF86MonBrightnessDown exec brightnessctl set 5%-
-      bindsym XF86AudioRaiseVolume exec pamixer -i 5
-      bindsym XF86AudioLowerVolume exec pamixer -d 5
-      bindsym XF86AudioMute exec pamixer -t
-
-      # Status bar
-      bar {
-          position top
-          status_command while date +'%Y-%m-%d %H:%M:%S'; do sleep 1; done
-          colors {
-              statusline #ffffff
-              background #323232
-          }
-      }
-
-      # Window borders
-      default_border pixel 2
-      default_floating_border pixel 2
-
-      # Autostart Pi in a terminal
-      exec $term -e bash -c 'login-greeting.sh && exec pi'
-      '';
   };
 
-  systemd.tmpfiles.rules = [
-    "C /home/${u}/.bashrc       0644 ${u} ${u} - /etc/skel/.bashrc"
-    "C /home/${u}/.bash_profile 0644 ${u} ${u} - /etc/skel/.bash_profile"
-  ];
+  system.activationScripts.nixpi-shell = lib.stringAfter [ "users" ] ''
+    primary_group="$(id -gn ${primaryUser})"
+    install -d -m 0755 -o ${primaryUser} -g "$primary_group" ${primaryHome}
+
+    if [ ! -e ${primaryHome}/.bashrc ]; then
+      install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.bashrc ${primaryHome}/.bashrc
+    fi
+
+    if [ ! -e ${primaryHome}/.bash_profile ]; then
+      install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.bash_profile ${primaryHome}/.bash_profile
+    fi
+  '';
 
   boot.kernel.sysctl."kernel.printk" = "4 4 1 7";
 
   networking.hostName = lib.mkDefault "nixos";
 
   warnings = lib.optional config.nixpi.security.passwordlessSudo.enable ''
-    nixPI grants `${u}` passwordless sudo for bootstrap convenience. Keep this
-    explicit until first-boot and OS-operation paths are further narrowed.
-  '';
+      nixPI grants `${primaryUser}` passwordless sudo for bootstrap convenience. Keep this
+      explicit until first-boot and OS-operation paths are further narrowed.
+    '';
 }

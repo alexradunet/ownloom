@@ -23,7 +23,7 @@ Use it to verify that setup, messaging, and recovery paths still match the shipp
 1. Complete the password step.
 2. Bring the machine online and confirm outbound network access works.
 3. Enroll NetBird and verify the reported mesh IP is reachable from another peer.
-4. Complete the Matrix step and confirm `~/.pi/matrix-credentials.json` exists.
+4. Complete the Matrix step and confirm `/var/lib/nixpi/agent/matrix-credentials.json` exists.
 5. Reboot once before finishing release notes.
 
 Expected result:
@@ -31,7 +31,7 @@ Pi resumes cleanly after reboot and does not require manual cleanup of partial w
 
 ### Core Runtime
 
-1. Confirm `pi-daemon.service` is active in the user session.
+1. Confirm `pi-daemon.service` is active as a system service.
 2. Confirm `matrix-synapse.service` is active.
 3. Verify the `#general:nixpi` room exists and Pi replies to a message.
 4. If agent overlays exist, confirm malformed overlays are skipped without killing the daemon.

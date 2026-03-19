@@ -148,7 +148,7 @@ describe("setup_advance daemon reconciliation", () => {
 
 		const result = await tool.execute("tool-call", { step: "persona", result: "completed" });
 
-		expect(runMock).toHaveBeenCalledWith("systemctl", ["--user", "enable", "--now", "pi-daemon.service"]);
+		expect(runMock).toHaveBeenCalledWith("sudo", ["systemctl", "enable", "--now", "pi-daemon.service"]);
 		expect(result.content[0]?.text).toContain("`pi-daemon.service` was enabled and started.");
 	});
 });

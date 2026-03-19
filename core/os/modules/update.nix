@@ -3,6 +3,11 @@
 
 let
   mkService = import ../lib/mk-service.nix { inherit lib; };
+  primaryUser = config.nixpi.primaryUser;
+  primaryHome =
+    if config.nixpi.primaryHome != ""
+    then config.nixpi.primaryHome
+    else "/home/${primaryUser}";
 in
 
 {
@@ -27,7 +32,8 @@ in
     execStart = pkgs.writeShellScript "nixpi-update" (builtins.readFile ../../../core/scripts/system-update.sh);
     environment = [
         "PATH=/run/current-system/sw/bin:${lib.makeBinPath (with pkgs; [ nix git jq ])}"
-        "NIXPI_USERNAME=${config.nixpi.username}"
+        "NIXPI_PRIMARY_USER=${primaryUser}"
+        "NIXPI_PRIMARY_HOME=${primaryHome}"
       ];
     hardening = false;
     serviceConfig.RemainAfterExit = false;

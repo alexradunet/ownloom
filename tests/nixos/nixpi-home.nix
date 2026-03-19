@@ -1,5 +1,5 @@
 # tests/nixos/nixpi-home.nix
-# Test that nixPI Home and the built-in user services are provisioned after firstboot
+# Test that nixPI Home and the built-in system services are provisioned after firstboot
 
 { pkgs, lib, nixpiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
 
@@ -15,7 +15,7 @@ pkgs.testers.runNixOSTest {
       mkTestFilesystems
     ];
     _module.args = { inherit piAgent appPackage; };
-    nixpi.username = username;
+    nixpi.primaryUser = username;
 
     virtualisation.diskSize = 20480;
     virtualisation.memorySize = 4096;
@@ -65,12 +65,12 @@ pkgs.testers.runNixOSTest {
     nixpi.wait_for_unit("nixpi-firstboot.service", timeout=120)
     nixpi.wait_until_succeeds("test -f " + home + "/.nixpi/.setup-complete", timeout=120)
 
-    nixpi.wait_until_succeeds("test -f " + home + "/.config/nixpi/home/index.html", timeout=120)
-    nixpi.wait_until_succeeds("test -f " + home + "/.config/nixpi/chat/config.json", timeout=120)
-    nixpi.succeed("grep -q 'nixPI Home' " + home + "/.config/nixpi/home/index.html")
-    nixpi.succeed("grep -q 'nixPI Chat' " + home + "/.config/nixpi/home/index.html")
-    nixpi.succeed("grep -q 'nixPI Files' " + home + "/.config/nixpi/home/index.html")
-    nixpi.succeed("grep -q 'nixPI Code' " + home + "/.config/nixpi/home/index.html")
+    nixpi.wait_until_succeeds("test -f /var/lib/nixpi/services/home/index.html", timeout=120)
+    nixpi.wait_until_succeeds("test -f /var/lib/nixpi/services/chat/config.json", timeout=120)
+    nixpi.succeed("grep -q 'nixPI Home' /var/lib/nixpi/services/home/index.html")
+    nixpi.succeed("grep -q 'nixPI Chat' /var/lib/nixpi/services/home/index.html")
+    nixpi.succeed("grep -q 'nixPI Files' /var/lib/nixpi/services/home/index.html")
+    nixpi.succeed("grep -q 'nixPI Code' /var/lib/nixpi/services/home/index.html")
 
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'nixPI Home'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q '8081'", timeout=60)
@@ -79,7 +79,7 @@ pkgs.testers.runNixOSTest {
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8081/config.json | grep -q 'defaultHomeserver'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:5000/ >/dev/null", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8443/ | grep -q 'code-server'", timeout=60)
-    nixpi.succeed("test -d " + home + "/.config/code-server")
+    nixpi.succeed("test -d /var/lib/nixpi/services/code")
 
     print("nixPI Home and built-in service tests passed!")
   '';

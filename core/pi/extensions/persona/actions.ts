@@ -6,7 +6,7 @@ import os from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import jsYaml from "js-yaml";
-import { getNixpiDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
+import { getNixpiDir, getPiDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
 import { createLogger } from "../../../lib/shared.js";
 import type { NixpiContext, GuardrailsConfig } from "./types.js";
 
@@ -65,13 +65,13 @@ export function loadGuardrails(): Array<{ tool: string; pattern: RegExp; label: 
 
 /** Get the path to the nixPI context persistence file. */
 export function getContextFile(): string {
-	return join(os.homedir(), ".pi", "nixpi-context.json");
+	return join(getPiDir(), "nixpi-context.json");
 }
 
 /** Save context state for cross-compaction continuity. */
 export function saveContext(ctx: NixpiContext): void {
 	try {
-		mkdirSync(join(os.homedir(), ".pi"), { recursive: true });
+		mkdirSync(getPiDir(), { recursive: true });
 		writeFileSync(getContextFile(), JSON.stringify(ctx, null, 2));
 	} catch (err) {
 		log.error("Failed to save context", { error: (err as Error).message });

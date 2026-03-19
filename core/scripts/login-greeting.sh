@@ -4,7 +4,8 @@ set -euo pipefail
 # nixPI login script — ensures Pi settings include the nixPI package.
 
 NIXPI_PKG="/usr/local/share/nixpi"
-PI_SETTINGS="$HOME/.pi/agent/settings.json"
+PI_DIR="${NIXPI_PI_DIR:-$HOME/.pi}"
+PI_SETTINGS="${PI_DIR}/agent/settings.json"
 
 # Ensure Pi settings include the nixPI package (idempotent)
 if [[ -d "$NIXPI_PKG" ]]; then
@@ -18,12 +19,5 @@ if [[ -d "$NIXPI_PKG" ]]; then
         fi
     else
         cp "$NIXPI_PKG/.pi/agent/settings.json" "$PI_SETTINGS"
-    fi
-fi
-
-# Keep the Matrix daemon online for this user session after setup completes.
-if [[ -f "$HOME/.nixpi/.setup-complete" ]] && ! systemctl --user --quiet is-active pi-daemon.service 2>/dev/null; then
-    if ! systemctl --user enable --now pi-daemon.service >/dev/null 2>&1; then
-        echo "warning: failed to enable pi-daemon.service from nixpi-greeting" >&2
     fi
 fi

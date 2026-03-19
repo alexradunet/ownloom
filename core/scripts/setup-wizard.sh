@@ -15,9 +15,8 @@ echo "=== nixPI Wizard Started: $(date) ==="
 WIZARD_STATE="$HOME/.nixpi/wizard-state"
 SETUP_COMPLETE="$HOME/.nixpi/.setup-complete"
 NIXPI_DIR="${NIXPI_DIR:-$HOME/nixPI}"
-SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
-NIXPI_CONFIG="$HOME/.config/nixpi"
-PI_DIR="$HOME/.pi"
+NIXPI_CONFIG="${NIXPI_CONFIG_DIR:-${NIXPI_STATE_DIR:-$HOME/.config/nixpi}/services}"
+PI_DIR="${NIXPI_PI_DIR:-$HOME/.pi}"
 MATRIX_HOMESERVER="http://localhost:6167"
 MATRIX_STATE_DIR="$WIZARD_STATE/matrix-state"
 
@@ -25,7 +24,8 @@ MATRIX_STATE_DIR="$WIZARD_STATE/matrix-state"
 # Create ~/.nixpi/prefill.env on your host to skip manual prompts.
 # When running in a VM via `just vm`, this file is shared into the VM automatically.
 # Supported vars: PREFILL_NETBIRD_KEY, PREFILL_NAME, PREFILL_EMAIL,
-#                 PREFILL_USERNAME, PREFILL_MATRIX_PASSWORD
+#                 PREFILL_USERNAME, PREFILL_MATRIX_PASSWORD,
+#                 PREFILL_PRIMARY_PASSWORD
 PREFILL_FILE="$HOME/.nixpi/prefill.env"
 # Fall back to host-shared mount (9p virtfs, available when running via `just vm`)
 if [[ ! -f "$PREFILL_FILE" && -f "/mnt/host-nixpi/prefill.env" ]]; then
@@ -152,8 +152,8 @@ step_password() {
 	fi
 	echo "Welcome! Let's set up a password for your account."
 	echo ""
-	if [[ -n "${PREFILL_PI_PASSWORD:-}" ]]; then
-		echo "$(whoami):${PREFILL_PI_PASSWORD}" | sudo chpasswd
+	if [[ -n "${PREFILL_PRIMARY_PASSWORD:-}" ]]; then
+		echo "$(whoami):${PREFILL_PRIMARY_PASSWORD}" | sudo chpasswd
 		echo "Password set."
 	else
 		# Always use sudo to bypass current password check on first boot.
@@ -338,9 +338,10 @@ step_services() {
 	else
 		echo "  nixPI Home setup failed."
 	fi
-	systemctl --user restart nixpi-chat.service || echo "  chat restart failed."
-	systemctl --user restart nixpi-files.service || echo "  files restart failed."
-	systemctl --user restart nixpi-code.service || echo "  code-server restart failed."
+    sudo systemctl restart nixpi-home.service || echo "  home restart failed."
+    sudo systemctl restart nixpi-chat.service || echo "  chat restart failed."
+    sudo systemctl restart nixpi-files.service || echo "  files restart failed."
+    sudo systemctl restart nixpi-code.service || echo "  code-server restart failed."
 	write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
 	mark_done_with services "fluffychat dufs code-server"
 }
@@ -361,10 +362,9 @@ step_bootc_switch() {
 
 finalize() {
 	touch "$SETUP_COMPLETE"
-	loginctl enable-linger "$USER"
-	if ! systemctl --user enable --now pi-daemon.service; then
-		echo "warning: failed to enable pi-daemon.service during wizard finalization" >&2
-	fi
+    if ! sudo systemctl enable --now pi-daemon.service; then
+        echo "warning: failed to enable pi-daemon.service during wizard finalization" >&2
+    fi
 
 	local mesh_ip
 	mesh_ip=$(read_checkpoint_data netbird)

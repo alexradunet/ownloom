@@ -133,8 +133,9 @@
               nixpi.start()
               nixpi.wait_for_unit("multi-user.target", timeout=300)
 
-              # Basic sanity: the pi user exists
+              # Basic sanity: the default operator and service users exist
               nixpi.succeed("id pi")
+              nixpi.succeed("id agent")
 
               # nixpi-firstboot was attempted (exit 0 or 1 both accepted by unit)
               nixpi.wait_for_unit("nixpi-firstboot.service", timeout=60)
