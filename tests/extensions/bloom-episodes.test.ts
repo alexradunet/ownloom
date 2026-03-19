@@ -191,4 +191,56 @@ describe("bloom-episodes", () => {
 		expect(objectRaw).toContain("scope: room");
 		expect(objectRaw).toContain("scope_value: ops-room");
 	});
+
+	it("episode_create returns success with minimal required params", async () => {
+		const create = getExecute("episode_create");
+		const result = await create("call-1", {
+			title: "Minimal Episode",
+			body: "Just the body.",
+		});
+		expect(result.isError).toBeFalsy();
+		expect(result.content[0].text).toContain("created episode/");
+		expect(result.details).toHaveProperty("id");
+		expect(result.details).toHaveProperty("path");
+	});
+
+	it("episode_list returns empty result with no episodes", async () => {
+		const list = getExecute("episode_list");
+		const result = await list("call-1", {});
+		expect(result.isError).toBeFalsy();
+		expect(result.content[0].text).toBe("No episodes found");
+		expect(result.details).toEqual({ count: 0 });
+	});
+
+	it("episode_list returns count in details after episodes are created", async () => {
+		const create = getExecute("episode_create");
+		const list = getExecute("episode_list");
+
+		// Use distinct rooms so the id slug differs even when timestamps match
+		await create("call-1", { title: "Alpha", body: "First.", room: "room-alpha" });
+		await create("call-2", { title: "Beta", body: "Second.", room: "room-beta" });
+
+		const result = await list("call-3", { limit: 5 });
+		const count = (result.details as { count: number }).count;
+		expect(count).toBeGreaterThanOrEqual(1);
+		expect(result.content[0].text).toContain(".md");
+	});
+
+	it("episode_promote returns error for nonexistent episode", async () => {
+		const promote = getExecute("episode_promote");
+		const result = await promote("call-1", {
+			episode_id: "9999-01-01T00-00-00Z",
+			target: { type: "fact", slug: "ghost" },
+		});
+		expect(result.isError).toBe(true);
+		expect(result.content[0].text).toContain("episode not found");
+	});
+
+	it("episode_consolidate returns no-candidates message when no episodes exist", async () => {
+		const consolidate = getExecute("episode_consolidate");
+		const result = await consolidate("call-1", { mode: "propose" });
+		expect(result.isError).toBeFalsy();
+		expect(result.content[0].text).toContain("No conservative promotion candidates found");
+		expect(result.details).toEqual({ count: 0, applied: 0 });
+	});
 });
