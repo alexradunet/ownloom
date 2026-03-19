@@ -23,7 +23,7 @@ import { loadSchedulerState, saveSchedulerState } from "./proactive.js";
 const log = createLogger("pi-daemon");
 
 const config = loadDaemonConfig();
-const SESSION_BASE = join(os.homedir(), ".pi", "agent", "sessions", "bloom-rooms");
+const ROOM_SESSION_BASE = join(os.homedir(), ".pi", "agent", "sessions", "bloom-rooms");
 const SCHEDULER_STATE_PATH = join(os.homedir(), ".pi", "pi-daemon", "scheduler-state.json");
 
 async function main(): Promise<void> {
@@ -66,7 +66,7 @@ async function runDaemon(
 ): Promise<void> {
 	const runtime = createMultiAgentRuntime({
 		agents,
-		sessionBaseDir: SESSION_BASE,
+		sessionBaseDir: ROOM_SESSION_BASE,
 		idleTimeoutMs: config.idleTimeoutMs,
 		loadAgentCredentials,
 		loadSchedulerState: () => loadSchedulerState(SCHEDULER_STATE_PATH),
@@ -145,7 +145,7 @@ function createDefaultAgent(credentials: MatrixCredentials): AgentDefinition {
 	return {
 		id: "host",
 		name: "Pi",
-		description: "Default Bloom host agent",
+		description: "Default host agent",
 		instructionsPath: "<builtin>",
 		instructionsBody: "You are Pi. Respond helpfully to Matrix room messages.",
 		matrix: {

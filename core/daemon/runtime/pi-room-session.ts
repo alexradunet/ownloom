@@ -10,18 +10,18 @@ import {
 	SettingsManager,
 } from "@mariozechner/pi-coding-agent";
 import { createLogger } from "../../lib/shared.js";
-import type { BloomSessionLike } from "../contracts/session.js";
+import type { AgentSessionLike } from "../contracts/session.js";
 import { extractResponseText, type SessionEvent } from "../contracts/session.js";
 
 const log = createLogger("pi-room-session");
-const BLOOM_REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 async function getSharedResources(): Promise<{
 	resourceLoader: DefaultResourceLoader;
 }> {
-	const settingsManager = SettingsManager.create(BLOOM_REPO_ROOT);
+	const settingsManager = SettingsManager.create(REPO_ROOT);
 	const resourceLoader = new DefaultResourceLoader({
-		cwd: BLOOM_REPO_ROOT,
+		cwd: REPO_ROOT,
 		settingsManager,
 	});
 	await resourceLoader.reload();
@@ -39,7 +39,7 @@ export interface PiRoomSessionOptions {
 	onExit: (code: number | null) => void;
 }
 
-export class PiRoomSession implements BloomSessionLike {
+export class PiRoomSession implements AgentSessionLike {
 	private readonly opts: PiRoomSessionOptions;
 	private session: PiAgentSession | null = null;
 	private unsubscribe: (() => void) | null = null;
@@ -61,7 +61,7 @@ export class PiRoomSession implements BloomSessionLike {
 		// Create a fresh SettingsManager per spawn so model/provider changes
 		// made in the TUI (written to ~/.pi/agent/settings.json) are always
 		// picked up when a new room session starts.
-		const settingsManager = SettingsManager.create(BLOOM_REPO_ROOT);
+		const settingsManager = SettingsManager.create(REPO_ROOT);
 		const { session } = await createAgentSession({
 			cwd: this.opts.sessionDir,
 			resourceLoader,

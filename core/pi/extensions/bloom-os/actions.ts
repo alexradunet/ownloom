@@ -7,7 +7,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
 import { getBloomRepoDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
-import { errorResult, guardBloom, requireConfirmation, truncate } from "../../../lib/shared.js";
+import { errorResult, guardServiceName, requireConfirmation, truncate } from "../../../lib/shared.js";
 import type { UpdateStatus } from "./types.js";
 
 // --- NixOS update handler ---
@@ -68,7 +68,7 @@ export async function handleSystemdControl(
 	signal: AbortSignal | undefined,
 	ctx: ExtensionContext,
 ) {
-	const guard = guardBloom(service);
+	const guard = guardServiceName(service);
 	if (guard) return errorResult(guard);
 	const unit = `${service}.service`;
 	const readOnly = action === "status";

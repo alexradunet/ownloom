@@ -7,7 +7,7 @@ import { parseFrontmatter, stringifyFrontmatter } from "../../core/lib/frontmatt
 import {
 	createLogger,
 	errorResult,
-	guardBloom,
+	guardServiceName,
 	nowIso,
 	requestSelection,
 	requestTextInput,
@@ -521,52 +521,56 @@ describe("requestTextInput", () => {
 });
 
 // ---------------------------------------------------------------------------
-// guardBloom (inlined from lib/os-utils.ts)
+// guardServiceName
 // ---------------------------------------------------------------------------
-describe("guardBloom", () => {
+describe("guardServiceName", () => {
 	it("returns null for bloom- prefixed names", () => {
-		expect(guardBloom("bloom-os")).toBeNull();
-		expect(guardBloom("bloom-test")).toBeNull();
+		expect(guardServiceName("bloom-os")).toBeNull();
+		expect(guardServiceName("bloom-test")).toBeNull();
 	});
 
 	it("returns null for bloom names with numbers", () => {
-		expect(guardBloom("bloom-svc1")).toBeNull();
-		expect(guardBloom("bloom-v2-api")).toBeNull();
+		expect(guardServiceName("bloom-svc1")).toBeNull();
+		expect(guardServiceName("bloom-v2-api")).toBeNull();
 	});
 
 	it("returns error for non-bloom names", () => {
-		const result = guardBloom("not-bloom");
+		const result = guardServiceName("not-bloom");
 		expect(result).toContain("Security error");
 	});
 
 	it("returns error for empty string", () => {
-		expect(guardBloom("")).not.toBeNull();
+		expect(guardServiceName("")).not.toBeNull();
 	});
 
 	it("rejects shell metacharacters", () => {
-		expect(guardBloom("bloom-;rm -rf /")).not.toBeNull();
-		expect(guardBloom("bloom-$(whoami)")).not.toBeNull();
-		expect(guardBloom("bloom-`id`")).not.toBeNull();
+		expect(guardServiceName("bloom-;rm -rf /")).not.toBeNull();
+		expect(guardServiceName("bloom-$(whoami)")).not.toBeNull();
+		expect(guardServiceName("bloom-`id`")).not.toBeNull();
 	});
 
 	it("rejects path separators", () => {
-		expect(guardBloom("bloom-../../etc")).not.toBeNull();
-		expect(guardBloom("bloom-foo/bar")).not.toBeNull();
+		expect(guardServiceName("bloom-../../etc")).not.toBeNull();
+		expect(guardServiceName("bloom-foo/bar")).not.toBeNull();
 	});
 
 	it("rejects spaces", () => {
-		expect(guardBloom("bloom- evil")).not.toBeNull();
+		expect(guardServiceName("bloom- evil")).not.toBeNull();
 	});
 
 	it("rejects uppercase letters", () => {
-		expect(guardBloom("bloom-Foo")).not.toBeNull();
+		expect(guardServiceName("bloom-Foo")).not.toBeNull();
 	});
 
 	it("rejects bloom- with nothing after it", () => {
-		expect(guardBloom("bloom-")).not.toBeNull();
+		expect(guardServiceName("bloom-")).not.toBeNull();
 	});
 
 	it("rejects bloom- starting with hyphen", () => {
-		expect(guardBloom("bloom--double")).not.toBeNull();
+		expect(guardServiceName("bloom--double")).not.toBeNull();
+	});
+
+	it("accepts alternate prefixes when requested", () => {
+		expect(guardServiceName("agent-router", "agent")).toBeNull();
 	});
 });

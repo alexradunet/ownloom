@@ -28,7 +28,7 @@ export interface MatrixCredentials {
 	registrationToken: string;
 }
 
-/** Credentials for one Bloom agent Matrix account. */
+/** Credentials for one agent-specific Matrix account. */
 export interface MatrixAgentCredentials {
 	homeserver: string;
 	userId: string;
@@ -120,7 +120,7 @@ export interface ProvisionMatrixAgentAccountOptions {
 	register?: typeof registerMatrixAccount;
 }
 
-/** Register a new Matrix account for a Bloom agent and return the credential payload to persist. */
+/** Register a new Matrix account for an agent and return the credential payload to persist. */
 export async function provisionMatrixAgentAccount(
 	options: ProvisionMatrixAgentAccountOptions,
 ): Promise<{ ok: true; credentials: MatrixAgentCredentials } | { ok: false; error: string }> {
@@ -152,7 +152,7 @@ export interface GenerateAgentInstructionsMarkdownOptions {
 	respondMode?: "host" | "mentioned" | "silent";
 }
 
-/** Generate a starter `AGENTS.md` file for a Bloom Matrix agent. */
+/** Generate a starter `AGENTS.md` file for a Matrix-backed agent. */
 export function generateAgentInstructionsMarkdown(options: GenerateAgentInstructionsMarkdownOptions): string {
 	const frontmatter: Record<string, unknown> = {
 		id: options.id,

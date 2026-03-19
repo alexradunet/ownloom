@@ -21,7 +21,7 @@ export function extractResponseText(messages: readonly Record<string, unknown>[]
 	return "";
 }
 
-export interface BloomSessionLike {
+export interface AgentSessionLike {
 	alive: boolean;
 	spawn(): Promise<void>;
 	sendMessage(text: string): Promise<void>;

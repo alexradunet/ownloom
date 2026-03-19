@@ -3,7 +3,7 @@ import { sanitizeRoomAlias } from "../lib/room-alias.js";
 import { createLogger } from "../lib/shared.js";
 import type { AgentDefinition } from "./agent-registry.js";
 import type { DaemonConfig } from "./config.js";
-import type { BloomSessionLike, SessionEvent } from "./contracts/session.js";
+import type { AgentSessionLike, SessionEvent } from "./contracts/session.js";
 import {
 	emitMessageBlocked,
 	emitMessageRouted,
@@ -33,7 +33,7 @@ export interface AgentSupervisorOptions {
 	matrixBridge?: MatrixBridgeLike;
 	sessionBaseDir: string;
 	idleTimeoutMs: number;
-	createSession?: (opts: AgentSessionOptions) => BloomSessionLike;
+	createSession?: (opts: AgentSessionOptions) => AgentSessionLike;
 	config?: DaemonConfig;
 	rateLimiter?: ProactiveJobRateLimiter;
 }
@@ -63,10 +63,10 @@ export class AgentSupervisor {
 	private readonly idleTimeoutMs: number;
 	private readonly config: DaemonConfig;
 	private readonly rateLimiter: ProactiveJobRateLimiter;
-	private readonly createSession: (opts: AgentSessionOptions) => BloomSessionLike;
+	private readonly createSession: (opts: AgentSessionOptions) => AgentSessionLike;
 	private readonly roomState: ReturnType<typeof createRoomState>;
 	private readonly pendingProactiveJobs = new Map<string, PendingProactiveJob[]>();
-	private readonly sessions = new Map<string, BloomSessionLike>();
+	private readonly sessions = new Map<string, AgentSessionLike>();
 	private readonly preambleSent = new Set<string>();
 	private readonly typingIntervals = new Map<string, ReturnType<typeof setInterval>>();
 	private shuttingDown = false;
@@ -148,7 +148,7 @@ export class AgentSupervisor {
 		emitProactiveJobStarted(job.agentId, job.roomId, job.jobId);
 		const message = [
 			`[system] Scheduled ${job.kind} job: ${job.jobId}`,
-			"You are being triggered proactively by the Bloom daemon.",
+			"You are being triggered proactively by the main daemon.",
 			job.prompt,
 		].join("\n\n");
 		try {
@@ -204,7 +204,7 @@ export class AgentSupervisor {
 		roomId: string,
 		roomAlias: string,
 		agent: AgentDefinition,
-	): Promise<BloomSessionLike> {
+	): Promise<AgentSessionLike> {
 		const key = this.sessionKey(roomId, agent.id);
 		const existing = this.sessions.get(key);
 		if (existing?.alive) return existing;
@@ -275,10 +275,10 @@ export class AgentSupervisor {
 
 	private buildPreamble(agent: AgentDefinition, roomAlias: string): string {
 		return [
-			`[system] You are the Bloom agent "${agent.name}".`,
+			`[system] You are the agent "${agent.name}".`,
 			`Your Matrix identity is ${agent.matrix.userId}.`,
 			`You are participating in room ${roomAlias}.`,
-			"Other Bloom agents may also be present.",
+			"Other agents may also be present.",
 			"Respond only as yourself.",
 			"Do not continue agent-to-agent back-and-forth unless explicitly addressed.",
 			"Prioritize being helpful to the human.",

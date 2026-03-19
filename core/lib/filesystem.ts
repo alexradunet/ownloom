@@ -11,7 +11,7 @@ export function safePath(root: string, ...segments: string[]): string {
 	return safePathWithin(root, ...segments);
 }
 
-/** Resolve the Bloom directory. Checks `BLOOM_DIR` env var, then falls back to `~/Bloom`. */
+/** Resolve the configured app data directory. Checks `BLOOM_DIR`, then falls back to `~/Bloom`. */
 export function getBloomDir(): string {
 	return process.env.BLOOM_DIR ?? path.join(os.homedir(), "Bloom");
 }
@@ -26,7 +26,7 @@ export function getUpdateStatusPath(): string {
 	return path.join(os.homedir(), ".bloom", "update-status.json");
 }
 
-/** Path to the local Bloom repo clone used for local-only proposal workflows. */
+/** Path to the local repo clone used for local-only proposal workflows. */
 export function getBloomRepoDir(): string {
 	return process.env.BLOOM_REPO_DIR ?? path.join(os.homedir(), ".bloom", "pi-bloom");
 }

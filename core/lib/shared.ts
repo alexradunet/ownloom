@@ -1,4 +1,4 @@
-/** Shared utilities: text truncation, error formatting, and Bloom directory resolution. */
+/** Shared utilities: text truncation, error formatting, and service-name guards. */
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { truncateHead } from "@mariozechner/pi-coding-agent";
 import { requestInteraction } from "./interactions.js";
@@ -133,10 +133,12 @@ export function createLogger(component: string) {
 	};
 }
 
-/** Validate that a service/unit name matches `bloom-[a-z0-9-]+`. Returns error message or null. */
-export function guardBloom(name: string): string | null {
-	if (!/^bloom-[a-z0-9][a-z0-9-]*$/.test(name)) {
-		return `Security error: name must match bloom-[a-z0-9-]+, got "${name}"`;
+/** Validate that a service/unit name matches `<prefix>-[a-z0-9-]+`. Returns error message or null. */
+export function guardServiceName(name: string, prefix = "bloom"): string | null {
+	const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const pattern = new RegExp(`^${escapedPrefix}-[a-z0-9][a-z0-9-]*$`);
+	if (!pattern.test(name)) {
+		return `Security error: name must match ${prefix}-[a-z0-9-]+, got "${name}"`;
 	}
 	return null;
 }
