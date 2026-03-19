@@ -51,7 +51,6 @@ forward_specs=(
     "8080:8080:optional"
     "8081:8081:optional"
     "8443:8443:optional"
-    "8888:80:optional"
 )
 
 net_opts=()
