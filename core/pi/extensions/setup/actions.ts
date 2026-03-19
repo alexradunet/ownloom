@@ -21,8 +21,8 @@ import { STEP_GUIDANCE } from "./step-guidance.js";
 
 const log = createLogger("setup");
 
-const SETUP_STATE_PATH = join(os.homedir(), ".workspace", "setup-state.json");
-const SETUP_COMPLETE_PATH = join(os.homedir(), ".workspace", ".setup-complete");
+const SETUP_STATE_PATH = join(os.homedir(), ".nixpi", "setup-state.json");
+const SETUP_COMPLETE_PATH = join(os.homedir(), ".nixpi", ".setup-complete");
 
 /** Load setup state from disk, or create initial state. */
 export function loadState(): SetupState {
@@ -54,7 +54,7 @@ export function saveState(state: SetupState): void {
 
 /** Mark persona customization as complete (wizard already handled OS-level setup). */
 export async function touchPersonaDone(): Promise<void> {
-	const markerPath = join(os.homedir(), ".workspace", "wizard-state", "persona-done");
+	const markerPath = join(os.homedir(), ".nixpi", "wizard-state", "persona-done");
 	const dir = dirname(markerPath);
 	if (!existsSync(dir)) ensureDir(dir, 0o700);
 	writeFileSync(markerPath, new Date().toISOString(), "utf-8");

@@ -1,7 +1,7 @@
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getWorkspaceDir, safePath } from "../../core/lib/filesystem.js";
+import { getNixpiDir, safePath } from "../../core/lib/filesystem.js";
 
 const ROOT = path.join(os.tmpdir(), "workspace-fs-test-root");
 
@@ -34,39 +34,39 @@ describe("safePath", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getWorkspaceDir
+// getNixpiDir
 // ---------------------------------------------------------------------------
-describe("getWorkspaceDir", () => {
+describe("getNixpiDir", () => {
 	let origBloomDir: string | undefined;
 
 	beforeEach(() => {
-		origBloomDir = process.env.WORKSPACE_DIR;
+		origBloomDir = process.env.NIXPI_DIR;
 	});
 
 	afterEach(() => {
 		if (origBloomDir !== undefined) {
-			process.env.WORKSPACE_DIR = origBloomDir;
+			process.env.NIXPI_DIR = origBloomDir;
 		} else {
-			delete process.env.WORKSPACE_DIR;
+			delete process.env.NIXPI_DIR;
 		}
 	});
 
-	it("returns WORKSPACE_DIR when env var is set", () => {
-		process.env.WORKSPACE_DIR = "/custom/workspace";
-		expect(getWorkspaceDir()).toBe("/custom/workspace");
+	it("returns NIXPI_DIR when env var is set", () => {
+		process.env.NIXPI_DIR = "/custom/nixpi";
+		expect(getNixpiDir()).toBe("/custom/nixpi");
 	});
 
-	it("falls back to ~/Workspace when env var is not set", () => {
-		delete process.env.WORKSPACE_DIR;
-		const expected = path.join(os.homedir(), "Workspace");
-		expect(getWorkspaceDir()).toBe(expected);
+	it("falls back to ~/nixPI when env var is not set", () => {
+		delete process.env.NIXPI_DIR;
+		const expected = path.join(os.homedir(), "nixPI");
+		expect(getNixpiDir()).toBe(expected);
 	});
 
-	it("reflects changes to WORKSPACE_DIR dynamically", () => {
-		process.env.WORKSPACE_DIR = "/first/path";
-		expect(getWorkspaceDir()).toBe("/first/path");
+	it("reflects changes to NIXPI_DIR dynamically", () => {
+		process.env.NIXPI_DIR = "/first/path";
+		expect(getNixpiDir()).toBe("/first/path");
 
-		process.env.WORKSPACE_DIR = "/second/path";
-		expect(getWorkspaceDir()).toBe("/second/path");
+		process.env.NIXPI_DIR = "/second/path";
+		expect(getNixpiDir()).toBe("/second/path");
 	});
 });

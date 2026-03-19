@@ -5,22 +5,22 @@ let
   u = config.nixpi.username;
 
   bashrc = pkgs.writeText "workspace-bashrc" ''
-    export WORKSPACE_DIR="$HOME/Workspace"
+    export NIXPI_DIR="$HOME/nixPI"
     export BROWSER="chromium"
-    export PATH="/usr/local/share/workspace/node_modules/.bin:$PATH"
+    export PATH="/usr/local/share/nixpi/node_modules/.bin:$PATH"
   '';
 
   bashProfile = pkgs.writeText "workspace-bash_profile" ''
-    # Source .bashrc for env vars (WORKSPACE_DIR, PATH, etc.)
+    # Source .bashrc for env vars (NIXPI_DIR, PATH, etc.)
     [ -f ~/.bashrc ] && . ~/.bashrc
 
     # First-boot wizard — loop until complete, Ctrl+C restarts it
-    while [ -t 0 ] && [ ! -f "$HOME/.workspace/.setup-complete" ]; do
+    while [ -t 0 ] && [ ! -f "$HOME/.nixpi/.setup-complete" ]; do
       setup-wizard.sh || true
     done
 
     # On TTY1 with setup complete, start Sway window manager
-    if [ "$(tty)" = "/dev/tty1" ] && [ -f "$HOME/.workspace/.setup-complete" ]; then
+    if [ "$(tty)" = "/dev/tty1" ] && [ -f "$HOME/.nixpi/.setup-complete" ]; then
       export XDG_SESSION_TYPE=wayland
       export XDG_CURRENT_DESKTOP=sway
       export MOZ_ENABLE_WAYLAND=1
@@ -32,8 +32,8 @@ let
     fi
 
     # Start Pi on interactive login (only after setup, only one instance — atomic mkdir lock)
-    if [ -t 0 ] && [ -f "$HOME/.workspace/.setup-complete" ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.workspace-pi-session 2>/dev/null; then
-      trap 'rmdir /tmp/.workspace-pi-session 2>/dev/null' EXIT
+    if [ -t 0 ] && [ -f "$HOME/.nixpi/.setup-complete" ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.nixpi-pi-session 2>/dev/null; then
+      trap 'rmdir /tmp/.nixpi-pi-session 2>/dev/null' EXIT
       export PI_SESSION=1
       login-greeting.sh
       exec pi

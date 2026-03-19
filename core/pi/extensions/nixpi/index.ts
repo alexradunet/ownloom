@@ -1,28 +1,28 @@
 /**
- * workspace — Workspace directory bootstrap, status, and blueprint seeding.
+ * nixpi — nixPI directory bootstrap, status, and blueprint seeding.
  *
- * @tools workspace_status
- * @commands /workspace (init | status | update-blueprints)
+ * @tools nixpi_status
+ * @commands /nixpi (init | status | update-blueprints)
  * @hooks session_start, resources_discover
- * @see {@link ../../AGENTS.md#workspace} Extension reference
+ * @see {@link ../../AGENTS.md#nixpi} Extension reference
  */
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { defineTool, type RegisteredExtensionTool, registerTools } from "../../../lib/extension-tools.js";
-import { getWorkspaceDir } from "../../../lib/filesystem.js";
+import { getNixpiDir } from "../../../lib/filesystem.js";
 import { discoverSkillPaths, ensureWorkspace, getPackageDir, handleWorkspaceStatus } from "./actions.js";
 import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
 
 type WorkspaceCommandContext = Parameters<Parameters<ExtensionAPI["registerCommand"]>[1]["handler"]>[1];
 
 export default function (pi: ExtensionAPI) {
-	const workspaceDir = getWorkspaceDir();
+	const workspaceDir = getNixpiDir();
 	const packageDir = getPackageDir();
 	const tools: RegisteredExtensionTool[] = [
 		defineTool({
-			name: "workspace_status",
-			label: "Workspace Status",
-			description: "Show Workspace directory location and blueprint state",
+			name: "nixpi_status",
+			label: "nixPI Status",
+			description: "Show nixPI directory location and blueprint state",
 			parameters: Type.Object({}),
 			async execute() {
 				return handleWorkspaceStatus(workspaceDir);
@@ -39,16 +39,16 @@ export default function (pi: ExtensionAPI) {
 		const updates = Object.keys(versions.updatesAvailable);
 		if (ctx.hasUI) {
 			if (updates.length > 0) {
-				ctx.ui.setWidget("workspace-updates", [
-					`${updates.length} blueprint update(s) available — /workspace update-blueprints`,
+				ctx.ui.setWidget("nixpi-updates", [
+					`${updates.length} blueprint update(s) available — /nixpi update-blueprints`,
 				]);
 			}
-			ctx.ui.setStatus("workspace", `Workspace: ${workspaceDir}`);
+			ctx.ui.setStatus("nixpi", `nixPI: ${workspaceDir}`);
 		}
 	});
 
-	pi.registerCommand("workspace", {
-		description: "Workspace directory management: /workspace init | status | update-blueprints",
+	pi.registerCommand("nixpi", {
+		description: "nixPI directory management: /nixpi init | status | update-blueprints",
 		handler: async (args: string, ctx) => handleWorkspaceCommand(pi, workspaceDir, packageDir, args, ctx),
 	});
 
@@ -67,7 +67,7 @@ async function handleWorkspaceCommand(
 ): Promise<void> {
 	const subcommand = args.trim().split(/\s+/)[0] ?? "";
 	if (!subcommand) {
-		ctx.ui.notify("Usage: /workspace init | status | update-blueprints", "info");
+		ctx.ui.notify("Usage: /nixpi init | status | update-blueprints", "info");
 		return;
 	}
 
@@ -75,10 +75,10 @@ async function handleWorkspaceCommand(
 		case "init":
 			ensureWorkspace(workspaceDir);
 			seedBlueprints(workspaceDir, packageDir);
-			ctx.ui.notify("Workspace initialized", "info");
+			ctx.ui.notify("nixPI initialized", "info");
 			return;
 		case "status":
-			pi.sendUserMessage("Show workspace status using the workspace_status tool.", { deliverAs: "followUp" });
+			pi.sendUserMessage("Show nixpi status using the nixpi_status tool.", { deliverAs: "followUp" });
 			return;
 		case "update-blueprints": {
 			const count = handleUpdateBlueprints(workspaceDir, packageDir);
@@ -86,6 +86,6 @@ async function handleWorkspaceCommand(
 			return;
 		}
 		default:
-			ctx.ui.notify("Usage: /workspace init | status | update-blueprints", "info");
+			ctx.ui.notify("Usage: /nixpi init | status | update-blueprints", "info");
 	}
 }

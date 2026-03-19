@@ -47,7 +47,7 @@ const InteractionStoreSchema = Type.Object({
 	records: Type.Array(InteractionRecordSchema),
 });
 
-const STORE_SUFFIX = ".workspace-interactions.json";
+const STORE_SUFFIX = ".nixpi-interactions.json";
 const MAX_RECORDS = 32;
 
 function nowIso(): string {

@@ -6,7 +6,7 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
-import { getWorkspaceRepoDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
+import { getNixpiRepoDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
 import { errorResult, guardServiceName, requireConfirmation, truncate } from "../../../lib/shared.js";
 import type { UpdateStatus } from "./types.js";
 
@@ -44,9 +44,9 @@ export async function handleNixosUpdate(
 	}
 
 	// apply
-	const flake = source === "local" ? `${getWorkspaceRepoDir()}#desktop` : "github:alexradunet/piBloom#desktop";
-	if (source === "local" && !existsSync(getWorkspaceRepoDir())) {
-		return errorResult(`Local nixPI repo not found at ${getWorkspaceRepoDir()}. Cannot switch the local flake.`);
+	const flake = source === "local" ? `${getNixpiRepoDir()}#desktop` : "github:alexradunet/piBloom#desktop";
+	if (source === "local" && !existsSync(getNixpiRepoDir())) {
+		return errorResult(`Local nixPI repo not found at ${getNixpiRepoDir()}. Cannot switch the local flake.`);
 	}
 	const result = await run("sudo", ["nixos-rebuild", "switch", "--flake", flake], signal);
 	const text =

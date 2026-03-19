@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getWorkspaceDir, safePath } from "../../core/lib/filesystem.js";
+import { getNixpiDir, safePath } from "../../core/lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../core/lib/frontmatter.js";
 import {
 	createLogger,
@@ -204,24 +204,24 @@ describe("nowIso", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getWorkspaceDir
+// getNixpiDir
 // ---------------------------------------------------------------------------
-describe("getWorkspaceDir", () => {
+describe("getNixpiDir", () => {
 	const origEnv = { ...process.env };
 
 	afterEach(() => {
 		process.env = { ...origEnv };
 	});
 
-	it("returns WORKSPACE_DIR when set", () => {
-		process.env.WORKSPACE_DIR = "/custom";
-		expect(getWorkspaceDir()).toBe("/custom");
+	it("returns NIXPI_DIR when set", () => {
+		process.env.NIXPI_DIR = "/custom";
+		expect(getNixpiDir()).toBe("/custom");
 	});
 
-	it("defaults to ~/Workspace when WORKSPACE_DIR is not set", () => {
-		delete process.env.WORKSPACE_DIR;
-		const result = getWorkspaceDir();
-		expect(result).toMatch(/\/Workspace$/);
+	it("defaults to ~/nixPI when NIXPI_DIR is not set", () => {
+		delete process.env.NIXPI_DIR;
+		const result = getNixpiDir();
+		expect(result).toMatch(/\/nixPI$/);
 	});
 });
 
@@ -334,7 +334,7 @@ describe("requireConfirmation", () => {
 		const second = await requireConfirmation(ctx, "delete file");
 
 		expect(first).toBe(second);
-		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.workspace-interactions.json`, "utf-8")) as {
+		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.nixpi-interactions.json`, "utf-8")) as {
 			records: Array<{ token: string; status: string; kind: string }>;
 		};
 		expect(saved.records).toHaveLength(1);
@@ -360,7 +360,7 @@ describe("requireConfirmation", () => {
 		const sessionFile = path.join(dir, "session.jsonl");
 		const token = "abc123";
 		fs.writeFileSync(
-			`${sessionFile}.workspace-interactions.json`,
+			`${sessionFile}.nixpi-interactions.json`,
 			JSON.stringify({
 				records: [
 					{
@@ -388,7 +388,7 @@ describe("requireConfirmation", () => {
 		const result = await requireConfirmation(ctx, "delete file");
 
 		expect(result).toBeNull();
-		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.workspace-interactions.json`, "utf-8")) as {
+		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.nixpi-interactions.json`, "utf-8")) as {
 			records: Array<{ token: string; status: string }>;
 		};
 		expect(saved.records[0]?.token).toBe(token);
@@ -400,7 +400,7 @@ describe("requireConfirmation", () => {
 		const dir = fs.mkdtempSync(path.join(os.tmpdir(), "shared-confirm-"));
 		const sessionFile = path.join(dir, "session.jsonl");
 		fs.writeFileSync(
-			`${sessionFile}.workspace-interactions.json`,
+			`${sessionFile}.nixpi-interactions.json`,
 			JSON.stringify({
 				records: [
 					{
@@ -428,7 +428,7 @@ describe("requireConfirmation", () => {
 		const result = await requireConfirmation(ctx, "delete file");
 
 		expect(result).toBe("User declined: delete file");
-		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.workspace-interactions.json`, "utf-8")) as {
+		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.nixpi-interactions.json`, "utf-8")) as {
 			records: Array<{ status: string }>;
 		};
 		expect(saved.records[0]?.status).toBe("consumed");
@@ -455,7 +455,7 @@ describe("requestSelection", () => {
 		expect(first.prompt).toContain("2. status");
 
 		fs.writeFileSync(
-			`${sessionFile}.workspace-interactions.json`,
+			`${sessionFile}.nixpi-interactions.json`,
 			JSON.stringify({
 				records: [
 					{
@@ -497,7 +497,7 @@ describe("requestTextInput", () => {
 		expect(first.prompt).toContain("Enter a short note");
 
 		fs.writeFileSync(
-			`${sessionFile}.workspace-interactions.json`,
+			`${sessionFile}.nixpi-interactions.json`,
 			JSON.stringify({
 				records: [
 					{

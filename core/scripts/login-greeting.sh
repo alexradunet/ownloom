@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Workspace login script — ensures Pi settings include Workspace package.
+# nixPI login script — ensures Pi settings include the nixPI package.
 
-BLOOM_PKG="/usr/local/share/workspace"
+BLOOM_PKG="/usr/local/share/nixpi"
 PI_SETTINGS="$HOME/.pi/agent/settings.json"
 
-# Ensure Pi settings include the Workspace package (idempotent)
+# Ensure Pi settings include the nixPI package (idempotent)
 if [[ -d "$BLOOM_PKG" ]]; then
     mkdir -p "$(dirname "$PI_SETTINGS")"
     if [[ -f "$PI_SETTINGS" ]]; then
@@ -22,8 +22,8 @@ if [[ -d "$BLOOM_PKG" ]]; then
 fi
 
 # Keep the Matrix daemon online for this user session after setup completes.
-if [[ -f "$HOME/.workspace/.setup-complete" ]] && ! systemctl --user --quiet is-active pi-daemon.service 2>/dev/null; then
+if [[ -f "$HOME/.nixpi/.setup-complete" ]] && ! systemctl --user --quiet is-active pi-daemon.service 2>/dev/null; then
     if ! systemctl --user enable --now pi-daemon.service >/dev/null 2>&1; then
-        echo "warning: failed to enable pi-daemon.service from workspace-greeting" >&2
+        echo "warning: failed to enable pi-daemon.service from nixpi-greeting" >&2
     fi
 fi

@@ -12,20 +12,20 @@ vi.mock("../../core/lib/exec.js", () => ({
 
 describe("os nixos_update handler", () => {
 	let repoDir: string;
-	const originalRepoDir = process.env.WORKSPACE_REPO_DIR;
+	const originalRepoDir = process.env.NIXPI_REPO_DIR;
 
 	beforeEach(() => {
 		vi.resetModules();
 		runMock.mockReset();
 		repoDir = fs.mkdtempSync(path.join(os.tmpdir(), "workspace-switch-"));
-		process.env.WORKSPACE_REPO_DIR = repoDir;
+		process.env.NIXPI_REPO_DIR = repoDir;
 	});
 
 	afterEach(() => {
 		if (originalRepoDir === undefined) {
-			delete process.env.WORKSPACE_REPO_DIR;
+			delete process.env.NIXPI_REPO_DIR;
 		} else {
-			process.env.WORKSPACE_REPO_DIR = originalRepoDir;
+			process.env.NIXPI_REPO_DIR = originalRepoDir;
 		}
 		fs.rmSync(repoDir, { recursive: true, force: true });
 	});

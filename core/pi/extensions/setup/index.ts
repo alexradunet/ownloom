@@ -75,7 +75,7 @@ export default function (pi: ExtensionAPI) {
 	// Inject persona setup guidance after the wizard has completed.
 	pi.on("before_agent_start", async (event) => {
 		if (!isSetupDone()) return; // wizard hasn't run yet
-		const personaDone = join(os.homedir(), ".workspace", "wizard-state", "persona-done");
+		const personaDone = join(os.homedir(), ".nixpi", "wizard-state", "persona-done");
 		if (existsSync(personaDone)) return; // persona already done
 
 		const setupPrompt = getSetupSystemPrompt();

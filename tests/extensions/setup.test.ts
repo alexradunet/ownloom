@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
-import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-nixpi.js";
 
 const runMock = vi.fn();
 
@@ -102,8 +102,8 @@ describe("setup tool structure", () => {
 // ---------------------------------------------------------------------------
 describe("setup startup gating", () => {
 	it("injects a setup-first prompt after the wizard completes and persona is still pending", async () => {
-		mkdirSync(path.join(os.homedir(), ".workspace"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".nixpi"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".nixpi", ".setup-complete"), "done", "utf-8");
 
 		await loadExtension();
 		const result = await api.fireEvent("before_agent_start", { systemPrompt: "BASE_PROMPT" });
@@ -120,9 +120,9 @@ describe("setup startup gating", () => {
 	});
 
 	it("does not inject setup guidance after persona setup is already complete", async () => {
-		mkdirSync(path.join(os.homedir(), ".workspace", "wizard-state"), { recursive: true });
-		writeFileSync(path.join(os.homedir(), ".workspace", ".setup-complete"), "done", "utf-8");
-		writeFileSync(path.join(os.homedir(), ".workspace", "wizard-state", "persona-done"), "done", "utf-8");
+		mkdirSync(path.join(os.homedir(), ".nixpi", "wizard-state"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".nixpi", ".setup-complete"), "done", "utf-8");
+		writeFileSync(path.join(os.homedir(), ".nixpi", "wizard-state", "persona-done"), "done", "utf-8");
 
 		await loadExtension();
 		const result = await api.fireEvent("before_agent_start", { systemPrompt: "BASE_PROMPT" });

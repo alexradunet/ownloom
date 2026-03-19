@@ -6,7 +6,7 @@ import os from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import jsYaml from "js-yaml";
-import { getWorkspaceDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
+import { getNixpiDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
 import { createLogger } from "../../../lib/shared.js";
 import type { WorkspaceContext, GuardrailsConfig } from "./types.js";
 
@@ -28,7 +28,7 @@ export function normalizeCommand(cmd: string): string {
 
 /** Load and compile guardrail patterns from YAML config. */
 export function loadGuardrails(): Array<{ tool: string; pattern: RegExp; label: string }> {
-	const workspaceDir = getWorkspaceDir();
+	const workspaceDir = getNixpiDir();
 	const packageDir = resolvePackageDir();
 
 	// User customization takes priority over defaults
@@ -63,9 +63,9 @@ export function loadGuardrails(): Array<{ tool: string; pattern: RegExp; label: 
 	}
 }
 
-/** Get the path to the workspace context persistence file. */
+/** Get the path to the nixPI context persistence file. */
 export function getContextFile(): string {
-	return join(os.homedir(), ".pi", "workspace-context.json");
+	return join(os.homedir(), ".pi", "nixpi-context.json");
 }
 
 /** Save context state for cross-compaction continuity. */
@@ -111,7 +111,7 @@ export function buildRestoredContextBlock(ctx: WorkspaceContext): string {
 
 /** Load the 4-layer persona from the runtime directory or default package persona. */
 export function loadPersona(): string {
-	const workspaceDir = getWorkspaceDir();
+	const workspaceDir = getNixpiDir();
 	const vaultDir = join(workspaceDir, "Persona");
 	const packageDir = resolvePackageDir();
 	const defaultPersonaDir = existsSync(join(packageDir, "core", "pi", "persona"))

@@ -4,14 +4,14 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { getWorkspaceDir, safePath } from "../../../lib/filesystem.js";
+import { getNixpiDir, safePath } from "../../../lib/filesystem.js";
 import { parseFrontmatter } from "../../../lib/frontmatter.js";
 import { errorResult, truncate } from "../../../lib/shared.js";
 import { walkMdFiles } from "./actions.js";
 import { readMemoryRecord, type ScopePreference, scoreRecord } from "./memory.js";
 
 function resolveObjectsDir(directory?: string) {
-	if (!directory) return { dir: path.join(getWorkspaceDir(), "Objects") };
+	if (!directory) return { dir: path.join(getNixpiDir(), "Objects") };
 	try {
 		return { dir: safePath(os.homedir(), directory) };
 	} catch {
@@ -72,7 +72,7 @@ export function listObjects(
 
 /** Search markdown files in ~/Workspace/ for a pattern. */
 export function searchObjects(params: { pattern: string }, signal?: AbortSignal) {
-	const workspaceDir = getWorkspaceDir();
+	const workspaceDir = getNixpiDir();
 	const matches: string[] = [];
 
 	const files = fs.globSync("**/*.md", { cwd: workspaceDir });
@@ -115,7 +115,7 @@ export function queryObjects(
 	},
 	signal?: AbortSignal,
 ) {
-	const workspaceDir = getWorkspaceDir();
+	const workspaceDir = getNixpiDir();
 	const dir = path.join(workspaceDir, "Objects");
 	const limit = Math.max(1, Math.min(100, Number(params.limit ?? 10)));
 	const results = [];

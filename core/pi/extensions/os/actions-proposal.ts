@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
-import { getWorkspaceRepoDir } from "../../../lib/filesystem.js";
+import { getNixpiRepoDir } from "../../../lib/filesystem.js";
 import { errorResult, requireConfirmation, truncate } from "../../../lib/shared.js";
 
 export type NixConfigProposalAction = "status" | "validate" | "update_flake_lock";
@@ -17,7 +17,7 @@ export async function handleNixConfigProposal(
 	signal: AbortSignal | undefined,
 	ctx: ExtensionContext,
 ) {
-	const repoDir = getWorkspaceRepoDir();
+	const repoDir = getNixpiRepoDir();
 	if (!existsSync(repoDir)) {
 		return errorResult(`Local nixPI repo not found at ${repoDir}. The proposal workflow expects a cloned repo there.`);
 	}
@@ -81,7 +81,7 @@ export async function handleNixConfigProposal(
 	]);
 	const ok = flakeCheck.exitCode === 0 && configBuild.exitCode === 0;
 	const text = [
-		`Validated local Workspace repo at ${repoDir}`,
+		`Validated local nixPI repo at ${repoDir}`,
 		"",
 		`nix flake check --no-build: ${flakeCheck.exitCode === 0 ? "ok" : "failed"}`,
 		summarizeOutput(flakeCheck),

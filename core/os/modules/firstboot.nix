@@ -37,7 +37,7 @@ in
       # Exit 1 = non-fatal partial failure; user can recover via setup-wizard.sh.
       SuccessExitStatus = "0 1";
     };
-    unitConfig.ConditionPathExists = "!/home/${u}/.workspace/.setup-complete";
+    unitConfig.ConditionPathExists = "!/home/${u}/.nixpi/.setup-complete";
   };
 
   # Narrow sudo rules for commands firstboot.sh needs in a non-TTY context.

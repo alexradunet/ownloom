@@ -6,8 +6,8 @@
 #   run-qemu.sh --mode headless|gui|daemon [--skip-setup]
 set -euo pipefail
 
-DISK="/tmp/workspace-vm-disk.qcow2"
-VARS="/tmp/workspace-ovmf-vars.fd"
+DISK="/tmp/nixpi-vm-disk.qcow2"
+VARS="/tmp/nixpi-ovmf-vars.fd"
 OVMF_CODE="/usr/share/edk2/ovmf/OVMF_CODE.fd"
 OVMF_VARS_SRC="/usr/share/edk2/ovmf/OVMF_VARS.fd"
 OUTPUT="result"
@@ -42,9 +42,9 @@ if [[ "$skip_setup" -eq 0 ]]; then
     qemu-img resize "$DISK" 24G
     cp "$OVMF_VARS_SRC" "$VARS"
     if [[ -f "core/scripts/prefill.env" ]]; then
-        mkdir -p "$HOME/.workspace"
-        cp "core/scripts/prefill.env" "$HOME/.workspace/prefill.env"
-        echo "Staged core/scripts/prefill.env → ~/.workspace/prefill.env"
+        mkdir -p "$HOME/.nixpi"
+        cp "core/scripts/prefill.env" "$HOME/.nixpi/prefill.env"
+        echo "Staged core/scripts/prefill.env -> ~/.nixpi/prefill.env"
     fi
 else
     if [[ ! -f "$DISK" ]]; then
@@ -71,7 +71,7 @@ QEMU_COMMON=(
     -drive "file=${DISK},format=qcow2,if=virtio,cache=writeback"
     -netdev "user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000,hostfwd=tcp::8080-:8080,hostfwd=tcp::8081-:8081,hostfwd=tcp::8888-:80"
     -device virtio-net-pci,netdev=net0
-    -virtfs "local,path=$HOME/.workspace,mount_tag=host-workspace,security_model=none,readonly=on"
+    -virtfs "local,path=$HOME/.nixpi,mount_tag=host-nixpi,security_model=none,readonly=on"
 )
 
 case "$mode" in
@@ -86,15 +86,15 @@ case "$mode" in
         "${QEMU_COMMON[@]}" -vga virtio -display gtk
         ;;
     daemon)
-        if pgrep -f "[q]emu-system-x86_64.*workspace-vm-disk" > /dev/null; then
+        if pgrep -f "[q]emu-system-x86_64.*nixpi-vm-disk" > /dev/null; then
             echo "VM already running. Use 'just vm-ssh' to connect or 'just vm-stop' to stop."
             exit 1
         fi
         echo "Starting VM in background..."
-        echo "  - Log file: /tmp/workspace-vm.log"
+        echo "  - Log file: /tmp/nixpi-vm.log"
         echo "  - Connect:  just vm-ssh"
         echo "  - Stop:     just vm-stop"
-        nohup "${QEMU_COMMON[@]}" -nographic -serial file:/tmp/workspace-vm.log \
+        nohup "${QEMU_COMMON[@]}" -nographic -serial file:/tmp/nixpi-vm.log \
             > /dev/null 2>&1 &
         echo "Waiting for VM to boot..."
         for i in {1..30}; do

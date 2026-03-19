@@ -1,5 +1,5 @@
 /**
- * Blueprint versioning and seeding logic for workspace.
+ * Blueprint versioning and seeding logic for nixpi.
  */
 import { createHash } from "node:crypto";
 import fs from "node:fs";

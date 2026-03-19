@@ -27,7 +27,7 @@ const NixosUpdateParams = Type.Object({
 	source: Type.Optional(
 		StringEnum(["remote", "local"] as const, {
 			description:
-				"Which flake source to use for apply. remote uses the GitHub flake. local uses ~/.workspace/pi-workspace. Ignored for status and rollback.",
+				"Which flake source to use for apply. remote uses the GitHub flake. local uses ~/.nixpi/pi-nixpi. Ignored for status and rollback.",
 			default: "remote",
 		}),
 	),

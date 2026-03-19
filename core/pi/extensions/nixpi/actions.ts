@@ -1,5 +1,5 @@
 /**
- * Handler / business logic for workspace.
+ * Handler / business logic for nixpi.
  * Package helpers, directory setup, and tool handlers.
  */
 import fs from "node:fs";
@@ -52,7 +52,7 @@ export function ensureWorkspace(workspaceDir: string): void {
 // --- Tool handlers ---
 
 export function handleWorkspaceStatus(workspaceDir: string) {
-	const lines: string[] = [`Workspace: ${workspaceDir}`, ""];
+	const lines: string[] = [`nixPI: ${workspaceDir}`, ""];
 
 	const versions = readBlueprintVersions(workspaceDir);
 	lines.push(`Package version: ${versions.packageVersion}`);
@@ -111,7 +111,7 @@ export function handleSkillList(workspaceDir: string) {
 		skills.push(`${entry.name} — ${desc}`);
 	}
 
-	const text = skills.length > 0 ? skills.join("\n") : "No skills found in Workspace.";
+	const text = skills.length > 0 ? skills.join("\n") : "No skills found in nixPI.";
 	return { content: [{ type: "text" as const, text }], details: {} };
 }
 

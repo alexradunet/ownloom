@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
-import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-nixpi.js";
 
 let temp: TempWorkspace;
 
@@ -38,26 +38,26 @@ describe("runtime package extension list", () => {
 			"./core/pi/extensions/os",
 			"./core/pi/extensions/episodes",
 			"./core/pi/extensions/objects",
-			"./core/pi/extensions/workspace",
+			"./core/pi/extensions/nixpi",
 			"./core/pi/extensions/setup",
 		]);
-		expect(extensionList).not.toContain("./core/pi/extensions/workspace-dev");
-		expect(extensionList).not.toContain("./core/pi/extensions/workspace-repo");
-		expect(extensionList).not.toContain("./core/pi/extensions/workspace-services");
+		expect(extensionList).not.toContain("./core/pi/extensions/nixpi-dev");
+		expect(extensionList).not.toContain("./core/pi/extensions/nixpi-repo");
+		expect(extensionList).not.toContain("./core/pi/extensions/nixpi-services");
 	});
 });
 
 // ---------------------------------------------------------------------------
 // workspace
 // ---------------------------------------------------------------------------
-describe("workspace registration", () => {
+describe("nixpi registration", () => {
 	it("registers expected tools, commands, and events", async () => {
-		const mod = await import("../../core/pi/extensions/workspace/index.js");
+		const mod = await import("../../core/pi/extensions/nixpi/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
-		expect(toolNames(api)).toEqual(["workspace_status"]);
-		expect(commandNames(api)).toEqual(["workspace"]);
+		expect(toolNames(api)).toEqual(["nixpi_status"]);
+		expect(commandNames(api)).toEqual(["nixpi"]);
 		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start", "resources_discover"]));
 		expect(eventNames(api)).not.toContain("input");
 	});

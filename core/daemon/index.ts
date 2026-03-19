@@ -23,7 +23,7 @@ import { loadSchedulerState, saveSchedulerState } from "./proactive.js";
 const log = createLogger("pi-daemon");
 
 const config = loadDaemonConfig();
-const ROOM_SESSION_BASE = join(os.homedir(), ".pi", "agent", "sessions", "workspace-rooms");
+const ROOM_SESSION_BASE = join(os.homedir(), ".pi", "agent", "sessions", "nixpi-rooms");
 const SCHEDULER_STATE_PATH = join(os.homedir(), ".pi", "pi-daemon", "scheduler-state.json");
 
 async function main(): Promise<void> {

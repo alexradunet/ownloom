@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-nixpi.js";
 
 vi.mock("../../core/lib/exec.js", () => ({
 	run: vi.fn(),
@@ -130,13 +130,13 @@ describe("handleNixosUpdate — rollback", () => {
 describe("handleNixosUpdate — apply local (missing repo)", () => {
 	it("returns error when local repo is absent", async () => {
 		const ctx = createMockExtensionContext();
-		const prev = process.env.WORKSPACE_REPO_DIR;
-		process.env.WORKSPACE_REPO_DIR = "/tmp/workspace-repo-does-not-exist-12345";
+		const prev = process.env.NIXPI_REPO_DIR;
+		process.env.NIXPI_REPO_DIR = "/tmp/nixpi-repo-does-not-exist-12345";
 		const result = await handleNixosUpdate("apply", "local", undefined, ctx as never);
 		if (prev === undefined) {
-			delete process.env.WORKSPACE_REPO_DIR;
+			delete process.env.NIXPI_REPO_DIR;
 		} else {
-			process.env.WORKSPACE_REPO_DIR = prev;
+			process.env.NIXPI_REPO_DIR = prev;
 		}
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("Local nixPI repo not found");

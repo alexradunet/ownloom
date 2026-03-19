@@ -11,10 +11,10 @@ import {
 	handleSkillCreate,
 	handleSkillList,
 	loadAgentInfos,
-} from "../../core/pi/extensions/workspace/actions.js";
+} from "../../core/pi/extensions/nixpi/actions.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-nixpi.js";
 
 let workspaceDir: string;
 
@@ -47,29 +47,29 @@ describe("workspace extension", () => {
 	it("does not register authoring tools in the default runtime surface", async () => {
 		vi.resetModules();
 		const api = createMockExtensionAPI();
-		const mod = await import("../../core/pi/extensions/workspace/index.js");
+		const mod = await import("../../core/pi/extensions/nixpi/index.js");
 		mod.default(api as never);
 
 		const names = api._registeredTools.map((tool) => tool.name);
-		expect(names).toEqual(["workspace_status"]);
+		expect(names).toEqual(["nixpi_status"]);
 		expect(api._eventHandlers.has("input")).toBe(false);
 	});
 
-	it("shows usage for /workspace without arguments instead of opening an interaction prompt", async () => {
+	it("shows usage for /nixpi without arguments instead of opening an interaction prompt", async () => {
 		vi.resetModules();
 		const api = createMockExtensionAPI();
-		const mod = await import("../../core/pi/extensions/workspace/index.js");
+		const mod = await import("../../core/pi/extensions/nixpi/index.js");
 		mod.default(api as never);
 
 		const ctx = createMockExtensionContext({ hasUI: true });
-		const command = api._registeredCommands.find((entry) => entry.name === "workspace") as unknown as {
+		const command = api._registeredCommands.find((entry) => entry.name === "nixpi") as unknown as {
 			handler: (args: string, ctx: ReturnType<typeof createMockExtensionContext>) => Promise<void>;
 		};
 
 		await command.handler("", ctx);
 
 		expect(api._sentCustomMessages).toEqual([]);
-		expect(ctx.ui.notify).toHaveBeenCalledWith("Usage: /workspace init | status | update-blueprints", "info");
+		expect(ctx.ui.notify).toHaveBeenCalledWith("Usage: /nixpi init | status | update-blueprints", "info");
 	});
 });
 
@@ -529,10 +529,10 @@ description: Planning assistant
 // workspace_status tool execute (via registered extension)
 // ---------------------------------------------------------------------------
 
-type GardenStatusResult = { content: Array<{ type: string; text: string }>; details: unknown };
-type GardenStatusExecute = () => Promise<GardenStatusResult>;
+type NixpiStatusResult = { content: Array<{ type: string; text: string }>; details: unknown };
+type NixpiStatusExecute = () => Promise<NixpiStatusResult>;
 
-describe("workspace_status tool execute", () => {
+describe("nixpi_status tool execute", () => {
 	let temp: TempWorkspace;
 	let api: ReturnType<typeof createMockExtensionAPI>;
 
@@ -540,7 +540,7 @@ describe("workspace_status tool execute", () => {
 		temp = createTempWorkspace();
 		vi.resetModules();
 		api = createMockExtensionAPI();
-		const mod = await import("../../core/pi/extensions/workspace/index.js");
+		const mod = await import("../../core/pi/extensions/nixpi/index.js");
 		mod.default(api as never);
 	});
 
@@ -548,40 +548,40 @@ describe("workspace_status tool execute", () => {
 		temp.cleanup();
 	});
 
-	function getGardenStatusExecute(): GardenStatusExecute {
-		const tool = api._registeredTools.find((t) => t.name === "workspace_status");
-		if (!tool) throw new Error("workspace_status tool not found");
-		return tool.execute as GardenStatusExecute;
+	function getNixpiStatusExecute(): NixpiStatusExecute {
+		const tool = api._registeredTools.find((t) => t.name === "nixpi_status");
+		if (!tool) throw new Error("nixpi_status tool not found");
+		return tool.execute as NixpiStatusExecute;
 	}
 
 	it("returns a result with content array containing a text item", async () => {
-		expect(api._registeredTools.find((t) => t.name === "workspace_status")).toBeDefined();
-		const result = await getGardenStatusExecute()();
+		expect(api._registeredTools.find((t) => t.name === "nixpi_status")).toBeDefined();
+		const result = await getNixpiStatusExecute()();
 		expect(result).toHaveProperty("content");
 		expect(Array.isArray(result.content)).toBe(true);
 		expect(result.content[0]).toHaveProperty("type", "text");
 	});
 
 	it("includes the workspace dir path in the status text", async () => {
-		const result = await getGardenStatusExecute()();
+		const result = await getNixpiStatusExecute()();
 		expect(result.content[0].text).toContain(temp.workspaceDir);
 	});
 
 	it("includes package version line in the status text", async () => {
-		const result = await getGardenStatusExecute()();
+		const result = await getNixpiStatusExecute()();
 		expect(result.content[0].text).toContain("Package version:");
 	});
 
 	it("includes seeded blueprints count in the status text", async () => {
-		const result = await getGardenStatusExecute()();
+		const result = await getNixpiStatusExecute()();
 		expect(result.content[0].text).toContain("Seeded blueprints:");
 	});
 });
 
 // ---------------------------------------------------------------------------
-// /workspace command handler subcommands
+// /nixpi command handler subcommands
 // ---------------------------------------------------------------------------
-describe("/workspace command handler", () => {
+describe("/nixpi command handler", () => {
 	let temp: TempWorkspace;
 	let api: ReturnType<typeof createMockExtensionAPI>;
 
@@ -589,7 +589,7 @@ describe("/workspace command handler", () => {
 		temp = createTempWorkspace();
 		vi.resetModules();
 		api = createMockExtensionAPI();
-		const mod = await import("../../core/pi/extensions/workspace/index.js");
+		const mod = await import("../../core/pi/extensions/nixpi/index.js");
 		mod.default(api as never);
 	});
 
@@ -598,13 +598,13 @@ describe("/workspace command handler", () => {
 	});
 
 	function getCommandHandler() {
-		const entry = api._registeredCommands.find((c) => c.name === "workspace");
-		if (!entry) throw new Error("workspace command not registered");
+		const entry = api._registeredCommands.find((c) => c.name === "nixpi");
+		if (!entry) throw new Error("nixpi command not registered");
 		return entry.handler as (args: string, ctx: ReturnType<typeof createMockExtensionContext>) => Promise<void>;
 	}
 
-	it("registers the /workspace command", () => {
-		const entry = api._registeredCommands.find((c) => c.name === "workspace");
+	it("registers the /nixpi command", () => {
+		const entry = api._registeredCommands.find((c) => c.name === "nixpi");
 		expect(entry).toBeDefined();
 	});
 
@@ -613,14 +613,14 @@ describe("/workspace command handler", () => {
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handler("status", ctx);
 		expect(api._sentMessages).toHaveLength(1);
-		expect(api._sentMessages[0].message).toContain("workspace_status");
+		expect(api._sentMessages[0].message).toContain("nixpi_status");
 	});
 
-	it("init subcommand notifies with Workspace initialized", async () => {
+	it("init subcommand notifies with nixPI initialized", async () => {
 		const handler = getCommandHandler();
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handler("init", ctx);
-		expect(ctx.ui.notify).toHaveBeenCalledWith("Workspace initialized", "info");
+		expect(ctx.ui.notify).toHaveBeenCalledWith("nixPI initialized", "info");
 	});
 
 	it("init subcommand creates workspace subdirectories", async () => {
@@ -646,6 +646,6 @@ describe("/workspace command handler", () => {
 		const handler = getCommandHandler();
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handler("unknown-cmd", ctx);
-		expect(ctx.ui.notify).toHaveBeenCalledWith("Usage: /workspace init | status | update-blueprints", "info");
+		expect(ctx.ui.notify).toHaveBeenCalledWith("Usage: /nixpi init | status | update-blueprints", "info");
 	});
 });

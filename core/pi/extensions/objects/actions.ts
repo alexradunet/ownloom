@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { getWorkspaceDir, safePath } from "../../../lib/filesystem.js";
+import { getNixpiDir, safePath } from "../../../lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../../lib/frontmatter.js";
 import { errorResult, nowIso, truncate } from "../../../lib/shared.js";
 import { defaultObjectBody, mergeObjectState, readMemoryRecord, writeMemoryRecord } from "./memory.js";
@@ -30,7 +30,7 @@ export function createObject(params: {
 	path?: string;
 	body?: string;
 }) {
-	const workspaceDir = getWorkspaceDir();
+	const workspaceDir = getNixpiDir();
 	let filepath: string;
 	try {
 		filepath = params.path ? safePath(os.homedir(), params.path) : safePath(workspaceDir, "Objects", `${params.slug}.md`);
@@ -79,7 +79,7 @@ export function updateObject(params: {
 			return errorResult("Path traversal blocked: invalid path");
 		}
 	} else {
-		const workspaceDir = getWorkspaceDir();
+		const workspaceDir = getNixpiDir();
 		try {
 			filepath = safePath(path.join(workspaceDir, "Objects"), `${params.slug}.md`);
 		} catch {
@@ -112,7 +112,7 @@ export function upsertObject(params: {
 	path?: string;
 	body?: string;
 }) {
-	const workspaceDir = getWorkspaceDir();
+	const workspaceDir = getNixpiDir();
 	let filepath: string;
 	try {
 		filepath = params.path
@@ -152,7 +152,7 @@ export function readObject(params: { type: string; slug: string; path?: string }
 			return errorResult("Path traversal blocked: invalid path");
 		}
 	} else {
-		const workspaceDir = getWorkspaceDir();
+		const workspaceDir = getNixpiDir();
 		try {
 			filepath = safePath(path.join(workspaceDir, "Objects"), `${params.slug}.md`);
 		} catch {
@@ -182,7 +182,7 @@ export function readObject(params: { type: string; slug: string; path?: string }
 
 /** Add bidirectional links between two objects. */
 export function linkObjects(params: { ref_a: string; ref_b: string }) {
-	const workspaceDir = getWorkspaceDir();
+	const workspaceDir = getNixpiDir();
 	const a = parseRef(params.ref_a);
 	const b = parseRef(params.ref_b);
 	let pathA: string;

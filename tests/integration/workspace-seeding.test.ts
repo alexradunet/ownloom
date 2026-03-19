@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-nixpi.js";
 
 let temp: TempWorkspace;
 
@@ -18,7 +18,7 @@ afterEach(() => {
 // We test workspace seeding by importing and calling the workspace extension
 // which calls ensureWorkspace + seedBlueprints in its session_start handler.
 async function runGardenExtension() {
-	const mod = await import("../../core/pi/extensions/workspace/index.js");
+	const mod = await import("../../core/pi/extensions/nixpi/index.js");
 	const api = createMockExtensionAPI();
 	const ctx = createMockExtensionContext();
 	mod.default(api as never);
