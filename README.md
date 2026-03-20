@@ -37,14 +37,17 @@ Current platform capabilities:
 
 ## 🚀 Quick Start
 
-Install nixPI on a standard NixOS system:
+Install nixPI on an existing NixOS system:
 
 ```bash
 # 1. Install NixOS from the official ISO: https://nixos.org/download.html
-# 2. After first boot, switch to the nixPI flake:
-sudo nixos-rebuild switch --flake github:alexradunet/nixPI#desktop
+# 2. After first boot, run the nixPI installer:
+curl -fsSL https://raw.githubusercontent.com/alexradunet/nixPI/main/core/scripts/nixpi-install.sh | bash
 
-# 3. Complete the first-boot wizard (runs automatically on login)
+# Or manually with your username:
+# NIXPI_PRIMARY_USER=yourusername bash -c '...
+
+# 3. Reboot or log out/in, then complete the first-boot wizard (runs automatically)
 ```
 
 See [docs/quick_deploy.md](docs/quick_deploy.md) for detailed instructions.

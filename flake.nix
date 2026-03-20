@@ -61,6 +61,18 @@
         ];
       };
 
+      # Attach nixPI to an existing NixOS installation.
+      # This imports your existing hardware-configuration.nix and configuration.nix,
+      # then layers nixPI services on top in existing-user mode.
+      # Usage: NIXPI_PRIMARY_USER=alex sudo --preserve-env=NIXPI_PRIMARY_USER nixos-rebuild switch --impure --flake github:alexradunet/nixPI#desktop-attach
+      nixosConfigurations.desktop-attach = nixpkgs.lib.nixosSystem {
+        inherit system specialArgs;
+        modules = [
+          ./core/os/hosts/x86_64-attach.nix
+        ];
+      };
+
+      # Legacy test configuration - for VM testing only
       nixosConfigurations.desktop-install-test = nixpkgs.lib.nixosSystem {
         inherit system specialArgs;
         modules = [

@@ -25,10 +25,15 @@ nixPI is installed on top of a standard NixOS system:
 
 2. **Attach nixPI to your existing operator account** after first boot:
    ```bash
-   /usr/local/share/nixpi/bin/nixpi-install.sh github:alexradunet/nixPI#desktop
+   curl -fsSL https://raw.githubusercontent.com/alexradunet/nixPI/main/core/scripts/nixpi-install.sh | bash
+   ```
+   
+   Or manually specify your user:
+   ```bash
+   NIXPI_PRIMARY_USER=yourusername curl -fsSL ... | bash
    ```
 
-3. **Complete first-boot setup** — the `setup-wizard.sh` runs automatically on first login
+3. **Reboot or log out/in**, then complete first-boot setup — the `setup-wizard.sh` runs automatically
 
 ## 💻 Development: VM Testing
 
