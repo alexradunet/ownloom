@@ -28,7 +28,20 @@ let
     if [ -t 0 ] && [ -f "$HOME/.nixpi/.setup-complete" ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.nixpi-pi-session 2>/dev/null; then
       trap 'rmdir /tmp/.nixpi-pi-session 2>/dev/null' EXIT
       export PI_SESSION=1
-      login-greeting.sh
+      _nixpi_pkg="/usr/local/share/nixpi"
+      _pi_settings="${stateDir}/agent/settings.json"
+      if [ -d "$_nixpi_pkg" ]; then
+        mkdir -p "$(dirname "$_pi_settings")"
+        if [ -f "$_pi_settings" ] && command -v jq >/dev/null 2>&1; then
+          if ! jq -e '.packages // [] | index("'"$_nixpi_pkg"'")' "$_pi_settings" >/dev/null 2>&1; then
+            jq '.packages = ((.packages // []) + ["'"$_nixpi_pkg"'"] | unique)' "$_pi_settings" > "${_pi_settings}.tmp" && \
+              mv "${_pi_settings}.tmp" "$_pi_settings"
+          fi
+        elif [ ! -f "$_pi_settings" ]; then
+          cp "$_nixpi_pkg/.pi/settings.json" "$_pi_settings"
+        fi
+      fi
+      unset _nixpi_pkg _pi_settings
       exec pi
     fi
   '';

@@ -191,16 +191,15 @@ step_network() {
 	echo "No network connection detected."
 	echo ""
 	echo "Options:"
-	echo "  1) Launch WiFi setup UI (nmtui) - recommended"
-	echo "  2) Enter WiFi details manually"
-	echo "  3) Skip (configure later)"
+	echo "  1) Launch WiFi setup (nmtui) - recommended"
+	echo "  2) Skip (configure later)"
 	echo ""
 
 	while true; do
-		read -rp "Select option [1/2/3]: " choice
+		read -rp "Select option [1/2]: " choice
 		case "$choice" in
 			1|nmtui|ui)
-				echo "Launching WiFi setup UI..."
+				echo "Launching WiFi setup..."
 				if command -v nmtui >/dev/null 2>&1; then
 					nmtui
 				else
@@ -218,27 +217,13 @@ step_network() {
 				fi
 				echo "Still not connected. Try again or check your credentials."
 				;;
-			2|manual)
-				read -rp "WiFi SSID: " ssid
-				read -rsp "WiFi password: " psk
-				echo ""
-				echo "Connecting to ${ssid}..."
-				if nmcli device wifi connect "$ssid" password "$psk" 2>/dev/null; then
-					if ping -c1 -W5 1.1.1.1 &>/dev/null; then
-						echo "Connected."
-						mark_done network
-						return
-					fi
-				fi
-				echo "Connection failed. Try again."
-				;;
-			3|skip)
+			2|skip)
 				echo "Skipping network setup. You can configure WiFi later with: nmtui"
 				mark_done network
 				return
 				;;
 			*)
-				echo "Invalid option. Please enter 1, 2, or 3."
+				echo "Invalid option. Please enter 1 or 2."
 				;;
 		esac
 	done

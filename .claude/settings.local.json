@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l /home/alex/pi-bloom/core/scripts/*.sh)",
+      "Bash(find /home/alex/pi-bloom/core -name \"*.ts\" -type f -exec wc -l {} +)",
+      "Bash(find /home/alex/pi-bloom/core/os/modules -name \"*.nix\" -type f -exec wc -l {} +)",
+      "Bash(find /home/alex/pi-bloom/core/daemon -name \"*.ts\" -exec wc -l {} +)",
+      "Bash(find /home/alex/pi-bloom/core/lib -name \"*.ts\" -exec wc -l {} +)",
+      "Bash(wc -l /home/alex/pi-bloom/core/os/hosts/*.nix)"
+    ]
+  }
+}

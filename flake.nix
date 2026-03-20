@@ -72,30 +72,6 @@
         ];
       };
 
-      # Legacy test configuration - for VM testing only
-      nixosConfigurations.desktop-install-test = nixpkgs.lib.nixosSystem {
-        inherit system specialArgs;
-        modules = [
-          ./core/os/hosts/x86_64.nix
-          {
-            nixpi.primaryUser = "alex";
-            nixpi.install.mode = "existing-user";
-            nixpi.createPrimaryUser = false;
-
-            users.users.alex = {
-              isNormalUser = true;
-              group = "alex";
-              extraGroups = [ "wheel" "networkmanager" ];
-              home = "/home/alex";
-              shell = pkgs.bash;
-            };
-            users.groups.alex = {};
-
-            fileSystems."/" = { device = "/dev/vda"; fsType = "ext4"; };
-            fileSystems."/boot" = { device = "/dev/vda1"; fsType = "vfat"; };
-          }
-        ];
-      };
 
       nixosConfigurations.installer-vm = nixpkgs.lib.nixosSystem {
         inherit system specialArgs;

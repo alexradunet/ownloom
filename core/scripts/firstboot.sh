@@ -36,13 +36,6 @@ if [[ -f "$PREFILL_FILE" ]]; then
     NONINTERACTIVE_INSTALL=1
 fi
 
-SUDO_BIN=""
-if command -v sudo >/dev/null 2>&1; then
-    SUDO_BIN="$(command -v sudo)"
-elif [[ -x /run/wrappers/bin/sudo ]]; then
-    SUDO_BIN="/run/wrappers/bin/sudo"
-fi
-
 # Load shared function library.
 # firstboot.sh is run directly from the Nix source tree (not via app),
 # so $(dirname "$0") points into the source store, not app's $out/bin/.
@@ -57,21 +50,13 @@ source "$SETUP_LIB"
 
 step_done() { [[ -f "$WIZARD_STATE/$1" ]]; }
 
-run_root_command() {
-    if [[ -n "$SUDO_BIN" ]]; then
-        "$SUDO_BIN" "$@"
-    else
-        "$@"
-    fi
-}
-
 run_bootstrap_command() {
     local helper="$1"
     shift
     if command -v "$helper" >/dev/null 2>&1; then
-        run_root_command "$helper" "$@"
+        root_command "$helper" "$@"
     else
-        run_root_command "$@"
+        root_command "$@"
     fi
 }
 
