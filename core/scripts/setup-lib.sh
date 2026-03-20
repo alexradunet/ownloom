@@ -50,7 +50,7 @@ netbird_ip() {
 }
 
 root_command() {
-	if [[ $# -gt 0 && "$1" == nixpi-bootstrap-* ]] && command -v "$1" >/dev/null 2>&1; then
+	if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
 		"$@"
 		return
 	fi

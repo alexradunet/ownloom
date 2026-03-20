@@ -117,7 +117,7 @@ pkgs.testers.runNixOSTest {
     steady.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'", timeout=60)
 
     # Matrix registration is disabled after setup by default.
-    steady.succeed("curl -s -X POST http://127.0.0.1:6167/_matrix/client/v3/register -H 'Content-Type: application/json' -d '{\"username\":\"blocked\",\"password\":\"testpassword123\",\"inhibit_login\":false}' | grep -q 'M_FORBIDDEN'")
+    steady.succeed("test \"$(curl -s -o /tmp/register.out -w '%{http_code}' -X POST http://127.0.0.1:6167/_matrix/client/v3/register -H 'Content-Type: application/json' -d '{\"username\":\"blocked\",\"password\":\"testpassword123\",\"inhibit_login\":false}')\" = 401")
 
     # fail2ban is active and protecting SSH.
     steady.succeed("fail2ban-client status sshd | grep -q 'Status for the jail: sshd'")

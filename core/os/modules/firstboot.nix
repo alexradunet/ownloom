@@ -24,6 +24,7 @@ let
   bootstrapNetbird = bootstrapAction "netbird-up" "/run/current-system/sw/bin/netbird up";
   bootstrapNetbirdSystemctl = bootstrapAction "netbird-systemctl" "/run/current-system/sw/bin/systemctl";
   bootstrapMatrixSystemctl = bootstrapAction "matrix-systemctl" "/run/current-system/sw/bin/systemctl";
+  bootstrapServiceSystemctl = bootstrapAction "service-systemctl" "/run/current-system/sw/bin/systemctl";
   bootstrapSshdSystemctl = bootstrapAction "sshd-systemctl" "/run/current-system/sw/bin/systemctl";
   bootstrapPasswd = bootstrapAction "passwd" "/run/current-system/sw/bin/passwd ${primaryUser}";
   bootstrapChpasswd = bootstrapAction "chpasswd" "/run/current-system/sw/bin/chpasswd";
@@ -38,6 +39,7 @@ in
     bootstrapNetbird
     bootstrapNetbirdSystemctl
     bootstrapMatrixSystemctl
+    bootstrapServiceSystemctl
     bootstrapSshdSystemctl
     bootstrapPasswd
     bootstrapChpasswd
@@ -52,6 +54,9 @@ in
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-netbird-up --setup-key *"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-netbird-systemctl * netbird.service"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-systemctl try-restart matrix-synapse.service"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/nixpi-bootstrap-service-systemctl restart nixpi-home.service"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/nixpi-bootstrap-service-systemctl restart nixpi-element-web.service"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/nixpi-bootstrap-service-systemctl enable --now nixpi-daemon.service"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-sshd-systemctl stop sshd.service"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-passwd"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-chpasswd"; options = [ "NOPASSWD" ]; }

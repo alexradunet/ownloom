@@ -100,6 +100,7 @@ EOF
   nixPiModules = [
     ../../core/os/modules/options.nix
     ../../core/os/modules/app.nix
+    ../../core/os/modules/broker.nix
     ../../core/os/modules/llm.nix
     ../../core/os/modules/matrix.nix
     ../../core/os/modules/network.nix
@@ -111,6 +112,7 @@ EOF
   nixPiModulesNoShell = [
     ../../core/os/modules/options.nix
     ../../core/os/modules/app.nix
+    ../../core/os/modules/broker.nix
     ../../core/os/modules/llm.nix
     ../../core/os/modules/matrix.nix
     ../../core/os/modules/network.nix

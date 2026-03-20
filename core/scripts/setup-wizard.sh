@@ -159,7 +159,7 @@ step_welcome() {
 
 	# Set hostname (NixOS derives it from networking.hostName; this sets it at runtime)
 	if [[ "$(hostnamectl hostname 2>/dev/null)" != "nixpi" ]]; then
-		sudo hostnamectl set-hostname nixpi 2>/dev/null || true
+		root_command hostnamectl set-hostname nixpi 2>/dev/null || true
 	fi
 
 	mark_done welcome
@@ -175,7 +175,7 @@ step_password() {
 	fi
 	
 	# Check if user already has a password set
-	if sudo passwd -S "$(whoami)" 2>/dev/null | grep -qE 'P\s+\d{2}/\d{2}/\d{4}'; then
+	if passwd -S "$(whoami)" 2>/dev/null | grep -qE 'P[[:space:]]+[0-9]{2}/[0-9]{2}/[0-9]{4}'; then
 		echo "You already have a password set for this account."
 		if [[ "$NONINTERACTIVE_SETUP" -eq 1 ]]; then
 			echo "Keeping existing password for noninteractive setup."
@@ -199,12 +199,12 @@ step_password() {
 	fi
 	
 	if [[ -n "${PREFILL_PRIMARY_PASSWORD:-}" ]]; then
-		echo "$(whoami):${PREFILL_PRIMARY_PASSWORD}" | sudo nixpi-bootstrap-chpasswd
+		echo "$(whoami):${PREFILL_PRIMARY_PASSWORD}" | root_command nixpi-bootstrap-chpasswd
 		echo "Password set."
 	else
 		# Always use sudo to bypass current password check on first boot.
 		# Using sudo allows root to set the password directly.
-		while ! sudo nixpi-bootstrap-passwd; do
+		while ! root_command nixpi-bootstrap-passwd; do
 			echo ""
 			echo "Password setup failed. Please try again."
 		done
@@ -276,7 +276,7 @@ step_netbird() {
 	# Ensure netbird daemon is running before attempting connection
 	if ! systemctl is-active --quiet netbird.service; then
 		echo "Starting NetBird daemon..."
-		sudo nixpi-bootstrap-netbird-systemctl start netbird.service 2>/dev/null || true
+		root_command nixpi-bootstrap-netbird-systemctl start netbird.service 2>/dev/null || true
 	fi
 	local wait_count=0
 	while [[ ! -S /var/run/netbird/sock ]]; do
@@ -307,7 +307,7 @@ step_netbird() {
 				echo ""
 				echo "Opening browser for NetBird authentication..."
 				echo "If no browser opens, visit the URL shown below."
-				if sudo nixpi-bootstrap-netbird-up 2>&1; then
+				if root_command nixpi-bootstrap-netbird-up 2>&1; then
 					# Wait for connection to establish
 					for _ in $(seq 1 30); do
 						sleep 1
@@ -348,7 +348,7 @@ step_netbird() {
 					fi
 
 					echo "Connecting to NetBird..."
-					if sudo nixpi-bootstrap-netbird-up --setup-key "$setup_key" 2>&1; then
+					if root_command nixpi-bootstrap-netbird-up --setup-key "$setup_key" 2>&1; then
 						sleep 3
 						local status
 						status=$(netbird status 2>/dev/null || true)
@@ -432,8 +432,8 @@ step_services() {
 	else
 		echo "  NixPI Home setup failed."
 	fi
-    root_command nixpi-bootstrap-brokerctl systemd restart nixpi-home.service || echo "  home restart failed."
-    root_command nixpi-bootstrap-brokerctl systemd restart nixpi-element-web.service || echo "  element restart failed."
+	root_command nixpi-bootstrap-service-systemctl restart nixpi-home.service || echo "  home restart failed."
+	root_command nixpi-bootstrap-service-systemctl restart nixpi-element-web.service || echo "  element restart failed."
 	write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
 	mark_done_with services "home element-web"
 }
@@ -457,7 +457,7 @@ finalize() {
 		root_command nixpi-bootstrap-sshd-systemctl stop sshd.service || echo "warning: failed to stop sshd.service" >&2
 	fi
 	root_command nixpi-bootstrap-matrix-systemctl try-restart matrix-synapse.service || echo "warning: failed to restart matrix-synapse.service" >&2
-	if ! root_command nixpi-bootstrap-brokerctl systemd enable-now nixpi-daemon.service; then
+	if ! root_command nixpi-bootstrap-service-systemctl enable --now nixpi-daemon.service; then
 		echo "warning: failed to enable nixpi-daemon.service during wizard finalization" >&2
 	fi
 	touch "$SETUP_COMPLETE"

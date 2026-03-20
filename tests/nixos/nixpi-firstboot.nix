@@ -98,7 +98,7 @@ pkgs.testers.runNixOSTest {
     print(log_content)
     print("=== End of log ===")
     
-    assert "NixPI Firstboot Started" in log_content, "Firstboot log missing start marker"
+    assert "NixPI Wizard Started" in log_content, "Wizard log missing start marker"
     assert "setup complete" in log_content.lower(), "Firstboot log missing completion marker"
     
     # Test 5: wizard-state directory was created

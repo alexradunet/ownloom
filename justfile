@@ -7,6 +7,8 @@ vm_host   := "desktop-vm"
 output    := "result"
 ovmf      := "/usr/share/edk2/ovmf/OVMF_CODE.fd"
 ovmf_vars := "/usr/share/edk2/ovmf/OVMF_VARS.fd"
+nix_opts  := "--option substituters https://cache.nixos.org/"
+nix_vm_lane_opts := "--option substituters https://cache.nixos.org/ --max-jobs 1"
 
 # Build NixPI TypeScript app derivation only
 build:
@@ -31,6 +33,56 @@ qcow2:
 # Build the graphical NixPI installer ISO
 iso:
     nix build {{ flake }}#installerIso
+
+# Boot the graphical installer ISO in QEMU for full install-flow testing.
+# Override with:
+#   NIXPI_INSTALL_VM_DISK_PATH=/tmp/custom.qcow2
+#   NIXPI_INSTALL_VM_DISK_SIZE=32G
+#   NIXPI_INSTALL_VM_MEMORY_MB=8192
+#   NIXPI_INSTALL_VM_CPUS=4
+#   NIXPI_INSTALL_VM_SSH_PORT=2222
+vm-install-iso: iso
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    disk="${NIXPI_INSTALL_VM_DISK_PATH:-/tmp/nixpi-install-vm.qcow2}"
+    disk_size="${NIXPI_INSTALL_VM_DISK_SIZE:-32G}"
+    memory_mb="${NIXPI_INSTALL_VM_MEMORY_MB:-8192}"
+    vm_cpus="${NIXPI_INSTALL_VM_CPUS:-4}"
+    ssh_port="${NIXPI_INSTALL_VM_SSH_PORT:-2222}"
+    ovmf_code="{{ ovmf }}"
+    ovmf_vars_template="{{ ovmf_vars }}"
+    ovmf_vars="/tmp/nixpi-install-ovmf-vars.fd"
+    iso_path="$(find result/iso -maxdepth 1 -name '*.iso' | head -n1)"
+
+    if [ -z "$iso_path" ]; then
+        echo "Installer ISO not found under result/iso"
+        exit 1
+    fi
+
+    if [ ! -f "$disk" ]; then
+        echo "Creating installer VM disk at $disk ($disk_size)..."
+        qemu-img create -f qcow2 "$disk" "$disk_size" >/dev/null
+    fi
+
+    cp "$ovmf_vars_template" "$ovmf_vars"
+
+    echo "Booting installer ISO: $iso_path"
+    echo "Disk: $disk"
+    echo "SSH forward: localhost:$ssh_port -> guest:22"
+
+    exec qemu-system-x86_64 \
+        -enable-kvm \
+        -m "$memory_mb" \
+        -smp "$vm_cpus" \
+        -drive if=pflash,format=raw,readonly=on,file="$ovmf_code" \
+        -drive if=pflash,format=raw,file="$ovmf_vars" \
+        -drive file="$disk",format=qcow2,if=virtio \
+        -cdrom "$iso_path" \
+        -boot d \
+        -nic user,model=virtio-net-pci,hostfwd=tcp::"$ssh_port"-:22 \
+        -display gtk \
+        -vga virtio
 
 # Run VM (fresh build from current codebase)
 vm: qcow2
@@ -96,25 +148,25 @@ deps:
 # Fast config check: build the NixOS closure locally.
 # Catches locale errors, bad module references, and evaluation failures
 check-config:
-    nix build {{ flake }}#checks.{{ system }}.config --no-link
+    nix {{ nix_opts }} build {{ flake }}#checks.{{ system }}.config --no-link
 
 # Full VM boot test: boots the installed system in a NixOS test VM.
 # Slower than check-config but verifies runtime behaviour (services, users).
 # Requires KVM. Takes 20-40 min on first run.
 check-boot:
-    nix build {{ flake }}#checks.{{ system }}.boot --no-link
+    nix {{ nix_opts }} build {{ flake }}#checks.{{ system }}.boot --no-link
 
 # PR-oriented NixOS VM smoke lane.
 check-nixos-smoke:
-    nix build {{ flake }}#checks.{{ system }}.nixos-smoke --no-link -L
+    nix {{ nix_vm_lane_opts }} build {{ flake }}#checks.{{ system }}.nixos-smoke --no-link -L
 
 # Comprehensive NixOS VM lane.
 check-nixos-full:
-    nix build {{ flake }}#checks.{{ system }}.nixos-full --no-link -L
+    nix {{ nix_vm_lane_opts }} build {{ flake }}#checks.{{ system }}.nixos-full --no-link -L
 
 # Long-running install/lockdown/broker lane.
 check-nixos-destructive:
-    nix build {{ flake }}#checks.{{ system }}.nixos-destructive --no-link -L
+    nix {{ nix_vm_lane_opts }} build {{ flake }}#checks.{{ system }}.nixos-destructive --no-link -L
 
 # Lint Nix files
 lint:

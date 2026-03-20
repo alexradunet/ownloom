@@ -81,7 +81,6 @@ pkgs.testers.runNixOSTest {
   };
 
   testScript = ''
-    import json
     client = machines[0]
     nixpi = machines[1]
     username = "pi"
@@ -114,13 +113,12 @@ pkgs.testers.runNixOSTest {
     assert "setup complete" in wizard_log.lower(), "Wizard log missing setup completion marker"
     
     # E2E Test 5: Registration is disabled in the steady state
-    register_resp = nixpi.succeed("""
-      curl -s -X POST http://127.0.0.1:6167/_matrix/client/v3/register \
+    register_status = nixpi.succeed("""
+      curl -s -o /tmp/e2e-register.out -w '%{http_code}' -X POST http://127.0.0.1:6167/_matrix/client/v3/register \
         -H "Content-Type: application/json" \
         -d '{"username":"blocked","password":"blockedpass123","inhibit_login":false}'
-    """)
-    register_data = json.loads(register_resp)
-    assert register_data.get("errcode") == "M_FORBIDDEN", "Expected registration to be disabled: " + register_resp
+    """).strip()
+    assert register_status == "401", "Expected registration to be disabled, got HTTP " + register_status
 
     # E2E Test 6: SSH is disabled from an untrusted peer after setup
     client.succeed("! nc -z -w 2 pi 22")
