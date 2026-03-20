@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-e2e.nix
 # End-to-end integration test - full nixPI stack validation
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems }:
+{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-e2e";
@@ -28,8 +28,6 @@ pkgs.testers.runNixOSTest {
       networking.networkmanager.enable = true;
       system.stateVersion = "25.05";
       # nixpkgs.config NOT set here - test framework injects its own pkgs
-      systemd.services.localai.wantedBy = lib.mkForce [];
-      systemd.services.localai-download.wantedBy = lib.mkForce [];
       
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;

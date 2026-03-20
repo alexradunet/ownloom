@@ -6,6 +6,11 @@ let
   primaryUser = resolved.resolvedPrimaryUser;
   primaryHome = resolved.resolvedPrimaryHome;
   stateDir = config.nixpi.stateDir;
+  matrixRegistrationSecretFile =
+    if config.nixpi.matrix.registrationSharedSecretFile != null then
+      config.nixpi.matrix.registrationSharedSecretFile
+    else
+      "${stateDir}/secrets/matrix-registration-shared-secret";
 in
 {
   imports = [ ./options.nix ];
@@ -55,7 +60,7 @@ in
   security.sudo.extraRules = lib.optional config.nixpi.bootstrap.passwordlessSudo.enable {
     users = [ primaryUser ];
     commands = [
-      { command = "/run/current-system/sw/bin/cat /var/lib/matrix-synapse/registration_shared_secret"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/cat ${matrixRegistrationSecretFile}"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/journalctl -u matrix-synapse --no-pager"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/netbird up --setup-key *"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/systemctl * netbird.service"; options = [ "NOPASSWD" ]; }

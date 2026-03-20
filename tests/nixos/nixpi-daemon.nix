@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-daemon.nix
 # Test that the Pi Daemon Matrix agent starts and connects to homeserver
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems }:
+{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-daemon";
@@ -24,8 +24,6 @@ pkgs.testers.runNixOSTest {
       
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
-      systemd.services.localai.wantedBy = lib.mkForce [];
-      systemd.services.localai-download.wantedBy = lib.mkForce [];
     };
 
     # Agent node running pi-daemon
@@ -50,9 +48,6 @@ pkgs.testers.runNixOSTest {
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
       systemd.services.matrix-synapse.wantedBy = lib.mkForce [];
-      systemd.services.localai.wantedBy = lib.mkForce [];
-      systemd.services.localai-download.wantedBy = lib.mkForce [];
-
       # Ensure the primary nixPI user exists with proper setup
       users.users.${username} = {
         isNormalUser = true;

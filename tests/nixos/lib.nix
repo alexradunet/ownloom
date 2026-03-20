@@ -182,7 +182,7 @@
     
     # Get Matrix registration token from file
     get_matrix_token() {
-      local token_file="/var/lib/matrix-synapse/registration_shared_secret"
+      local token_file="/var/lib/nixpi/secrets/matrix-registration-shared-secret"
       if [ -f "$token_file" ]; then
         cat "$token_file"
       else

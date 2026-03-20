@@ -43,16 +43,6 @@ in
     primary_group="$(id -gn ${primaryUser})"
 
     install -d -m 0755 -o ${primaryUser} -g "$primary_group" ${primaryHome}
-    install -d -m 2775 -o ${primaryUser} -g ${serviceUser} ${primaryHome}/nixPI
-    install -d -m 2775 -o ${primaryUser} -g ${serviceUser} ${primaryHome}/Public
-    install -d -m 2775 -o ${primaryUser} -g ${serviceUser} ${primaryHome}/Public/nixPI
-    install -d -m 0755 -o ${serviceUser} -g ${serviceUser} ${serviceHome}
-    install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${agentStateDir}
-    install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${stateDir}/pi-daemon
-    install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${stateDir}/services/home
-    install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${stateDir}/services/chat
-    install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${stateDir}/services/code
-    install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${stateDir}/services/files
 
     if [ -d ${primaryHome}/.pi ] && [ ! -L ${primaryHome}/.pi ] && [ ! -e ${agentStateDir}/.migration-complete ]; then
       cp -a ${primaryHome}/.pi/. ${agentStateDir}/

@@ -3,6 +3,11 @@
 { lib, ... }:
 
 let
+  absolutePath = lib.types.pathWith { absolute = true; };
+  externalAbsolutePath = lib.types.pathWith {
+    absolute = true;
+    inStore = false;
+  };
   mkPortOption = default: description:
     lib.mkOption {
       type = lib.types.port;
@@ -20,7 +25,7 @@ in
     };
 
     primaryHome = lib.mkOption {
-      type = lib.types.str;
+      type = lib.types.strMatching "^$|/.*";
       default = "";
       description = ''
         Home directory for the primary nixPI operator account. When left empty,
@@ -69,7 +74,7 @@ in
     };
 
     stateDir = lib.mkOption {
-      type = lib.types.str;
+      type = absolutePath;
       default = "/var/lib/nixpi";
       description = ''
         Root directory for service-owned nixPI state.
@@ -77,6 +82,15 @@ in
     };
 
     security = {
+      ssh.passwordAuthentication = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Whether SSH password authentication is enabled for the main nixPI
+          host configuration.
+        '';
+      };
+
       trustedInterface = lib.mkOption {
         type = lib.types.str;
         default = "wt0";
@@ -193,6 +207,23 @@ in
       code = {
         enable = lib.mkEnableOption "nixPI code-server service" // { default = true; };
         port = mkPortOption 8443 "TCP port for the nixPI browser IDE.";
+        auth = lib.mkOption {
+          type = lib.types.enum [ "none" "password" ];
+          default = "password";
+          description = ''
+            Authentication mode for the built-in code-server instance.
+          '';
+        };
+
+        passwordFile = lib.mkOption {
+          type = lib.types.nullOr externalAbsolutePath;
+          default = null;
+          description = ''
+            Optional external file containing the code-server password. When
+            unset and password auth is enabled, nixPI generates one stable
+            runtime password under the nixPI state directory.
+          '';
+        };
       };
     };
 
@@ -220,6 +251,44 @@ in
         default = "20M";
         description = ''
           Maximum upload size accepted by the local Matrix homeserver.
+        '';
+      };
+
+      registrationSharedSecretFile = lib.mkOption {
+        type = lib.types.nullOr externalAbsolutePath;
+        default = null;
+        description = ''
+          Optional external file containing the Matrix registration shared
+          secret. When unset, nixPI generates one stable runtime secret.
+        '';
+      };
+
+      macaroonSecretKeyFile = lib.mkOption {
+        type = lib.types.nullOr externalAbsolutePath;
+        default = null;
+        description = ''
+          Optional external file containing the Matrix macaroon secret key.
+          When unset, nixPI generates one stable runtime secret.
+        '';
+      };
+    };
+
+    llm = {
+      enable = lib.mkEnableOption "LocalAI model bootstrap and local inference service";
+
+      modelFileName = lib.mkOption {
+        type = lib.types.str;
+        default = "Qwen3.5-4B-Q4_K_M.gguf";
+        description = ''
+          Filename used for the local GGUF model artifact.
+        '';
+      };
+
+      modelUrl = lib.mkOption {
+        type = lib.types.str;
+        default = "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf?download=true";
+        description = ''
+          Upstream URL used to download the local GGUF model artifact.
         '';
       };
     };

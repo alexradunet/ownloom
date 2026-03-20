@@ -10,8 +10,6 @@ pkgs.testers.runNixOSTest {
 
       networking.hostName = "nixpi";
 
-      systemd.services.localai.wantedBy = lib.mkForce [ ];
-      systemd.services.localai-download.wantedBy = lib.mkForce [ ];
       systemd.services.netbird.wantedBy = lib.mkForce [ ];
       systemd.services.nixpi-home.wantedBy = lib.mkForce [ ];
       systemd.services.nixpi-chat.wantedBy = lib.mkForce [ ];
@@ -40,8 +38,6 @@ pkgs.testers.runNixOSTest {
       users.groups.${username} = {};
 
       systemd.services.matrix-synapse.wantedBy = lib.mkForce [ ];
-      systemd.services.localai.wantedBy = lib.mkForce [ ];
-      systemd.services.localai-download.wantedBy = lib.mkForce [ ];
       systemd.services.netbird.wantedBy = lib.mkForce [ ];
       systemd.services.nixpi-home.wantedBy = lib.mkForce [ ];
       systemd.services.nixpi-chat.wantedBy = lib.mkForce [ ];

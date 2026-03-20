@@ -56,8 +56,6 @@ pkgs.testers.runNixOSTest {
       # This test validates the generic install contract on an existing user.
       # It intentionally skips interactive setup and large-model bootstrap.
       systemd.services.nixpi-firstboot.wantedBy = lib.mkForce [ ];
-      systemd.services.localai.wantedBy = lib.mkForce [ ];
-      systemd.services.localai-download.wantedBy = lib.mkForce [ ];
     };
   };
 
@@ -91,6 +89,7 @@ pkgs.testers.runNixOSTest {
     machine.succeed("systemctl is-enabled pi-daemon.service")
     machine.succeed("systemctl is-enabled nixpi-broker.service")
     machine.succeed("systemctl is-active nixpi-broker.service")
+    machine.succeed("sshd -T | grep -q '^passwordauthentication no$'")
     machine.succeed("systemctl cat nixpi-firstboot.service >/dev/null")
     machine.succeed("systemctl show -p UnitFileState --value nixpi-firstboot.service | grep -Eq 'enabled|linked'")
 

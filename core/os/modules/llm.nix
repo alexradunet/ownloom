@@ -1,11 +1,13 @@
 # core/os/modules/llm.nix
-{ pkgs, lib, ... }:
+{ pkgs, lib, config, ... }:
 
 let
-  modelFileName = "Qwen3.5-4B-Q4_K_M.gguf";
-  modelUrl      = "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf?download=true";
+  cfg = config.nixpi.llm;
 in
 {
+  imports = [ ./options.nix ];
+
+  config = lib.mkIf cfg.enable {
   # Static localai user shared by localai-download and localai services.
   # DynamicUser cannot be shared across two services, and both need write
   # access to /var/lib/localai/models.
@@ -34,14 +36,14 @@ in
       User            = "localai";
       TimeoutStartSec = "7200";   # 2-hour ceiling for slow connections
       ExecStart       = pkgs.writeShellScript "localai-download" ''
-        dest=/var/lib/localai/models/${modelFileName}
+        dest=/var/lib/localai/models/${cfg.modelFileName}
         if [ -f "$dest" ]; then
-          echo "${modelFileName} already present — skipping download"
+          echo "${cfg.modelFileName} already present — skipping download"
           exit 0
         fi
-        echo "Downloading ${modelFileName} (~2.7 GB) — this will take a while..."
+        echo "Downloading ${cfg.modelFileName} (~2.7 GB) — this will take a while..."
         ${pkgs.curl}/bin/curl -L --retry 5 --retry-delay 10 \
-          --progress-bar -o "$dest.tmp" "${modelUrl}"
+          --progress-bar -o "$dest.tmp" "${cfg.modelUrl}"
         mv "$dest.tmp" "$dest"
         echo "Download complete: $dest"
       '';
@@ -57,15 +59,16 @@ in
     wantedBy = [ "multi-user.target" ];
     after    = [ "network.target" "localai-download.service" ];
     wants    = [ "network.target" ];
-    unitConfig.ConditionPathExists = "/var/lib/localai/models/${modelFileName}";
+    unitConfig.ConditionPathExists = "/var/lib/localai/models/${cfg.modelFileName}";
 
     serviceConfig = {
       Type             = "simple";
       User             = "localai";
-      ExecStart        = "${pkgs.llama-cpp}/bin/llama-server --host 0.0.0.0 --port 11435 --model /var/lib/localai/models/${modelFileName}";
+      ExecStart        = "${pkgs.llama-cpp}/bin/llama-server --host 0.0.0.0 --port 11435 --model /var/lib/localai/models/${cfg.modelFileName}";
       Restart          = "on-failure";
       RestartSec       = 5;
       WorkingDirectory = "/var/lib/localai";
     };
+  };
   };
 }

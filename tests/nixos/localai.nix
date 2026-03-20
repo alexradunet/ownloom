@@ -3,7 +3,7 @@
 # This test is hermetic: it avoids external model downloads and instead
 # verifies the gating and serving contract with a local stub server.
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, self ? null }:
+{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, self ? null, ... }:
 
 let
   testModelName = "test-model.gguf";
@@ -15,6 +15,9 @@ pkgs.testers.runNixOSTest {
     imports = nixpiModules ++ [ mkTestFilesystems ];
     _module.args = { inherit piAgent appPackage; };
     nixpi.primaryUser = "tester";
+    nixpi.install.mode = "managed-user";
+    nixpi.createPrimaryUser = true;
+    nixpi.llm.enable = true;
 
     # VM configuration
     virtualisation.diskSize = 20480;
@@ -29,15 +32,6 @@ pkgs.testers.runNixOSTest {
     networking.networkmanager.enable = true;
     system.stateVersion = "25.05";
     # nixpkgs.config NOT set here - test framework injects its own pkgs
-
-    users.users.tester = {
-      isNormalUser = true;
-      group = "tester";
-      extraGroups = [ "wheel" "networkmanager" "agent" ];
-      home = "/home/tester";
-      shell = pkgs.bash;
-    };
-    users.groups.tester = {};
 
     # Keep this VM focused on the LocalAI contract only.
     systemd.services.matrix-synapse.wantedBy = lib.mkForce [ ];

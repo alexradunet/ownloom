@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-firstboot.nix
 # Test that the nixPI first-boot wizard runs correctly
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems }:
+{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-firstboot";
@@ -30,8 +30,6 @@ pkgs.testers.runNixOSTest {
     networking.networkmanager.enable = true;
     system.stateVersion = "25.05";
     # nixpkgs.config NOT set here - test framework injects its own pkgs
-    systemd.services.localai.wantedBy = lib.mkForce [];
-    systemd.services.localai-download.wantedBy = lib.mkForce [];
 
     # Ensure the primary nixPI user exists (normally created by nixpi-shell)
     users.users.${username} = {

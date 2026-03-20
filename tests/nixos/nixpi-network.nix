@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-network.nix
 # Test network connectivity, SSH, and NetBird mesh setup between nodes
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems }:
+{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-network";
@@ -10,6 +10,9 @@ pkgs.testers.runNixOSTest {
     nixpi1 = { ... }: {
       imports = nixpiModules ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
+      nixpi.primaryUser = "tester1";
+      nixpi.install.mode = "managed-user";
+      nixpi.createPrimaryUser = true;
 
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
@@ -21,9 +24,6 @@ pkgs.testers.runNixOSTest {
       system.stateVersion = "25.05";
       # nixpkgs.config NOT set here - test framework injects its own pkgs
       systemd.services.matrix-synapse.wantedBy = lib.mkForce [];
-      systemd.services.localai.wantedBy = lib.mkForce [];
-      systemd.services.localai-download.wantedBy = lib.mkForce [];
-      
       # Standard boot config
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
@@ -32,6 +32,9 @@ pkgs.testers.runNixOSTest {
     nixpi2 = { ... }: {
       imports = nixpiModules ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
+      nixpi.primaryUser = "tester2";
+      nixpi.install.mode = "managed-user";
+      nixpi.createPrimaryUser = true;
 
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
@@ -43,9 +46,6 @@ pkgs.testers.runNixOSTest {
       system.stateVersion = "25.05";
       # nixpkgs.config NOT set here - test framework injects its own pkgs
       systemd.services.matrix-synapse.wantedBy = lib.mkForce [];
-      systemd.services.localai.wantedBy = lib.mkForce [];
-      systemd.services.localai-download.wantedBy = lib.mkForce [];
-      
       # Standard boot config
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;

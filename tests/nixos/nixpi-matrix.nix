@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-matrix.nix
 # Test that the nixPI Matrix homeserver (Synapse) starts and accepts connections
 
-{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems }:
+{ pkgs, lib, nixpiModules, nixpiModulesNoShell, piAgent, appPackage, mkNixpiNode, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-matrix";
@@ -9,6 +9,9 @@ pkgs.testers.runNixOSTest {
   nodes.server = { ... }: {
     imports = nixpiModules ++ [ mkTestFilesystems ];
     _module.args = { inherit piAgent appPackage; };
+    nixpi.primaryUser = "tester";
+    nixpi.install.mode = "managed-user";
+    nixpi.createPrimaryUser = true;
 
     # VM configuration
     virtualisation.diskSize = 20480;
@@ -23,8 +26,6 @@ pkgs.testers.runNixOSTest {
     networking.networkmanager.enable = true;
     system.stateVersion = "25.05";
     # nixpkgs.config NOT set here - test framework injects its own pkgs
-    systemd.services.localai.wantedBy = lib.mkForce [];
-    systemd.services.localai-download.wantedBy = lib.mkForce [];
   };
 
   testScript = ''
@@ -45,15 +46,17 @@ pkgs.testers.runNixOSTest {
     # Test 2: Matrix homeserver responds to client versions endpoint
     server.succeed("curl -sf http://localhost:6167/_matrix/client/versions")
     
-    # Test 3: Registration shared secret file was created
-    server.succeed("test -f /var/lib/matrix-synapse/registration_shared_secret")
+    # Test 3: Registration shared secret file was created in the stable nixPI
+    # secret directory and rendered into Synapse config.
+    server.succeed("test -f /var/lib/nixpi/secrets/matrix-registration-shared-secret")
+    server.succeed("grep -q 'registration_shared_secret' /var/lib/matrix-synapse/extra.yaml")
     
     # Test 4: Registration shared secret has correct permissions (readable by service)
-    token_perms = server.succeed("stat -c '%a' /var/lib/matrix-synapse/registration_shared_secret").strip()
-    assert token_perms in ["640", "644"], f"Unexpected token permissions: {token_perms}"
+    token_perms = server.succeed("stat -c '%a' /var/lib/nixpi/secrets/matrix-registration-shared-secret").strip()
+    assert token_perms == "640", f"Unexpected token permissions: {token_perms}"
     
     # Test 5: Can read the shared secret
-    token = server.succeed("cat /var/lib/matrix-synapse/registration_shared_secret").strip()
+    token = server.succeed("cat /var/lib/nixpi/secrets/matrix-registration-shared-secret").strip()
     assert len(token) > 0, "Registration token is empty"
     
     # Test 6: Matrix unit is installed
@@ -68,9 +71,12 @@ pkgs.testers.runNixOSTest {
     server.succeed("test -d /var/lib/matrix-synapse")
     
     # Test 9: Service restart works
+    old_token = token
     server.succeed("systemctl restart matrix-synapse.service")
     server.wait_for_unit("matrix-synapse.service", timeout=60)
     server.succeed("curl -sf http://localhost:6167/_matrix/client/versions")
+    new_token = server.succeed("cat /var/lib/nixpi/secrets/matrix-registration-shared-secret").strip()
+    assert old_token == new_token, "Matrix registration secret changed across restart"
     
     # Test 10: Service is in wantedBy multi-user.target
     server.succeed("systemctl list-dependencies multi-user.target | grep -q matrix-synapse")

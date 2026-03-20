@@ -17,7 +17,7 @@ in
     };
 
     primaryHome = mkOption {
-      type = types.str;
+      type = types.pathWith { absolute = true; };
     };
 
     path = mkOption {

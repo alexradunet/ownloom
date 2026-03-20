@@ -18,7 +18,7 @@ in
     };
 
     sharedDir = mkOption {
-      type = types.str;
+      type = types.pathWith { absolute = true; };
     };
 
     serviceUser = mkOption {

@@ -36,9 +36,6 @@ pkgs.testers.runNixOSTest {
       shell = pkgs.bash;
     };
     users.groups.${username} = {};
-    systemd.services.localai.wantedBy = lib.mkForce [];
-    systemd.services.localai-download.wantedBy = lib.mkForce [];
-
     systemd.tmpfiles.rules = [
       "d ${homeDir}/.nixpi 0755 ${username} ${username} -"
       "f ${homeDir}/.nixpi/prefill.env 0644 ${username} ${username} -"

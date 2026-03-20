@@ -1,6 +1,26 @@
 # core/os/modules/matrix.nix
 { pkgs, config, lib, ... }:
 
+let
+  stateDir = config.nixpi.stateDir;
+  secretDir = "${stateDir}/secrets";
+  matrixBindsLocally =
+    config.nixpi.matrix.bindAddress == "127.0.0.1"
+    || config.nixpi.matrix.bindAddress == "::1"
+    || config.nixpi.matrix.bindAddress == "localhost";
+  generatedRegistrationSecretFile = "${secretDir}/matrix-registration-shared-secret";
+  generatedMacaroonSecretFile = "${secretDir}/matrix-macaroon-secret-key";
+  registrationSecretFile =
+    if config.nixpi.matrix.registrationSharedSecretFile != null then
+      config.nixpi.matrix.registrationSharedSecretFile
+    else
+      generatedRegistrationSecretFile;
+  macaroonSecretFile =
+    if config.nixpi.matrix.macaroonSecretKeyFile != null then
+      config.nixpi.matrix.macaroonSecretKeyFile
+    else
+      generatedMacaroonSecretFile;
+in
 {
   imports = [ ./options.nix ];
 
@@ -12,6 +32,7 @@
   ];
 
   systemd.tmpfiles.rules = [
+    "d ${secretDir} 0750 root matrix-synapse -"
     "d /var/lib/matrix-synapse 0750 matrix-synapse matrix-synapse -"
     "d /var/lib/matrix-synapse/media_store 0750 matrix-synapse matrix-synapse -"
   ];
@@ -66,7 +87,7 @@
       url_preview_enabled = false;
     };
     
-    # Extra configuration lines for registration shared secret
+    # Extra configuration lines for runtime secrets
     extraConfigFiles = [ "/var/lib/matrix-synapse/extra.yaml" ];
   };
 
@@ -74,24 +95,27 @@
   systemd.services.matrix-synapse = {
     serviceConfig = {
       # Ensure data directory exists with proper permissions
+      PermissionsStartOnly = true;
       StateDirectory = "matrix-synapse";
       StateDirectoryMode = "0750";
     };
     preStart = ''
-      # Bootstrap registration shared secret if not exists
-      TOKEN_FILE=/var/lib/matrix-synapse/registration_shared_secret
-      MACAROON_FILE=/var/lib/matrix-synapse/macaroon_secret_key
+      TOKEN_FILE="${registrationSecretFile}"
+      MACAROON_FILE="${macaroonSecretFile}"
       if [ ! -f "$TOKEN_FILE" ]; then
         ${pkgs.openssl}/bin/openssl rand -hex 32 > "$TOKEN_FILE"
-        chmod 640 "$TOKEN_FILE"
+        chown root:matrix-synapse "$TOKEN_FILE"
+        chmod 0640 "$TOKEN_FILE"
       fi
 
       if [ ! -f "$MACAROON_FILE" ]; then
         ${pkgs.openssl}/bin/openssl rand -hex 32 > "$MACAROON_FILE"
-        chmod 640 "$MACAROON_FILE"
+        chown root:matrix-synapse "$MACAROON_FILE"
+        chmod 0640 "$MACAROON_FILE"
       fi
       
-      # Append generated secrets to the config.
+      # Render a stable runtime secret config for Synapse from the selected
+      # operator-managed or generated secret files.
       if [ -f "$TOKEN_FILE" ] && [ -f "$MACAROON_FILE" ]; then
         SECRET=$(cat "$TOKEN_FILE")
         MACAROON_SECRET=$(cat "$MACAROON_FILE")
@@ -99,7 +123,8 @@
 registration_shared_secret: "$SECRET"
 macaroon_secret_key: "$MACAROON_SECRET"
 EOF
-        chmod 640 /var/lib/matrix-synapse/extra.yaml
+        chown root:matrix-synapse /var/lib/matrix-synapse/extra.yaml
+        chmod 0640 /var/lib/matrix-synapse/extra.yaml
       fi
     '';
   };
@@ -107,9 +132,12 @@ EOF
   # Ensure openssl is available for bootstrap
   environment.systemPackages = [ pkgs.openssl ];
 
-  warnings = lib.optional config.nixpi.matrix.enableRegistration ''
-    nixPI keeps Matrix registration enabled to support unattended setup. The
-    firewall policy should stay enabled so Matrix is exposed only on
-    `${config.nixpi.security.trustedInterface}`.
+  warnings = lib.optional
+    (config.nixpi.matrix.enableRegistration
+      && !config.nixpi.security.enforceServiceFirewall
+      && !matrixBindsLocally) ''
+    nixPI Matrix registration is enabled while Synapse is listening on
+    `${config.nixpi.matrix.bindAddress}` without the trusted-interface firewall
+    restriction. Registration should be disabled or Matrix should be kept local.
   '';
 }

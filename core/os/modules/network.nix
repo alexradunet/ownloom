@@ -9,6 +9,10 @@ let
   stateDir = config.nixpi.stateDir;
   cfg = config.nixpi.services;
   securityCfg = config.nixpi.security;
+  bindsLocally =
+    cfg.bindAddress == "127.0.0.1"
+    || cfg.bindAddress == "::1"
+    || cfg.bindAddress == "localhost";
   exposedPorts =
     lib.optionals cfg.home.enable [ cfg.home.port ]
     ++ lib.optionals cfg.chat.enable [ cfg.chat.port ]
@@ -42,7 +46,7 @@ in
     services.openssh = {
       enable = true;
       settings = {
-        PasswordAuthentication = true;
+        PasswordAuthentication = securityCfg.ssh.passwordAuthentication;
         PubkeyAuthentication = "yes";
         PermitRootLogin = "no";
       };
@@ -56,6 +60,15 @@ in
     networking.networkmanager.enable = true;
 
     environment.etc."nixpi/fluffychat-web".source = pkgs.fluffychat-web;
+
+    systemd.tmpfiles.rules = [
+      "d ${stateDir}/services/home/tmp 0770 ${serviceUser} ${serviceUser} -"
+      "d ${stateDir}/services/chat/tmp 0770 ${serviceUser} ${serviceUser} -"
+      "d ${stateDir}/services/code 0770 ${serviceUser} ${serviceUser} -"
+      "d ${primaryHome}/nixPI 2775 ${primaryUser} ${serviceUser} -"
+      "d ${primaryHome}/Public 2775 ${primaryUser} ${serviceUser} -"
+      "d ${primaryHome}/Public/nixPI 2775 ${primaryUser} ${serviceUser} -"
+    ];
 
     environment.systemPackages = with pkgs; [
       git git-lfs gh
@@ -108,27 +121,22 @@ in
             port = cfg.code.port;
             bindAddress = cfg.bindAddress;
             workspaceDir = "${primaryHome}/nixPI";
+            auth = cfg.code.auth;
+            passwordFile = cfg.code.passwordFile;
             inherit stateDir serviceUser;
           };
         };
       })
     ];
-
-    system.activationScripts.nixpi-builtins = lib.stringAfter [ "users" ] ''
-      install -d -m 2775 -o ${primaryUser} -g ${serviceUser} ${primaryHome}/Public
-      install -d -m 2775 -o ${primaryUser} -g ${serviceUser} ${primaryHome}/Public/nixPI
-      install -d -m 2775 -o ${primaryUser} -g ${serviceUser} ${primaryHome}/nixPI
-      install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${stateDir}/services/home
-      install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${stateDir}/services/home/tmp
-      install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${stateDir}/services/chat
-      install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${stateDir}/services/chat/tmp
-      install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${stateDir}/services/code
-    '';
-
-    warnings = lib.optional config.nixpi.security.enforceServiceFirewall ''
-      nixPI opens Home, Chat, Files, Code, and Matrix only on
-      `${config.nixpi.security.trustedInterface}`. Without that interface, only local
-      access remains available.
-    '';
+    warnings =
+      lib.optional (!securityCfg.enforceServiceFirewall && !bindsLocally) ''
+        nixPI's built-in service surface is bound to `${cfg.bindAddress}` without
+        the trusted-interface firewall restriction. Home, Chat, Files, Code, and
+        Matrix may be reachable on all network interfaces.
+      ''
+      ++ lib.optional (cfg.code.enable && cfg.code.auth == "none" && !bindsLocally) ''
+        nixPI Code is configured with `auth = "none"` while listening on
+        `${cfg.bindAddress}`. Restrict it to localhost or enable authentication.
+      '';
   };
 }

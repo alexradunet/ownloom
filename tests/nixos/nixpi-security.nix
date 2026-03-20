@@ -41,9 +41,6 @@ pkgs.testers.runNixOSTest {
       };
       users.groups.${username} = { };
 
-      systemd.services.localai.wantedBy = [ ];
-      systemd.services.localai-download.wantedBy = [ ];
-
       system.activationScripts.nixpi-prefill = ''
         mkdir -p ${homeDir}/.nixpi
         cat > ${homeDir}/.nixpi/prefill.env << 'EOF'

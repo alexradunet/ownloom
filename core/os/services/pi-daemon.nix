@@ -14,7 +14,7 @@ in
     };
 
     primaryHome = mkOption {
-      type = types.str;
+      type = types.pathWith { absolute = true; };
     };
 
     primaryUser = mkOption {
@@ -22,15 +22,15 @@ in
     };
 
     serviceHome = mkOption {
-      type = types.str;
+      type = types.pathWith { absolute = true; };
     };
 
     stateDir = mkOption {
-      type = types.str;
+      type = types.pathWith { absolute = true; };
     };
 
     agentStateDir = mkOption {
-      type = types.str;
+      type = types.pathWith { absolute = true; };
     };
 
     serviceUser = mkOption {

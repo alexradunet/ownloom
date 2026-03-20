@@ -21,7 +21,7 @@ in
     };
 
     stateDir = mkOption {
-      type = types.str;
+      type = types.pathWith { absolute = true; };
     };
   };
 
