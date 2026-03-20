@@ -8,9 +8,13 @@ pkgs.testers.runNixOSTest {
 
   nodes = {
     # Matrix homeserver node
-    server = { ... }: {
+    server = { ... }: let
+      username = "server";
+      homeDir = "/home/${username}";
+    in {
       imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
+      nixpi.primaryUser = username;
 
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
@@ -24,6 +28,15 @@ pkgs.testers.runNixOSTest {
       
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
+
+      users.users.${username} = {
+        isNormalUser = true;
+        group = username;
+        extraGroups = [ "wheel" "networkmanager" "agent" ];
+        home = homeDir;
+        shell = pkgs.bash;
+      };
+      users.groups.${username} = {};
     };
 
     # Agent node running pi-daemon
@@ -159,9 +172,14 @@ pkgs.testers.runNixOSTest {
     print("Pi-daemon journal: " + journal)
     assert daemon_status in ["active", "activating"], "Unexpected pi-daemon status: " + daemon_status
 
-    service_unit = agent.succeed("cat /etc/systemd/system/pi-daemon.service")
-    assert "/bin/node /usr/local/share/nixpi/dist/core/daemon/index.js" in service_unit, "Unexpected ExecStart in pi-daemon service"
-    assert "NIXPI_DIR=/home/pi/nixPI" in service_unit, "Expected NIXPI_DIR environment in pi-daemon service"
+    service_unit = agent.succeed("systemctl cat pi-daemon.service")
+    exec_start = agent.succeed("systemctl show -p ExecStart --value pi-daemon.service")
+    environment = agent.succeed("systemctl show -p Environment --value pi-daemon.service")
+    working_directory = agent.succeed("systemctl show -p WorkingDirectory --value pi-daemon.service").strip()
+    assert "node" in exec_start and "/usr/local/share/nixpi/dist/core/daemon/index.js" in exec_start, \
+        "Unexpected ExecStart in pi-daemon service: " + exec_start
+    assert "NIXPI_DIR=/home/pi/nixPI" in environment, "Expected NIXPI_DIR environment in pi-daemon service"
+    assert working_directory == "/home/pi/nixPI", "Unexpected WorkingDirectory: " + working_directory
     agent.succeed("ls -la /usr/local/share/nixpi/")
 
     agent.succeed("test -f /var/lib/nixpi/agent/matrix-credentials.json")

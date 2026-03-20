@@ -152,6 +152,18 @@ check-config:
 check-boot:
     nix build {{ flake }}#checks.{{ system }}.boot --no-link
 
+# PR-oriented NixOS VM smoke lane.
+check-nixos-smoke:
+    nix build {{ flake }}#checks.{{ system }}.nixos-smoke --no-link -L
+
+# Comprehensive NixOS VM lane.
+check-nixos-full:
+    nix build {{ flake }}#checks.{{ system }}.nixos-full --no-link -L
+
+# Long-running install/lockdown/broker lane.
+check-nixos-destructive:
+    nix build {{ flake }}#checks.{{ system }}.nixos-destructive --no-link -L
+
 # Lint Nix files
 lint:
     nix flake check

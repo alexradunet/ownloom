@@ -18,6 +18,60 @@
     system.stateVersion = "25.05";
   } // extraConfig;
 
+  mkManagedUserConfig = {
+    username,
+    homeDir ? "/home/${username}",
+    extraGroups ? [ "wheel" "networkmanager" "agent" ],
+  }: {
+    nixpi.primaryUser = username;
+    nixpi.install.mode = "managed-user";
+    nixpi.createPrimaryUser = true;
+
+    users.users.${username} = {
+      isNormalUser = true;
+      group = username;
+      inherit extraGroups;
+      home = homeDir;
+      shell = pkgs.bash;
+    };
+    users.groups.${username} = {};
+  };
+
+  mkExistingUserConfig = {
+    username,
+    homeDir ? "/home/${username}",
+    extraGroups ? [ "wheel" "networkmanager" "agent" ],
+  }: {
+    nixpi.primaryUser = username;
+    nixpi.install.mode = "existing-user";
+    nixpi.createPrimaryUser = false;
+
+    users.users.${username} = {
+      isNormalUser = true;
+      group = username;
+      inherit extraGroups;
+      home = homeDir;
+      shell = pkgs.bash;
+    };
+    users.groups.${username} = {};
+  };
+
+  mkPrefillActivation = {
+    username,
+    homeDir ? "/home/${username}",
+    matrixUsername ? "testuser",
+    matrixPassword ? "testpassword123",
+  }: lib.stringAfter [ "users" ] ''
+    mkdir -p ${homeDir}/.nixpi
+    cat > ${homeDir}/.nixpi/prefill.env << 'EOF'
+PREFILL_USERNAME=${matrixUsername}
+PREFILL_MATRIX_PASSWORD=${matrixPassword}
+EOF
+    chown -R ${username}:${username} ${homeDir}/.nixpi
+    chmod 755 ${homeDir}/.nixpi
+    chmod 644 ${homeDir}/.nixpi/prefill.env
+  '';
+
   # Common test configuration for nixPI nodes
   mkNixpiNode = { nixpiModules, piAgent, appPackage, extraConfig ? {} }: {
     imports = nixpiModules ++ [ extraConfig ];
@@ -44,6 +98,7 @@
 
   # Standard nixPI modules list
   nixpiModules = [
+    ../../core/os/modules/options.nix
     ../../core/os/modules/app.nix
     ../../core/os/modules/llm.nix
     ../../core/os/modules/matrix.nix
@@ -211,5 +266,34 @@
         fi
       done
     }
+  '';
+
+  matrixRegisterScript = ''
+    import json
+
+    def register_matrix_user(machine, homeserver, username, password):
+        response = machine.succeed(
+            "curl -s -X POST " + homeserver + "/_matrix/client/v3/register "
+            + "-H 'Content-Type: application/json' "
+            + "-d '{\"username\":\"" + username + "\",\"password\":\"" + password + "\",\"inhibit_login\":false}'"
+        )
+        data = json.loads(response)
+        if "access_token" in data:
+            return data
+        session = data.get("session")
+        assert session, "Matrix registration challenge missing session: " + response
+        payload = json.dumps({
+            "username": username,
+            "password": password,
+            "inhibit_login": False,
+            "auth": {"type": "m.login.dummy", "session": session},
+        })
+        return json.loads(
+            machine.succeed(
+                "curl -sf -X POST " + homeserver + "/_matrix/client/v3/register "
+                + "-H 'Content-Type: application/json' "
+                + "-d '" + payload + "'"
+            )
+        )
   '';
 }

@@ -130,20 +130,7 @@
             pkgs = pkgsUnfree;
             inherit lib piAgent appPackage self;
           };
-        in
-        {
-          # Fast: build the installed system closure locally — catches locale
-          # errors, module conflicts, bad package references, and NixOS
-          # evaluation failures without touching QEMU.
-          config = self.nixosConfigurations.installed-test.config.system.build.toplevel;
-
-          # Regression guard for the local desktop VM path used by `just qcow2`.
-          desktop-vm = self.nixosConfigurations.desktop.config.system.build.vm;
-          installer-vm = self.nixosConfigurations.installer-vm.config.system.build.vm;
-
-          # Thorough: boot the installed system in a NixOS test VM and verify
-          # that critical services come up.
-          boot = pkgsUnfree.testers.nixosTest {
+          bootCheck = pkgsUnfree.testers.nixosTest {
             name = "boot";
 
             nodes.nixpi = { ... }: {
@@ -187,6 +174,53 @@
               nixpi.succeed("systemctl is-active NetworkManager")
             '';
           };
+          mkCheckLane = name: entries:
+            pkgs.linkFarm name entries;
+        in
+        {
+          # Fast: build the installed system closure locally — catches locale
+          # errors, module conflicts, bad package references, and NixOS
+          # evaluation failures without touching QEMU.
+          config = self.nixosConfigurations.installed-test.config.system.build.toplevel;
+
+          # Regression guard for the local desktop VM path used by `just qcow2`.
+          desktop-vm = self.nixosConfigurations.desktop.config.system.build.vm;
+          installer-vm = self.nixosConfigurations.installer-vm.config.system.build.vm;
+
+          # Thorough: boot the installed system in a NixOS test VM and verify
+          # that critical services come up.
+          boot = bootCheck;
+
+          nixos-smoke = mkCheckLane "nixos-smoke" [
+            { name = "smoke-matrix"; path = nixosTests.smoke-matrix; }
+            { name = "smoke-firstboot"; path = nixosTests.smoke-firstboot; }
+            { name = "smoke-security"; path = nixosTests.smoke-security; }
+            { name = "smoke-broker"; path = nixosTests.smoke-broker; }
+          ];
+
+          nixos-full = mkCheckLane "nixos-full" [
+            { name = "boot"; path = bootCheck; }
+            { name = "nixpi-matrix"; path = nixosTests.nixpi-matrix; }
+            { name = "nixpi-firstboot"; path = nixosTests.nixpi-firstboot; }
+            { name = "localai"; path = nixosTests.localai; }
+            { name = "nixpi-network"; path = nixosTests.nixpi-network; }
+            { name = "nixpi-daemon"; path = nixosTests.nixpi-daemon; }
+            { name = "nixpi-e2e"; path = nixosTests.nixpi-e2e; }
+            { name = "nixpi-home"; path = nixosTests.nixpi-home; }
+            { name = "nixpi-security"; path = nixosTests.nixpi-security; }
+            { name = "nixpi-install-flow"; path = nixosTests.nixpi-install-flow; }
+            { name = "nixpi-modular-services"; path = nixosTests.nixpi-modular-services; }
+            { name = "nixpi-matrix-bridge"; path = nixosTests.nixpi-matrix-bridge; }
+            { name = "nixpi-bootstrap-mode"; path = nixosTests.nixpi-bootstrap-mode; }
+            { name = "nixpi-post-setup-lockdown"; path = nixosTests.nixpi-post-setup-lockdown; }
+            { name = "nixpi-broker"; path = nixosTests.nixpi-broker; }
+          ];
+
+          nixos-destructive = mkCheckLane "nixos-destructive" [
+            { name = "nixpi-install-flow"; path = nixosTests.nixpi-install-flow; }
+            { name = "nixpi-post-setup-lockdown"; path = nixosTests.nixpi-post-setup-lockdown; }
+            { name = "nixpi-broker"; path = nixosTests.nixpi-broker; }
+          ];
         }
         // nixosTests;  # Merge in the new test suite
 

@@ -2,32 +2,48 @@
 
 This directory contains NixOS integration tests for the nixPI platform. These tests use the `pkgs.testers.runNixOSTest` framework to spin up QEMU VMs and verify that nixPI services work correctly together.
 
-## Test Suite
+## Test Lanes
 
-| Test | Description | Duration | Nodes |
-|------|-------------|----------|-------|
-| `config` | Fast build test of the default installed system closure | ~1 min | None |
-| `boot` | Basic VM boot and service startup test | ~3 min | 1 |
-| `nixpi-matrix` | Matrix homeserver (Synapse) functionality | ~3 min | 1 |
-| `nixpi-firstboot` | First-boot preparation and unattended prefill automation | ~5 min | 1 |
-| `localai` | LocalAI inference service with test model | ~10 min | 1 |
-| `nixpi-network` | Network connectivity and SSH between nodes | ~5 min | 2 |
-| `nixpi-daemon` | Pi daemon Matrix agent connection | ~5 min | 2 |
-| `nixpi-e2e` | Full end-to-end integration test | ~10 min | 2 |
-| `nixpi-home` | nixPI Home plus built-in system web services | ~5 min | 1 |
-| `nixpi-modular-services` | Modular-service `configData` and unit wiring for built-ins | ~5 min | 1 |
-| `nixpi-matrix-bridge` | Remote Matrix homeserver plus nixPI daemon transport wiring | ~8 min | 3 |
+- `config`: fast non-VM closure build for the default installed system
+- `nixos-smoke`: PR-oriented VM subset
+  - `smoke-matrix`
+  - `smoke-firstboot`
+  - `smoke-security`
+  - `smoke-broker`
+- `nixos-full`: comprehensive VM lane
+  - existing happy-path tests: `boot`, `nixpi-matrix`, `nixpi-firstboot`, `localai`, `nixpi-network`, `nixpi-daemon`, `nixpi-e2e`, `nixpi-home`, `nixpi-security`, `nixpi-install-flow`, `nixpi-modular-services`, `nixpi-matrix-bridge`
+  - new policy tests: `nixpi-bootstrap-mode`, `nixpi-post-setup-lockdown`, `nixpi-broker`
+- `nixos-destructive`: slower install/lockdown/broker cases intended for manual or scheduled runs
 
 ## Running Tests
 
-### Run all tests
+### Run fast local checks
 ```bash
-nix flake check
+nix build .#checks.x86_64-linux.config --no-link
+nix build .#checks.x86_64-linux.nixos-smoke --no-link -L
+```
+
+### Run the full VM lane
+```bash
+nix build .#checks.x86_64-linux.nixos-full --no-link -L
+```
+
+### Run the destructive lane
+```bash
+nix build .#checks.x86_64-linux.nixos-destructive --no-link -L
 ```
 
 ### Run a specific test
 ```bash
 nix build .#checks.x86_64-linux.nixpi-matrix --no-link -L
+```
+
+Equivalent `just` recipes:
+```bash
+just check-config
+just check-nixos-smoke
+just check-nixos-full
+just check-nixos-destructive
 ```
 
 ### Interactive test driver
@@ -43,13 +59,16 @@ $(nix-build -A checks.x86_64-linux.nixpi-matrix.driverInteractive)/bin/nixos-tes
 tests/nixos/
 ├── lib.nix              # Shared test helpers and module lists
 ├── default.nix          # Test suite entry point
-├── nixpi-matrix.nix     # Matrix homeserver test
-├── nixpi-firstboot.nix  # First-boot wizard test
-├── localai.nix    # LocalAI inference test
-├── nixpi-network.nix    # Network/mesh test
-├── nixpi-daemon.nix     # Pi daemon test
-├── nixpi-e2e.nix        # End-to-end integration test
-├── nixpi-home.nix       # nixPI Home and built-in system services test
+├── nixpi-bootstrap-mode.nix   # no-prefill bootstrap-state contract
+├── nixpi-broker.nix           # broker autonomy and privilege boundaries
+├── nixpi-post-setup-lockdown.nix # steady-state post-setup security contract
+├── nixpi-matrix.nix           # Matrix homeserver test
+├── nixpi-firstboot.nix        # First-boot wizard test
+├── localai.nix                # LocalAI inference test
+├── nixpi-network.nix          # Network/mesh test
+├── nixpi-daemon.nix           # Pi daemon test
+├── nixpi-e2e.nix              # End-to-end integration test
+├── nixpi-home.nix             # nixPI Home and built-in system services test
 ├── nixpi-modular-services.nix # system.services/configData regression
 ├── nixpi-matrix-bridge.nix    # multi-node Matrix daemon transport test
 └── README.md            # This file
@@ -97,15 +116,16 @@ pkgs.testers.runNixOSTest {
 
 ## CI Integration
 
-The NixOS tests run in CI via `.github/workflows/nixos-tests.yml`:
+- `.github/workflows/check.yml` runs TypeScript checks plus `checks.x86_64-linux.config`
+- `.github/workflows/nixos-vm.yml` runs VM lanes on a self-hosted runner
 
-- **Fast checks** (`config`) run on every PR
-- **VM tests** require KVM and run on self-hosted runners or can be triggered manually
-- Tests are skipped if KVM is not available
+The VM workflow supports:
+- `workflow_dispatch` with lane selection: `nixos-smoke`, `nixos-full`, `nixos-destructive`
+- nightly scheduled `nixos-full`
 
-To enable full VM tests in CI:
+To enable VM tests in CI:
 1. Set up a self-hosted runner with KVM support
-2. Set the `NIXOS_TEST_RUNNER` repository variable to the runner label
+2. Ensure the runner can execute `nix build` with virtualization support
 3. Optionally configure Cachix for faster builds
 
 ## Debugging Failed Tests

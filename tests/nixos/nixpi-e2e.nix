@@ -86,6 +86,8 @@ pkgs.testers.runNixOSTest {
     nixpi = machines[1]
     username = "pi"
     home = "/home/pi"
+    matrix_user = "e2etest"
+    matrix_password = "e2etestpass123"
     
     # Start the nixPI server
     nixpi.start()
@@ -99,62 +101,33 @@ pkgs.testers.runNixOSTest {
     # E2E Test 1: nixPI server is accessible from client
     client.succeed("ping -c 3 pi")
     
-    # E2E Test 2: Matrix homeserver is available locally on the nixPI node
+    # E2E Test 2: Firstboot completes and the system reaches its steady state
+    nixpi.wait_for_unit("nixpi-firstboot.service", timeout=180)
+    nixpi.wait_until_succeeds("test -f " + home + "/.nixpi/.setup-complete", timeout=180)
+
+    # E2E Test 3: Matrix homeserver is available locally on the nixPI node
     nixpi.wait_for_unit("matrix-synapse.service", timeout=60)
     nixpi.succeed("curl -sf http://127.0.0.1:6167/_matrix/client/versions")
 
-    # E2E Test 3: Can register a user locally
+    # E2E Test 4: Firstboot logged its completion in unattended mode
+    firstboot_log = nixpi.succeed("cat " + home + "/.nixpi/firstboot.log")
+    assert "setup complete" in firstboot_log.lower(), "Firstboot log missing setup completion marker"
+    
+    # E2E Test 5: Registration is disabled in the steady state
     register_resp = nixpi.succeed("""
       curl -s -X POST http://127.0.0.1:6167/_matrix/client/v3/register \
         -H "Content-Type: application/json" \
-        -d '{"username":"e2euser","password":"e2epass123","inhibit_login":false}'
+        -d '{"username":"blocked","password":"blockedpass123","inhibit_login":false}'
     """)
     register_data = json.loads(register_resp)
-    if "access_token" not in register_data:
-        session = register_data.get("session")
-        assert session, "Matrix registration challenge missing session: " + register_resp
-        register_payload = json.dumps({
-            "username": "e2euser",
-            "password": "e2epass123",
-            "inhibit_login": False,
-            "auth": {"type": "m.login.dummy", "session": session},
-        })
-        register_resp = nixpi.succeed(
-            "curl -sf -X POST http://127.0.0.1:6167/_matrix/client/v3/register "
-            + "-H \"Content-Type: application/json\" "
-            + "-d '"
-            + register_payload
-            + "'"
-        )
-        register_data = json.loads(register_resp)
-    assert "access_token" in register_data, "Registration response missing access_token"
-    
-    # E2E Test 4: Can login locally
-    login_resp = nixpi.succeed("""
-      curl -sf -X POST http://127.0.0.1:6167/_matrix/client/v3/login \
-        -H "Content-Type: application/json" \
-        -d '{"type":"m.login.password","user":"e2euser","password":"e2epass123"}'
-    """)
-    
-    # Verify login response contains expected fields
-    try:
-        login_data = json.loads(login_resp)
-        assert "access_token" in login_data, "Login response missing access_token"
-        assert "user_id" in login_data, "Login response missing user_id"
-        print("Successfully logged in as " + login_data['user_id'])
-    except json.JSONDecodeError as e:
-        print("Warning: Could not parse login response: " + str(e))
-    
-    # E2E Test 5: SSH is accessible from client
-    nixpi.wait_for_unit("sshd.service", timeout=60)
-    client.succeed("nc -z pi 22")
-    
-    # E2E Test 6: Firstboot completes successfully
-    nixpi.wait_for_unit("nixpi-firstboot.service", timeout=120)
-    nixpi.succeed("test -f " + home + "/.nixpi/.setup-complete")
+    assert register_data.get("errcode") == "M_FORBIDDEN", "Expected registration to be disabled: " + register_resp
+
+    # E2E Test 6: SSH is disabled from an untrusted peer after setup
+    client.succeed("! nc -z -w 2 pi 22")
+    nixpi.succeed("systemctl show -p ActiveState --value sshd.service | grep -Eq 'inactive|failed'")
     
     # E2E Test 7: All expected services are running
-    services = ["matrix-synapse", "netbird", "NetworkManager", "sshd"]
+    services = ["matrix-synapse", "netbird", "NetworkManager"]
     for svc in services:
         nixpi.succeed("systemctl is-active " + svc + ".service")
     
@@ -183,7 +156,6 @@ pkgs.testers.runNixOSTest {
     nixpi.succeed("systemctl is-active netbird.service")
 
     # E2E Test 12: Firewall keeps app ports closed to an untrusted peer
-    client.succeed("nc -z pi 22")
     for port in [6167, 8080, 8081, 5000, 8443]:
         client.succeed(f"! nc -z -w 2 pi {port}")
 
@@ -201,8 +173,9 @@ pkgs.testers.runNixOSTest {
     print("=" * 60)
     print("Verified:")
     print("  - Matrix homeserver is functional locally on the nixPI node")
-    print("  - User registration and login work")
-    print("  - SSH service stays reachable from an untrusted peer")
+    print("  - Firstboot logged unattended setup completion")
+    print("  - Matrix self-registration is disabled after setup")
+    print("  - SSH is disabled from an untrusted peer after setup")
     print("  - App ports stay closed without wt0")
     print("  - Firstboot automation completes")
     print("  - All core services start correctly")

@@ -4,11 +4,25 @@ pkgs.testers.runNixOSTest {
   name = "nixpi-matrix-bridge";
 
   nodes = {
-    homeserver = { ... }: {
+    homeserver = { ... }: let
+      username = "homeserver";
+      homeDir = "/home/${username}";
+    in {
       imports = nixpiModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
+      nixpi.primaryUser = username;
+      nixpi.security.trustedInterface = "eth1";
 
       networking.hostName = "nixpi";
+
+      users.users.${username} = {
+        isNormalUser = true;
+        group = username;
+        extraGroups = [ "wheel" "networkmanager" "agent" ];
+        home = homeDir;
+        shell = pkgs.bash;
+      };
+      users.groups.${username} = {};
 
       systemd.services.netbird.wantedBy = lib.mkForce [ ];
       systemd.services.nixpi-home.wantedBy = lib.mkForce [ ];
@@ -133,7 +147,7 @@ EOF
         + "-H 'Authorization: Bearer " + admin_creds["access_token"] + "' "
         + "-H 'Content-Type: application/json' "
         + "-d '{"
-        + "\"preset\":\"private_chat\","
+        + "\"preset\":\"public_chat\","
         + "\"room_alias_name\":\"general\","
         + "\"invite\":[\"@host:nixpi\"]"
         + "}'"
@@ -142,9 +156,22 @@ EOF
     room_id_enc = urllib.parse.quote(room_id, safe="")
 
     nixpi.succeed(
+        "cat > /var/lib/nixpi/agent/matrix-credentials.json <<'EOF'\n"
+        + json.dumps({
+            "homeserver": "http://nixpi:6167",
+            "botUserId": host_creds["user_id"],
+            "botAccessToken": host_creds["access_token"],
+            "botPassword": "hostpass123",
+        }, indent=2)
+        + "\nEOF"
+    )
+    nixpi.succeed("chown agent:agent /var/lib/nixpi/agent/matrix-credentials.json")
+    nixpi.succeed("chmod 600 /var/lib/nixpi/agent/matrix-credentials.json")
+
+    nixpi.succeed(
         "cat > /var/lib/nixpi/agent/matrix-agents/host.json <<'EOF'\n"
         + json.dumps({
-            "homeserver": "http://homeserver:6167",
+            "homeserver": "http://nixpi:6167",
             "userId": host_creds["user_id"],
             "accessToken": host_creds["access_token"],
             "password": "hostpass123",
@@ -172,15 +199,15 @@ EOF
     )
 
     client.succeed(
-        "nixpi-matrix-client http://homeserver:6167 clientuser clientpass123 '#general:nixpi' "
+        "nixpi-matrix-client http://nixpi:6167 clientuser clientpass123 '#general:nixpi' "
         + "'hello from integration test' -"
     )
 
     nixpi.succeed("journalctl -u pi-daemon.service --no-pager | grep -q 'pi-daemon running'")
     homeserver.succeed(
-        "curl -sf http://127.0.0.1:6167/_matrix/client/v3/rooms/"
+        "curl -sf 'http://127.0.0.1:6167/_matrix/client/v3/rooms/"
         + room_id_enc
-        + "/messages?dir=b&limit=10 -H 'Authorization: Bearer "
+        + "/messages?dir=b&limit=10' -H 'Authorization: Bearer "
         + admin_creds["access_token"]
         + "' | grep -q 'hello from integration test'"
     )

@@ -71,7 +71,14 @@ pkgs.testers.runNixOSTest {
 
     machine.succeed("""
       set -euo pipefail
-      /run/current-system/specialisation/nixpi-install/bin/switch-to-configuration test
+      SWITCH_TO_CONFIGURATION="$(readlink -f /run/current-system/specialisation/nixpi-install/bin/switch-to-configuration)"
+      "$SWITCH_TO_CONFIGURATION" test
+    """)
+
+    # Re-applying the specialization must remain idempotent.
+    machine.succeed("""
+      set -euo pipefail
+      /run/current-system/bin/switch-to-configuration test
     """)
 
     machine.wait_until_succeeds("systemctl is-active nixpi-broker.service", timeout=120)

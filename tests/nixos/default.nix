@@ -18,14 +18,42 @@ let
   # Import shared helpers
   testLib = import ./lib.nix { inherit pkgs lib; };
   
-  inherit (testLib) nixpiModules nixpiModulesNoShell mkNixpiNode mkTestFilesystems matrixTestClient;
+  inherit (testLib)
+    nixpiModules
+    nixpiModulesNoShell
+    mkNixpiNode
+    mkTestFilesystems
+    matrixTestClient
+    matrixRegisterScript
+    mkManagedUserConfig
+    mkExistingUserConfig
+    mkPrefillActivation;
   
   # Test function with common dependencies
   mkTest = testFile: import testFile {
-    inherit pkgs lib nixpiModules nixpiModulesNoShell piAgent appPackage mkNixpiNode mkTestFilesystems matrixTestClient self;
+    inherit
+      pkgs
+      lib
+      nixpiModules
+      nixpiModulesNoShell
+      piAgent
+      appPackage
+      mkNixpiNode
+      mkTestFilesystems
+      matrixTestClient
+      matrixRegisterScript
+      mkManagedUserConfig
+      mkExistingUserConfig
+      mkPrefillActivation
+      self;
   };
 in
 {
+  smoke-matrix = mkTest ./nixpi-matrix.nix;
+  smoke-firstboot = mkTest ./nixpi-firstboot.nix;
+  smoke-security = mkTest ./nixpi-security.nix;
+  smoke-broker = mkTest ./nixpi-broker.nix;
+
   # Matrix homeserver test
   nixpi-matrix = mkTest ./nixpi-matrix.nix;
   
@@ -58,4 +86,13 @@ in
 
   # Multi-node Matrix daemon transport test
   nixpi-matrix-bridge = mkTest ./nixpi-matrix-bridge.nix;
+
+  # No-prefill bootstrap policy test
+  nixpi-bootstrap-mode = mkTest ./nixpi-bootstrap-mode.nix;
+
+  # Post-setup security transition and persistence test
+  nixpi-post-setup-lockdown = mkTest ./nixpi-post-setup-lockdown.nix;
+
+  # Broker autonomy and privilege boundaries test
+  nixpi-broker = mkTest ./nixpi-broker.nix;
 }
