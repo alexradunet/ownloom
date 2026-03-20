@@ -20,7 +20,7 @@ Before first-boot setup, you need a NixOS system with nixPI applied:
 > NetBird is the network security boundary for all nixPI services. The firewall
 > configuration (`trustedInterfaces = ["wt0"]`) only protects services when the
 > NetBird interface (`wt0`) is active. Without NetBird:
-> - Matrix, Home (port 8080), dufs (port 5000), and code-server (port 8443)
+> - Matrix, Home (port 8080), and Web Chat (port 8081)
 >   are exposed to the local network
 > - A compromised local device could access OS tools via prompt injection
 >
@@ -56,10 +56,8 @@ Current responsibilities:
 
 Built-in services provisioned by the wizard:
 
-- Home landing page on port `8080`
+- Home status page on port `8080`
 - Web Chat (`fluffychat`) on port `8081`
-- `dufs` WebDAV file server on port `5000`
-- `code-server` on port `8443`
 
 Bootstrap security lifecycle:
 

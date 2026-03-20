@@ -9,10 +9,8 @@ nixPI ships these services as part of the base NixOS system. They are not option
 
 ## Always Available
 
-- `nixPI Home` on `:8080` — landing page with links to the built-in web services
+- `nixPI Home` on `:8080` — minimal service directory showing localhost and NetBird access details
 - `nixPI Chat` on `:8081` — FluffyChat web client for the local nixPI Matrix server
-- `nixPI Files` on `:5000` — dufs WebDAV/file browser for `~/Public/nixPI`
-- `code-server` on `:8443` — browser IDE for working on the local machine
 
 ## Operational Notes
 
@@ -24,8 +22,6 @@ nixPI ships these services as part of the base NixOS system. They are not option
 
 - `nixpi-home`
 - `nixpi-chat`
-- `nixpi-files`
-- `nixpi-code`
 
 ## URLs
 
@@ -33,12 +29,10 @@ Preferred access is over NetBird:
 
 - `http://<netbird-host>:8080`
 - `http://<netbird-host>:8081`
-- `http://<netbird-host>:5000`
-- `http://<netbird-host>:8443`
+- `http://<netbird-host>:6167`
 
 Local access on the machine also works:
 
 - `http://localhost:8080`
 - `http://localhost:8081`
-- `http://localhost:5000`
-- `http://localhost:8443`
+- `http://localhost:6167`

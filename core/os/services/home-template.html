@@ -191,7 +191,7 @@
           <div class="service-icon">HM</div>
           <div>
             <h2>nixPI Home</h2>
-            <p class="service-description">NetBird landing page showing installed services and shareable access URLs</p>
+            <p class="service-description">Minimal service directory with the best local and NetBird access URLs</p>
           </div>
           <span class="service-status status-live">Running</span>
         </div>
@@ -206,30 +206,19 @@
           </div>
           <span class="service-status status-live">Running</span>
         </div>
-        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="http://@@MESH_HOST@@:8081">http://@@MESH_HOST@@:8081</a></p>
+        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="@@CHAT_URL@@">@@CHAT_URL@@</a></p>
+        <p class="service-meta"><span class="service-label">Note</span>Terminal and Matrix-native clients remain the primary interfaces.</p>
       </article>
       <article class="service-card">
         <div class="service-head">
-          <div class="service-icon">FS</div>
+          <div class="service-icon">MX</div>
           <div>
-            <h2>nixPI Files</h2>
-            <p class="service-description">WebDAV share for the intentional cross-device nixPI folder</p>
+            <h2>Matrix</h2>
+            <p class="service-description">Homeserver endpoint for chat clients, rooms, and the always-on Pi daemon</p>
           </div>
           <span class="service-status status-live">Running</span>
         </div>
-        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="http://@@MESH_HOST@@:5000">http://@@MESH_HOST@@:5000</a></p>
-        <p class="service-meta"><span class="service-label">Path</span>~/Public/nixPI</p>
-      </article>
-      <article class="service-card">
-        <div class="service-head">
-          <div class="service-icon">CS</div>
-          <div>
-            <h2>nixPI Code</h2>
-            <p class="service-description">Browser IDE for editing the local machine and reviewing nixPI changes</p>
-          </div>
-          <span class="service-status status-live">Running</span>
-        </div>
-        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="http://@@MESH_HOST@@:8443">http://@@MESH_HOST@@:8443</a></p>
+        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" href="@@MATRIX_URL@@">@@MATRIX_URL@@</a></p>
       </article>
     </section>
     <section class="footer-note">

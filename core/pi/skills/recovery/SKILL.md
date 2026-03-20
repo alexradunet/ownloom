@@ -47,18 +47,6 @@ Use these procedures when diagnosing and recovering from common system issues. A
    - Wrong repo path: confirm the local clone exists at `~/.nixpi/pi-nixpi`
 4. Do not apply or publish until local validation passes and the diff is reviewed
 
-## dufs WebDAV Issues
-
-**Symptoms**: Files not accessible via WebDAV, connection refused on port 5000.
-
-1. Check service state: `systemd_control service=nixpi-files action=status`
-2. Check logs: `journalctl --user -u nixpi-files -n 100`
-3. Verify port is listening: `curl -s http://localhost:5000/`
-4. Common causes:
-   - Service not running: restart with `systemd_control service=nixpi-files action=restart`
-   - Port conflict: check for other services on port 5000
-   - Quadlet/runtime issue: inspect the installed unit and generated logs
-
 ## Pi Startup Issues
 
 **Symptoms**: Pi agent not responding or extensions failing to load.

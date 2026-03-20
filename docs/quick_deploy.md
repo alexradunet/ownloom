@@ -8,7 +8,7 @@ Audience: operators and maintainers installing nixPI on NixOS or running test VM
 >
 > NetBird is the network security boundary for all nixPI services. The firewall
 > trusts only the NetBird interface (`wt0`). Without NetBird running, all services
-> (Matrix, Home, dufs, code-server) are exposed to the local network.
+> (Matrix, Home, Web Chat) are exposed to the local network.
 >
 > **Complete NetBird setup and verify `wt0` is active before exposing this
 > machine to any network.** See [security-model.md](security-model.md) for the

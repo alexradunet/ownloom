@@ -150,10 +150,10 @@ describe("handleSystemdControl", () => {
 		expect(result.isError).toBe(true);
 	});
 
-	it("runs systemctl for nixpi-files status", async () => {
+	it("runs systemctl for nixpi-chat status", async () => {
 		mockRun.mockResolvedValueOnce({ stdout: "active", stderr: "", exitCode: 0 });
 		const ctx = createMockExtensionContext();
-		const result = await handleSystemdControl("nixpi-files", "status", undefined, ctx as never);
+		const result = await handleSystemdControl("nixpi-chat", "status", undefined, ctx as never);
 		expect(result.content[0].text).toContain("active");
 	});
 });
@@ -190,7 +190,7 @@ describe("handleSystemHealth", () => {
 		mockRun
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }) // nixos-rebuild fails
 			.mockResolvedValueOnce({
-				stdout: JSON.stringify([{ Names: ["nixpi-files"], Status: "Up 1 hour" }]),
+				stdout: JSON.stringify([{ Names: ["nixpi-chat"], Status: "Up 1 hour" }]),
 				stderr: "",
 				exitCode: 0,
 			}) // podman ps
@@ -199,7 +199,7 @@ describe("handleSystemHealth", () => {
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }) // free
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }); // uptime
 		const result = await handleSystemHealth(undefined);
-		expect(result.content[0].text).toContain("nixpi-files");
+		expect(result.content[0].text).toContain("nixpi-chat");
 		expect(result.content[0].text).toContain("Up 1 hour");
 	});
 

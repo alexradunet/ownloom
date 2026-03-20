@@ -84,8 +84,6 @@ pkgs.testers.runNixOSTest {
     # Local services remain available on loopback.
     nixpi.succeed("curl -sf http://127.0.0.1:8080 | grep -q 'nixPI Home'")
     nixpi.succeed("curl -sf http://127.0.0.1:8081/config.json | grep -q 'defaultHomeserver'")
-    nixpi.succeed("curl -sf http://127.0.0.1:5000/ >/dev/null")
-    nixpi.succeed("curl -sf http://127.0.0.1:8443/ >/dev/null")
 
     # Bootstrap wrappers refuse to run after setup.
     nixpi.fail("su - pi -c 'sudo -n /run/current-system/sw/bin/nixpi-bootstrap-read-matrix-secret >/tmp/secret.out 2>/tmp/secret.err'")
@@ -94,7 +92,7 @@ pkgs.testers.runNixOSTest {
     nixpi.succeed("grep -q 'bootstrap access is disabled after setup completes' /tmp/broker.err")
 
     # App ports are still blocked from an untrusted peer.
-    for port in [6167, 8080, 8081, 5000, 8443]:
+    for port in [6167, 8080, 8081]:
         client.succeed(f"! nc -z -w 2 nixpi-steady {port}")
 
     print("nixPI post-setup lockdown test passed!")

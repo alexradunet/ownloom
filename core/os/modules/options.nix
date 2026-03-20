@@ -4,10 +4,6 @@
 
 let
   absolutePath = lib.types.pathWith { absolute = true; };
-  externalAbsolutePath = lib.types.pathWith {
-    absolute = true;
-    inStore = false;
-  };
   mkPortOption = default: description:
     lib.mkOption {
       type = lib.types.port;
@@ -171,8 +167,6 @@ in
           "netbird.service"
           "nixpi-home.service"
           "nixpi-chat.service"
-          "nixpi-files.service"
-          "nixpi-code.service"
           "matrix-synapse.service"
           "nixpi-update.service"
         ];
@@ -223,33 +217,6 @@ in
       chat = {
         enable = lib.mkEnableOption "nixPI web chat service" // { default = true; };
         port = mkPortOption 8081 "TCP port for the nixPI Chat web client.";
-      };
-
-      files = {
-        enable = lib.mkEnableOption "nixPI Files service" // { default = true; };
-        port = mkPortOption 5000 "TCP port for the nixPI file browser.";
-      };
-
-      code = {
-        enable = lib.mkEnableOption "nixPI code-server service" // { default = true; };
-        port = mkPortOption 8443 "TCP port for the nixPI browser IDE.";
-        auth = lib.mkOption {
-          type = lib.types.enum [ "none" "password" ];
-          default = "password";
-          description = ''
-            Authentication mode for the built-in code-server instance.
-          '';
-        };
-
-        passwordFile = lib.mkOption {
-          type = lib.types.nullOr externalAbsolutePath;
-          default = null;
-          description = ''
-            Optional external file containing the code-server password. When
-            unset and password auth is enabled, nixPI generates one stable
-            runtime password under the nixPI state directory.
-          '';
-        };
       };
     };
 

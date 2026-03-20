@@ -41,7 +41,7 @@ NIXPI_VM_DISK_PATH="$DISK_PATH" \
 NIXPI_VM_LOG_PATH="$LOG_PATH" \
 NIXPI_VM_HOST_STATE_PATH="$HOST_STATE_PATH" \
 NIXPI_VM_PREFILL_SOURCE="$PREFILL_PATH" \
-core/scripts/run-qemu.sh --mode daemon
+tools/run-qemu.sh --mode daemon
 
 wait_for_ssh() {
     local attempts=0

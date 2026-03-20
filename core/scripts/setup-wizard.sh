@@ -101,20 +101,12 @@ print_service_access_summary() {
 	fi
 	echo "    Share this   - send other NetBird peers the nixPI Home URL"
 	if [[ -n "$mesh_host" ]]; then
-		echo "    nixPI Chat - http://${mesh_host}:8081"
+		echo "    nixPI Chat   - http://${mesh_host}:8081"
 	fi
 	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-		echo "    nixPI Chat - http://${mesh_ip}:8081"
-		echo "    dufs/WebDAV  - http://${mesh_ip}:5000"
-		echo "    code-server  - http://${mesh_ip}:8443"
+		echo "    nixPI Chat   - http://${mesh_ip}:8081"
 	fi
 	echo "    FluffyChat   - preconfigured for this nixPI server"
-	if [[ -n "$mesh_host" ]]; then
-		echo "    dufs/WebDAV  - http://${mesh_host}:5000"
-		echo "    code-server  - http://${mesh_host}:8443"
-	fi
-	echo "    dufs path    - ~/Public/nixPI"
-
 	if [[ -n "$mesh_host" ]]; then
 		echo "    Matrix       - http://${mesh_host}:6167"
 	fi
@@ -385,10 +377,8 @@ step_services() {
 	fi
     root_command nixpi-bootstrap-brokerctl systemd restart nixpi-home.service || echo "  home restart failed."
     root_command nixpi-bootstrap-brokerctl systemd restart nixpi-chat.service || echo "  chat restart failed."
-    root_command nixpi-bootstrap-brokerctl systemd restart nixpi-files.service || echo "  files restart failed."
-    root_command nixpi-bootstrap-brokerctl systemd restart nixpi-code.service || echo "  code-server restart failed."
 	write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
-	mark_done_with services "fluffychat dufs code-server"
+	mark_done_with services "home chat"
 }
 
 step_bootc_switch() {
@@ -451,7 +441,7 @@ finalize() {
 	[[ -n "$mesh_ip" ]] && echo "  Mesh IP: ${mesh_ip} (access from any NetBird peer)"
 	[[ -n "$mesh_fqdn" ]] && echo "  NetBird name: ${mesh_fqdn}"
 	[[ -n "$matrix_user" ]] && echo "  Matrix user: @${matrix_user}:nixpi"
-	echo "  Built-in services: ${services:-fluffychat dufs code-server}"
+	echo "  Built-in services: ${services:-home chat}"
 	echo ""
 	print_service_access_summary "$services" "$mesh_ip" "$mesh_fqdn"
 	echo ""

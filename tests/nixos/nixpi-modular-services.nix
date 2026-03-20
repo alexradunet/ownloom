@@ -37,17 +37,15 @@ pkgs.testers.runNixOSTest {
 
     nixpi.succeed("grep -q 'nixPI Home' /etc/system-services/nixpi-home/webroot/index.html")
     nixpi.succeed("grep -q 'defaultHomeserver' /etc/system-services/nixpi-chat/config.json")
+    nixpi.succeed("grep -q 'Matrix' /etc/system-services/nixpi-home/webroot/index.html")
 
     nixpi.succeed("systemctl cat nixpi-home.service | grep -q '/etc/system-services/nixpi-home/nginx.conf'")
     nixpi.succeed("systemctl cat nixpi-chat.service | grep -q '/etc/system-services/nixpi-chat/nginx.conf'")
-    nixpi.succeed("systemctl show -p NoNewPrivileges --value nixpi-code.service | grep -q yes")
-    nixpi.succeed("systemctl show -p ProtectSystem --value nixpi-code.service | grep -q strict")
+    nixpi.succeed("systemctl show -p NoNewPrivileges --value nixpi-home.service | grep -q yes")
+    nixpi.succeed("systemctl show -p ProtectSystem --value nixpi-home.service | grep -q strict")
 
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'nixPI Home'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8081/config.json | grep -q 'defaultHomeserver'", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:5000/ >/dev/null", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8443/ >/dev/null", timeout=60)
-    nixpi.succeed("test -f /var/lib/nixpi/services/code/generated-password")
 
     print("nixPI modular service tests passed!")
   '';

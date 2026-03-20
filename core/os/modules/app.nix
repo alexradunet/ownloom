@@ -35,8 +35,6 @@ in
     "d ${stateDir}/services 0770 ${serviceUser} ${serviceUser} -"
     "d ${stateDir}/services/home 0770 ${serviceUser} ${serviceUser} -"
     "d ${stateDir}/services/chat 0770 ${serviceUser} ${serviceUser} -"
-    "d ${stateDir}/services/code 0770 ${serviceUser} ${serviceUser} -"
-    "d ${stateDir}/services/files 0770 ${serviceUser} ${serviceUser} -"
   ];
 
   system.activationScripts.nixpi-app = lib.stringAfter [ "users" ] ''

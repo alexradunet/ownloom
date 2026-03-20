@@ -14,7 +14,7 @@ This layer defines nixPI's current competency inventory.
 
 ### nixPI Directory Management
 
-- nixPI directory at `~/nixPI/` — accessible via dufs WebDAV, editable with any tool.
+- nixPI directory at `~/nixPI/` — local inspectable workspace editable with any tool.
 - Blueprint seeding: persona and skills copied from package to `~/nixPI/`.
 - Persona and skills are user-editable at `~/nixPI/Persona/` and `~/nixPI/Skills/`.
 

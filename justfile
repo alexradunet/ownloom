@@ -31,21 +31,21 @@ qcow2:
 
 # Run VM (fresh build from current codebase)
 vm: qcow2
-    core/scripts/run-qemu.sh --mode headless
+    tools/run-qemu.sh --mode headless
 
 # Run VM with GUI display
 vm-gui: qcow2
-    core/scripts/run-qemu.sh --mode gui
+    tools/run-qemu.sh --mode gui
 
 # Run VM with existing qcow2 (no rebuild)
 vm-run:
-    core/scripts/run-qemu.sh --mode headless --skip-setup
+    tools/run-qemu.sh --mode headless --skip-setup
 
 # Run VM in background daemon mode (detached, no terminal attached)
 # Use this when you want to run the VM and still use your shell
 # Then connect with: just vm-ssh
 vm-daemon: qcow2
-    core/scripts/run-qemu.sh --mode daemon
+    tools/run-qemu.sh --mode daemon
 
 # SSH into the running VM
 vm-ssh:
@@ -63,15 +63,15 @@ installer-qcow2:
 
 # Run the installer simulation VM (fresh build from current codebase)
 vm-install: installer-qcow2
-    NIXPI_VM_OUTPUT={{ installer_output }} NIXPI_VM_DISK_PATH=/tmp/nixpi-installer-vm-disk.qcow2 NIXPI_VM_LOG_PATH=/tmp/nixpi-installer-vm.log core/scripts/run-qemu.sh --mode headless
+    NIXPI_VM_OUTPUT={{ installer_output }} NIXPI_VM_DISK_PATH=/tmp/nixpi-installer-vm-disk.qcow2 NIXPI_VM_LOG_PATH=/tmp/nixpi-installer-vm.log tools/run-qemu.sh --mode headless
 
 # Run the installer simulation VM with GUI display
 vm-install-gui: installer-qcow2
-    NIXPI_VM_OUTPUT={{ installer_output }} NIXPI_VM_DISK_PATH=/tmp/nixpi-installer-vm-disk.qcow2 NIXPI_VM_LOG_PATH=/tmp/nixpi-installer-vm.log core/scripts/run-qemu.sh --mode gui
+    NIXPI_VM_OUTPUT={{ installer_output }} NIXPI_VM_DISK_PATH=/tmp/nixpi-installer-vm-disk.qcow2 NIXPI_VM_LOG_PATH=/tmp/nixpi-installer-vm.log tools/run-qemu.sh --mode gui
 
 # Run the installer simulation VM in background daemon mode
 vm-install-daemon: installer-qcow2
-    NIXPI_VM_OUTPUT={{ installer_output }} NIXPI_VM_DISK_PATH=/tmp/nixpi-installer-vm-disk.qcow2 NIXPI_VM_LOG_PATH=/tmp/nixpi-installer-vm.log core/scripts/run-qemu.sh --mode daemon
+    NIXPI_VM_OUTPUT={{ installer_output }} NIXPI_VM_DISK_PATH=/tmp/nixpi-installer-vm-disk.qcow2 NIXPI_VM_LOG_PATH=/tmp/nixpi-installer-vm.log tools/run-qemu.sh --mode daemon
 
 # SSH into the installer simulation VM
 vm-install-ssh:
@@ -106,7 +106,7 @@ vm-install-stop:
 
 # One-shot live installer test with a real NetBird setup key supplied at runtime.
 live-install-e2e:
-    core/scripts/run-install-vm-e2e.sh
+    tools/run-install-vm-e2e.sh
 
 # Show VM log (for vm-daemon)
 vm-logs:

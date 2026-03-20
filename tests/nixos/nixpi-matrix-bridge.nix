@@ -27,8 +27,6 @@ pkgs.testers.runNixOSTest {
       systemd.services.netbird.wantedBy = lib.mkForce [ ];
       systemd.services.nixpi-home.wantedBy = lib.mkForce [ ];
       systemd.services.nixpi-chat.wantedBy = lib.mkForce [ ];
-      systemd.services.nixpi-files.wantedBy = lib.mkForce [ ];
-      systemd.services.nixpi-code.wantedBy = lib.mkForce [ ];
       systemd.timers.nixpi-update.wantedBy = lib.mkForce [ ];
     };
 
@@ -55,8 +53,6 @@ pkgs.testers.runNixOSTest {
       systemd.services.netbird.wantedBy = lib.mkForce [ ];
       systemd.services.nixpi-home.wantedBy = lib.mkForce [ ];
       systemd.services.nixpi-chat.wantedBy = lib.mkForce [ ];
-      systemd.services.nixpi-files.wantedBy = lib.mkForce [ ];
-      systemd.services.nixpi-code.wantedBy = lib.mkForce [ ];
       systemd.timers.nixpi-update.wantedBy = lib.mkForce [ ];
 
       system.activationScripts.nixpi-bridge-fixtures = lib.stringAfter [ "users" ] ''

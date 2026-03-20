@@ -53,8 +53,6 @@ in
       "pi-daemon.service"
       "nixpi-home.service"
       "nixpi-chat.service"
-      "nixpi-files.service"
-      "nixpi-code.service"
     ];
     wants = [
       "network-online.target"
@@ -63,8 +61,6 @@ in
       "pi-daemon.service"
       "nixpi-home.service"
       "nixpi-chat.service"
-      "nixpi-files.service"
-      "nixpi-code.service"
     ];
     serviceConfig = {
       Type = "oneshot";

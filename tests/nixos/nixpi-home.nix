@@ -1,5 +1,5 @@
 # tests/nixos/nixpi-home.nix
-# Test that nixPI Home and the built-in system services are provisioned after firstboot
+# Test that nixPI Home and Chat are provisioned after firstboot
 
 { pkgs, lib, nixpiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
 
@@ -66,18 +66,13 @@ pkgs.testers.runNixOSTest {
     nixpi.wait_until_succeeds("test -f /etc/system-services/nixpi-chat/config.json", timeout=120)
     nixpi.succeed("grep -q 'nixPI Home' /etc/system-services/nixpi-home/webroot/index.html")
     nixpi.succeed("grep -q 'nixPI Chat' /etc/system-services/nixpi-home/webroot/index.html")
-    nixpi.succeed("grep -q 'nixPI Files' /etc/system-services/nixpi-home/webroot/index.html")
-    nixpi.succeed("grep -q 'nixPI Code' /etc/system-services/nixpi-home/webroot/index.html")
+    nixpi.succeed("grep -q 'Matrix' /etc/system-services/nixpi-home/webroot/index.html")
 
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'nixPI Home'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q '8081'", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q '5000'", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q '8443'", timeout=60)
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q '6167'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8081/config.json | grep -q 'defaultHomeserver'", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:5000/ >/dev/null", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8443/ >/dev/null", timeout=60)
-    nixpi.succeed("test -d /var/lib/nixpi/services/code")
 
-    print("nixPI Home and built-in service tests passed!")
+    print("nixPI Home and Chat tests passed!")
   '';
 }

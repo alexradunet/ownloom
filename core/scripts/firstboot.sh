@@ -111,9 +111,7 @@ firstboot_services() {
     install_home_infrastructure || echo "nixpi-firstboot: Home setup failed (non-fatal)"
     run_bootstrap_command nixpi-bootstrap-brokerctl systemd restart nixpi-home.service || echo "nixpi-firstboot: home restart failed (non-fatal)" >&2
     run_bootstrap_command nixpi-bootstrap-brokerctl systemd restart nixpi-chat.service || echo "nixpi-firstboot: chat restart failed (non-fatal)" >&2
-    run_bootstrap_command nixpi-bootstrap-brokerctl systemd restart nixpi-files.service || echo "nixpi-firstboot: files restart failed (non-fatal)" >&2
-    run_bootstrap_command nixpi-bootstrap-brokerctl systemd restart nixpi-code.service || echo "nixpi-firstboot: code-server restart failed (non-fatal)" >&2
-    mark_done_with services "chat files code"
+    mark_done_with services "home chat"
 }
 
 firstboot_localai() {

@@ -22,8 +22,6 @@ let
   exposedPorts =
     lib.optionals cfg.home.enable [ cfg.home.port ]
     ++ lib.optionals cfg.chat.enable [ cfg.chat.port ]
-    ++ lib.optionals cfg.files.enable [ cfg.files.port ]
-    ++ lib.optionals cfg.code.enable [ cfg.code.port ]
     ++ [ config.nixpi.matrix.port ];
 in
 
@@ -94,10 +92,7 @@ in
     systemd.tmpfiles.rules = [
       "d ${stateDir}/services/home/tmp 0770 ${serviceUser} ${serviceUser} -"
       "d ${stateDir}/services/chat/tmp 0770 ${serviceUser} ${serviceUser} -"
-      "d ${stateDir}/services/code 0770 ${serviceUser} ${serviceUser} -"
       "d ${primaryHome}/nixPI 2775 ${primaryUser} ${serviceUser} -"
-      "d ${primaryHome}/Public 2775 ${primaryUser} ${serviceUser} -"
-      "d ${primaryHome}/Public/nixPI 2775 ${primaryUser} ${serviceUser} -"
     ];
 
     environment.systemPackages = with pkgs; [
@@ -107,7 +102,7 @@ in
       qemu OVMF
       chromium
       netbird
-      dufs nginx code-server
+      nginx
     ] ++ lib.optionals securityCfg.fail2ban.enable [ pkgs.fail2ban ];
 
     system.services = lib.mkMerge [
@@ -118,8 +113,8 @@ in
             port = cfg.home.port;
             inherit stateDir serviceUser;
             chatPort = cfg.chat.port;
-            filesPort = cfg.files.port;
-            codePort = cfg.code.port;
+            matrixPort = config.nixpi.matrix.port;
+            trustedInterface = securityCfg.trustedInterface;
           };
         };
       })
@@ -133,40 +128,12 @@ in
           };
         };
       })
-      (lib.mkIf cfg.files.enable {
-        nixpi-files = {
-          imports = [ (lib.modules.importApply ../services/nixpi-files.nix { inherit pkgs; }) ];
-          nixpi-files = {
-            port = cfg.files.port;
-            bindAddress = cfg.bindAddress;
-            sharedDir = "${primaryHome}/Public/nixPI";
-            inherit serviceUser;
-          };
-        };
-      })
-      (lib.mkIf cfg.code.enable {
-        nixpi-code = {
-          imports = [ (lib.modules.importApply ../services/nixpi-code.nix { inherit pkgs; }) ];
-          nixpi-code = {
-            port = cfg.code.port;
-            bindAddress = cfg.bindAddress;
-            workspaceDir = "${primaryHome}/nixPI";
-            auth = cfg.code.auth;
-            passwordFile = cfg.code.passwordFile;
-            inherit stateDir serviceUser;
-          };
-        };
-      })
     ];
     warnings =
       lib.optional (!securityCfg.enforceServiceFirewall && !bindsLocally) ''
         nixPI's built-in service surface is bound to `${cfg.bindAddress}` without
-        the trusted-interface firewall restriction. Home, Chat, Files, Code, and
+        the trusted-interface firewall restriction. Home, Chat, and
         Matrix may be reachable on all network interfaces.
-      ''
-      ++ lib.optional (cfg.code.enable && cfg.code.auth == "none" && !bindsLocally) ''
-        nixPI Code is configured with `auth = "none"` while listening on
-        `${cfg.bindAddress}`. Restrict it to localhost or enable authentication.
       '';
   };
 }

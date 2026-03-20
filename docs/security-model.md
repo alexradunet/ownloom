@@ -31,10 +31,8 @@ are accessible **only** to peers on the NetBird mesh:
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Home | 8080 | Landing page with service links |
+| Home | 8080 | Minimal service directory with shareable access URLs |
 | Matrix | 6167 | Homeserver for messaging |
-| dufs (WebDAV) | 5000 | File server for `~/Public/nixPI` |
-| code-server | 8443 | Browser-based code editor |
 | fluffychat | 8081 | Web Matrix client |
 
 ---

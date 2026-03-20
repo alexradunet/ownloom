@@ -10,4 +10,4 @@ The important supply-chain boundary is therefore:
 - the selected Nixpkgs revision
 - nixPI's own source tree
 
-Built-in services such as nixPI Home, FluffyChat, dufs, and code-server are provisioned from those sources rather than from a mutable runtime package catalog.
+Built-in services such as nixPI Home and FluffyChat are provisioned from those sources rather than from a mutable runtime package catalog.
