@@ -20,7 +20,7 @@ buildNpmPackage {
           || lib.hasSuffix ".iso" rel);
   };
 
-  npmDepsHash = "sha256-fBTRWnnRHvZd9UiLe+b3/Aiau9BIRkoWK4DaN7QFeEM=";
+  npmDepsHash = "sha256-kxagRT1BeszO6vg26/gtQDQbDwGuIC4MZrOOJuyI01k=";
   npmDepsFetcherVersion = 2;
 
   buildPhase = ''
