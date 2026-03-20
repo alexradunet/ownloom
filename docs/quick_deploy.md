@@ -36,7 +36,12 @@ nixPI is installed on top of a standard NixOS system:
    sudo NIXPI_PRIMARY_USER=alex nixos-rebuild switch --impure --flake .#desktop-attach
    ```
 
-4. **Reboot or log out/in**, then complete first-boot setup — the `setup-wizard.sh` runs automatically
+4. **Reboot, then run the setup wizard** to complete configuration:
+   ```bash
+   setup-wizard.sh
+   ```
+   
+   > **Note:** The wizard auto-runs on TTY login before setup completes. If it doesn't start (e.g., using a graphical display manager), run `setup-wizard.sh` manually.
 
 ## 💻 Development: VM Testing
 

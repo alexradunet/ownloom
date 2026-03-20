@@ -49,7 +49,8 @@ cd ~/nixpi
 # 3. Apply nixPI to your existing user (replace 'alex' with your username)
 sudo NIXPI_PRIMARY_USER=alex nixos-rebuild switch --impure --flake .#desktop-attach
 
-# 4. Reboot or log out/in, then complete the first-boot wizard (runs automatically)
+# 4. Reboot, then run the setup wizard to complete configuration:
+setup-wizard.sh
 ```
 
 See [docs/quick_deploy.md](docs/quick_deploy.md) for detailed instructions.
