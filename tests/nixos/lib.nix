@@ -104,13 +104,7 @@ EOF
 
   # NixPI modules without nixpi-shell (for tests that define their own operator user)
   nixPiModulesNoShell = [
-    ../../core/os/modules/options.nix
-    ../../core/os/modules/app.nix
-    ../../core/os/modules/broker.nix
-    ../../core/os/modules/llm.nix
-    ../../core/os/modules/matrix.nix
-    ../../core/os/modules/network.nix
-    ../../core/os/modules/update.nix
+    self.nixosModules.nixpi-no-shell
   ];
 
   matrixTestClient = pkgs.writers.writePython3Bin "nixpi-matrix-client" {

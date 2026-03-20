@@ -39,9 +39,9 @@
       formatter.${system} = pkgs.nixfmt-rfc-style;
 
       nixosModules = {
-        # Single composable module exporting all NixPI feature modules.
-        # Consuming flake.nix must provide piAgent and appPackage in specialArgs.
-        nixpi = { piAgent, appPackage, ... }: {
+        # Portable NixPI module set without the operator shell/user module.
+        # Useful for tests that intentionally define their own primary user.
+        nixpi-no-shell = { piAgent, appPackage, ... }: {
           imports = [
             ./core/os/modules/options.nix
             ./core/os/modules/app.nix
@@ -49,8 +49,16 @@
             ./core/os/modules/llm.nix
             ./core/os/modules/matrix.nix
             ./core/os/modules/network.nix
-            ./core/os/modules/shell.nix
             ./core/os/modules/update.nix
+          ];
+        };
+
+        # Single composable module exporting all NixPI feature modules.
+        # Consuming flake.nix must provide piAgent and appPackage in specialArgs.
+        nixpi = { piAgent, appPackage, ... }: {
+          imports = [
+            self.nixosModules.nixpi-no-shell
+            ./core/os/modules/shell.nix
           ];
           # allowUnfree is intentionally NOT set here.
           # nixpkgs.config cannot be set in a module that is used inside
@@ -125,7 +133,7 @@
             pkgs = pkgsUnfree;
             inherit lib piAgent appPackage self;
           };
-          bootCheck = pkgsUnfree.testers.nixosTest {
+          bootCheck = pkgsUnfree.testers.runNixOSTest {
             name = "boot";
 
             nodes.nixpi = { ... }: {
