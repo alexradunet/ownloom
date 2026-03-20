@@ -150,16 +150,27 @@ step_password() {
 		mark_done password
 		return
 	fi
-	echo "Welcome! Let's set up a password for your account."
-	echo ""
+	
+	# Check if user already has a password set
+	if sudo passwd -S "$(whoami)" 2>/dev/null | grep -qE 'P\s+\d{2}/\d{2}/\d{4}'; then
+		echo "You already have a password set for this account."
+		read -rp "Change password? [y/N]: " change_pw
+		if [[ ! "$change_pw" =~ ^[Yy]$ ]]; then
+			echo "Keeping existing password."
+			mark_done password
+			return
+		fi
+	else
+		echo "Welcome! Let's set up a password for your account."
+		echo ""
+	fi
+	
 	if [[ -n "${PREFILL_PRIMARY_PASSWORD:-}" ]]; then
 		echo "$(whoami):${PREFILL_PRIMARY_PASSWORD}" | sudo nixpi-bootstrap-chpasswd
 		echo "Password set."
 	else
 		# Always use sudo to bypass current password check on first boot.
-		# The pi user has no initial password, but 'passwd' alone may still
-		# prompt for one depending on PAM configuration. Using sudo allows
-		# root to set the password directly.
+		# Using sudo allows root to set the password directly.
 		while ! sudo nixpi-bootstrap-passwd; do
 			echo ""
 			echo "Password setup failed. Please try again."
@@ -237,7 +248,6 @@ step_netbird() {
 	echo ""
 	echo "--- NetBird Mesh Network ---"
 	echo "NetBird creates a private mesh network so you can access this device from anywhere."
-	echo "You'll need a setup key from your NetBird dashboard (app.netbird.io → Setup Keys)."
 	echo ""
 
 	# Ensure netbird daemon is running before attempting connection
@@ -255,39 +265,89 @@ step_netbird() {
 		sleep 0.5
 	done
 
+	echo "Connection options:"
+	echo "  1) Web login (OAuth) - opens browser to authenticate"
+	echo "  2) Setup key - for headless/automated setup"
+	echo "  3) Skip - configure later"
+	echo ""
+
 	while true; do
-		if [[ -n "${PREFILL_NETBIRD_KEY:-}" ]]; then
-			setup_key="$PREFILL_NETBIRD_KEY"
-			echo "Setup key: [prefilled]"
-		else
-			read -rp "Setup key: " setup_key
-		fi
-		if [[ -z "$setup_key" ]]; then
-			echo "Setup key cannot be empty."
-			continue
-		fi
-
-		echo "Connecting to NetBird..."
-		if sudo nixpi-bootstrap-netbird-up --setup-key "$setup_key" 2>&1; then
-			# Wait a moment for connection to establish
-			sleep 3
-			local status
-			status=$(netbird status 2>/dev/null || true)
-
-			if echo "$status" | grep -q "Connected"; then
-				local mesh_ip
-				mesh_ip=$(echo "$status" | grep -oP 'NetBird IP:\s+\K[\d.]+' || true)
-				if [[ -n "$mesh_ip" ]]; then
+		read -rp "Select option [1/2/3]: " nb_choice
+		case "$nb_choice" in
+			1|web|oauth|login)
+				echo ""
+				echo "Opening browser for NetBird authentication..."
+				echo "If no browser opens, visit the URL shown below."
+				if sudo nixpi-bootstrap-netbird-up 2>&1; then
+					# Wait for connection to establish
+					for _ in $(seq 1 30); do
+						sleep 1
+						local status
+						status=$(netbird status 2>/dev/null || true)
+						if echo "$status" | grep -q "Connected"; then
+							local mesh_ip
+							mesh_ip=$(echo "$status" | grep -oP 'NetBird IP:\s+\K[\d.]+' || true)
+							if [[ -n "$mesh_ip" ]]; then
+								echo ""
+								echo "Connected! Mesh IP: ${mesh_ip}"
+								mark_done_with netbird "$mesh_ip"
+								return
+							fi
+						fi
+					done
 					echo ""
-					echo "Connected! Mesh IP: ${mesh_ip}"
-					mark_done_with netbird "$mesh_ip"
-					return
+					echo "Connection is taking longer than expected."
+					echo "Check status with: netbird status"
+					return 1
 				fi
-			fi
-		fi
+				echo ""
+				echo "NetBird connection failed. Try again or use a setup key."
+				;;
+			2|key|setup-key)
+				echo ""
+				echo "Get a setup key from: https://app.netbird.io/setup-keys"
+				while true; do
+					if [[ -n "${PREFILL_NETBIRD_KEY:-}" ]]; then
+						setup_key="$PREFILL_NETBIRD_KEY"
+						echo "Setup key: [prefilled]"
+					else
+						read -rp "Setup key: " setup_key
+					fi
+					if [[ -z "$setup_key" ]]; then
+						echo "Setup key cannot be empty."
+						continue
+					fi
 
-		echo ""
-		echo "NetBird connection failed. Check your setup key and try again."
+					echo "Connecting to NetBird..."
+					if sudo nixpi-bootstrap-netbird-up --setup-key "$setup_key" 2>&1; then
+						sleep 3
+						local status
+						status=$(netbird status 2>/dev/null || true)
+
+						if echo "$status" | grep -q "Connected"; then
+							local mesh_ip
+							mesh_ip=$(echo "$status" | grep -oP 'NetBird IP:\s+\K[\d.]+' || true)
+							if [[ -n "$mesh_ip" ]]; then
+								echo ""
+								echo "Connected! Mesh IP: ${mesh_ip}"
+								mark_done_with netbird "$mesh_ip"
+								return
+							fi
+						fi
+					fi
+					echo ""
+					echo "NetBird connection failed. Check your setup key and try again."
+				done
+				;;
+			3|skip)
+				echo "Skipping NetBird setup. You can configure later with: sudo netbird up"
+				mark_done netbird
+				return
+				;;
+			*)
+				echo "Invalid option. Please enter 1, 2, or 3."
+				;;
+		esac
 	done
 }
 
