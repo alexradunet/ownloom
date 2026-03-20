@@ -59,10 +59,14 @@ pkgs.testers.runNixOSTest {
     # Start both nodes
     start_all()
     
-    # Wait for both nodes to be online
+    # Wait for both nodes to be online and mutually reachable on the test network.
     for node in [nixpi1, nixpi2]:
         node.wait_for_unit("multi-user.target", timeout=300)
-        node.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
+
+    nixpi1.wait_until_succeeds("getent hosts nixpi2", timeout=120)
+    nixpi2.wait_until_succeeds("getent hosts nixpi1", timeout=120)
+    nixpi1.wait_until_succeeds("ping -c 1 nixpi2", timeout=120)
+    nixpi2.wait_until_succeeds("ping -c 1 nixpi1", timeout=120)
     
     # Test 1: Both nodes can ping each other by hostname
     nixpi1.succeed("ping -c 3 nixpi2")
