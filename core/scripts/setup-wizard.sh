@@ -20,6 +20,9 @@ PI_DIR="${NIXPI_PI_DIR:-$HOME/.pi}"
 MATRIX_HOMESERVER="http://localhost:6167"
 MATRIX_STATE_DIR="$WIZARD_STATE/matrix-state"
 LEGACY_SETUP_STATE="$HOME/.nixpi/setup-state.json"
+BOOTSTRAP_STATE_DIR="${NIXPI_STATE_DIR:-/var/lib/nixpi}/bootstrap"
+BOOTSTRAP_UPGRADE_STATUS_FILE="${BOOTSTRAP_STATE_DIR}/full-appliance-upgrade.status"
+BOOTSTRAP_UPGRADE_LOG_FILE="${BOOTSTRAP_STATE_DIR}/full-appliance-upgrade.log"
 
 # --- Prefill (for VM/dev use) ---
 # Create ~/.nixpi/prefill.env on your host to skip manual prompts.
@@ -82,6 +85,29 @@ has_full_appliance() {
 	has_runtime_stack && has_matrix_stack && has_service_stack && has_command chromium
 }
 
+print_appliance_upgrade_progress() {
+	local status_line=""
+	if [[ -r "$BOOTSTRAP_UPGRADE_STATUS_FILE" ]]; then
+		status_line=$(tail -n 1 "$BOOTSTRAP_UPGRADE_STATUS_FILE" 2>/dev/null || true)
+	fi
+	if [[ -n "$status_line" ]]; then
+		echo "  Status: $status_line"
+	else
+		echo "  Status: building and activating the full NixPI appliance..."
+	fi
+
+	if [[ -r "$BOOTSTRAP_UPGRADE_LOG_FILE" ]]; then
+		local recent_log
+		recent_log=$(tail -n 3 "$BOOTSTRAP_UPGRADE_LOG_FILE" 2>/dev/null || true)
+		if [[ -n "$recent_log" ]]; then
+			echo "  Recent activity:"
+			while IFS= read -r line; do
+				echo "    $line"
+			done <<< "$recent_log"
+		fi
+	fi
+}
+
 step_appliance() {
 	echo ""
 	echo "--- Appliance Upgrade ---"
@@ -100,12 +126,23 @@ step_appliance() {
 	fi
 
 	echo "Promoting this minimal base into the standard NixPI appliance..."
+	echo "This can take several minutes on slower hardware."
+	echo "You will see progress updates while the appliance is being built."
 
 	local attempts=0
+	local last_status_line=""
 	while ! has_full_appliance; do
 		attempts=$((attempts + 1))
 		local active_state
 		active_state=$(systemctl show -p ActiveState --value nixpi-bootstrap-upgrade.service 2>/dev/null || true)
+		local current_status_line=""
+		if [[ -r "$BOOTSTRAP_UPGRADE_STATUS_FILE" ]]; then
+			current_status_line=$(tail -n 1 "$BOOTSTRAP_UPGRADE_STATUS_FILE" 2>/dev/null || true)
+		fi
+		if [[ $attempts -eq 1 || $((attempts % 5)) -eq 0 || "$current_status_line" != "$last_status_line" ]]; then
+			print_appliance_upgrade_progress
+			last_status_line="$current_status_line"
+		fi
 		if systemctl is-failed --quiet nixpi-bootstrap-upgrade.service; then
 			echo "Automatic appliance upgrade failed. Recent logs:" >&2
 			root_command journalctl -u nixpi-bootstrap-upgrade.service -n 40 --no-pager >&2 || true
