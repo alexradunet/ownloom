@@ -25,12 +25,29 @@
   networking.networkmanager.enable = true;
   time.timeZone = "UTC";
   i18n.defaultLocale = "en_US.UTF-8";
-  services.getty.autologinUser = lib.mkDefault "nixos";
+  services.getty.autologinUser = lib.mkForce "root";
   systemd.services."serial-getty@ttyS0".enable = true;
   systemd.services."serial-getty@ttyS0".serviceConfig.ExecStart = [
     ""
-    "${lib.getExe' pkgs.util-linux "agetty"} --login-program ${pkgs.shadow}/bin/login --autologin nixos --keep-baud ttyS0 115200,38400,9600 vt220"
+    "${lib.getExe' pkgs.util-linux "agetty"} --login-program ${pkgs.shadow}/bin/login --autologin root --keep-baud ttyS0 115200,38400,9600 vt220"
   ];
+
+  environment.loginShellInit = lib.mkAfter ''
+    if [ "$(id -u)" -eq 0 ] \
+      && [ -t 0 ] \
+      && [ -t 1 ] \
+      && [ -z "''${NIXPI_INSTALLER_AUTOSTARTED:-}" ] \
+      && [ ! -e /run/nixpi-installer-autostart-done ]
+    then
+      case "$(tty)" in
+        /dev/tty1|/dev/ttyS0)
+          export NIXPI_INSTALLER_AUTOSTARTED=1
+          touch /run/nixpi-installer-autostart-done
+          nixpi-installer
+          ;;
+      esac
+    fi
+  '';
 
   environment.systemPackages = with pkgs; [
     git

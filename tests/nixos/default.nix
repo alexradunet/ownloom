@@ -72,6 +72,7 @@ in
   smoke-firstboot = mkTest ./nixpi-firstboot.nix;
   smoke-security = mkTest ./nixpi-security.nix;
   smoke-broker = mkTest ./nixpi-broker.nix;
+  smoke-desktop = mkTest ./nixpi-desktop.nix;
   installer-smoke = mkInstallerTest ./nixpi-installer-smoke.nix;
 
   # Matrix homeserver test
@@ -94,6 +95,9 @@ in
 
   # NixPI Home landing page and user service test
   nixpi-home = mkTest ./nixpi-home.nix;
+
+  # Graphical Openbox desktop session smoke test
+  nixpi-desktop = mkTest ./nixpi-desktop.nix;
 
   # Firewall and service exposure policy test
   nixpi-security = mkTest ./nixpi-security.nix;

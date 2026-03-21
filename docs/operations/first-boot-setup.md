@@ -15,6 +15,7 @@ Before first-boot setup, you need a system installed from the NixPI installer im
 3. Choose your target disk and layout, then enter your hostname and primary user in the terminal wizard
 4. Reboot into the installed system
 5. The installed machine now owns a standard local flake at `/etc/nixos`, but the recommended editable source of truth is the `~/nixpi` git checkout
+6. The installed system boots into the official NixPI Openbox desktop; use it as a local automation surface and fallback GUI, not as the main setup surface
 
 ## 🛡️ Security Note: NetBird is Mandatory
 

@@ -97,24 +97,12 @@
       nixosConfigurations.installed-test = nixpkgs.lib.nixosSystem {
         inherit system specialArgs;
         modules = [
-          self.nixosModules.nixpi
-          self.nixosModules.firstboot
+          ./core/os/hosts/x86_64.nix
           {
             nixpi.primaryUser = "alex";
             nixpi.install.mode = "managed-user";
             nixpi.createPrimaryUser = true;
-            # Default machine settings used by desktop.
-            nixpkgs.config.allowUnfree = true;
-            boot.loader.systemd-boot.enable = true;
-            boot.loader.efi.canTouchEfiVariables = true;
             networking.hostName = "nixos";
-            time.timeZone = "UTC";
-            i18n.defaultLocale = "en_US.UTF-8";
-            services.xserver.xkb = { layout = "us"; variant = ""; };
-            console.keyMap = "us";
-            networking.networkmanager.enable = true;
-            system.stateVersion = "25.05";
-            # Minimal stub filesystems (not real hardware, just enough to evaluate)
             fileSystems."/" = { device = "/dev/vda"; fsType = "ext4"; };
             fileSystems."/boot" = { device = "/dev/vda1"; fsType = "vfat"; };
           }
@@ -147,8 +135,7 @@
 
             nodes.nixpi = { ... }: {
               imports = [
-                self.nixosModules.nixpi
-                self.nixosModules.firstboot
+                ./core/os/hosts/x86_64.nix
               ];
               _module.args = { inherit piAgent appPackage; };
 
@@ -156,13 +143,7 @@
               nixpi.install.mode = "managed-user";
               nixpi.createPrimaryUser = true;
 
-              boot.loader.systemd-boot.enable = true;
-              boot.loader.efi.canTouchEfiVariables = true;
               networking.hostName = "nixos";
-              time.timeZone = "UTC";
-              i18n.defaultLocale = "en_US.UTF-8";
-              networking.networkmanager.enable = true;
-              system.stateVersion = "25.05";
 
               # Give the VM enough disk for the NixPI closure
               virtualisation.diskSize = 20480;  # 20 GB
@@ -262,6 +243,7 @@
             { name = "smoke-firstboot"; path = nixosTests.smoke-firstboot; }
             { name = "smoke-security"; path = nixosTests.smoke-security; }
             { name = "smoke-broker"; path = nixosTests.smoke-broker; }
+            { name = "smoke-desktop"; path = nixosTests.smoke-desktop; }
           ];
 
           nixos-full = mkCheckLane "nixos-full" [
@@ -273,6 +255,7 @@
             { name = "nixpi-daemon"; path = nixosTests.nixpi-daemon; }
             { name = "nixpi-e2e"; path = nixosTests.nixpi-e2e; }
             { name = "nixpi-home"; path = nixosTests.nixpi-home; }
+            { name = "nixpi-desktop"; path = nixosTests.nixpi-desktop; }
             { name = "nixpi-security"; path = nixosTests.nixpi-security; }
             { name = "nixpi-modular-services"; path = nixosTests.nixpi-modular-services; }
             { name = "nixpi-matrix-bridge"; path = nixosTests.nixpi-matrix-bridge; }

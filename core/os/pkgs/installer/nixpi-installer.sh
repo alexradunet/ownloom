@@ -289,8 +289,10 @@ run_install_steps() {
     log_step "Installing prebuilt system closure"
     nixos-install --no-root-passwd --system "$SYSTEM_CLOSURE" --root "$ROOT_MOUNT"
   else
-    log_step "Running nixos-install for $HOSTNAME_VALUE"
-    nixos-install --no-root-passwd --flake "$ROOT_MOUNT/etc/nixos#$HOSTNAME_VALUE"
+    log_step "Running nixos-install from configuration.nix"
+    NIX_CONFIG="experimental-features = nix-command flakes" \
+      NIXOS_INSTALL_BOOTLOADER=1 \
+      nixos-install --no-root-passwd --root "$ROOT_MOUNT" --no-channel-copy -I "nixos-config=$ROOT_MOUNT/etc/nixos/configuration.nix"
   fi
 }
 

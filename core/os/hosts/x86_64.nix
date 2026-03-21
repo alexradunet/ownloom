@@ -6,6 +6,7 @@
   imports = [
     self.nixosModules.nixpi
     self.nixosModules.firstboot
+    ../modules/desktop-openbox.nix
   ];
 
   system.stateVersion = "25.05";

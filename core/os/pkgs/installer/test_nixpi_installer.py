@@ -47,6 +47,7 @@ class NixpiInstallerTests(unittest.TestCase):
         self.assertEqual(artifacts["flake_path"], "/mnt/target/etc/nixos/flake.nix")
         self.assertEqual(artifacts["configuration_path"], "/mnt/target/etc/nixos/configuration.nix")
         self.assertEqual(artifacts["flake_install_ref"], "/mnt/target/etc/nixos#pi-box")
+        self.assertEqual(artifacts["configuration_install_ref"], "/mnt/target/etc/nixos/configuration.nix")
         self.assertIn('nixpi.primaryUser = "alex";', artifacts["nixpi_install_module"])
         self.assertIn('nixpi.install.mode = "managed-user";', artifacts["nixpi_install_module"])
         self.assertIn('nixpi.createPrimaryUser = true;', artifacts["nixpi_install_module"])

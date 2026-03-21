@@ -13,7 +13,7 @@ NIXPI_FLAKE_TEMPLATE = """{
   description = "NixPI installed system";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/@@nixpkgsRev@@?narHash=@@nixpkgsNarHash@@";
+    nixpkgs.url = "github:NixOS/nixpkgs/@nixpkgsRev@?narHash=@nixpkgsNarHash@";
   };
 
   outputs = { nixpkgs, ... }:
@@ -83,6 +83,7 @@ def prepare_nixpi_install_artifacts(root_mount_point, username, hostname, cfg):
         "flake_path": str(nixos_etc / "flake.nix"),
         "configuration_path": str(nixos_etc / "configuration.nix"),
         "flake_install_ref": f"{nixos_etc}#{hostname}",
+        "configuration_install_ref": str(nixos_etc / "configuration.nix"),
         "nixpi_install_module": load_nixpi_install_module_template().replace("@@username@@", username),
         "nixpi_flake": NIXPI_FLAKE_TEMPLATE.replace("@@hostname@@", hostname),
         "configuration_module": NIXPI_CONFIGURATION_TEMPLATE,

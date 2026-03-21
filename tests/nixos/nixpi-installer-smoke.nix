@@ -95,7 +95,7 @@ pkgs.testers.runNixOSTest {
             )
         )
         installer.wait_until_succeeds("test -f /tmp/nixpi-installer-artifacts.json", timeout=60)
-        installer.succeed("cat /tmp/nixpi-installer-artifacts.json | jq -e '.flake_install_ref == \"" + target_mount + "/etc/nixos#" + hostname + "\"'")
+        installer.succeed("cat /tmp/nixpi-installer-artifacts.json | jq -e '.configuration_install_ref == \"" + target_mount + "/etc/nixos/configuration.nix\"'")
 
         installer.succeed("test -f " + target_mount + "/etc/nixos/configuration.nix")
         installer.succeed("test -f " + target_mount + "/etc/nixos/nixpi-install.nix")

@@ -51,6 +51,8 @@ setup-wizard.sh
   </div>
 </div>
 
+The installed system now boots into the official NixPI Openbox desktop automatically. That desktop is intentionally minimal and agent-friendly; the primary operator flows still live in the setup wizard, Pi, Matrix, and the local shell.
+
 <PresentationBand
   eyebrow="After install"
   title="Operate the machine from the local checkout"
