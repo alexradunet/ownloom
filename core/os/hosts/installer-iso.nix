@@ -54,6 +54,7 @@
     just
     curl
     gum
+    networkmanager
   ] ++ [
     installerHelper
   ];

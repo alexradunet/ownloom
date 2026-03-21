@@ -7,12 +7,34 @@ import { parseFrontmatter, stringifyFrontmatter } from "../../core/lib/frontmatt
 import {
 	createLogger,
 	errorResult,
+	formatResumeMessage,
+	getPendingInteractions,
 	guardServiceName,
 	nowIso,
+	requestInteraction,
 	requestSelection,
 	requestTextInput,
+	resolveInteractionReply,
 	requireConfirmation,
 } from "../../core/lib/shared.js";
+
+function makeSessionContext(prefix: string, options?: { sessionFile?: boolean }) {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+	const sessionFile = path.join(dir, "session.jsonl");
+	const ctx = {
+		hasUI: false,
+		sessionManager: {
+			getSessionFile: () => (options?.sessionFile === false ? null : sessionFile),
+			getSessionDir: () => dir,
+			getSessionId: () => "session",
+		},
+	} as never;
+	return {
+		ctx,
+		dir,
+		storePath: options?.sessionFile === false ? path.join(dir, "session.nixpi-interactions.json") : `${sessionFile}.nixpi-interactions.json`,
+	};
+}
 
 // ---------------------------------------------------------------------------
 // safePath
@@ -516,6 +538,203 @@ describe("requestTextInput", () => {
 
 		const second = await requestTextInput(ctx, "note", "Enter a short note");
 		expect(second.value).toBe("hello world");
+		fs.rmSync(dir, { recursive: true, force: true });
+	});
+});
+
+describe("interaction store helpers", () => {
+	it("returns null when interaction persistence is unavailable", () => {
+		const result = requestInteraction({ hasUI: false } as never, {
+			kind: "confirm",
+			key: "delete file",
+			prompt: "Allow: delete file?",
+		});
+		expect(result).toBeNull();
+	});
+
+	it("stores interactions under sessionDir/sessionId when no session file exists", () => {
+		const { ctx, dir, storePath } = makeSessionContext("shared-sessiondir-", { sessionFile: false });
+		const result = requestInteraction(ctx, {
+			kind: "input",
+			key: "nickname",
+			prompt: "Enter nickname",
+		});
+
+		expect(result?.state).toBe("pending");
+		expect(fs.existsSync(storePath)).toBe(true);
+		fs.rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("resolves confirm replies using synonyms and stores the resolved value", () => {
+		const { ctx, dir, storePath } = makeSessionContext("shared-confirm-reply-");
+		const pending = requestInteraction(ctx, {
+			kind: "confirm",
+			key: "delete file",
+			prompt: "Allow: delete file?",
+		});
+
+		if (!pending || pending.state !== "pending") throw new Error("expected pending interaction");
+		const resolved = resolveInteractionReply(ctx, `yes ${pending.record.token}`);
+
+		expect(resolved?.value).toBe("approved");
+		expect(resolved?.record.status).toBe("resolved");
+		const saved = JSON.parse(fs.readFileSync(storePath, "utf-8")) as {
+			records: Array<{ resolution?: string; status: string }>;
+		};
+		expect(saved.records[0]?.resolution).toBe("approved");
+		expect(saved.records[0]?.status).toBe("resolved");
+		fs.rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("supports select replies by number or exact option text", () => {
+		const { ctx, dir } = makeSessionContext("shared-select-reply-");
+
+		const first = requestInteraction(ctx, {
+			kind: "select",
+			key: "mode",
+			prompt: "Choose mode",
+			options: ["fast", "safe"],
+		});
+		if (!first || first.state !== "pending") throw new Error("expected first pending interaction");
+		const byNumber = resolveInteractionReply(ctx, `2 ${first.record.token}`);
+		expect(byNumber?.value).toBe("safe");
+
+		const second = requestInteraction(ctx, {
+			kind: "select",
+			key: "theme",
+			prompt: "Choose theme",
+			options: ["Light", "Dark"],
+		});
+		if (!second || second.state !== "pending") throw new Error("expected second pending interaction");
+		const byExactText = resolveInteractionReply(ctx, `dark ${second.record.token}`);
+		expect(byExactText?.value).toBe("Dark");
+
+		fs.rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("marks untokened replies as ambiguous when multiple pending interactions exist", () => {
+		const { ctx, dir } = makeSessionContext("shared-ambiguous-");
+		requestInteraction(ctx, {
+			kind: "input",
+			key: "first",
+			prompt: "First prompt",
+		});
+		const second = requestInteraction(ctx, {
+			kind: "input",
+			key: "second",
+			prompt: "Second prompt",
+		});
+
+		if (!second || second.state !== "pending") throw new Error("expected second pending interaction");
+		const resolved = resolveInteractionReply(ctx, "typed answer");
+
+		expect(resolved?.value).toBe("typed answer");
+		expect(resolved?.record.key).toBe("second");
+		expect(resolved?.ambiguous).toBe(true);
+		fs.rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("extracts tokens from the start of replies and ignores invalid replies", () => {
+		const { ctx, dir } = makeSessionContext("shared-token-prefix-");
+		const pending = requestInteraction(ctx, {
+			kind: "input",
+			key: "nickname",
+			prompt: "Enter nickname",
+		});
+
+		if (!pending || pending.state !== "pending") throw new Error("expected pending interaction");
+		expect(resolveInteractionReply(ctx, "   ")).toBeNull();
+		const resolved = resolveInteractionReply(ctx, `${pending.record.token} Bloom`);
+		expect(resolved?.value).toBe("Bloom");
+
+		fs.rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("lists only pending interactions", () => {
+		const { ctx, dir } = makeSessionContext("shared-pending-list-");
+		requestInteraction(ctx, {
+			kind: "confirm",
+			key: "first",
+			prompt: "First prompt",
+		});
+		const second = requestInteraction(ctx, {
+			kind: "input",
+			key: "second",
+			prompt: "Second prompt",
+		});
+		if (!second || second.state !== "pending") throw new Error("expected second pending interaction");
+		resolveInteractionReply(ctx, `${second.record.token} hello`);
+
+		const pending = getPendingInteractions(ctx);
+		expect(pending).toHaveLength(1);
+		expect(pending[0]?.key).toBe("first");
+		fs.rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("formats default and templated resume messages", () => {
+		expect(
+			formatResumeMessage(
+				{
+					token: "tok123",
+					kind: "confirm",
+					key: "deploy",
+					prompt: "Deploy now?",
+					status: "resolved",
+					createdAt: "2026-03-15T00:00:00Z",
+					updatedAt: "2026-03-15T00:00:00Z",
+				},
+				"denied",
+			),
+		).toContain("denied confirmation tok123");
+
+		expect(
+			formatResumeMessage(
+				{
+					token: "sel123",
+					kind: "select",
+					key: "theme",
+					prompt: "Theme?",
+					status: "resolved",
+					createdAt: "2026-03-15T00:00:00Z",
+					updatedAt: "2026-03-15T00:00:00Z",
+				},
+				"Dark",
+			),
+		).toContain('selected "Dark"');
+
+		expect(
+			formatResumeMessage(
+				{
+					token: "inp123",
+					kind: "input",
+					key: "nickname",
+					prompt: "Nickname?",
+					status: "resolved",
+					resumeMessage: "Resume with {{value}} using {{token}}.",
+					createdAt: "2026-03-15T00:00:00Z",
+					updatedAt: "2026-03-15T00:00:00Z",
+				},
+				"Bloom",
+			),
+		).toBe("Resume with Bloom using inp123.");
+	});
+
+	it("trims persisted interaction history to the latest 32 records", () => {
+		const { ctx, dir, storePath } = makeSessionContext("shared-trim-");
+		for (let i = 0; i < 35; i += 1) {
+			requestInteraction(ctx, {
+				kind: "input",
+				key: `note-${i}`,
+				prompt: `Prompt ${i}`,
+			});
+		}
+
+		const saved = JSON.parse(fs.readFileSync(storePath, "utf-8")) as {
+			records: Array<{ key: string }>;
+		};
+		expect(saved.records).toHaveLength(32);
+		expect(saved.records[0]?.key).toBe("note-3");
+		expect(saved.records.at(-1)?.key).toBe("note-34");
 		fs.rmSync(dir, { recursive: true, force: true });
 	});
 });

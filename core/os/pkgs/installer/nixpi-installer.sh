@@ -25,6 +25,10 @@ Performs a destructive UEFI install with:
 EOF
 }
 
+network_online() {
+  ping -c1 -W5 1.1.1.1 >/dev/null 2>&1
+}
+
 require_tty() {
   if [[ ! -t 0 || ! -t 1 ]]; then
     echo "Interactive mode requires a TTY." >&2
@@ -185,6 +189,69 @@ choose_layout() {
       exit 1
       ;;
   esac
+}
+
+connect_wifi_nmcli() {
+  local ssid password
+
+  nmcli --colors no device wifi rescan >/dev/null 2>&1 || true
+  nmcli --colors no device wifi list || true
+  echo ""
+  read -rp "WiFi SSID: " ssid
+  if [[ -z "$ssid" ]]; then
+    echo "SSID cannot be empty." >&2
+    return 1
+  fi
+  read -rsp "WiFi password: " password
+  echo ""
+  nmcli --wait 30 device wifi connect "$ssid" password "$password"
+}
+
+prompt_network_setup() {
+  if network_online; then
+    log_step "Network is already connected"
+    return
+  fi
+
+  if [[ "$FORCE_YES" -eq 1 ]]; then
+    log_step "No network connection detected; continuing without interactive WiFi setup"
+    return
+  fi
+
+  require_tty
+
+  while true; do
+    echo ""
+    echo "No network connection detected."
+    echo "Choose an option:"
+    echo "  1) Launch WiFi setup (nmtui)"
+    echo "  2) Connect to WiFi with nmcli"
+    echo "  3) Continue without network"
+    echo ""
+
+    case "$("$GUM_BIN" choose --header "Installer network setup" "Launch WiFi setup (nmtui)" "Connect to WiFi with nmcli" "Continue without network")" in
+      "Launch WiFi setup (nmtui)")
+        if command -v nmtui >/dev/null 2>&1; then
+          nmtui
+        else
+          echo "nmtui is not available on this image." >&2
+        fi
+        ;;
+      "Connect to WiFi with nmcli")
+        connect_wifi_nmcli || true
+        ;;
+      "Continue without network")
+        return
+        ;;
+    esac
+
+    if network_online; then
+      log_step "Network connected"
+      return
+    fi
+
+    echo "Still offline. Check the WiFi credentials or signal and try again."
+  done
 }
 
 normalize_layout_inputs() {
@@ -357,6 +424,7 @@ done
 ensure_root
 choose_disk
 prompt_inputs
+prompt_network_setup
 choose_layout
 normalize_layout_inputs
 confirm_install
