@@ -62,6 +62,9 @@ in
 
   nixpkgs.config.allowUnfree = true;
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nixpi.primaryUser = "@@username@@";
+  nixpi.install.mode = "managed-user";
+  nixpi.createPrimaryUser = true;
 }
 """
 
@@ -121,7 +124,7 @@ def prepare_nixpi_install_artifacts(root_mount_point, username, hostname, passwo
             .replace("@@username@@", username)
             .replace("@@password@@", json.dumps(password))
         ),
-        "nixpi_appliance_module": NIXPI_APPLIANCE_TEMPLATE,
+        "nixpi_appliance_module": NIXPI_APPLIANCE_TEMPLATE.replace("@@username@@", username),
         "nixpi_flake": NIXPI_FLAKE_TEMPLATE.replace("@@hostname@@", hostname),
         "configuration_module": NIXPI_CONFIGURATION_TEMPLATE,
         "host_cfg": host_cfg,

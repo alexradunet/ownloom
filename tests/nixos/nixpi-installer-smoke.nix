@@ -109,6 +109,9 @@ pkgs.testers.runNixOSTest {
         installer.succeed("grep -q 'nixpi.install.mode = \"managed-user\";' " + target_mount + "/etc/nixos/nixpi-install.nix")
         installer.succeed("grep -q 'bootstrap-upgrade.nix' " + target_mount + "/etc/nixos/nixpi-install.nix")
         installer.succeed("grep -q 'desktop-openbox.nix' " + target_mount + "/etc/nixos/nixpi-appliance.nix")
+        installer.succeed("grep -q 'nixpi.primaryUser = \"installer\";' " + target_mount + "/etc/nixos/nixpi-appliance.nix")
+        installer.succeed("grep -q 'nixpi.install.mode = \"managed-user\";' " + target_mount + "/etc/nixos/nixpi-appliance.nix")
+        installer.succeed("grep -q 'nixpi.createPrimaryUser = true;' " + target_mount + "/etc/nixos/nixpi-appliance.nix")
         installer.succeed("grep -q 'nixpi-appliance.nix' " + target_mount + "/etc/nixos/flake.nix")
         installer.succeed("grep -q 'nixpkgs.url = \"path:\\./nixpkgs\";' " + target_mount + "/etc/nixos/flake.nix")
         installer.fail("grep -q 'github:NixOS/nixpkgs' " + target_mount + "/etc/nixos/flake.nix")
@@ -126,6 +129,13 @@ pkgs.testers.runNixOSTest {
         installer.succeed("nixos-enter --root " + target_mount + " -c 'test -d /etc/nixos/nixpi'")
         installer.succeed("nixos-enter --root " + target_mount + " -c 'test -d /etc/nixos/nixpkgs'")
         installer.succeed("nixos-enter --root " + target_mount + " -c 'nix flake metadata --offline /etc/nixos >/dev/null'")
+        installer.succeed(
+            "nixos-enter --root "
+            + target_mount
+            + " -c 'nix --extra-experimental-features \"nix-command flakes\" build --offline /etc/nixos#nixosConfigurations."
+            + hostname
+            + ".config.system.build.toplevel --no-link >/dev/null'"
+        )
         installer.fail("nixos-enter --root " + target_mount + " -c 'getent passwd agent'")
 
     run_install_case("no-swap", "installer-vm-noswap", "--layout no-swap", False)
