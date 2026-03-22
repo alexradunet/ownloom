@@ -35,7 +35,7 @@ iso:
     nix build {{ flake }}#installerIso
 
 # Boot the minimal installer ISO in QEMU for full install-flow testing.
-# This runs in the terminal over the serial console.
+# This opens the standard QEMU graphical window.
 # Override with:
 #   NIXPI_INSTALL_VM_DISK_PATH=$HOME/custom.qcow2
 #   NIXPI_INSTALL_VM_DISK_SIZE=32G
@@ -67,12 +67,14 @@ vm-install-iso: iso
     fi
 
     mkdir -p "$(dirname "$ovmf_vars")"
-    cp "$ovmf_vars_template" "$ovmf_vars"
+    if [ ! -f "$ovmf_vars" ]; then
+        cp "$ovmf_vars_template" "$ovmf_vars"
+    fi
 
     echo "Booting installer ISO: $iso_path"
     echo "Disk: $disk"
     echo "SSH forward: localhost:$ssh_port -> guest:22"
-    echo "Console: serial"
+    echo "Console: graphical"
 
     qemu_args=(
         -enable-kvm
@@ -82,21 +84,23 @@ vm-install-iso: iso
         -drive "if=pflash,format=raw,file=$ovmf_vars"
         -drive "file=$disk,format=qcow2,if=virtio"
         -cdrom "$iso_path"
-        -boot d
+        -boot "order=dc,once=d"
         -nic "user,model=virtio-net-pci,hostfwd=tcp::$ssh_port-:22"
     )
-
-    qemu_args+=(-nographic -serial mon:stdio)
 
     exec qemu-system-x86_64 "${qemu_args[@]}"
 
 # Run VM (fresh build from current codebase)
 vm: qcow2
-    tools/run-qemu.sh --mode headless
+    tools/run-qemu.sh --mode gui
 
 # Run VM with existing qcow2 (no rebuild)
 vm-run:
-    tools/run-qemu.sh --mode headless --skip-setup
+    tools/run-qemu.sh --mode gui --skip-setup
+
+# Run VM in the terminal over the serial console
+vm-headless: qcow2
+    tools/run-qemu.sh --mode headless
 
 # Run VM in background daemon mode (detached, no terminal attached)
 # Use this when you want to run the VM and still use your shell

@@ -95,8 +95,9 @@ has_internet_connection() {
 }
 
 write_appliance_status() {
-	mkdir -p "$BOOTSTRAP_STATE_DIR"
-	printf '%s %s\n' "$(date -Iseconds)" "$1" > "$BOOTSTRAP_UPGRADE_STATUS_FILE"
+	root_command install -d -m 0755 "$BOOTSTRAP_STATE_DIR"
+	printf '%s %s\n' "$(date -Iseconds)" "$1" | root_command tee "$BOOTSTRAP_UPGRADE_STATUS_FILE" >/dev/null
+	root_command chmod 0644 "$BOOTSTRAP_UPGRADE_STATUS_FILE"
 }
 
 print_recent_appliance_log() {
@@ -204,24 +205,23 @@ promote_full_appliance() {
 	local hostname="$1"
 	local primary_user="$2"
 
-	mkdir -p "$BOOTSTRAP_STATE_DIR"
-	: > "$BOOTSTRAP_UPGRADE_LOG_FILE"
-	chmod 0644 "$BOOTSTRAP_UPGRADE_LOG_FILE"
+	root_command install -d -m 0755 "$BOOTSTRAP_STATE_DIR"
+	root_command install -m 0644 /dev/null "$BOOTSTRAP_UPGRADE_LOG_FILE"
 
 	write_appliance_status "Cloning the NixPI checkout..."
-	if ! clone_nixpi_checkout 2>&1 | tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
+	if ! clone_nixpi_checkout 2>&1 | root_command tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
 		write_appliance_status "Failed to prepare the NixPI checkout."
 		return 1
 	fi
 
 	write_appliance_status "Writing the local /etc/nixos system flake..."
-	if ! write_promoted_system_flake "$hostname" "$primary_user" 2>&1 | tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
+	if ! write_promoted_system_flake "$hostname" "$primary_user" 2>&1 | root_command tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
 		write_appliance_status "Failed to write the local /etc/nixos flake."
 		return 1
 	fi
 
 	write_appliance_status "Building and activating the full NixPI appliance..."
-	if ! root_command nixos-rebuild switch --flake "${BOOTSTRAP_SYSTEM_FLAKE_DIR}#${hostname}" 2>&1 | tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
+	if ! root_command nixos-rebuild switch --flake "${BOOTSTRAP_SYSTEM_FLAKE_DIR}#${hostname}" 2>&1 | root_command tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
 		write_appliance_status "Promotion failed. Review ${BOOTSTRAP_UPGRADE_LOG_FILE}."
 		return 1
 	fi

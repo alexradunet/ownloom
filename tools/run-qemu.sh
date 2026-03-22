@@ -3,7 +3,7 @@
 # Uses the generated NixOS VM runner in result/bin/run-nixos-vm.
 #
 # Usage:
-#   run-qemu.sh --mode headless|daemon [--skip-setup]
+#   run-qemu.sh --mode gui|headless|daemon [--skip-setup]
 set -euo pipefail
 
 DISK="${NIXPI_VM_DISK_PATH:-/tmp/nixpi-vm-disk.qcow2}"
@@ -65,7 +65,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$mode" ]]; then
-    echo "Error: --mode is required (headless|daemon)" >&2
+    echo "Error: --mode is required (gui|headless|daemon)" >&2
     exit 1
 fi
 
@@ -108,6 +108,10 @@ export QEMU_NET_OPTS
 QEMU_NET_OPTS="$(IFS=,; echo "${net_opts[*]}")"
 
 case "$mode" in
+    gui)
+        echo "Starting VM in graphical mode..."
+        exec "$RUNNER"
+        ;;
     headless)
         echo "Starting VM... Press Ctrl+A X to exit"
         export QEMU_OPTS="${QEMU_OPTS} -nographic -serial mon:stdio"
@@ -135,7 +139,7 @@ case "$mode" in
         echo "VM starting... try 'just vm-ssh' in a few seconds"
         ;;
     *)
-        echo "Error: unknown mode '$mode'. Must be headless or daemon." >&2
+        echo "Error: unknown mode '$mode'. Must be gui, headless, or daemon." >&2
         exit 1
         ;;
 esac
