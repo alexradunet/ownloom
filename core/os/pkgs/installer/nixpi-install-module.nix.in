@@ -1,6 +1,7 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 let
   setupPackage = pkgs.callPackage ./nixpi/core/os/pkgs/setup {};
+  bootstrapPasswordFile = "${config.nixpi.stateDir}/bootstrap/primary-user-password";
 in
 {
   _module.args = { inherit setupPackage; };
@@ -19,6 +20,12 @@ in
   nixpi.install.mode = "managed-user";
   nixpi.createPrimaryUser = true;
   users.users."@@username@@".initialPassword = @@password@@;
+
+  system.activationScripts.nixpi-bootstrap-primary-password = ''
+    install -d -m 0755 -o root -g root "$(dirname ${bootstrapPasswordFile})"
+    install -m 0600 -o root -g root /dev/null ${bootstrapPasswordFile}
+    printf '%s' @@password@@ > ${bootstrapPasswordFile}
+  '';
 
   nixpkgs.config.allowUnfree = true;
   nix.settings.experimental-features = [ "nix-command" "flakes" ];

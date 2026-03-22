@@ -91,6 +91,25 @@ generate_password() {
 	openssl rand -base64 24 | tr '+/' '-_'
 }
 
+matrix_username_is_valid() {
+	local username="$1"
+	[[ "$username" =~ ^[a-z][a-z0-9._-]*$ ]]
+}
+
+default_operator_username() {
+	if [[ -n "${PREFILL_USERNAME:-}" ]]; then
+		printf '%s' "$PREFILL_USERNAME"
+	else
+		whoami
+	fi
+}
+
+read_bootstrap_primary_password() {
+	if command -v nixpi-bootstrap-read-primary-password >/dev/null 2>&1; then
+		root_command nixpi-bootstrap-read-primary-password 2>/dev/null || true
+	fi
+}
+
 
 # Register a Matrix account.
 # Usage: matrix_register <username> <password>
@@ -272,9 +291,9 @@ step_matrix() {
 	local username
 	username=$(matrix_state_get username)
 	if [[ -z "$username" ]]; then
-		if [[ -n "${PREFILL_USERNAME:-}" ]]; then
-			username="$PREFILL_USERNAME"
-			echo "Username: [prefilled as ${username}]"
+		username=$(default_operator_username)
+		if [[ -n "$username" ]] && matrix_username_is_valid "$username"; then
+			echo "Username: ${username} [from login username]"
 			matrix_state_set username "$username"
 		else
 			while true; do
@@ -328,10 +347,17 @@ step_matrix() {
 	user_token=$(matrix_state_get user_token)
 	user_user_id=$(matrix_state_get user_user_id)
 	if [[ -z "$user_password" ]]; then
-		if [[ -n "${PREFILL_MATRIX_PASSWORD:-}" ]]; then
+		if [[ -n "${PREFILL_PRIMARY_PASSWORD:-}" ]]; then
+			user_password="$PREFILL_PRIMARY_PASSWORD"
+		elif [[ -n "${PREFILL_MATRIX_PASSWORD:-}" ]]; then
 			user_password="$PREFILL_MATRIX_PASSWORD"
 		else
+			user_password=$(read_bootstrap_primary_password)
+		fi
+		if [[ -z "$user_password" ]]; then
 			user_password=$(generate_password)
+		else
+			echo "Using the login password for your Matrix account."
 		fi
 		matrix_state_set user_password "$user_password"
 	fi

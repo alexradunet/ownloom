@@ -11,6 +11,7 @@ let
       config.nixpi.matrix.registrationSharedSecretFile
     else
       "${stateDir}/secrets/matrix-registration-shared-secret";
+  bootstrapPrimaryPasswordFile = "${stateDir}/bootstrap/primary-user-password";
   bootstrapAction = action: command: pkgs.writeShellScriptBin "nixpi-bootstrap-${action}" ''
     set -euo pipefail
     if [ -f "${setupCompleteFile}" ]; then
@@ -20,6 +21,8 @@ let
     exec ${command} "$@"
   '';
   bootstrapReadMatrixSecret = bootstrapAction "read-matrix-secret" "/run/current-system/sw/bin/cat ${matrixRegistrationSecretFile}";
+  bootstrapReadPrimaryPassword = bootstrapAction "read-primary-password" "/run/current-system/sw/bin/cat ${bootstrapPrimaryPasswordFile}";
+  bootstrapRemovePrimaryPassword = bootstrapAction "remove-primary-password" "/run/current-system/sw/bin/rm -f ${bootstrapPrimaryPasswordFile}";
   bootstrapMatrixJournal = bootstrapAction "matrix-journal" "/run/current-system/sw/bin/journalctl -u continuwuity --no-pager";
   bootstrapNetbird = bootstrapAction "netbird-up" "/run/current-system/sw/bin/netbird up";
   bootstrapNetbirdSystemctl = bootstrapAction "netbird-systemctl" "/run/current-system/sw/bin/systemctl";
@@ -35,6 +38,8 @@ in
 
   environment.systemPackages = [
     bootstrapReadMatrixSecret
+    bootstrapReadPrimaryPassword
+    bootstrapRemovePrimaryPassword
     bootstrapMatrixJournal
     bootstrapNetbird
     bootstrapNetbirdSystemctl
@@ -50,6 +55,8 @@ in
     users = [ primaryUser ];
     commands = [
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-read-matrix-secret"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/nixpi-bootstrap-read-primary-password"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/nixpi-bootstrap-remove-primary-password"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-journal"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-systemctl start continuwuity.service"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-systemctl restart continuwuity.service"; options = [ "NOPASSWD" ]; }

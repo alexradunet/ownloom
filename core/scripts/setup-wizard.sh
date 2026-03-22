@@ -236,7 +236,7 @@ print_service_access_summary() {
 	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
 		echo "    Element Web  - http://${mesh_ip}:8081"
 	fi
-	echo "    FluffyChat   - preconfigured for this NixPI server"
+	echo "    Elmenet Web   - preconfigured for this NixPI server"
 	if [[ -n "$mesh_host" ]]; then
 		echo "    Matrix       - http://${mesh_host}:6167"
 	fi
@@ -277,22 +277,9 @@ step_password() {
 	# Check if user already has a password set
 	if passwd -S "$(whoami)" 2>/dev/null | grep -qE 'P[[:space:]]+[0-9]{2}/[0-9]{2}/[0-9]{4}'; then
 		echo "You already have a password set for this account."
-		if [[ "${NIXPI_INSTALL_MODE:-}" == "managed-user" ]]; then
-			echo "Keeping the password set during installation."
-			mark_done password
-			return
-		fi
-		if [[ "$NONINTERACTIVE_SETUP" -eq 1 ]]; then
-			echo "Keeping existing password for noninteractive setup."
-			mark_done password
-			return
-		fi
-		read -rp "Change password? [y/N]: " change_pw
-		if [[ ! "$change_pw" =~ ^[Yy]$ ]]; then
-			echo "Keeping existing password."
-			mark_done password
-			return
-		fi
+		echo "Keeping the existing login password."
+		mark_done password
+		return
 	else
 		echo "Welcome! Let's set up a password for your account."
 		echo ""
@@ -502,7 +489,8 @@ step_git() {
 		git_name="$PREFILL_NAME"
 		echo "Your name: [prefilled]"
 	else
-		read -rp "Your name: " git_name
+		git_name="$(whoami)"
+		echo "Your name: ${git_name} [from login username]"
 	fi
 	if [[ -n "${PREFILL_EMAIL:-}" ]]; then
 		git_email="$PREFILL_EMAIL"
@@ -577,6 +565,9 @@ step_bootc_switch() {
 # --- Finalization ---
 
 finalize() {
+	if command -v nixpi-bootstrap-remove-primary-password >/dev/null 2>&1; then
+		root_command nixpi-bootstrap-remove-primary-password || echo "warning: failed to remove bootstrap primary password file" >&2
+	fi
 	if [[ "${NIXPI_KEEP_SSH_AFTER_SETUP:-0}" != "1" ]]; then
 		root_command nixpi-bootstrap-sshd-systemctl stop sshd.service || echo "warning: failed to stop sshd.service" >&2
 	fi
