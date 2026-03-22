@@ -23,6 +23,91 @@ let
   bootstrapReadMatrixSecret = bootstrapAction "read-matrix-secret" "/run/current-system/sw/bin/sh -c 'tr -d \"\\n\" < ${matrixRegistrationSecretFile}'";
   bootstrapReadPrimaryPassword = bootstrapAction "read-primary-password" "/run/current-system/sw/bin/sh -c 'tr -d \"\\n\" < ${bootstrapPrimaryPasswordFile}'";
   bootstrapRemovePrimaryPassword = bootstrapAction "remove-primary-password" "/run/current-system/sw/bin/rm -f ${bootstrapPrimaryPasswordFile}";
+  bootstrapInstallHostFlake = pkgs.writeShellScriptBin "nixpi-bootstrap-install-host-flake" ''
+    set -euo pipefail
+    if [ -f "${setupCompleteFile}" ]; then
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
+      exit 1
+    fi
+
+    nixpi_dir="''${1:-}"
+    hostname="''${2:-}"
+    primary_user="''${3:-}"
+    if [ -z "$nixpi_dir" ] || [ -z "$hostname" ] || [ -z "$primary_user" ]; then
+      echo "usage: nixpi-bootstrap-install-host-flake <nixpi_dir> <hostname> <primary_user>" >&2
+      exit 1
+    fi
+
+    install -d -m 0755 /etc/nixos
+
+    cat > /etc/nixos/nixpi-host.nix <<EOF
+{ ... }:
+{
+  networking.hostName = "$hostname";
+  nixpi.primaryUser = "$primary_user";
+  nixpi.install.mode = "managed-user";
+  nixpi.createPrimaryUser = true;
+}
+EOF
+
+    cat > /etc/nixos/configuration.nix <<EOF
+{ ... }:
+{
+  imports = [
+    $nixpi_dir/core/os/hosts/x86_64.nix
+    ./hardware-configuration.nix
+    ./nixpi-host.nix
+  ];
+}
+EOF
+
+    cat > /etc/nixos/flake.nix <<EOF
+{
+  description = "NixPI installed host";
+
+  inputs = {
+    nixpi.url = "path:$nixpi_dir";
+    nixpkgs.follows = "nixpi/nixpkgs";
+  };
+
+  outputs = { nixpi, nixpkgs, ... }:
+    let
+      system = "x86_64-linux";
+    in {
+      nixosConfigurations."$hostname" = nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = {
+          piAgent = nixpi.packages.\''${system}.pi;
+          appPackage = nixpi.packages.\''${system}.app;
+          setupPackage = nixpi.packages.\''${system}.nixpi-setup;
+        };
+        modules = [
+          ./configuration.nix
+          {
+            nixpkgs.hostPlatform = system;
+            nixpkgs.config.allowUnfree = true;
+          }
+        ];
+      };
+    };
+}
+EOF
+  '';
+  bootstrapNixosRebuildSwitch = pkgs.writeShellScriptBin "nixpi-bootstrap-nixos-rebuild-switch" ''
+    set -euo pipefail
+    if [ -f "${setupCompleteFile}" ]; then
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
+      exit 1
+    fi
+
+    hostname="''${1:-}"
+    if [ -z "$hostname" ]; then
+      echo "usage: nixpi-bootstrap-nixos-rebuild-switch <hostname>" >&2
+      exit 1
+    fi
+
+    exec /run/current-system/sw/bin/nixos-rebuild switch --impure --flake "/etc/nixos#$hostname"
+  '';
   bootstrapMatrixJournal = bootstrapAction "matrix-journal" "/run/current-system/sw/bin/journalctl -u continuwuity --no-pager";
   bootstrapNetbird = bootstrapAction "netbird-up" "/run/current-system/sw/bin/netbird up";
   bootstrapNetbirdSystemctl = bootstrapAction "netbird-systemctl" "/run/current-system/sw/bin/systemctl";
@@ -69,6 +154,8 @@ in
     bootstrapReadMatrixSecret
     bootstrapReadPrimaryPassword
     bootstrapRemovePrimaryPassword
+    bootstrapInstallHostFlake
+    bootstrapNixosRebuildSwitch
     bootstrapMatrixJournal
     bootstrapNetbird
     bootstrapNetbirdSystemctl
@@ -87,6 +174,8 @@ in
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-read-matrix-secret"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-read-primary-password"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-remove-primary-password"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/nixpi-bootstrap-install-host-flake *"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/nixpi-bootstrap-nixos-rebuild-switch *"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-journal"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-systemctl stop continuwuity.service"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-systemctl start continuwuity.service"; options = [ "NOPASSWD" ]; }

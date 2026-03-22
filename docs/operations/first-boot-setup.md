@@ -51,6 +51,7 @@ NixPI's first-boot experience has two phases.
 2. Clone `~/nixpi` and write the host-specific `/etc/nixos` flake
 3. Promote the minimal base into the full appliance with `nixos-rebuild switch`
 4. NetBird enrollment
+   In the text-mode first-boot shell, use a setup key for headless enrollment. OAuth web login needs a running desktop/browser session and may not be able to open a browser from the TTY wizard.
 5. Primary Matrix account bootstrap
 6. AI provider defaults for Pi
 7. Built-in service provisioning

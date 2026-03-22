@@ -20,13 +20,9 @@ PI_DIR="${NIXPI_PI_DIR:-$HOME/.pi}"
 MATRIX_HOMESERVER="http://localhost:6167"
 MATRIX_STATE_DIR="$WIZARD_STATE/matrix-state"
 LEGACY_SETUP_STATE="$HOME/.nixpi/setup-state.json"
-BOOTSTRAP_STATE_DIR="${NIXPI_STATE_DIR:-/var/lib/nixpi}/bootstrap"
+BOOTSTRAP_STATE_DIR="$HOME/.nixpi/bootstrap"
 BOOTSTRAP_UPGRADE_STATUS_FILE="${BOOTSTRAP_STATE_DIR}/full-appliance-upgrade.status"
 BOOTSTRAP_UPGRADE_LOG_FILE="${BOOTSTRAP_STATE_DIR}/full-appliance-upgrade.log"
-BOOTSTRAP_SYSTEM_FLAKE_DIR="/etc/nixos"
-BOOTSTRAP_SYSTEM_FLAKE_FILE="${BOOTSTRAP_SYSTEM_FLAKE_DIR}/flake.nix"
-BOOTSTRAP_SYSTEM_CONFIG_FILE="${BOOTSTRAP_SYSTEM_FLAKE_DIR}/configuration.nix"
-BOOTSTRAP_SYSTEM_HOST_FILE="${BOOTSTRAP_SYSTEM_FLAKE_DIR}/nixpi-host.nix"
 NIXPI_BOOTSTRAP_REPO="${NIXPI_BOOTSTRAP_REPO:-https://github.com/alexradunet/nixpi.git}"
 
 # --- Prefill (for VM/dev use) ---
@@ -126,10 +122,17 @@ has_internet_connection() {
 	ping -c1 -W5 1.1.1.1 &>/dev/null
 }
 
+has_gui_session() {
+	[[ -n "${DISPLAY:-}" ]] && return 0
+	systemctl is-active --quiet display-manager.service 2>/dev/null || return 1
+	[[ -f "$HOME/.Xauthority" ]] || return 1
+	return 0
+}
+
 write_appliance_status() {
-	root_command install -d -m 0755 "$BOOTSTRAP_STATE_DIR"
-	printf '%s %s\n' "$(date -Iseconds)" "$1" | root_command tee "$BOOTSTRAP_UPGRADE_STATUS_FILE" >/dev/null
-	root_command chmod 0644 "$BOOTSTRAP_UPGRADE_STATUS_FILE"
+	install -d -m 0755 "$BOOTSTRAP_STATE_DIR"
+	printf '%s %s\n' "$(date -Iseconds)" "$1" > "$BOOTSTRAP_UPGRADE_STATUS_FILE"
+	chmod 0644 "$BOOTSTRAP_UPGRADE_STATUS_FILE"
 }
 
 print_recent_appliance_log() {
@@ -145,16 +148,6 @@ print_recent_appliance_log() {
 	while IFS= read -r line; do
 		echo "  $line"
 	done <<< "$recent_log"
-}
-
-write_root_text_file() {
-	local destination="$1"
-	local mode="${2:-0644}"
-	local tmp_file
-	tmp_file=$(mktemp)
-	cat > "$tmp_file"
-	root_command install -D -m "$mode" "$tmp_file" "$destination"
-	rm -f "$tmp_file"
 }
 
 clone_nixpi_checkout() {
@@ -173,87 +166,27 @@ clone_nixpi_checkout() {
 	nix --extra-experimental-features 'nix-command flakes' run nixpkgs#git -- clone "$NIXPI_BOOTSTRAP_REPO" "$NIXPI_DIR"
 }
 
-write_promoted_system_flake() {
-	local hostname="$1"
-	local primary_user="$2"
-
-	root_command install -d -m 0755 "$BOOTSTRAP_SYSTEM_FLAKE_DIR"
-
-	write_root_text_file "$BOOTSTRAP_SYSTEM_HOST_FILE" <<-EOF
-	{ ... }:
-	{
-	  networking.hostName = "${hostname}";
-	  nixpi.primaryUser = "${primary_user}";
-	  nixpi.install.mode = "managed-user";
-	  nixpi.createPrimaryUser = true;
-	}
-	EOF
-
-	write_root_text_file "$BOOTSTRAP_SYSTEM_CONFIG_FILE" <<-EOF
-	{ ... }:
-	{
-	  imports = [
-	    ${NIXPI_DIR}/core/os/hosts/x86_64.nix
-	    ./hardware-configuration.nix
-	    ./nixpi-host.nix
-	  ];
-	}
-	EOF
-
-	write_root_text_file "$BOOTSTRAP_SYSTEM_FLAKE_FILE" <<-EOF
-	{
-	  description = "NixPI installed host";
-
-	  inputs = {
-	    nixpi.url = "path:${NIXPI_DIR}";
-	    nixpkgs.follows = "nixpi/nixpkgs";
-	  };
-
-	  outputs = { nixpi, nixpkgs, ... }:
-	    let
-	      system = "x86_64-linux";
-	    in {
-	      nixosConfigurations."${hostname}" = nixpkgs.lib.nixosSystem {
-	        inherit system;
-	        specialArgs = {
-	          piAgent = nixpi.packages.\${system}.pi;
-	          appPackage = nixpi.packages.\${system}.app;
-	          setupPackage = nixpi.packages.\${system}.nixpi-setup;
-	        };
-	        modules = [
-	          ./configuration.nix
-	          {
-	            nixpkgs.hostPlatform = system;
-	            nixpkgs.config.allowUnfree = true;
-	          }
-	        ];
-	      };
-	    };
-	}
-	EOF
-}
-
 promote_full_appliance() {
 	local hostname="$1"
 	local primary_user="$2"
 
-	root_command install -d -m 0755 "$BOOTSTRAP_STATE_DIR"
-	root_command install -m 0644 /dev/null "$BOOTSTRAP_UPGRADE_LOG_FILE"
+	install -d -m 0755 "$BOOTSTRAP_STATE_DIR"
+	: > "$BOOTSTRAP_UPGRADE_LOG_FILE"
 
 	write_appliance_status "Cloning the NixPI checkout..."
-	if ! clone_nixpi_checkout 2>&1 | root_command tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
+	if ! clone_nixpi_checkout 2>&1 | tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
 		write_appliance_status "Failed to prepare the NixPI checkout."
 		return 1
 	fi
 
 	write_appliance_status "Writing the local /etc/nixos system flake..."
-	if ! write_promoted_system_flake "$hostname" "$primary_user" 2>&1 | root_command tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
+	if ! root_command nixpi-bootstrap-install-host-flake "$NIXPI_DIR" "$hostname" "$primary_user" 2>&1 | tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
 		write_appliance_status "Failed to write the local /etc/nixos flake."
 		return 1
 	fi
 
 	write_appliance_status "Building and activating the full NixPI appliance..."
-	if ! root_command nixos-rebuild switch --impure --flake "${BOOTSTRAP_SYSTEM_FLAKE_DIR}#${hostname}" 2>&1 | root_command tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
+	if ! root_command nixpi-bootstrap-nixos-rebuild-switch "$hostname" 2>&1 | tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
 		write_appliance_status "Promotion failed. Review ${BOOTSTRAP_UPGRADE_LOG_FILE}."
 		return 1
 	fi
@@ -409,9 +342,17 @@ step_password() {
 		mark_done password
 		return
 	fi
+
+	local bootstrap_primary_password
+	bootstrap_primary_password=$(read_bootstrap_primary_password)
+	if [[ -n "$bootstrap_primary_password" ]]; then
+		echo "Password was already set during installation."
+		mark_done password
+		return
+	fi
 	
 	# Check if user already has a password set
-	if passwd -S "$(whoami)" 2>/dev/null | grep -qE 'P[[:space:]]+[0-9]{2}/[0-9]{2}/[0-9]{4}'; then
+	if [[ "$(passwd -S "$(whoami)" 2>/dev/null | awk '{print $2}')" == "P" ]]; then
 		echo "You already have a password set for this account."
 		echo "Keeping the existing login password."
 		mark_done password
@@ -516,7 +457,7 @@ step_netbird() {
 	done
 
 	echo "Connection options:"
-	echo "  1) Web login (OAuth) - opens browser to authenticate"
+	echo "  1) Web login (OAuth) - requires a desktop/browser session"
 	echo "  2) Setup key - for headless/automated setup"
 	echo "  3) Skip - configure later"
 	echo ""
@@ -532,8 +473,14 @@ step_netbird() {
 		case "$nb_choice" in
 			1|web|oauth|login)
 				echo ""
-				echo "Opening browser for NetBird authentication..."
-				echo "If no browser opens, visit the URL shown below."
+				if has_gui_session; then
+					echo "Starting NetBird web login..."
+					echo "If no browser opens, visit the URL shown below."
+				else
+					echo "No local desktop session is active in this setup shell."
+					echo "NetBird may print a login URL, but it cannot open a browser window here."
+					echo "Use option 2 with a setup key, or finish the desktop install and retry from Openbox."
+				fi
 				if root_command nixpi-bootstrap-netbird-up 2>&1; then
 					# Wait for connection to establish
 					for _ in $(seq 1 30); do

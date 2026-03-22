@@ -51,10 +51,33 @@ let
     categories = [ "System" ];
   };
 
+  desktopTerminal = pkgs.writeShellScriptBin "nixpi-open-desktop-terminal" ''
+    set -euo pipefail
+
+    if pgrep -u "${primaryUser}" -f "xterm.*NixPI (Terminal|Setup)" >/dev/null 2>&1; then
+      exit 0
+    fi
+
+    title="NixPI Terminal"
+    if [ ! -f "${primaryHome}/.nixpi/.setup-complete" ]; then
+      title="NixPI Setup"
+    fi
+
+    exec ${pkgs.xterm}/bin/xterm \
+      -title "$title" \
+      -fa "Monospace" \
+      -fs 12 \
+      -fg "#e6edf3" \
+      -bg "#10161d" \
+      -geometry 132x36 \
+      -e ${pkgs.bash}/bin/bash --login
+  '';
+
   openboxAutostart = pkgs.writeText "nixpi-openbox-autostart" ''
     ${pkgs.xsetroot}/bin/xsetroot -solid "#10161d"
     ${pkgs.dunst}/bin/dunst &
     ${pkgs.tint2}/bin/tint2 &
+    ${desktopTerminal}/bin/nixpi-open-desktop-terminal &
   '';
 
   openboxRc = pkgs.writeText "nixpi-openbox-rc.xml" ''
@@ -187,6 +210,7 @@ in
     openHome
     openChat
     restartDesktop
+    desktopTerminal
     homeDesktopItem
     chatDesktopItem
     restartDesktopItem
