@@ -35,13 +35,14 @@ class NixpiInstallerTests(unittest.TestCase):
 
     def test_prepare_artifacts_generates_managed_user_install(self):
         cfg = "{\n  imports = [\n    ./hardware-configuration.nix\n  ];\n}\n"
-        artifacts = self.module.prepare_nixpi_install_artifacts(
-            "/mnt/target",
-            "alex",
-            "pi-box",
-            "supersecret",
-            cfg,
-        )
+        with mock.patch.object(self.module, "hash_password", return_value="$6$fixedhash"):
+            artifacts = self.module.prepare_nixpi_install_artifacts(
+                "/mnt/target",
+                "alex",
+                "pi-box",
+                "supersecret",
+                cfg,
+            )
 
         self.assertEqual(artifacts["nixpi_install_path"], "/mnt/target/etc/nixos/nixpi-install.nix")
         self.assertEqual(artifacts["configuration_path"], "/mnt/target/etc/nixos/configuration.nix")
@@ -49,7 +50,8 @@ class NixpiInstallerTests(unittest.TestCase):
         self.assertIn('nixpi.primaryUser = "alex";', artifacts["nixpi_install_module"])
         self.assertIn('nixpi.install.mode = "managed-user";', artifacts["nixpi_install_module"])
         self.assertIn('nixpi.createPrimaryUser = true;', artifacts["nixpi_install_module"])
-        self.assertIn('users.users."alex".initialPassword = "supersecret";', artifacts["nixpi_install_module"])
+        self.assertIn('users.users."alex".hashedPassword = "$6$fixedhash";', artifacts["nixpi_install_module"])
+        self.assertNotIn('users.users."alex".initialPassword', artifacts["nixpi_install_module"])
         self.assertIn('bootstrapPasswordFile = "${config.nixpi.stateDir}/bootstrap/primary-user-password";', artifacts["nixpi_install_module"])
         self.assertIn("system.activationScripts.nixpi-bootstrap-primary-password", artifacts["nixpi_install_module"])
         self.assertIn("printf '%s' \"supersecret\" > ${bootstrapPasswordFile}", artifacts["nixpi_install_module"])
@@ -84,13 +86,14 @@ class NixpiInstallerTests(unittest.TestCase):
     def test_prepare_artifacts_updates_single_line_imports_block(self):
         cfg = "{\n  imports = [ ./hardware-configuration.nix ];\n}\n"
 
-        artifacts = self.module.prepare_nixpi_install_artifacts(
-            "/mnt/target",
-            "alex",
-            "pi-box",
-            "supersecret",
-            cfg,
-        )
+        with mock.patch.object(self.module, "hash_password", return_value="$6$fixedhash"):
+            artifacts = self.module.prepare_nixpi_install_artifacts(
+                "/mnt/target",
+                "alex",
+                "pi-box",
+                "supersecret",
+                cfg,
+            )
 
         self.assertEqual(artifacts["configuration_module"].count("imports = ["), 1)
         self.assertIn("  imports = [\n", artifacts["configuration_module"])
@@ -110,8 +113,9 @@ class NixpiInstallerTests(unittest.TestCase):
 
             argv = ["nixpi-installer", "--root", tmpdir, "--hostname", "pi-box", "--primary-user", "alex", "--password", "supersecret"]
             with mock.patch("sys.argv", argv):
-                with mock.patch("builtins.print") as print_mock:
-                    self.module.main()
+                with mock.patch.object(self.module, "hash_password", return_value="$6$fixedhash"):
+                    with mock.patch("builtins.print") as print_mock:
+                        self.module.main()
 
             payload = json.loads(print_mock.call_args[0][0])
             self.assertEqual(payload["hostname"], "pi-box")

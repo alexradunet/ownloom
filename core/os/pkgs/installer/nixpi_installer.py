@@ -3,6 +3,7 @@
 import argparse
 import json
 import re
+import subprocess
 from pathlib import Path
 
 NIXPI_INSTALL_MODULE_TEMPLATE_PATH = "@nixpiInstallModuleTemplate@"
@@ -60,9 +61,21 @@ def load_base_host_config(nixos_etc):
     raise FileNotFoundError(f"missing configuration.nix under {nixos_etc}")
 
 
+def hash_password(password):
+    result = subprocess.run(
+        ["openssl", "passwd", "-6", "-stdin"],
+        input=password,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
 def prepare_nixpi_install_artifacts(root_mount_point, username, hostname, password, cfg):
     nixos_etc = Path(root_mount_point) / "etc/nixos"
     configuration_module = upsert_hostname(ensure_import(cfg, "./nixpi-install.nix"), hostname)
+    password_hash = hash_password(password)
     return {
         "hostname": hostname,
         "nixpi_install_path": str(nixos_etc / "nixpi-install.nix"),
@@ -72,6 +85,7 @@ def prepare_nixpi_install_artifacts(root_mount_point, username, hostname, passwo
             load_nixpi_install_module_template()
             .replace("@@username@@", username)
             .replace("@@password@@", json.dumps(password))
+            .replace("@@passwordHash@@", json.dumps(password_hash))
         ),
         "configuration_module": configuration_module,
     }

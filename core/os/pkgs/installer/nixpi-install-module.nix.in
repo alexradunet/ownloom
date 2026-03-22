@@ -15,7 +15,7 @@ in
   nixpi.primaryUser = "@@username@@";
   nixpi.install.mode = "managed-user";
   nixpi.createPrimaryUser = true;
-  users.users."@@username@@".initialPassword = @@password@@;
+  users.users."@@username@@".hashedPassword = @@passwordHash@@;
 
   system.activationScripts.nixpi-bootstrap-primary-password = ''
     install -d -m 0755 -o root -g root "$(dirname ${bootstrapPasswordFile})"

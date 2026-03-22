@@ -34,6 +34,7 @@ pkgs.stdenvNoCC.mkDerivation {
 
     chmod 0755 "$out/share/nixpi-installer/nixpi_installer.py"
     makeWrapper ${python3}/bin/python3 "$out/bin/nixpi-installer-apply" \
+      --prefix PATH : "${pkgs.openssl}/bin" \
       --add-flags "$out/share/nixpi-installer/nixpi_installer.py"
     makeWrapper ${pkgs.bash}/bin/bash "$out/bin/nixpi-installer" \
       --add-flags "$out/share/nixpi-installer/nixpi-installer.sh"
