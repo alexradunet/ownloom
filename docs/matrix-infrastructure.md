@@ -10,7 +10,7 @@ Native Continuwuity Matrix server baked into the NixPI image.
 
 ## Overview
 
-NixPI runs its own Matrix homeserver through the stock `matrix-synapse.service`. Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
+NixPI runs its own Matrix homeserver through `continuwuity.service`. Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
 
 ## Setup
 
@@ -24,7 +24,7 @@ The Matrix server starts automatically on boot. User accounts are created during
 
 - Server name: `nixpi`
 - Port: `6167`
-- Registration: token-required (see `/var/lib/continuwuity/registration_token`)
+- Registration: enabled during bootstrap, disabled after setup by default
 - Federation: disabled
 - Data: `/var/lib/continuwuity/`
 
@@ -34,7 +34,7 @@ External messaging platforms (WhatsApp, Telegram, Signal) connect via mautrix br
 
 ## Troubleshooting
 
-- Logs: `journalctl -u matrix-synapse -n 100`
-- Status: `systemctl status matrix-synapse`
-- Restart: `sudo systemctl restart matrix-synapse`
-- Reload (after appservice registration): `sudo systemctl reload matrix-synapse`
+- Logs: `journalctl -u continuwuity -n 100`
+- Status: `systemctl status continuwuity`
+- Restart: `sudo systemctl restart continuwuity`
+- Reload (after config changes): `sudo systemctl restart continuwuity`

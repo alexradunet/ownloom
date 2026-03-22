@@ -12,22 +12,25 @@ let
     || config.nixpi.matrix.bindAddress == "::1"
     || config.nixpi.matrix.bindAddress == "localhost";
   generatedRegistrationSecretFile = "${secretDir}/matrix-registration-shared-secret";
-  generatedMacaroonSecretFile = "${secretDir}/matrix-macaroon-secret-key";
   registrationSecretFile =
     if config.nixpi.matrix.registrationSharedSecretFile != null then
       config.nixpi.matrix.registrationSharedSecretFile
     else
       generatedRegistrationSecretFile;
-  macaroonSecretFile =
-    if config.nixpi.matrix.macaroonSecretKeyFile != null then
-      config.nixpi.matrix.macaroonSecretKeyFile
+  uploadSizeMatch = builtins.match "^([0-9]+)([KkMmGg]?)$" config.nixpi.matrix.maxUploadSize;
+  uploadSizeValue =
+    if uploadSizeMatch == null then
+      throw "nixpi.matrix.maxUploadSize must use the form <int>[K|M|G], for example 20M."
     else
-      generatedMacaroonSecretFile;
-  clientBaseUrl =
-    if config.nixpi.matrix.clientBaseUrl != "" then
-      config.nixpi.matrix.clientBaseUrl
-    else
-      "http://${config.networking.hostName}:${toString config.nixpi.matrix.port}";
+      lib.toInt (builtins.elemAt uploadSizeMatch 0);
+  uploadSizeSuffix = if uploadSizeMatch == null then "" else builtins.elemAt uploadSizeMatch 1;
+  uploadSizeMultiplier =
+    if builtins.elem uploadSizeSuffix [ "" ] then 1 else
+    if builtins.elem uploadSizeSuffix [ "K" "k" ] then 1000 else
+    if builtins.elem uploadSizeSuffix [ "M" "m" ] then 1000 * 1000 else
+    if builtins.elem uploadSizeSuffix [ "G" "g" ] then 1000 * 1000 * 1000 else
+    throw "Unsupported nixpi.matrix.maxUploadSize suffix `${uploadSizeSuffix}`.";
+  maxRequestSize = uploadSizeValue * uploadSizeMultiplier;
 in
 {
   imports = [ ./options.nix ];
@@ -40,114 +43,62 @@ in
   ];
 
   systemd.tmpfiles.rules = [
-    "d ${secretDir} 0750 root matrix-synapse -"
-    "d /var/lib/matrix-synapse 0750 matrix-synapse matrix-synapse -"
-    "d /var/lib/matrix-synapse/media_store 0750 matrix-synapse matrix-synapse -"
+    "d ${secretDir} 0750 root continuwuity -"
+    "d /var/lib/continuwuity 0750 continuwuity continuwuity -"
   ];
 
-  services.matrix-synapse = {
+  services.matrix-continuwuity = {
     enable = true;
-    
-    settings = {
+    settings.global = {
       server_name = config.networking.hostName;
-      public_baseurl = clientBaseUrl;
-      
-      listeners = [
-        {
-          port = config.nixpi.matrix.port;
-          bind_addresses = [ config.nixpi.matrix.bindAddress ];
-          type = "http";
-          tls = false;
-          x_forwarded = false;
-          resources = [
-            {
-              names = [ "client" "federation" ];
-              compress = true;
-            }
-          ];
-        }
-      ];
-      
-      # Use SQLite for simplicity (suitable for single-user/embedded use)
-      database.name = "sqlite3";
-      database.args = {
-        database = "/var/lib/matrix-synapse/homeserver.db";
-      };
-      
-      # Registration settings
-      enable_registration = config.nixpi.matrix.enableRegistration;
-      enable_registration_without_verification = config.nixpi.matrix.enableRegistration;
-      suppress_key_server_warning = true;
-      
-      # Don't require email verification
-      registrations_require_3pid = [];
-      
-      # Disable federation (private homeserver)
-      federation_domain_whitelist = [];
-      
-      # Limit request size for file uploads
-      max_upload_size = config.nixpi.matrix.maxUploadSize;
-      
-      # Disable presence (reduces resource usage)
-      use_presence = false;
-      
-      # URL preview settings
-      url_preview_enabled = false;
+      address = [ config.nixpi.matrix.bindAddress ];
+      port = [ config.nixpi.matrix.port ];
+      max_request_size = maxRequestSize;
+      allow_registration = false;
+      allow_federation = false;
+      trusted_servers = [ ];
+      allow_announcements_check = false;
     };
-    
-    # Extra configuration lines for runtime secrets
-    extraConfigFiles = [ "/var/lib/matrix-synapse/extra.yaml" ];
   };
 
-  # Override the systemd service to add bootstrap script and ensure proper ordering
-  systemd.services.matrix-synapse = {
+  # Generate a mutable runtime config so registration can close automatically
+  # once first-boot setup completes, while keeping the homeserver package declarative.
+  systemd.services.continuwuity = {
+    environment.CONTINUWUITY_CONFIG = lib.mkForce "/var/lib/continuwuity/continuwuity.toml";
     serviceConfig = {
-      # Ensure data directory exists with proper permissions
       PermissionsStartOnly = true;
-      StateDirectory = "matrix-synapse";
-      StateDirectoryMode = "0750";
     };
     preStart = ''
       TOKEN_FILE="${registrationSecretFile}"
-      MACAROON_FILE="${macaroonSecretFile}"
       if [ ! -f "$TOKEN_FILE" ]; then
         ${pkgs.openssl}/bin/openssl rand -hex 32 > "$TOKEN_FILE"
-        chown root:matrix-synapse "$TOKEN_FILE"
+        chown root:continuwuity "$TOKEN_FILE"
         chmod 0640 "$TOKEN_FILE"
       fi
 
-      if [ ! -f "$MACAROON_FILE" ]; then
-        ${pkgs.openssl}/bin/openssl rand -hex 32 > "$MACAROON_FILE"
-        chown root:matrix-synapse "$MACAROON_FILE"
-        chmod 0640 "$MACAROON_FILE"
+      ENABLE_REGISTRATION="${if config.nixpi.matrix.keepRegistrationAfterSetup then (if config.nixpi.matrix.enableRegistration then "true" else "false") else "dynamic"}"
+      if [ "$ENABLE_REGISTRATION" = "dynamic" ]; then
+        if [ -f "${setupCompleteFile}" ]; then
+          ENABLE_REGISTRATION="false"
+        else
+          ENABLE_REGISTRATION="${if config.nixpi.matrix.enableRegistration then "true" else "false"}"
+        fi
       fi
-      
-      # Render a stable runtime secret config for Synapse from the selected
-      # operator-managed or generated secret files.
-      if [ -f "$TOKEN_FILE" ] && [ -f "$MACAROON_FILE" ]; then
-        SECRET=$(cat "$TOKEN_FILE")
-        MACAROON_SECRET=$(cat "$MACAROON_FILE")
-        ENABLE_REGISTRATION="${if config.nixpi.matrix.keepRegistrationAfterSetup then (if config.nixpi.matrix.enableRegistration then "true" else "false") else "dynamic"}"
-        ENABLE_REGISTRATION_WITHOUT_VERIFICATION="false"
-        if [ "$ENABLE_REGISTRATION" = "dynamic" ]; then
-          if [ -f "${setupCompleteFile}" ]; then
-            ENABLE_REGISTRATION="false"
-          else
-            ENABLE_REGISTRATION="${if config.nixpi.matrix.enableRegistration then "true" else "false"}"
-          fi
-        fi
-        if [ "$ENABLE_REGISTRATION" = "true" ]; then
-          ENABLE_REGISTRATION_WITHOUT_VERIFICATION="${if config.nixpi.matrix.enableRegistration then "true" else "false"}"
-        fi
-        cat > /var/lib/matrix-synapse/extra.yaml <<EOF
-registration_shared_secret: "$SECRET"
-macaroon_secret_key: "$MACAROON_SECRET"
-enable_registration: $ENABLE_REGISTRATION
-enable_registration_without_verification: $ENABLE_REGISTRATION_WITHOUT_VERIFICATION
+
+      cat > /var/lib/continuwuity/continuwuity.toml <<EOF
+[global]
+server_name = "${config.networking.hostName}"
+address = ["${config.nixpi.matrix.bindAddress}"]
+port = [${toString config.nixpi.matrix.port}]
+database_path = "/var/lib/continuwuity"
+max_request_size = ${toString maxRequestSize}
+allow_registration = $ENABLE_REGISTRATION
+allow_federation = false
+trusted_servers = []
+allow_announcements_check = false
 EOF
-        chown root:matrix-synapse /var/lib/matrix-synapse/extra.yaml
-        chmod 0640 /var/lib/matrix-synapse/extra.yaml
-      fi
+      chown root:continuwuity /var/lib/continuwuity/continuwuity.toml
+      chmod 0640 /var/lib/continuwuity/continuwuity.toml
     '';
   };
 
@@ -158,7 +109,7 @@ EOF
     (config.nixpi.matrix.enableRegistration
       && !config.nixpi.security.enforceServiceFirewall
       && !matrixBindsLocally) ''
-    NixPI Matrix registration is enabled while Synapse is listening on
+    NixPI Matrix registration is enabled while Continuwuity is listening on
     `${config.nixpi.matrix.bindAddress}` without the trusted-interface firewall
     restriction. Registration should be disabled or Matrix should be kept local.
   '';

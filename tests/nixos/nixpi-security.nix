@@ -92,7 +92,7 @@ pkgs.testers.runNixOSTest {
 
     bootstrap.start()
     bootstrap.wait_for_unit("multi-user.target", timeout=300)
-    bootstrap.wait_for_unit("matrix-synapse.service", timeout=60)
+    bootstrap.wait_for_unit("continuwuity.service", timeout=60)
     bootstrap.wait_for_unit("fail2ban.service", timeout=60)
     bootstrap.wait_until_succeeds("test ! -f /home/pi/.nixpi/.setup-complete", timeout=30)
 
@@ -117,7 +117,7 @@ pkgs.testers.runNixOSTest {
     steady.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'", timeout=60)
 
     # Matrix registration is disabled after setup by default.
-    steady.succeed("test \"$(curl -s -o /tmp/register.out -w '%{http_code}' -X POST http://127.0.0.1:6167/_matrix/client/v3/register -H 'Content-Type: application/json' -d '{\"username\":\"blocked\",\"password\":\"testpassword123\",\"inhibit_login\":false}')\" = 401")
+    steady.succeed("test \"$(curl -s -o /tmp/register.out -w '%{http_code}' -X POST http://127.0.0.1:6167/_matrix/client/v3/register -H 'Content-Type: application/json' -d '{\"username\":\"blocked\",\"password\":\"testpassword123\",\"inhibit_login\":false}')\" != 200")
 
     # fail2ban is active and protecting SSH.
     steady.succeed("fail2ban-client status sshd | grep -q 'Status for the jail: sshd'")

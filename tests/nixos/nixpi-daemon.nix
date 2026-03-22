@@ -60,7 +60,7 @@ pkgs.testers.runNixOSTest {
       
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
-      systemd.services.matrix-synapse.wantedBy = lib.mkForce [];
+      systemd.services.continuwuity.wantedBy = lib.mkForce [];
       # Ensure the primary NixPI user exists with proper setup
       users.users.${username} = {
         isNormalUser = true;
@@ -97,7 +97,7 @@ pkgs.testers.runNixOSTest {
     # Start the homeserver first.
     server.start()
     server.wait_for_unit("multi-user.target", timeout=300)
-    server.wait_for_unit("matrix-synapse.service", timeout=60)
+    server.wait_for_unit("continuwuity.service", timeout=60)
     server.wait_until_succeeds("curl -sf http://localhost:6167/_matrix/client/versions", timeout=60)
 
     register_response = server.succeed("""

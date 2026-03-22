@@ -196,7 +196,7 @@ EOF
       done
     }
     
-    # Register a Matrix user on the local Synapse instance
+    # Register a Matrix user on the local Continuwuity instance
     register_matrix_user() {
       local username="$1"
       local password="$2"

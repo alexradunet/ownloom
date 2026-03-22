@@ -97,7 +97,7 @@ Installed by default:
 
 - `sshd.service`
 - `netbird.service`
-- `matrix-synapse.service`
+- `continuwuity.service`
 - `nixpi-daemon.service` after setup once AI auth and defaults are ready
 - `nixpi-home.service`
 - `nixpi-element-web.service`

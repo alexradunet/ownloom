@@ -100,7 +100,7 @@ describe("episodes", () => {
 			"call-1",
 			{
 				title: "Recovery Procedure",
-				body: "Restart matrix-synapse.service, then verify the bridge recovers.",
+				body: "Restart continuwuity.service, then verify the bridge recovers.",
 				kind: "resolution",
 				importance: "high",
 				tags: ["recovery", "procedure"],

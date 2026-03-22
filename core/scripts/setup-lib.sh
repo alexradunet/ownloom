@@ -224,14 +224,14 @@ write_element_web_runtime_config() {
 }
 
 start_matrix_homeserver() {
-	if systemctl is-active --quiet matrix-synapse.service; then
+	if systemctl is-active --quiet continuwuity.service; then
 		return 0
 	fi
 
 	if command -v nixpi-bootstrap-matrix-systemctl >/dev/null 2>&1; then
-		root_command nixpi-bootstrap-matrix-systemctl start matrix-synapse.service >/dev/null 2>&1 || true
+		root_command nixpi-bootstrap-matrix-systemctl start continuwuity.service >/dev/null 2>&1 || true
 	else
-		root_command systemctl start matrix-synapse.service >/dev/null 2>&1 || true
+		root_command systemctl start continuwuity.service >/dev/null 2>&1 || true
 	fi
 }
 
@@ -245,20 +245,20 @@ step_matrix() {
 	echo "Waiting for Matrix homeserver..."
 	start_matrix_homeserver
 	local attempts=0
-	while ! systemctl is-active --quiet matrix-synapse.service; do
+	while ! systemctl is-active --quiet continuwuity.service; do
 		attempts=$((attempts + 1))
 		if [[ $attempts -eq 30 ]]; then
 			start_matrix_homeserver
 		fi
 		if [[ $attempts -ge 120 ]]; then
-			echo "ERROR: matrix-synapse.service did not start within 120 seconds." >&2
+			echo "ERROR: continuwuity.service did not start within 120 seconds." >&2
 			if command -v nixpi-bootstrap-matrix-journal >/dev/null 2>&1; then
-				echo "Recent matrix-synapse logs:" >&2
+				echo "Recent continuwuity logs:" >&2
 				root_command nixpi-bootstrap-matrix-journal >&2 || true
 			else
-				root_command journalctl -u matrix-synapse --no-pager >&2 || true
+				root_command journalctl -u continuwuity --no-pager >&2 || true
 			fi
-			echo "Run 'systemctl status matrix-synapse' to debug." >&2
+			echo "Run 'systemctl status continuwuity' to debug." >&2
 			return 1
 		fi
 		sleep 1

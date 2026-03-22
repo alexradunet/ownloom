@@ -49,7 +49,7 @@ pkgs.testers.runNixOSTest {
       };
       users.groups.${username} = {};
 
-      systemd.services.matrix-synapse.wantedBy = lib.mkForce [ ];
+      systemd.services.continuwuity.wantedBy = lib.mkForce [ ];
       systemd.services.netbird.wantedBy = lib.mkForce [ ];
       systemd.services.nixpi-home.wantedBy = lib.mkForce [ ];
       systemd.services.nixpi-element-web.wantedBy = lib.mkForce [ ];
@@ -107,7 +107,7 @@ EOF
 
     start_all()
 
-    homeserver.wait_for_unit("matrix-synapse.service", timeout=120)
+    homeserver.wait_for_unit("continuwuity.service", timeout=120)
     homeserver.wait_until_succeeds("curl -sf http://127.0.0.1:6167/_matrix/client/versions", timeout=60)
 
     def register(username, password):

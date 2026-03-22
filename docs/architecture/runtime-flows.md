@@ -33,7 +33,7 @@ Understanding how control and data flow through NixPI is essential for:
 3. **Service installation**
    - `nixpi-daemon.service` enabled
    - `nixpi-home.service`, `nixpi-element-web.service` configured
-   - Matrix Synapse provisioned
+   - Matrix Continuwuity provisioned
 
 ### Key Files
 
@@ -53,7 +53,7 @@ systemd boot
     ↓
 multi-user.target
     ↓
-├─ matrix-synapse.service
+├─ continuwuity.service
 ├─ netbird.service
 ├─ nixpi-home.service
 ├─ nixpi-element-web.service

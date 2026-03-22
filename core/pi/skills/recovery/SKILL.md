@@ -12,10 +12,10 @@ Use these procedures when diagnosing and recovering from common system issues. A
 **Symptoms**: Messages not delivered, Pi not responding in Matrix rooms.
 
 1. Check system health: `system_health`
-2. Check Matrix service: `systemctl status matrix-synapse`
-3. Check logs: `journalctl -u matrix-synapse -n 100`
+2. Check Matrix service: `systemctl status continuwuity`
+3. Check logs: `journalctl -u continuwuity -n 100`
 4. Common causes:
-   - Server not running: `sudo systemctl restart matrix-synapse`
+   - Server not running: `sudo systemctl restart continuwuity`
    - Database corruption: check `/var/lib/continuwuity/` for issues
    - Port conflict: verify nothing else is on port 6167
 5. If Pi is not responding to messages:

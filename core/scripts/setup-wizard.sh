@@ -70,7 +70,7 @@ has_runtime_stack() {
 }
 
 has_matrix_stack() {
-	has_systemd_unit matrix-synapse.service && has_command curl
+	has_systemd_unit continuwuity.service && has_command curl
 }
 
 has_service_stack() {
@@ -581,7 +581,7 @@ finalize() {
 		root_command nixpi-bootstrap-sshd-systemctl stop sshd.service || echo "warning: failed to stop sshd.service" >&2
 	fi
 	if has_matrix_stack; then
-		root_command nixpi-bootstrap-matrix-systemctl try-restart matrix-synapse.service || echo "warning: failed to restart matrix-synapse.service" >&2
+		root_command nixpi-bootstrap-matrix-systemctl try-restart continuwuity.service || echo "warning: failed to restart continuwuity.service" >&2
 	fi
 	if has_systemd_unit nixpi-daemon.service; then
 		if ! root_command nixpi-bootstrap-service-systemctl enable --now nixpi-daemon.service; then

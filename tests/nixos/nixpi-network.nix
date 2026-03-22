@@ -23,7 +23,7 @@ pkgs.testers.runNixOSTest {
       networking.networkmanager.enable = true;
       system.stateVersion = "25.05";
       # nixpkgs.config NOT set here - test framework injects its own pkgs
-      systemd.services.matrix-synapse.wantedBy = lib.mkForce [];
+      systemd.services.continuwuity.wantedBy = lib.mkForce [];
       # Standard boot config
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
@@ -45,7 +45,7 @@ pkgs.testers.runNixOSTest {
       networking.networkmanager.enable = true;
       system.stateVersion = "25.05";
       # nixpkgs.config NOT set here - test framework injects its own pkgs
-      systemd.services.matrix-synapse.wantedBy = lib.mkForce [];
+      systemd.services.continuwuity.wantedBy = lib.mkForce [];
       # Standard boot config
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;

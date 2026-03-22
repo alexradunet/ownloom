@@ -121,7 +121,7 @@ nixpi
 systemd.services.nixpi-daemon = {
   description = "NixPI Matrix daemon";
   wantedBy = [ "multi-user.target" ];
-  after = [ "network.target" "matrix-synapse.service" ];
+  after = [ "network.target" "continuwuity.service" ];
   serviceConfig = {
     User = "agent";
     ExecStart = "${appPackage}/bin/nixpi-daemon";
@@ -154,7 +154,7 @@ systemd.services.nixpi-daemon = {
 
 ### `core/os/modules/matrix.nix`
 
-**Responsibility**: Matrix Synapse homeserver configuration.
+**Responsibility**: Matrix Continuwuity homeserver configuration.
 
 **Key Features**:
 - Non-federating configuration (private server)

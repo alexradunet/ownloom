@@ -168,7 +168,7 @@ in
           "netbird.service"
           "nixpi-home.service"
           "nixpi-element-web.service"
-          "matrix-synapse.service"
+          "continuwuity.service"
           "nixpi-update.service"
         ];
         description = ''
@@ -271,8 +271,9 @@ in
         type = lib.types.nullOr externalAbsolutePath;
         default = null;
         description = ''
-          Optional external file containing the Matrix registration shared
-          secret. When unset, NixPI generates one stable runtime secret.
+          Optional external file containing the Matrix registration secret
+          maintained for NixPI bootstrap compatibility. When unset, NixPI
+          generates one stable runtime secret file.
         '';
       };
 
@@ -280,8 +281,8 @@ in
         type = lib.types.nullOr externalAbsolutePath;
         default = null;
         description = ''
-          Optional external file containing the Matrix macaroon secret key.
-          When unset, NixPI generates one stable runtime secret.
+          Deprecated Synapse-era option. Continuwuity does not use a macaroon
+          secret key, so this value is ignored.
         '';
       };
     };

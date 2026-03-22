@@ -121,7 +121,7 @@ describe("persona session_start", () => {
 					type: "procedure",
 					slug: "matrix-recovery",
 					title: "Matrix Recovery",
-					summary: "Restart matrix-synapse.service, then verify recovery.",
+					summary: "Restart continuwuity.service, then verify recovery.",
 					status: "active",
 					salience: 0.8,
 				},

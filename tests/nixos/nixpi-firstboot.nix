@@ -78,13 +78,13 @@ pkgs.testers.runNixOSTest {
     nixpi.wait_for_unit("netbird.service", timeout=60)
 
     # Simulate slow or inactive Matrix startup and ensure the wizard recovers it.
-    nixpi.succeed("systemctl stop matrix-synapse.service")
+    nixpi.succeed("systemctl stop continuwuity.service")
     
     # Test 1: Wizard completes unattended from prefill state
     nixpi.succeed("su - pi -c 'setup-wizard.sh'")
 
     # Test 1a: Wizard started Matrix itself and left it active
-    nixpi.wait_for_unit("matrix-synapse.service", timeout=120)
+    nixpi.wait_for_unit("continuwuity.service", timeout=120)
     
     # Test 2: .setup-complete marker file was created (unattended mode)
     nixpi.succeed("test -f " + home + "/.nixpi/.setup-complete")

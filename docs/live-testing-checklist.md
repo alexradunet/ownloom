@@ -32,7 +32,7 @@ Pi resumes cleanly after reboot and does not require manual cleanup of partial w
 ### Core Runtime
 
 1. Confirm `nixpi-daemon.service` is active as a system service.
-2. Confirm `matrix-synapse.service` is active.
+2. Confirm `continuwuity.service` is active.
 3. Verify the `#general:nixpi` room exists and Pi replies to a message.
 4. If agent overlays exist, confirm malformed overlays are skipped without killing the daemon.
 

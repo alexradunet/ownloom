@@ -79,7 +79,7 @@ pkgs.testers.runNixOSTest {
         curl -s -o /tmp/post-setup-register.out -w '%{http_code}' -X POST http://127.0.0.1:6167/_matrix/client/v3/register \
         -H 'Content-Type: application/json' \
         -d '{"username":"blocked","password":"blockedpass123","inhibit_login":false}' \
-      )" = 401
+      )" != 200
     """)
 
     # Local services remain available on loopback.

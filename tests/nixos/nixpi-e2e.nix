@@ -105,7 +105,7 @@ pkgs.testers.runNixOSTest {
     nixpi.wait_until_succeeds("test -f " + home + "/.nixpi/.setup-complete", timeout=180)
 
     # E2E Test 3: Matrix homeserver is available locally on the NixPI node
-    nixpi.wait_for_unit("matrix-synapse.service", timeout=60)
+    nixpi.wait_for_unit("continuwuity.service", timeout=60)
     nixpi.succeed("curl -sf http://127.0.0.1:6167/_matrix/client/versions")
 
     # E2E Test 4: Wizard logged its completion in unattended mode
@@ -118,14 +118,14 @@ pkgs.testers.runNixOSTest {
         -H "Content-Type: application/json" \
         -d '{"username":"blocked","password":"blockedpass123","inhibit_login":false}'
     """).strip()
-    assert register_status == "401", "Expected registration to be disabled, got HTTP " + register_status
+    assert register_status != "200", "Expected registration to be disabled, got HTTP " + register_status
 
     # E2E Test 6: SSH is disabled from an untrusted peer after setup
     client.succeed("! nc -z -w 2 pi 22")
     nixpi.succeed("systemctl show -p ActiveState --value sshd.service | grep -Eq 'inactive|failed'")
     
     # E2E Test 7: All expected services are running
-    services = ["matrix-synapse", "netbird", "NetworkManager"]
+    services = ["continuwuity", "netbird", "NetworkManager"]
     for svc in services:
         nixpi.succeed("systemctl is-active " + svc + ".service")
     

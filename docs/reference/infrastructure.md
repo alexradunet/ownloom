@@ -6,7 +6,7 @@
 
 ### Overview
 
-NixPI runs its own Matrix homeserver through the stock `matrix-synapse.service`. Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
+NixPI runs its own Matrix homeserver through `continuwuity.service`. Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
 
 ### Setup
 
@@ -35,16 +35,16 @@ External messaging platforms (WhatsApp, Telegram, Signal) connect via mautrix br
 
 ```bash
 # Logs
-journalctl -u matrix-synapse -n 100
+journalctl -u continuwuity -n 100
 
 # Status
-systemctl status matrix-synapse
+systemctl status continuwuity
 
 # Restart
-sudo systemctl restart matrix-synapse
+sudo systemctl restart continuwuity
 
-# Reload (after appservice registration)
-sudo systemctl reload matrix-synapse
+# Restart after config changes
+sudo systemctl restart continuwuity
 ```
 
 ---

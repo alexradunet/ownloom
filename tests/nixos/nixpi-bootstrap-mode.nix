@@ -54,7 +54,7 @@ pkgs.testers.runNixOSTest {
 
     bootstrap.start()
     bootstrap.wait_for_unit("multi-user.target", timeout=300)
-    bootstrap.wait_for_unit("matrix-synapse.service", timeout=120)
+    bootstrap.wait_for_unit("continuwuity.service", timeout=120)
     bootstrap.succeed("command -v setup-wizard.sh")
     bootstrap.wait_until_succeeds("test ! -f /home/pi/.nixpi/.setup-complete", timeout=60)
 
