@@ -18,8 +18,6 @@ pkgs.testers.runNixOSTest {
     console.keyMap = "us";
 
     nixpi.primaryUser = "pi";
-    nixpi.install.mode = "managed-user";
-    nixpi.createPrimaryUser = true;
     networking.hostName = "nixpi-desktop-test";
 
     virtualisation.diskSize = 20480;

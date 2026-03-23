@@ -21,14 +21,14 @@ Use it to verify that setup, messaging, and recovery paths still match the shipp
 For VM validation:
 
 - Use `just vm-install-iso` for the default local-dev path.
-- Use `NIXPI_INSTALL_VM_BRIDGE=br0 just vm-install-iso-bridge` when you need realistic NetBird reachability checks.
-- Do not expect guest NetBird URLs in the default NAT path to behave like a real network peer.
+- Use it to validate installer flow, desktop startup, and in-guest NetBird enrollment.
+- Do not expect guest NetBird URLs in the default NAT path to behave like a real network peer from the host or LAN.
 
 ### First Boot
 
 1. Complete the password step.
 2. Bring the machine online and confirm outbound network access works.
-3. Enroll NetBird and verify the reported mesh IP is reachable from another peer.
+3. Enroll NetBird and verify `netbird status` reports a connected session.
 4. Complete the Matrix step and confirm `~/.pi/matrix-credentials.json` exists.
 5. Reboot once before finishing release notes.
 

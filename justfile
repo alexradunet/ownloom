@@ -43,13 +43,7 @@ iso:
 #   NIXPI_INSTALL_VM_CPUS=4
 #   NIXPI_INSTALL_VM_SSH_PORT=2222
 vm-install-iso: iso
-    NIXPI_INSTALL_VM_OVMF_CODE={{ ovmf }} NIXPI_INSTALL_VM_OVMF_VARS_TEMPLATE={{ ovmf_vars }} bash tools/run-installer-iso.sh user
-
-# Boot the installer ISO with bridged networking for realistic NetBird validation.
-# Requires:
-#   NIXPI_INSTALL_VM_BRIDGE=br0
-vm-install-iso-bridge: iso
-    NIXPI_INSTALL_VM_OVMF_CODE={{ ovmf }} NIXPI_INSTALL_VM_OVMF_VARS_TEMPLATE={{ ovmf_vars }} bash tools/run-installer-iso.sh bridge "${NIXPI_INSTALL_VM_BRIDGE:-}"
+    NIXPI_INSTALL_VM_OVMF_CODE={{ ovmf }} NIXPI_INSTALL_VM_OVMF_VARS_TEMPLATE={{ ovmf_vars }} bash tools/run-installer-iso.sh
 
 # Run VM (fresh build from current codebase)
 vm: qcow2

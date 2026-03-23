@@ -24,8 +24,6 @@
   systemd.services."serial-getty@ttyS0".enable = true;
   nixpi.security.ssh.passwordAuthentication = lib.mkDefault true;
   nixpi.primaryUser = lib.mkDefault "pi";
-  nixpi.install.mode = lib.mkDefault "managed-user";
-  nixpi.createPrimaryUser = lib.mkDefault true;
 
   time.timeZone = "UTC";
   i18n.defaultLocale = "en_US.UTF-8";

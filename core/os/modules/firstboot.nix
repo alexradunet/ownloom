@@ -1,9 +1,8 @@
 { config, pkgs, lib, ... }:
 
 let
-  resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
-  primaryUser = resolved.resolvedPrimaryUser;
-  primaryHome = resolved.resolvedPrimaryHome;
+  primaryUser = config.nixpi.primaryUser;
+  primaryHome = "/home/${primaryUser}";
   stateDir = config.nixpi.stateDir;
   setupCompleteFile = "${primaryHome}/.nixpi/.setup-complete";
   matrixRegistrationSecretFile =
@@ -45,8 +44,6 @@ let
 {
   networking.hostName = "$hostname";
   nixpi.primaryUser = "$primary_user";
-  nixpi.install.mode = "managed-user";
-  nixpi.createPrimaryUser = true;
 }
 EOF
 

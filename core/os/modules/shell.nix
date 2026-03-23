@@ -2,9 +2,8 @@
 { pkgs, lib, config, ... }:
 
 let
-  resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
-  primaryUser = resolved.resolvedPrimaryUser;
-  primaryHome = resolved.resolvedPrimaryHome;
+  primaryUser = config.nixpi.primaryUser;
+  primaryHome = "/home/${primaryUser}";
   stateDir = config.nixpi.stateDir;
 
   bashrc = pkgs.writeText "nixpi-bashrc" ''
@@ -13,7 +12,6 @@ let
     export NIXPI_PI_DIR="${primaryHome}/.pi"
     export PI_CODING_AGENT_DIR="${primaryHome}/.pi"
     export NIXPI_CONFIG_DIR="${stateDir}/services"
-    export NIXPI_INSTALL_MODE="${config.nixpi.install.mode}"
     export NIXPI_KEEP_SSH_AFTER_SETUP="${if config.nixpi.bootstrap.keepSshAfterSetup then "1" else "0"}"
     if command -v chromium >/dev/null 2>&1; then
       export BROWSER="chromium"
@@ -38,15 +36,11 @@ in
     }
     {
       assertion = primaryHome != "";
-      message = "nixpi.primaryHome must not be empty.";
-    }
-    {
-      assertion = config.nixpi.install.mode != "managed-user" || primaryUser != "";
-      message = "nixpi.install.mode = managed-user requires nixpi.primaryUser.";
+      message = "nixpi.primaryUser must resolve to a valid home directory.";
     }
   ];
 
-  users.users.${primaryUser} = lib.mkIf (config.nixpi.createPrimaryUser || config.nixpi.install.mode == "managed-user") {
+  users.users.${primaryUser} = {
     isNormalUser = true;
     group = primaryUser;
     extraGroups = [ "wheel" "networkmanager" ];
@@ -55,7 +49,7 @@ in
     shell = pkgs.bash;
   };
 
-  users.groups.${primaryUser} = lib.mkIf (config.nixpi.createPrimaryUser || config.nixpi.install.mode == "managed-user") {};
+  users.groups.${primaryUser} = {};
 
   security.sudo.extraRules = lib.mkIf config.nixpi.security.passwordlessSudo.enable [
     {

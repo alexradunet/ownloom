@@ -18,47 +18,10 @@ in
   options.nixpi = {
     primaryUser = lib.mkOption {
       type = lib.types.str;
-      default = "";
+      default = "pi";
       description = ''
         Primary human/operator account for the NixPI machine.
       '';
-    };
-
-    primaryHome = lib.mkOption {
-      type = lib.types.strMatching "^$|/.*";
-      default = "";
-      description = ''
-        Home directory for the primary NixPI operator account. When left empty,
-        NixPI defaults to `/home/<primaryUser>`.
-      '';
-    };
-
-    createPrimaryUser = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = ''
-        Whether NixPI should create and manage the primary operator account.
-      '';
-    };
-
-    install = {
-      mode = lib.mkOption {
-        type = lib.types.enum [ "existing-user" "managed-user" ];
-        default = "existing-user";
-        description = ''
-          Whether NixPI should use an existing operator account or create and
-          manage one directly.
-        '';
-      };
-
-      autoDetectPrimaryUser = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = ''
-          Whether the installer should attempt to resolve `nixpi.primaryUser`
-          from installer state when `nixpi.primaryUser` is empty.
-        '';
-      };
     };
 
     stateDir = lib.mkOption {

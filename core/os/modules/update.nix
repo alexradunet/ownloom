@@ -2,9 +2,8 @@
 { pkgs, lib, config, ... }:
 
 let
-  resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
-  primaryUser = resolved.resolvedPrimaryUser;
-  primaryHome = resolved.resolvedPrimaryHome;
+  primaryUser = config.nixpi.primaryUser;
+  primaryHome = "/home/${primaryUser}";
 in
 
 {

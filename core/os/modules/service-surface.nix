@@ -1,8 +1,7 @@
 { pkgs, lib, config, ... }:
 
 let
-  resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
-  primaryUser = resolved.resolvedPrimaryUser;
+  primaryUser = config.nixpi.primaryUser;
   stateDir = config.nixpi.stateDir;
   cfg = config.nixpi.services;
   securityCfg = config.nixpi.security;

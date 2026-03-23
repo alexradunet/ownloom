@@ -58,17 +58,8 @@ NixOS modules use appPackage
   ];
 
   nixpi.primaryUser = "pi";
-  nixpi.install.mode = "managed-user";
 }
 ```
-
----
-
-## 📋 Library (`core/os/lib/`)
-
-| File | Why | What | How / Notes |
-|------|-----|------|-------------|
-| `resolve-primary-user.nix` | User resolution | Determine primary user from config | Shared primary home/user helper |
 
 ---
 
@@ -82,8 +73,7 @@ NixOS modules use appPackage
 ```
 nixpi
 ├── primaryUser
-├── createPrimaryUser
-├── install.mode
+├── stateDir
 ├── bootstrap
 │   ├── keepSshAfterSetup
 │   └── ...
@@ -123,7 +113,7 @@ systemd.services.nixpi-daemon = {
   wantedBy = [ "multi-user.target" ];
   after = [ "network.target" "continuwuity.service" ];
   serviceConfig = {
-    User = "agent";
+    User = config.nixpi.primaryUser;
     ExecStart = "${appPackage}/bin/nixpi-daemon";
     # ...
   };
@@ -136,7 +126,7 @@ systemd.services.nixpi-daemon = {
 
 **Responsibility**: Privilege escalation service for elevated operations.
 
-**Why It Exists**: The daemon runs as unprivileged `agent` user. Some operations (like certain NixOS commands) need elevated privileges. The broker acts as a controlled elevation point.
+**Why It Exists**: The daemon runs without direct root privileges. Some operations (like certain NixOS commands) need elevated privileges. The broker acts as a controlled elevation point.
 
 **Tools**:
 | Tool | Purpose |

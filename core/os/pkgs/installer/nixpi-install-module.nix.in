@@ -14,8 +14,6 @@ in
   environment.systemPackages = [ @setupPackage@ ];
 
   nixpi.primaryUser = "@@username@@";
-  nixpi.install.mode = "managed-user";
-  nixpi.createPrimaryUser = true;
   users.users."@@username@@".hashedPassword = @@passwordHash@@;
 
   system.activationScripts.nixpi-bootstrap-primary-password = ''

@@ -129,8 +129,6 @@
             nixpkgs.hostPlatform = system;
             nixpkgs.config.allowUnfree = true;
             nixpi.primaryUser = "alex";
-            nixpi.install.mode = "managed-user";
-            nixpi.createPrimaryUser = true;
             networking.hostName = "nixos";
             fileSystems."/" = { device = "/dev/vda"; fsType = "ext4"; };
             fileSystems."/boot" = { device = "/dev/vda1"; fsType = "vfat"; };
@@ -186,8 +184,6 @@
               _module.args = { inherit piAgent appPackage setupPackage self; };
 
               nixpi.primaryUser = "alex";
-              nixpi.install.mode = "managed-user";
-              nixpi.createPrimaryUser = true;
 
               networking.hostName = "nixos";
 
@@ -202,11 +198,9 @@
               nixpi.start()
               nixpi.wait_for_unit("multi-user.target", timeout=300)
 
-              # Basic sanity: the default operator and service users exist
+              # Basic sanity: the default operator exists and setup tooling is installed
               nixpi.succeed("id alex")
-              nixpi.succeed("id agent")
 
-              # setup is now owned by the interactive wizard; just verify it is installed
               nixpi.succeed("command -v setup-wizard.sh")
 
               # NetworkManager is running
@@ -234,7 +228,7 @@
             grep -F '{ config, ... }:' "$install_template" >/dev/null
             grep -F 'environment.systemPackages = [ ' "$install_template" >/dev/null
             grep -F 'def ensure_import(' "$module" >/dev/null
-            grep -F 'nixpi.install.mode = "managed-user";' "$install_template" >/dev/null
+            grep -F 'nixpi.primaryUser = "@@username@@";' "$install_template" >/dev/null
             PYTHONPYCACHEPREFIX="$TMPDIR/pycache" ${pkgs.python3}/bin/python3 -m py_compile "$module"
             touch "$out"
           '';
@@ -276,8 +270,6 @@
                 nixpkgs.config.allowUnfree = true;
                 nix.settings.experimental-features = [ "nix-command" "flakes" ];
                 nixpi.primaryUser = "installer";
-                nixpi.install.mode = "managed-user";
-                nixpi.createPrimaryUser = true;
                 users.groups.installer = {};
                 users.users.installer = {
                   isNormalUser = true;

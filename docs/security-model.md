@@ -94,7 +94,8 @@ chmod 600 ~/.ssh/authorized_keys
 
 ## 🤖 Agent Privilege Boundary
 
-- `agent` is a non-login system user that owns `/var/lib/nixpi`
+- the primary operator account is the normal human and Pi runtime identity
+- interactive Pi state lives in `~/.pi`, while service and secret state lives under `/var/lib/nixpi`
 - the human operator keeps full OS administration through their own account
 - NixPI agent actions no longer rely on blanket passwordless sudo
 - privileged actions are routed through the root-owned `nixpi-broker` service

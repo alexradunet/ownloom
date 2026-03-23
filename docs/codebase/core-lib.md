@@ -95,7 +95,7 @@ If the answer is no, keep it local to the caller.
 
 **Key Exports**:
 - `NIXPI_DIR` - Base directory constant (`~/nixpi`)
-- `AGENT_STATE_DIR` - Agent state directory (`/var/lib/nixpi`)
+- `AGENT_STATE_DIR` - Service state directory (`/var/lib/nixpi`)
 - Common type definitions
 - Utility functions
 

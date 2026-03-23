@@ -95,7 +95,7 @@ just check-config    # Fast: validate NixOS config
 just check-boot      # Thorough: boot test in VM
 ```
 
-**Default operator user**: the user chosen during `nixpi-installer`. The `agent` system user owns the always-on runtime.
+**Default operator user**: the user chosen during `nixpi-installer`. That same primary operator account is the normal local and always-on Pi runtime identity.
 
 ## 🔄 OTA Updates
 

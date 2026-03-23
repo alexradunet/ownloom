@@ -11,8 +11,6 @@ pkgs.testers.runNixOSTest {
       imports = nixPiModules ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage setupPackage; };
       nixpi.primaryUser = "tester1";
-      nixpi.install.mode = "managed-user";
-      nixpi.createPrimaryUser = true;
 
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
@@ -33,8 +31,6 @@ pkgs.testers.runNixOSTest {
       imports = nixPiModules ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage setupPackage; };
       nixpi.primaryUser = "tester2";
-      nixpi.install.mode = "managed-user";
-      nixpi.createPrimaryUser = true;
 
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;

@@ -10,8 +10,6 @@ pkgs.testers.runNixOSTest {
     imports = nixPiModules ++ [ mkTestFilesystems ];
     _module.args = { inherit piAgent appPackage setupPackage; };
     nixpi.primaryUser = "tester";
-    nixpi.install.mode = "managed-user";
-    nixpi.createPrimaryUser = true;
 
     # VM configuration
     virtualisation.diskSize = 20480;

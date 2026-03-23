@@ -21,8 +21,8 @@ Before first-boot setup, you need a system installed from the NixPI installer im
 For VM install-flow testing:
 
 - `just vm-install-iso` runs the installer in the default user-mode NAT network with SSH forwarding
-- `NIXPI_INSTALL_VM_BRIDGE=br0 just vm-install-iso-bridge` runs the installer with bridged networking for realistic NetBird reachability tests
-- Only the bridged path should be treated like a real peer on your network
+- use this path to validate install flow, Openbox startup, and in-guest NetBird enrollment
+- do not expect guest service URLs or the NetBird mesh IP to behave like a real inbound-reachable peer from the host or LAN in this VM mode
 
 ## 🛡️ Security Note: NetBird is Mandatory
 

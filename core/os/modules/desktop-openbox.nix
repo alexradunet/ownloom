@@ -1,9 +1,8 @@
 { pkgs, lib, config, ... }:
 
 let
-  resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
-  primaryUser = resolved.resolvedPrimaryUser;
-  primaryHome = resolved.resolvedPrimaryHome;
+  primaryUser = config.nixpi.primaryUser;
+  primaryHome = "/home/${primaryUser}";
 
   openHome = pkgs.writeShellScriptBin "nixpi-open-home" ''
     set -euo pipefail
@@ -220,7 +219,7 @@ in
     }
     {
       assertion = primaryHome != "";
-      message = "nixpi.primaryHome must resolve before enabling the Openbox desktop session.";
+      message = "nixpi.primaryUser must resolve before enabling the Openbox desktop session.";
     }
   ];
 

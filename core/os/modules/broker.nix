@@ -1,8 +1,8 @@
 { config, lib, pkgs, ... }:
 
 let
-  resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
-  primaryUser = resolved.resolvedPrimaryUser;
+  primaryUser = config.nixpi.primaryUser;
+  primaryHome = "/home/${primaryUser}";
   stateDir = config.nixpi.stateDir;
   socketDir = "/run/nixpi-broker";
   socketPath = "${socketDir}/broker.sock";
@@ -15,7 +15,7 @@ let
     elevationDuration = config.nixpi.agent.elevation.duration;
     osUpdateEnable = config.nixpi.agent.osUpdate.enable;
     allowedUnits = config.nixpi.agent.allowedUnits;
-    defaultFlake = "${resolved.resolvedPrimaryHome}/nixpi";
+    defaultFlake = "${primaryHome}/nixpi";
   });
 
   brokerProgram = pkgs.writeScriptBin "nixpi-broker" ''

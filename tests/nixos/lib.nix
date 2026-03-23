@@ -21,30 +21,9 @@
   mkManagedUserConfig = {
     username,
     homeDir ? "/home/${username}",
-    extraGroups ? [ "wheel" "networkmanager" "agent" ],
+    extraGroups ? [ "wheel" "networkmanager" ],
   }: {
     nixpi.primaryUser = username;
-    nixpi.install.mode = "managed-user";
-    nixpi.createPrimaryUser = true;
-
-    users.users.${username} = {
-      isNormalUser = true;
-      group = username;
-      inherit extraGroups;
-      home = homeDir;
-      shell = pkgs.bash;
-    };
-    users.groups.${username} = {};
-  };
-
-  mkExistingUserConfig = {
-    username,
-    homeDir ? "/home/${username}",
-    extraGroups ? [ "wheel" "networkmanager" "agent" ],
-  }: {
-    nixpi.primaryUser = username;
-    nixpi.install.mode = "existing-user";
-    nixpi.createPrimaryUser = false;
 
     users.users.${username} = {
       isNormalUser = true;

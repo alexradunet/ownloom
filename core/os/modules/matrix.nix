@@ -3,8 +3,7 @@
 
 let
   tomlFormat = pkgs.formats.toml { };
-  resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
-  primaryHome = resolved.resolvedPrimaryHome;
+  primaryHome = "/home/${config.nixpi.primaryUser}";
   stateDir = config.nixpi.stateDir;
   secretDir = "${stateDir}/secrets";
   setupCompleteFile = "${primaryHome}/.nixpi/.setup-complete";

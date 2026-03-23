@@ -98,10 +98,10 @@ The `wt0` interface (NetBird WireGuard tunnel) is the only trusted interface in 
 
 ### Privilege Separation
 
-| User | Purpose |
-|------|---------|
-| Primary operator | Human administrator |
-| `agent` | System user owning `/var/lib/nixpi` |
+| Boundary | Purpose |
+|----------|---------|
+| Primary operator | Human administrator and interactive Pi runtime |
+| `/var/lib/nixpi` | Service and secret state owned by the appliance runtime |
 | `root` (via broker) | Elevated operations only |
 
 ## 📚 Subsystem Details

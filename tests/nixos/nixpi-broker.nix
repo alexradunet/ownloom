@@ -12,8 +12,6 @@ pkgs.testers.runNixOSTest {
       _module.args = { inherit piAgent appPackage setupPackage; };
 
       nixpi.primaryUser = "maintainer";
-      nixpi.install.mode = "managed-user";
-      nixpi.createPrimaryUser = true;
       nixpi.agent.autonomy = "maintain";
       nixpi.agent.osUpdate.enable = false;
 
@@ -38,8 +36,6 @@ pkgs.testers.runNixOSTest {
       _module.args = { inherit piAgent appPackage setupPackage; };
 
       nixpi.primaryUser = "observer";
-      nixpi.install.mode = "managed-user";
-      nixpi.createPrimaryUser = true;
       nixpi.agent.autonomy = "observe";
 
       networking.hostName = "observe";
