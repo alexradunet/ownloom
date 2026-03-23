@@ -77,6 +77,10 @@
     print(log_content)
     print("=== End of log ===")
     assert "NixPI Wizard Started" in log_content, "Wizard log missing start marker"
+    assert "no WiFi hardware detected, skipping WiFi preference" in log_content, (
+        "Firstboot log missing no-WiFi bootstrap path"
+    )
+    assert "command not found" not in log_content, "Wizard log contains shell execution errors"
     assert "setup complete" in log_content.lower(), "Firstboot log missing completion marker"
 
     nixpi.succeed("test -d " + home + "/.nixpi/wizard-state")

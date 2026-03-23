@@ -12,6 +12,10 @@ exec > >(tee -a "$WIZARD_LOG") 2>&1
 
 echo "=== NixPI Wizard Started: $(date) ==="
 
+log() {
+	printf '%s\n' "$*"
+}
+
 WIZARD_STATE="$HOME/.nixpi/wizard-state"
 SYSTEM_READY="$WIZARD_STATE/system-ready"
 NIXPI_DIR="${NIXPI_DIR:-$HOME/nixpi}"
