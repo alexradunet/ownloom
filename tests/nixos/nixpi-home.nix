@@ -61,15 +61,18 @@ pkgs.testers.runNixOSTest {
 
     nixpi.wait_until_succeeds("test -f /etc/system-services/nixpi-home/webroot/index.html", timeout=120)
     nixpi.wait_until_succeeds("test -f /etc/system-services/nixpi-element-web/config.json", timeout=120)
+    nixpi.wait_until_succeeds("test -f " + home + "/.config/nixpi/services/element-web/config.json", timeout=120)
     nixpi.succeed("grep -q 'NixPI Home' /etc/system-services/nixpi-home/webroot/index.html")
     nixpi.succeed("grep -q 'Element Web' /etc/system-services/nixpi-home/webroot/index.html")
     nixpi.succeed("grep -q 'Matrix' /etc/system-services/nixpi-home/webroot/index.html")
+    nixpi.fail("test -e " + home + "/.config/nixpi/services/chat/config.json")
 
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1 | grep -q 'NixPI Home'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q '8081'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q '6167'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8081/config.json | grep -q 'default_server_config'", timeout=60)
+    nixpi.fail("grep -q 'CHAT_URL' /etc/system-services/nixpi-home/webroot/index.html")
 
     print("NixPI Home and Element Web tests passed!")
   '';

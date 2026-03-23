@@ -303,7 +303,7 @@ write_service_home_runtime() {
 	sed \
 		-e "s|@@MESH_HOST@@|${mesh_host}|g" \
 		-e "s|@@PAGE_URL@@|${page_url}|g" \
-		-e "s|@@CHAT_URL@@|http://${mesh_host}:8081|g" \
+		-e "s|@@ELEMENT_WEB_URL@@|http://${mesh_host}:8081|g" \
 		-e "s|@@MATRIX_URL@@|http://${mesh_host}:6167|g" \
 		-e "s|@@GENERATED_AT@@|${generated_at}|g" \
 		"$template" > "$NIXPI_CONFIG/home/index.html"
@@ -324,8 +324,8 @@ write_element_web_runtime_config() {
 		primary_matrix_url="http://${primary_host}:6167"
 	fi
 
-	mkdir -p "$NIXPI_CONFIG/chat"
-	cat > "$NIXPI_CONFIG/chat/config.json" <<-CONFIG
+	mkdir -p "$NIXPI_CONFIG/element-web"
+	cat > "$NIXPI_CONFIG/element-web/config.json" <<-CONFIG
 	{
 	  "default_server_config": {
 	    "m.homeserver": {

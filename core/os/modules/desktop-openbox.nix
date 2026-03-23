@@ -9,7 +9,7 @@ let
     exec ${pkgs.chromium}/bin/chromium --app=http://127.0.0.1
   '';
 
-  openChat = pkgs.writeShellScriptBin "nixpi-open-chat" ''
+  openElementWeb = pkgs.writeShellScriptBin "nixpi-open-element-web" ''
     set -euo pipefail
     exec ${pkgs.chromium}/bin/chromium --app=http://127.0.0.1:${toString config.nixpi.services.elementWeb.port}
   '';
@@ -33,11 +33,11 @@ let
     categories = [ "Network" ];
   };
 
-  chatDesktopItem = pkgs.makeDesktopItem {
-    name = "nixpi-chat";
-    desktopName = "NixPI Chat";
+  elementWebDesktopItem = pkgs.makeDesktopItem {
+    name = "nixpi-element-web";
+    desktopName = "NixPI Element Web";
     genericName = "Element Web";
-    exec = "${openChat}/bin/nixpi-open-chat";
+    exec = "${openElementWeb}/bin/nixpi-open-element-web";
     terminal = false;
     categories = [ "Network" "Chat" ];
   };
@@ -240,11 +240,11 @@ in
     xterm
     scrot
     openHome
-    openChat
+    openElementWeb
     restartDesktop
     desktopTerminal
     homeDesktopItem
-    chatDesktopItem
+    elementWebDesktopItem
     restartDesktopItem
   ];
 

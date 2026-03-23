@@ -20,7 +20,7 @@ in
     "d ${stateDir}/nixpi-daemon 0770 ${primaryUser} ${primaryUser} -"
     "d ${stateDir}/services 0770 ${primaryUser} ${primaryUser} -"
     "d ${stateDir}/services/home 0770 ${primaryUser} ${primaryUser} -"
-    "d ${stateDir}/services/chat 0770 ${primaryUser} ${primaryUser} -"
+    "d ${stateDir}/services/element-web 0770 ${primaryUser} ${primaryUser} -"
   ];
 
   system.activationScripts.nixpi-app = lib.stringAfter [ "users" ] ''

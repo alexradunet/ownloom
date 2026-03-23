@@ -32,10 +32,13 @@ pkgs.testers.runNixOSTest {
 
     nixpi.succeed("test -f /etc/system-services/nixpi-home/webroot/index.html")
     nixpi.succeed("test -f /etc/system-services/nixpi-element-web/config.json")
+    nixpi.succeed("test -d /var/lib/nixpi/services/element-web")
+    nixpi.fail("test -e /var/lib/nixpi/services/chat")
 
     nixpi.succeed("grep -q 'NixPI Home' /etc/system-services/nixpi-home/webroot/index.html")
     nixpi.succeed("grep -q 'default_server_config' /etc/system-services/nixpi-element-web/config.json")
     nixpi.succeed("grep -q 'Matrix' /etc/system-services/nixpi-home/webroot/index.html")
+    nixpi.fail("grep -q 'CHAT_URL' /etc/system-services/nixpi-home/webroot/index.html")
 
     nixpi.succeed("systemctl cat nixpi-home.service | grep -q 'static-web-server'")
     nixpi.succeed("systemctl cat nixpi-element-web.service | grep -q 'static-web-server'")
