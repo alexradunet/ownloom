@@ -20,8 +20,8 @@ Keep setup logic split by responsibility, not by historical flow:
 
 First boot is now a single flow:
 
-1. LightDM autologins into the Openbox desktop
-2. Openbox launches the NixPI terminal wrapper
+1. LightDM autologins into the XFCE desktop
+2. XFCE launches the NixPI terminal wrapper
 3. That terminal runs `setup-wizard.sh` until `~/.nixpi/.setup-complete` exists
 4. Persona completion is tracked only by `~/.nixpi/wizard-state/persona-done`
 

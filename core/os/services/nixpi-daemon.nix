@@ -54,6 +54,7 @@ in
           "NIXPI_DIR=${primaryHome}/nixpi"
           "NIXPI_STATE_DIR=${config.nixpi-daemon.stateDir}"
           "NIXPI_PI_DIR=${config.nixpi-daemon.agentStateDir}"
+          "PI_CODING_AGENT_DIR=${config.nixpi-daemon.agentStateDir}"
           "NIXPI_DAEMON_STATE_DIR=${config.nixpi-daemon.stateDir}/nixpi-daemon"
           "NIXPI_PRIMARY_USER=${config.nixpi-daemon.primaryUser}"
           "PATH=${lib.makeBinPath config.nixpi-daemon.path}:/run/current-system/sw/bin"

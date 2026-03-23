@@ -16,12 +16,12 @@ Before first-boot setup, you need a system installed from the NixPI installer im
 4. Reboot into the installed system
 5. The installed machine initially boots a minimal NixPI base from `/etc/nixos`
 6. During first boot, the setup wizard creates the local `~/nixpi` checkout and the host-specific flake at `/etc/nixos`
-7. The installed system autologins into the official NixPI Openbox desktop and opens the NixPI terminal there
+7. The installed system autologins into the official NixPI XFCE desktop and opens the NixPI terminal there
 
 For VM install-flow testing:
 
 - `just vm-install-iso` runs the installer in the default user-mode NAT network with host forwards
-- use this path to validate install flow, Openbox startup, and local access from the host machine
+- use this path to validate install flow, XFCE startup, and local access from the host machine
 - use the printed localhost forwards for SSH, Home, Element Web, and Matrix access
 
 ## Security Note: NetBird Is Mandatory
@@ -49,7 +49,7 @@ NixPI's first-boot experience has two phases.
 
 ### Phase 1: Bash Wizard
 
-`setup-wizard.sh` handles deterministic machine setup from the Openbox-launched NixPI terminal.
+`setup-wizard.sh` handles deterministic machine setup from the XFCE-launched NixPI terminal.
 
 **Current responsibilities**:
 
@@ -112,7 +112,7 @@ If you want to redo persona setup, remove `~/.nixpi/wizard-state/persona-done` a
 - After the wizard completes, opening Pi checks only for `persona-done`
 - If persona setup is still pending, Pi starts that flow first and defers unrelated conversation
 - After `persona-done` exists, Pi resumes normal conversation
-- Openbox is the only supported automatic first-boot entry path
+- XFCE is the only supported automatic first-boot entry path
 - The wizard enables `nixpi-daemon.service` as part of setup completion
 - The wizard refreshes Matrix policy so public registration is no longer left open after setup
 - The wizard refreshes the built-in service configs so NetBird peers have a stable page listing service URLs and shareable host info

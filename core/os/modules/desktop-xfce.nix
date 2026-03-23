@@ -16,12 +16,13 @@ let
 
   restartDesktop = pkgs.writeShellScriptBin "nixpi-restart-desktop-shell" ''
     set -euo pipefail
-    pkill -u "$USER" -x tint2 || true
-    pkill -u "$USER" -x dunst || true
-    pkill -u "$USER" -x pcmanfm || true
-    ${pkgs.openbox}/bin/openbox --reconfigure || true
     ${pkgs.dunst}/bin/dunst >/tmp/nixpi-dunst.log 2>&1 &
-    ${pkgs.tint2}/bin/tint2 >/tmp/nixpi-tint2.log 2>&1 &
+    pkill -u "$USER" -x xfce4-panel || true
+    pkill -u "$USER" -x xfdesktop || true
+    pkill -u "$USER" -x Thunar || true
+    ${pkgs.xfce4-panel}/bin/xfce4-panel >/tmp/nixpi-xfce4-panel.log 2>&1 &
+    ${pkgs.xfdesktop}/bin/xfdesktop >/tmp/nixpi-xfdesktop.log 2>&1 &
+    ${pkgs.xfwm4}/bin/xfwm4 --replace >/tmp/nixpi-xfwm4.log 2>&1 &
   '';
 
   homeDesktopItem = pkgs.makeDesktopItem {
@@ -109,108 +110,33 @@ let
       '
   '';
 
-  openboxAutostart = pkgs.writeText "nixpi-openbox-autostart" ''
+  xfceSessionInit = pkgs.writeShellScript "nixpi-xfce-session-init" ''
+    set -eu
+    ${pkgs.setxkbmap}/bin/setxkbmap \
+      ${lib.escapeShellArg config.services.xserver.xkb.layout} \
+      ${lib.optionalString (config.services.xserver.xkb.variant != "") "-variant ${lib.escapeShellArg config.services.xserver.xkb.variant}"}
     ${pkgs.xsetroot}/bin/xsetroot -solid "#10161d"
-    ${pkgs.dunst}/bin/dunst &
-    ${pkgs.tint2}/bin/tint2 &
-    ${desktopTerminal}/bin/nixpi-open-desktop-terminal &
+    if ! pgrep -u "${primaryUser}" -x dunst >/dev/null 2>&1; then
+      ${pkgs.dunst}/bin/dunst >/tmp/nixpi-dunst.log 2>&1 &
+    fi
   '';
 
-  openboxRc = pkgs.writeText "nixpi-openbox-rc.xml" ''
-    <?xml version="1.0" encoding="UTF-8"?>
-    <openbox_config xmlns="http://openbox.org/3.4/rc">
-      <resistance>
-        <strength>10</strength>
-        <screen_edge_strength>20</screen_edge_strength>
-      </resistance>
-      <focus>
-        <focusNew>yes</focusNew>
-        <followMouse>no</followMouse>
-        <focusLast>yes</focusLast>
-        <underMouse>no</underMouse>
-      </focus>
-      <placement>
-        <policy>Smart</policy>
-        <center>yes</center>
-        <monitor>Primary</monitor>
-      </placement>
-      <theme>
-        <name>Clearlooks</name>
-        <titleLayout>NLIMC</titleLayout>
-      </theme>
-      <desktops>
-        <number>1</number>
-        <popupTime>0</popupTime>
-      </desktops>
-      <applications/>
-      <keyboard>
-        <chainQuitKey>C-g</chainQuitKey>
-        <keybind key="W-space">
-          <action name="Execute">
-            <command>${pkgs.rofi}/bin/rofi -show drun</command>
-          </action>
-        </keybind>
-        <keybind key="W-Return">
-          <action name="Execute">
-            <command>${pkgs.xterm}/bin/xterm</command>
-          </action>
-        </keybind>
-        <keybind key="W-f">
-          <action name="Execute">
-            <command>${pkgs.pcmanfm}/bin/pcmanfm</command>
-          </action>
-        </keybind>
-      </keyboard>
-      <mouse>
-        <doubleClickTime>500</doubleClickTime>
-        <screenEdgeWarpTime>0</screenEdgeWarpTime>
-        <screenEdgeWarpMouse>false</screenEdgeWarpMouse>
-      </mouse>
-      <margins>
-        <top>0</top>
-        <bottom>36</bottom>
-        <left>0</left>
-        <right>0</right>
-      </margins>
-    </openbox_config>
+  desktopAutostartEntry = pkgs.writeText "nixpi-terminal-autostart.desktop" ''
+    [Desktop Entry]
+    Type=Application
+    Version=1.0
+    Name=NixPI Terminal
+    Comment=Launch the NixPI setup and Pi session terminal
+    Exec=${desktopTerminal}/bin/nixpi-open-desktop-terminal
+    OnlyShowIn=XFCE;
+    X-GNOME-Autostart-enabled=true
+    StartupNotify=false
   '';
 
-  tint2Config = pkgs.writeText "nixpi-tint2rc" ''
-    rounded = 0
-    border_width = 0
-    background_color = #0b1117 100
-    border_color = #0b1117 100
-
-    panel_monitor = all
-    panel_position = bottom center horizontal
-    panel_size = 100% 36
-    panel_margin = 0 0
-    panel_padding = 10 6 10
-    panel_items = TSC
-    panel_background_id = 0
-    wm_menu = 1
-    panel_dock = 0
-    panel_layer = top
-    panel_pivot_struts = 0
-
-    taskbar_mode = single_desktop
-    taskbar_padding = 6 0 6
-    taskbar_background_id = 0
-
-    task_text = 1
-    task_centered = 1
-    task_padding = 10 4 10
-    task_background_id = 0
-    task_active_background_id = 0
-    task_iconified_background_id = 0
-
-    systray_padding = 6 2 6
-    systray_background_id = 0
-
-    time1_format = %H:%M
-    time1_font = Sans 10
-    clock_padding = 8 0
-    clock_background_id = 0
+  xprofile = pkgs.writeText "nixpi-xprofile" ''
+    if [ -x ${xfceSessionInit} ]; then
+      ${xfceSessionInit}
+    fi
   '';
 in
 {
@@ -219,7 +145,7 @@ in
   assertions = [
     {
       assertion = primaryUser != "";
-      message = "nixpi.primaryUser must resolve before enabling the Openbox desktop session.";
+      message = "nixpi.primaryUser must resolve before enabling the XFCE desktop session.";
     }
   ];
 
@@ -227,12 +153,9 @@ in
     chromium
     dunst
     imagemagick
-    openbox
-    pcmanfm
-    rofi
-    tint2
     tesseract
     wmctrl
+    thunar
     xclip
     xdotool
     xprop
@@ -249,37 +172,31 @@ in
   ];
 
   services.xserver.enable = true;
-  services.xserver.windowManager.openbox.enable = true;
+  services.xserver.desktopManager.xfce.enable = true;
   services.xserver.displayManager.lightdm.enable = true;
-  services.displayManager.defaultSession = lib.mkDefault "none+openbox";
+  services.displayManager.defaultSession = lib.mkDefault "xfce";
   services.displayManager.autoLogin.enable = true;
   services.displayManager.autoLogin.user = primaryUser;
   services.xserver.displayManager.lightdm.greeters.gtk.enable = true;
   systemd.defaultUnit = lib.mkDefault "graphical.target";
 
   environment.etc = {
-    "skel/.config/openbox/autostart".source = openboxAutostart;
-    "skel/.config/openbox/rc.xml".source = openboxRc;
-    "skel/.config/tint2/tint2rc".source = tint2Config;
+    "skel/.config/autostart/nixpi-terminal.desktop".source = desktopAutostartEntry;
+    "skel/.xprofile".source = xprofile;
   };
 
-  system.activationScripts.nixpi-openbox-desktop = lib.stringAfter [ "users" ] ''
+  system.activationScripts.nixpi-xfce-desktop = lib.stringAfter [ "users" ] ''
     primary_group="$(id -gn ${primaryUser})"
 
     install -d -m 0755 -o ${primaryUser} -g "$primary_group" ${primaryHome}/.config
-    install -d -m 0755 -o ${primaryUser} -g "$primary_group" ${primaryHome}/.config/openbox
-    install -d -m 0755 -o ${primaryUser} -g "$primary_group" ${primaryHome}/.config/tint2
+    install -d -m 0755 -o ${primaryUser} -g "$primary_group" ${primaryHome}/.config/autostart
 
-    if [ ! -e ${primaryHome}/.config/openbox/autostart ]; then
-      install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.config/openbox/autostart ${primaryHome}/.config/openbox/autostart
+    if [ ! -e ${primaryHome}/.config/autostart/nixpi-terminal.desktop ]; then
+      install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.config/autostart/nixpi-terminal.desktop ${primaryHome}/.config/autostart/nixpi-terminal.desktop
     fi
 
-    if [ ! -e ${primaryHome}/.config/openbox/rc.xml ]; then
-      install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.config/openbox/rc.xml ${primaryHome}/.config/openbox/rc.xml
-    fi
-
-    if [ ! -e ${primaryHome}/.config/tint2/tint2rc ]; then
-      install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.config/tint2/tint2rc ${primaryHome}/.config/tint2/tint2rc
+    if [ ! -e ${primaryHome}/.xprofile ]; then
+      install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.xprofile ${primaryHome}/.xprofile
     fi
   '';
 }

@@ -33,7 +33,7 @@ cleanup() {
 trap cleanup EXIT
 
 wait_for "X authority" test -f "${XAUTHORITY}"
-wait_for "Openbox window manager" wmctrl -m
+wait_for "desktop window manager" wmctrl -m
 
 xterm -title "${WINDOW_TITLE}" -e "sleep 300" >/tmp/nixpi-desktop-probe-xterm.log 2>&1 &
 probe_pid=$!

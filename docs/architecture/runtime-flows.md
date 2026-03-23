@@ -93,12 +93,12 @@ multi-user.target
 
 ### Phase 1: Bash Wizard
 
-**Entry**: Openbox desktop autologin opens the NixPI terminal
+**Entry**: XFCE desktop autologin opens the NixPI terminal
 
 ```
 LightDM autologin
     ↓
-Openbox session
+XFCE session
     ↓
 NixPI terminal
     ↓

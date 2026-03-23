@@ -13,7 +13,7 @@
     ../modules/tooling.nix
     ../modules/shell.nix
     ../modules/firstboot.nix
-    ../modules/desktop-openbox.nix
+    ../modules/desktop-xfce.nix
   ];
 
   system.stateVersion = "25.05";

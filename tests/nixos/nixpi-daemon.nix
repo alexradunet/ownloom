@@ -143,6 +143,8 @@ pkgs.testers.runNixOSTest {
     assert "node" in exec_start and "/usr/local/share/nixpi/dist/core/daemon/index.js" in exec_start, \
         "Unexpected ExecStart in nixpi-daemon service: " + exec_start
     assert "NIXPI_DIR=/home/pi/nixpi" in environment, "Expected NIXPI_DIR environment in nixpi-daemon service"
+    assert "PI_CODING_AGENT_DIR=/home/pi/.pi" in environment, \
+        "Expected PI_CODING_AGENT_DIR environment in nixpi-daemon service"
     assert working_directory == "/home/pi/nixpi", "Unexpected WorkingDirectory: " + working_directory
     agent.succeed("ls -la /usr/local/share/nixpi/")
 

@@ -550,7 +550,7 @@ step_netbird() {
 				else
 					echo "No local desktop session is active."
 					echo "NetBird may print a login URL, but it cannot open a browser window here."
-					echo "Use option 2 with a setup key, or retry once the Openbox desktop is running."
+					echo "Use option 2 with a setup key, or retry once the XFCE desktop is running."
 				fi
 				if root_command nixpi-bootstrap-netbird-up 2>&1; then
 					# Wait for connection to establish
@@ -737,15 +737,18 @@ finalize() {
 	if has_matrix_stack; then
 		root_command nixpi-bootstrap-matrix-systemctl try-restart continuwuity.service || echo "warning: failed to restart continuwuity.service" >&2
 	fi
+	touch "$SETUP_COMPLETE"
 	if has_systemd_unit nixpi-daemon.service; then
-		if ! root_command nixpi-bootstrap-service-systemctl enable --now nixpi-daemon.service; then
+		if ! root_command nixpi-bootstrap-service-systemctl enable nixpi-daemon.service; then
 			echo "warning: failed to enable nixpi-daemon.service during wizard finalization" >&2
+		fi
+		if ! root_command nixpi-bootstrap-service-systemctl restart nixpi-daemon.service; then
+			echo "warning: failed to start nixpi-daemon.service during wizard finalization" >&2
 		fi
 	fi
 	if has_systemd_unit display-manager.service; then
 		root_command nixpi-bootstrap-service-systemctl start display-manager.service || echo "warning: failed to start display-manager.service" >&2
 	fi
-	touch "$SETUP_COMPLETE"
 
 	local mesh_ip
 	mesh_ip=$(read_checkpoint_data netbird)

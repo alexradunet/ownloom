@@ -64,6 +64,8 @@ pkgs.testers.runNixOSTest {
 
     nixpi.wait_for_unit("continuwuity.service", timeout=120)
     nixpi.succeed("test -f " + home + "/.nixpi/.setup-complete")
+    nixpi.succeed("systemctl is-enabled nixpi-daemon.service | grep -q enabled")
+    nixpi.succeed("test \"$(systemctl show -p Result --value nixpi-daemon.service || true)\" != condition")
     nixpi.succeed("test -f " + home + "/.nixpi/prefill.env")
     nixpi.succeed("test -f " + home + "/.nixpi/wizard.log")
     log_content = nixpi.succeed("cat " + home + "/.nixpi/wizard.log")

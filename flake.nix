@@ -151,6 +151,7 @@
                 [
                   "@setupPackage@"
                   "@firstbootModule@"
+                  "@desktopXfceModule@"
                   "@networkModule@"
                   "@shellModule@"
                   "@updateModule@"
@@ -160,6 +161,7 @@
                 [
                   (toString setupPackage)
                   "${toString nixpiSource}/core/os/modules/firstboot.nix"
+                  "${toString nixpiSource}/core/os/modules/desktop-xfce.nix"
                   "${toString nixpiSource}/core/os/modules/network.nix"
                   "${toString nixpiSource}/core/os/modules/shell.nix"
                   "${toString nixpiSource}/core/os/modules/update.nix"
