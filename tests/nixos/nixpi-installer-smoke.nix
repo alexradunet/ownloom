@@ -1,17 +1,17 @@
-{ pkgs, installerHelper, self, lib, ... }:
+{ installerHelper, self, lib, ... }:
 
 {
   name = "nixpi-installer-smoke";
   node.pkgsReadOnly = false;
 
   nodes.installer =
-    { pkgs, ... }:
+    { modulesPath, pkgs, ... }:
     let
       targetDisk = "/tmp/shared/nixpi-installer-target.qcow2";
     in
     {
       imports = [
-        "${pkgs.path}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+        "${modulesPath}/installer/cd-dvd/installation-cd-minimal.nix"
       ];
 
       system.stateVersion = "25.05";
@@ -48,7 +48,7 @@
       ];
 
       system.extraDependencies = [
-        self.checks.${pkgs.stdenv.hostPlatform.system}.installer-generated-config
+        self.checks.x86_64-linux.installer-generated-config
       ];
     };
 
@@ -60,7 +60,7 @@
     installer = machines[0]
     target_disk_image = "/tmp/shared/nixpi-installer-target.qcow2"
     target_mount = "/mnt"
-    qemu_img = "${pkgs.qemu}/bin/qemu-img"
+    qemu_img = "qemu-img"
 
     os.makedirs(os.path.dirname(target_disk_image), exist_ok=True)
     if os.path.exists(target_disk_image):
@@ -92,7 +92,7 @@
                 + " --password installerpass123 "
                 + layout_args
                 + " --yes --system "
-                + shlex.quote("${self.checks.${pkgs.stdenv.hostPlatform.system}.installer-generated-config}")
+                + shlex.quote("${self.checks.x86_64-linux.installer-generated-config}")
                 + " > /tmp/nixpi-installer.log 2>&1 || { cat /tmp/nixpi-installer.log >&2; exit 1; }"
             )
         )

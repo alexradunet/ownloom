@@ -1,11 +1,11 @@
-{ nixPiModules, mkTestFilesystems, mkManagedUserConfig, piAgent, appPackage, setupPackage, ... }:
+{ nixPiModulesNoShell, mkTestFilesystems, mkManagedUserConfig, piAgent, appPackage, setupPackage, ... }:
 
 {
   name = "nixpi-options-validation";
 
   nodes = {
     defaults = { ... }: {
-      imports = nixPiModules ++ [
+      imports = nixPiModulesNoShell ++ [
         mkTestFilesystems
         (mkManagedUserConfig { username = "pi"; })
       ];
@@ -25,7 +25,7 @@
     };
 
     overrides = { ... }: {
-      imports = nixPiModules ++ [
+      imports = nixPiModulesNoShell ++ [
         mkTestFilesystems
         (mkManagedUserConfig { username = "pi"; })
       ];

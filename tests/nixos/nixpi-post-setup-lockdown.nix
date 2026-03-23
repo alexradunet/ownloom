@@ -1,4 +1,4 @@
-{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkManagedUserConfig, mkPrefillActivation, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkManagedUserConfig, ... }:
 
 {
   name = "nixpi-post-setup-lockdown";
@@ -27,12 +27,15 @@
       time.timeZone = "UTC";
       i18n.defaultLocale = "en_US.UTF-8";
       system.stateVersion = "25.05";
-      system.activationScripts.nixpi-prefill = mkPrefillActivation {
-        inherit username homeDir;
-        matrixUsername = "steadyuser";
-        matrixPassword = "steadypass123";
-      } + ''
+      system.activationScripts.nixpi-prefill = lib.stringAfter [ "users" ] ''
+        mkdir -p ${homeDir}/.nixpi
+        cat > ${homeDir}/.nixpi/prefill.env << 'EOF'
+PREFILL_USERNAME=steadyuser
+PREFILL_MATRIX_PASSWORD=steadypass123
+EOF
         chown -R ${username}:${username} ${homeDir}/.nixpi
+        chmod 755 ${homeDir}/.nixpi
+        chmod 644 ${homeDir}/.nixpi/prefill.env
       '';
     } // (mkManagedUserConfig { inherit username homeDir; });
 
