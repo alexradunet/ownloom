@@ -1,7 +1,7 @@
 { nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, ... }:
 
 let
-  mkNode = { hostName, username, prefill ? false }: { ... }: let
+  mkNode = { hostName, username, prefill ? false }: { pkgs, ... }: let
     homeDir = "/home/${username}";
   in {
     imports = nixPiModulesNoShell ++ [
@@ -64,7 +64,7 @@ in
       prefill = true;
     };
 
-    client = { ... }: {
+    client = { pkgs, ... }: {
       virtualisation.diskSize = 5120;
       virtualisation.memorySize = 1024;
 

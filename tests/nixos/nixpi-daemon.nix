@@ -4,7 +4,7 @@
   name = "nixpi-daemon";
 
   nodes = {
-    server = { ... }: let
+    server = { pkgs, ... }: let
       username = "server";
       homeDir = "/home/${username}";
     in {
@@ -36,7 +36,7 @@
       users.groups.${username} = {};
     };
 
-    agent = { ... }: let
+    agent = { pkgs, ... }: let
       username = "pi";
       homeDir = "/home/${username}";
     in {

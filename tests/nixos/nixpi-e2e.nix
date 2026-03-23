@@ -4,7 +4,7 @@
   name = "nixpi-e2e";
 
   nodes = {
-    nixpi = { ... }: let
+    nixpi = { pkgs, ... }: let
       username = "pi";
       homeDir = "/home/${username}";
     in {
@@ -46,7 +46,7 @@
       '';
     };
 
-    client = { ... }: {
+    client = { pkgs, ... }: {
       virtualisation.diskSize = 5120;
       virtualisation.memorySize = 1024;
 

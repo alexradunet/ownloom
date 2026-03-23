@@ -36,7 +36,7 @@
       '';
     } // (mkManagedUserConfig { inherit username homeDir; });
 
-    client = { ... }: {
+    client = { pkgs, ... }: {
       imports = [ mkTestFilesystems ];
 
       virtualisation.diskSize = 5120;

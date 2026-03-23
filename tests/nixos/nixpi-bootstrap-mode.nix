@@ -29,7 +29,7 @@
       # Bootstrap without prefill keeps the machine in setup mode.
     } // (mkManagedUserConfig { inherit username; });
 
-    client = { ... }: {
+    client = { pkgs, ... }: {
       imports = [ mkTestFilesystems ];
 
       virtualisation.diskSize = 5120;

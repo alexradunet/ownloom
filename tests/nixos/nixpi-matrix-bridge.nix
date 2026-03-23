@@ -4,7 +4,7 @@
   name = "nixpi-matrix-bridge";
 
   nodes = {
-    homeserver = { ... }: let
+    homeserver = { pkgs, ... }: let
       username = "homeserver";
       homeDir = "/home/${username}";
     in {
@@ -30,7 +30,7 @@
       systemd.timers.nixpi-update.wantedBy = lib.mkForce [ ];
     };
 
-    nixpi = { ... }: let
+    nixpi = { pkgs, ... }: let
       username = "pi";
       homeDir = "/home/${username}";
     in {
@@ -83,7 +83,7 @@ EOF
       environment.systemPackages = [ pkgs.curl pkgs.jq ];
     };
 
-    client = {
+    client = { pkgs, ... }: {
       imports = [ mkTestFilesystems ];
       networking.hostName = "client";
       environment.systemPackages = [ matrixTestClient pkgs.curl pkgs.jq ];

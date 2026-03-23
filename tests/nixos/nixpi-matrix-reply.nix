@@ -4,7 +4,7 @@
   name = "nixpi-matrix-reply";
 
   nodes = {
-    homeserver = { ... }: let
+    homeserver = { pkgs, ... }: let
       username = "homeserver";
       homeDir = "/home/${username}";
     in {
@@ -32,7 +32,7 @@
       systemd.timers.nixpi-update.wantedBy = lib.mkForce [ ];
     };
 
-    nixpi = { ... }: let
+    nixpi = { pkgs, ... }: let
       username = "pi";
       homeDir = "/home/${username}";
       testProviderDir = "${homeDir}/nixpi/test-provider";

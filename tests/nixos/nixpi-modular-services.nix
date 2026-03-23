@@ -3,7 +3,7 @@
 {
   name = "nixpi-modular-services";
 
-  nodes.nixpi = { ... }: let
+  nodes.nixpi = { pkgs, ... }: let
     username = "pi";
     homeDir = "/home/${username}";
   in {

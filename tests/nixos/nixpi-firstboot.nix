@@ -3,7 +3,7 @@
 {
   name = "nixpi-firstboot";
 
-  nodes.nixpi = { ... }: let
+  nodes.nixpi = { pkgs, ... }: let
     username = "pi";
     homeDir = "/home/${username}";
   in {
