@@ -186,6 +186,7 @@ in
     openFirewall = false;
   };
 
+  # RDP port is inert until the NetBird wt0 interface exists; see network.nix for the same rationale.
   networking.firewall.interfaces."${securityCfg.trustedInterface}".allowedTCPPorts = [ 3389 ];
 
   services.xserver.displayManager.lightdm.greeters.gtk.enable = true;
