@@ -1,10 +1,11 @@
 # tests/nixos/nixpi-netbird-provisioner.nix
-{ lib, nixPiModulesNoShell, mkTestFilesystems, ... }:
+{ lib, nixPiModulesNoShell, mkTestFilesystems, piAgent, appPackage, setupPackage, ... }:
 
 {
   name = "nixpi-netbird-provisioner";
 
   nodes.nixpi = { pkgs, ... }: {
+    _module.args = { inherit piAgent appPackage setupPackage; };
     imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
 
     nixpi.primaryUser = "pi";
@@ -68,6 +69,8 @@ http.server.HTTPServer(('127.0.0.1', 19999), H).serve_forever()
   };
 
   testScript = ''
+    nixpi = machines[0]
+
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=120)
     nixpi.wait_for_unit("mock-netbird-api.service", timeout=30)
