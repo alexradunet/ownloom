@@ -350,6 +350,31 @@ describe("canonical repo metadata", () => {
 		expect(readCanonicalRepoMetadata("codex-test-user")).toBeUndefined();
 	});
 
+	it("reads legacy firstboot metadata when canonical metadata has not been migrated yet", async () => {
+		const legacyPath = "/home/codex-test-user/.nixpi/canonical-repo.json";
+		const metadata = {
+			path: "/srv/nixpi",
+			origin: "https://github.com/example/nixpi.git",
+			branch: "main",
+		};
+
+		vi.doMock("node:fs", async () => {
+			const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
+			return {
+				...actual,
+				existsSync: vi.fn((candidate: string) => candidate === legacyPath),
+				readFileSync: vi.fn((candidate: string) => {
+					if (candidate !== legacyPath) throw new Error(`unexpected path ${candidate}`);
+					return JSON.stringify(metadata);
+				}),
+			};
+		});
+		vi.resetModules();
+		const { readCanonicalRepoMetadata } = await import("../../core/lib/repo-metadata.js");
+
+		expect(readCanonicalRepoMetadata("codex-test-user")).toEqual(metadata);
+	});
+
 	it("rejects malformed canonical repo metadata", async () => {
 		vi.doMock("node:fs", async () => {
 			const actual = await vi.importActual<typeof import("node:fs")>("node:fs");

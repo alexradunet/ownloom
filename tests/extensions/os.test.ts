@@ -140,6 +140,18 @@ describe("handleNixosUpdate — apply (missing system flake)", () => {
 	});
 });
 
+describe("handleNixosUpdate — apply (wrong canonical branch)", () => {
+	it("returns error when /srv/nixpi is not on main", async () => {
+		vi.spyOn(fs, "existsSync").mockReturnValue(true);
+		mockRun.mockResolvedValueOnce({ stdout: "feature/test\n", stderr: "", exitCode: 0 });
+		const ctx = createMockExtensionContext();
+		const result = await handleNixosUpdate("apply", undefined, ctx as never);
+		expect(result.isError).toBe(true);
+		expect(result.content[0].text).toContain("Supported rebuilds require /srv/nixpi to be on main");
+		expect(result.content[0].text).toContain("switch to main");
+	});
+});
+
 describe("handleSystemdControl", () => {
 	it("rejects non-nixpi services", async () => {
 		const ctx = createMockExtensionContext();

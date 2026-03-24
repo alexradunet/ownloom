@@ -7,7 +7,12 @@ import path from "node:path";
 import { readFile, writeFile } from "node:fs/promises";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
-import { getSystemFlakeDir, getUpdateStatusPath } from "../../../lib/filesystem.js";
+import {
+	assertSupportedRebuildBranch,
+	getNixPiRepoDir,
+	getSystemFlakeDir,
+	getUpdateStatusPath,
+} from "../../../lib/filesystem.js";
 import { errorResult, guardServiceName, requireConfirmation, truncate } from "../../../lib/shared.js";
 import type { UpdateStatus } from "./types.js";
 
@@ -49,6 +54,17 @@ export async function handleNixosUpdate(
 		return errorResult(
 			`System flake not found at ${flake}. Supported rebuilds use /etc/nixos with the canonical repo at /srv/nixpi; switch to main in /srv/nixpi and ensure ${flake}/flake.nix exists.`,
 		);
+	}
+	const repoDir = getNixPiRepoDir();
+	const branchResult = await run("git", ["-C", repoDir, "branch", "--show-current"], signal);
+	if (branchResult.exitCode !== 0) {
+		return errorResult(`Failed to determine canonical repo branch at ${repoDir}: ${branchResult.stderr}`);
+	}
+	try {
+		assertSupportedRebuildBranch(branchResult.stdout.trim());
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		return errorResult(`${message}. switch to main in ${repoDir} before rebuilding from ${flake}.`);
 	}
 	const args = ["nixos-update", "apply"];
 	args.push(flake);

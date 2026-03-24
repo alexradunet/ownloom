@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { atomicWriteFile } from "./filesystem.js";
 import { assertValidPrimaryUser, getCanonicalRepoDir, getPrimaryUser } from "./filesystem.js";
 
@@ -21,19 +22,29 @@ export function getCanonicalRepoMetadataPath(primaryUser = getPrimaryUser()): st
 	return "/etc/nixpi/canonical-repo.json";
 }
 
+function getLegacyCanonicalRepoMetadataPath(primaryUser: string): string {
+	return path.join("/home", primaryUser, ".nixpi", "canonical-repo.json");
+}
+
 export function readCanonicalRepoMetadata(
 	primaryUser = getPrimaryUser(),
 ): CanonicalRepoMetadata | undefined {
-	const metadataPath = getCanonicalRepoMetadataPath(primaryUser);
-	if (!existsSync(metadataPath)) return undefined;
 	const validatedUser = assertValidPrimaryUser(primaryUser);
-	const parsed = JSON.parse(readFileSync(metadataPath, "utf-8")) as Partial<CanonicalRepoMetadata>;
+	const metadataPath = getCanonicalRepoMetadataPath(validatedUser);
+	const legacyMetadataPath = getLegacyCanonicalRepoMetadataPath(validatedUser);
+	const resolvedMetadataPath = existsSync(metadataPath)
+		? metadataPath
+		: existsSync(legacyMetadataPath)
+			? legacyMetadataPath
+			: undefined;
+	if (!resolvedMetadataPath) return undefined;
+	const parsed = JSON.parse(readFileSync(resolvedMetadataPath, "utf-8")) as Partial<CanonicalRepoMetadata>;
 	if (
 		typeof parsed.path !== "string" ||
 		typeof parsed.origin !== "string" ||
 		typeof parsed.branch !== "string"
 	) {
-		throw new Error(`Invalid canonical repo metadata in ${metadataPath}`);
+		throw new Error(`Invalid canonical repo metadata in ${resolvedMetadataPath}`);
 	}
 	return assertCanonicalMetadataPath(parsed, validatedUser);
 }
