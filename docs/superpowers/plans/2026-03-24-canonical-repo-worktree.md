@@ -15,11 +15,13 @@
 ### Core runtime and path policy
 
 - Modify: `core/lib/filesystem.ts`
+- Create: `core/lib/repo-metadata.ts`
 - Create: `tests/lib/filesystem.test.ts`
 
 Responsibility:
 - define the canonical repo path as `/home/$USER/nixpi`
 - expose strict repo validation helpers for path, `origin`, and branch
+- define one persisted metadata file and one shared API for reading/writing it
 - remove the legacy default of `~/.nixpi/pi-nixpi`
 
 ### Bootstrap and install flow
@@ -30,6 +32,7 @@ Responsibility:
 - Modify: `core/scripts/system-update.sh`
 - Modify: `core/os/pkgs/installer/nixpi-installer.sh`
 - Modify: `core/os/pkgs/installer/test_nixpi_installer.py`
+- Modify: `tests/nixos/nixpi-firstboot.nix`
 
 Responsibility:
 - clone or validate `/home/$USER/nixpi`
@@ -70,6 +73,7 @@ Responsibility:
 
 - Modify: `tests/nixos/nixpi-update.nix`
 - Modify: `tests/nixos/nixpi-installer-smoke.nix`
+- Modify: `tests/nixos/nixpi-firstboot.nix`
 
 Responsibility:
 - prove update/install flows target `/home/$USER/nixpi`
@@ -81,6 +85,7 @@ Responsibility:
 
 **Files:**
 - Modify: `core/lib/filesystem.ts`
+- Create: `core/lib/repo-metadata.ts`
 - Create: `tests/lib/filesystem.test.ts`
 
 - [ ] **Step 1: Write the failing filesystem tests**
@@ -151,6 +156,30 @@ Implementation notes:
 - use explicit error messages that mention expected path, origin, and branch
 - do not silently normalize legacy paths
 
+Create `core/lib/repo-metadata.ts` and make it the only runtime metadata source:
+
+```ts
+export interface CanonicalRepoMetadata {
+	path: string;
+	origin: string;
+	branch: string;
+}
+
+export function getCanonicalRepoMetadataPath(primaryUser = getPrimaryUser()): string {
+	return `/home/${primaryUser}/.nixpi/canonical-repo.json`;
+}
+```
+
+Persist this JSON shape:
+
+```json
+{
+  "path": "/home/alex/nixpi",
+  "origin": "https://github.com/alexradunet/nixpi.git",
+  "branch": "main"
+}
+```
+
 - [ ] **Step 4: Run the filesystem tests and make sure they pass**
 
 Run: `npm test -- tests/lib/filesystem.test.ts`
@@ -159,7 +188,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add core/lib/filesystem.ts tests/lib/filesystem.test.ts
+git add core/lib/filesystem.ts core/lib/repo-metadata.ts tests/lib/filesystem.test.ts
 git commit -m "refactor: centralize canonical repo path policy"
 ```
 
@@ -170,6 +199,7 @@ git commit -m "refactor: centralize canonical repo path policy"
 - Modify: `core/scripts/setup-wizard.sh`
 - Modify: `core/os/pkgs/installer/nixpi-installer.sh`
 - Modify: `core/os/pkgs/installer/test_nixpi_installer.py`
+- Modify: `tests/nixos/nixpi-firstboot.nix`
 
 - [ ] **Step 1: Write or extend failing bootstrap tests**
 
@@ -181,17 +211,30 @@ def test_installer_records_canonical_checkout_metadata(self):
     self.assertEqual(artifacts["canonical_repo_branch"], "main")
 ```
 
-Add shell-level assertions in the wizard or related test fixture for:
+Add explicit strict-validation cases for:
+
+```python
+def test_existing_non_git_directory_is_rejected(self): ...
+def test_matching_existing_checkout_is_accepted(self): ...
+def test_wrong_remote_is_rejected(self): ...
+def test_wrong_branch_is_rejected(self): ...
+```
+
+Add shell-level assertions in `tests/nixos/nixpi-firstboot.nix` for:
 
 ```bash
 test -d "/home/$USER/nixpi/.git"
 test ! -e "/var/lib/nixpi/pi-nixpi"
+test -f "/home/$USER/.nixpi/canonical-repo.json"
 ```
 
 - [ ] **Step 2: Run the narrow installer/bootstrap tests and confirm they fail**
 
 Run: `pytest core/os/pkgs/installer/test_nixpi_installer.py -q`
 Expected: FAIL because canonical repo metadata is not emitted yet
+
+Run: `nix build .#checks.x86_64-linux.smoke-firstboot --no-link`
+Expected: FAIL or expose first-boot assumptions that still rely on legacy repo setup
 
 - [ ] **Step 3: Update first-boot/bootstrap scripts to clone or validate the canonical repo**
 
@@ -213,7 +256,7 @@ if [[ -d "$NIXPI_DIR/.git" ]]; then
 fi
 ```
 
-3. Persist the chosen remote and branch in a host-readable config file under the canonical repo or system state so later validation can compare exact values.
+3. Persist the chosen remote and branch in `/home/$USER/.nixpi/canonical-repo.json` so later validation can compare exact values through `core/lib/repo-metadata.ts`.
 
 4. Update user-facing messages from:
 
@@ -232,10 +275,13 @@ rebuilt directly from ~/nixpi
 Run: `pytest core/os/pkgs/installer/test_nixpi_installer.py -q`
 Expected: PASS
 
+Run: `nix build .#checks.x86_64-linux.smoke-firstboot --no-link`
+Expected: PASS
+
 - [ ] **Step 5: Commit**
 
 ```bash
-git add core/os/modules/firstboot.nix core/scripts/setup-wizard.sh core/os/pkgs/installer/nixpi-installer.sh core/os/pkgs/installer/test_nixpi_installer.py
+git add core/os/modules/firstboot.nix core/scripts/setup-wizard.sh core/os/pkgs/installer/nixpi-installer.sh core/os/pkgs/installer/test_nixpi_installer.py tests/nixos/nixpi-firstboot.nix
 git commit -m "feat: bootstrap canonical home repo checkout"
 ```
 
@@ -245,6 +291,7 @@ git commit -m "feat: bootstrap canonical home repo checkout"
 - Modify: `core/os/modules/update.nix`
 - Modify: `core/scripts/system-update.sh`
 - Modify: `core/pi/extensions/os/actions.ts`
+- Modify: `tests/extensions/os-update.test.ts`
 - Modify: `tests/nixos/nixpi-update.nix`
 
 - [ ] **Step 1: Add failing tests for rebuild/update path selection**
@@ -256,7 +303,7 @@ machine.succeed("test -f /home/alex/nixpi/flake.nix")
 machine.fail("test -f /etc/nixos/flake.nix")
 ```
 
-Add unit-level expectations for `handleNixosUpdate("apply")` if a dedicated test file exists or is added:
+Add unit-level expectations in `tests/extensions/os-update.test.ts`:
 
 ```ts
 expect(result.details.flake).toBe("/home/alex/nixpi")
@@ -264,8 +311,8 @@ expect(result.details.flake).toBe("/home/alex/nixpi")
 
 - [ ] **Step 2: Run the focused update tests and verify failure**
 
-Run: `npm test -- tests/extensions/os-proposal.test.ts`
-Expected: existing assumptions around hidden repo dirs or legacy flake paths cause failures
+Run: `npm test -- tests/extensions/os-update.test.ts`
+Expected: FAIL because the update flow still references legacy flake paths or does not enforce the canonical checkout
 
 Run: `nix build .#checks.x86_64-linux.nixos-smoke --no-link`
 Expected: FAIL or expose legacy `/etc/nixos` assumptions before implementation
@@ -290,7 +337,7 @@ Ensure `core/pi/extensions/os/actions.ts` uses the centralized canonical path he
 
 - [ ] **Step 4: Re-run the targeted tests**
 
-Run: `npm test -- tests/extensions/os-proposal.test.ts`
+Run: `npm test -- tests/extensions/os-update.test.ts`
 Expected: PASS for the updated unit expectations
 
 Run: `nix build .#checks.x86_64-linux.config --no-link`
@@ -299,7 +346,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add core/os/modules/update.nix core/scripts/system-update.sh core/pi/extensions/os/actions.ts tests/nixos/nixpi-update.nix
+git add core/os/modules/update.nix core/scripts/system-update.sh core/pi/extensions/os/actions.ts tests/extensions/os-update.test.ts tests/nixos/nixpi-update.nix
 git commit -m "refactor: rebuild from canonical repo checkout"
 ```
 
@@ -337,20 +384,21 @@ Expected: FAIL because the handler still initializes a hidden local proposal clo
 Change `ensureProposalRepo()` so it:
 
 - validates the canonical repo path instead of cloning into a state dir
-- uses configured `origin` and branch validation
+- loads expected `path`, `origin`, and `branch` from `/home/$USER/.nixpi/canonical-repo.json`
 - reports “Canonical repo” in output text
 - removes the lazy `git clone` fallback for hidden proposal repos
 
 Minimal target shape:
 
 ```ts
+const metadata = readCanonicalRepoMetadata();
 const repoDir = getNixPiRepoDir();
 assertCanonicalRepo({
-	expectedPath: getCanonicalRepoDir(),
+	expectedPath: metadata.path,
 	actualPath: repoDir,
-	expectedOrigin,
+	expectedOrigin: metadata.origin,
 	actualOrigin,
-	expectedBranch,
+	expectedBranch: metadata.branch,
 	actualBranch,
 });
 ```
@@ -387,7 +435,7 @@ git commit -m "refactor: align proposal tooling with canonical repo"
 Search for legacy references:
 
 ```bash
-rg -n "pi-nixpi|/etc/nixos#|/etc/nixos|~/.nixpi/pi-nixpi|/var/lib/nixpi/pi-nixpi" README.md docs core/pi/skills
+rg -n "pi-nixpi|/etc/nixos#|/etc/nixos|~/.nixpi/pi-nixpi|/var/lib/nixpi/pi-nixpi" README.md AGENTS.md docs core/pi/skills
 ```
 
 Expected: multiple matches before edits
@@ -409,7 +457,7 @@ Be explicit that:
 
 - [ ] **Step 3: Run the doc audit again**
 
-Run: `rg -n "pi-nixpi|~/.nixpi/pi-nixpi|/var/lib/nixpi/pi-nixpi" README.md docs core/pi/skills`
+Run: `rg -n "pi-nixpi|~/.nixpi/pi-nixpi|/var/lib/nixpi/pi-nixpi" README.md AGENTS.md docs core/pi/skills`
 Expected: only intentional historical/spec references remain
 
 - [ ] **Step 4: Commit**
@@ -441,7 +489,7 @@ machine.fail("test -d /var/lib/nixpi/pi-nixpi")
 Run:
 
 ```bash
-npm test -- tests/lib/filesystem.test.ts tests/extensions/os-proposal.test.ts tests/extensions/nixpi.test.ts
+npm test -- tests/lib/filesystem.test.ts tests/extensions/os-update.test.ts tests/extensions/os-proposal.test.ts tests/extensions/nixpi.test.ts
 pytest core/os/pkgs/installer/test_nixpi_installer.py -q
 nix build .#checks.x86_64-linux.config --no-link
 ```
@@ -456,6 +504,7 @@ Expected:
 Run:
 
 ```bash
+nix build .#checks.x86_64-linux.smoke-firstboot --no-link
 nix build .#checks.x86_64-linux.nixos-smoke --no-link
 ```
 
