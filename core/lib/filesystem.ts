@@ -136,7 +136,7 @@ export function getDaemonStateDir(): string {
 
 /** Path to the local repo clone used for local-only proposal workflows. */
 export function getNixPiRepoDir(): string {
-	return process.env.NIXPI_REPO_DIR ?? getCanonicalRepoDir();
+	return getCanonicalRepoDir();
 }
 
 function getExpectedCanonicalRepoValues(args: CanonicalRepoValidationArgs) {

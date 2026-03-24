@@ -137,11 +137,9 @@ describe("getSystemFlakeDir", () => {
 // ---------------------------------------------------------------------------
 describe("canonical repo policy", () => {
 	let origPrimaryUser: string | undefined;
-	let origRepoDir: string | undefined;
 
 	beforeEach(() => {
 		origPrimaryUser = process.env.NIXPI_PRIMARY_USER;
-		origRepoDir = process.env.NIXPI_REPO_DIR;
 	});
 
 	afterEach(() => {
@@ -149,11 +147,6 @@ describe("canonical repo policy", () => {
 			process.env.NIXPI_PRIMARY_USER = origPrimaryUser;
 		} else {
 			delete process.env.NIXPI_PRIMARY_USER;
-		}
-		if (origRepoDir !== undefined) {
-			process.env.NIXPI_REPO_DIR = origRepoDir;
-		} else {
-			delete process.env.NIXPI_REPO_DIR;
 		}
 	});
 
@@ -184,8 +177,13 @@ describe("canonical repo policy", () => {
 	});
 
 	it("defaults the repo dir to /home/<primaryUser>/nixpi", () => {
-		delete process.env.NIXPI_REPO_DIR;
 		process.env.NIXPI_PRIMARY_USER = "alex";
+		expect(getNixPiRepoDir()).toBe("/home/alex/nixpi");
+	});
+
+	it("ignores NIXPI_REPO_DIR overrides and stays canonical", () => {
+		process.env.NIXPI_PRIMARY_USER = "alex";
+		process.env.NIXPI_REPO_DIR = "/tmp/pi-nixpi";
 		expect(getNixPiRepoDir()).toBe("/home/alex/nixpi");
 	});
 
@@ -316,6 +314,36 @@ describe("canonical repo metadata", () => {
 
 		expect(() => readCanonicalRepoMetadata("codex-test-user", metadataPath)).toThrow(
 			`Invalid canonical repo metadata in ${metadataPath}`,
+		);
+	});
+
+	it("rejects writing canonical repo metadata with a non-canonical path", () => {
+		expect(() =>
+			writeCanonicalRepoMetadata(
+				{
+					path: "/tmp/pi-nixpi",
+					origin: "https://github.com/example/nixpi.git",
+					branch: "main",
+				},
+				"codex-test-user",
+				metadataPath,
+			),
+		).toThrow("Invalid canonical repo metadata path: expected /home/codex-test-user/nixpi, got /tmp/pi-nixpi");
+	});
+
+	it("rejects reading canonical repo metadata with a non-canonical path", () => {
+		fs.mkdirSync(path.dirname(metadataPath), { recursive: true });
+		fs.writeFileSync(
+			metadataPath,
+			JSON.stringify({
+				path: "/tmp/pi-nixpi",
+				origin: "https://github.com/example/nixpi.git",
+				branch: "main",
+			}),
+		);
+
+		expect(() => readCanonicalRepoMetadata("codex-test-user", metadataPath)).toThrow(
+			"Invalid canonical repo metadata path: expected /home/codex-test-user/nixpi, got /tmp/pi-nixpi",
 		);
 	});
 });

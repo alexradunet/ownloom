@@ -1,12 +1,20 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { atomicWriteFile } from "./filesystem.js";
-import { assertValidPrimaryUser, getPrimaryUser } from "./filesystem.js";
+import { assertValidPrimaryUser, getCanonicalRepoDir, getPrimaryUser } from "./filesystem.js";
 
 export interface CanonicalRepoMetadata {
 	path: string;
 	origin: string;
 	branch: string;
+}
+
+function assertCanonicalMetadataPath(metadata: CanonicalRepoMetadata, primaryUser: string): CanonicalRepoMetadata {
+	const expectedPath = getCanonicalRepoDir(primaryUser);
+	if (metadata.path !== expectedPath) {
+		throw new Error(`Invalid canonical repo metadata path: expected ${expectedPath}, got ${metadata.path}`);
+	}
+	return metadata;
 }
 
 export function getCanonicalRepoMetadataPath(primaryUser = getPrimaryUser()): string {
@@ -18,6 +26,7 @@ export function readCanonicalRepoMetadata(
 	metadataPath = getCanonicalRepoMetadataPath(primaryUser),
 ): CanonicalRepoMetadata | undefined {
 	if (!existsSync(metadataPath)) return undefined;
+	const validatedUser = assertValidPrimaryUser(primaryUser);
 	const parsed = JSON.parse(readFileSync(metadataPath, "utf-8")) as Partial<CanonicalRepoMetadata>;
 	if (
 		typeof parsed.path !== "string" ||
@@ -26,7 +35,7 @@ export function readCanonicalRepoMetadata(
 	) {
 		throw new Error(`Invalid canonical repo metadata in ${metadataPath}`);
 	}
-	return parsed;
+	return assertCanonicalMetadataPath(parsed, validatedUser);
 }
 
 export function writeCanonicalRepoMetadata(
@@ -34,6 +43,7 @@ export function writeCanonicalRepoMetadata(
 	primaryUser = getPrimaryUser(),
 	metadataPath = getCanonicalRepoMetadataPath(primaryUser),
 ): string {
-	atomicWriteFile(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
+	const validatedUser = assertValidPrimaryUser(primaryUser);
+	atomicWriteFile(metadataPath, `${JSON.stringify(assertCanonicalMetadataPath(metadata, validatedUser), null, 2)}\n`);
 	return metadataPath;
 }
