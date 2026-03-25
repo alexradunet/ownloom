@@ -42,13 +42,11 @@ export async function withRetry<T>(
 		onRetry,
 	} = opts;
 
-	let lastError: unknown;
-
 	for (let attempt = 0; attempt <= maxRetries; attempt++) {
 		try {
 			return await fn();
 		} catch (err) {
-			lastError = err;
+			// onError is not called on the final attempt — callers should not depend on it for final cleanup
 			if (attempt === maxRetries || !shouldRetry(err)) throw err;
 
 			await onError?.();
@@ -62,5 +60,6 @@ export async function withRetry<T>(
 		}
 	}
 
-	throw lastError;
+	// Loop should always throw or return; this is unreachable
+	throw new Error("Retry exhausted");
 }
