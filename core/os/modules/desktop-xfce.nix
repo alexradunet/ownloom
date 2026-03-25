@@ -197,18 +197,30 @@ in
     "skel/.xprofile".source = xprofile;
   };
 
-  system.activationScripts.nixpi-xfce-desktop = lib.stringAfter [ "users" ] ''
-    primary_group="$(id -gn ${primaryUser})"
+  systemd.tmpfiles.rules = [
+    "d ${primaryHome}/.config 0755 ${primaryUser} ${primaryUser} -"
+    "d ${primaryHome}/.config/autostart 0755 ${primaryUser} ${primaryUser} -"
+  ];
 
-    install -d -m 0755 -o ${primaryUser} -g "$primary_group" ${primaryHome}/.config
-    install -d -m 0755 -o ${primaryUser} -g "$primary_group" ${primaryHome}/.config/autostart
+  systemd.services.nixpi-xfce-desktop-setup = {
+    description = "NixPI XFCE desktop setup: seed autostart entry and xprofile";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-tmpfiles-setup.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "root";
+      ExecStart = "${pkgs.writeShellScript "nixpi-xfce-desktop-setup" ''
+        primary_group="$(id -gn ${primaryUser})"
 
-    if [ ! -e ${primaryHome}/.config/autostart/nixpi-terminal.desktop ]; then
-      install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.config/autostart/nixpi-terminal.desktop ${primaryHome}/.config/autostart/nixpi-terminal.desktop
-    fi
+        if [ ! -e ${primaryHome}/.config/autostart/nixpi-terminal.desktop ]; then
+          install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.config/autostart/nixpi-terminal.desktop ${primaryHome}/.config/autostart/nixpi-terminal.desktop
+        fi
 
-    if [ ! -e ${primaryHome}/.xprofile ]; then
-      install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.xprofile ${primaryHome}/.xprofile
-    fi
-  '';
+        if [ ! -e ${primaryHome}/.xprofile ]; then
+          install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.xprofile ${primaryHome}/.xprofile
+        fi
+      ''}";
+    };
+  };
 }

@@ -60,18 +60,27 @@ in
     "issue".text = "NixPI\n";
   };
 
-  system.activationScripts.nixpi-shell = lib.stringAfter [ "users" ] ''
-    primary_group="$(id -gn ${primaryUser})"
-    install -d -m 0755 -o ${primaryUser} -g "$primary_group" ${primaryHome}
+  systemd.services.nixpi-shell-setup = {
+    description = "NixPI shell setup: seed .bashrc and .bash_profile for primary user";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-tmpfiles-setup.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "root";
+      ExecStart = "${pkgs.writeShellScript "nixpi-shell-setup" ''
+        primary_group="$(id -gn ${primaryUser})"
 
-    if [ ! -e ${primaryHome}/.bashrc ]; then
-      install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.bashrc ${primaryHome}/.bashrc
-    fi
+        if [ ! -e ${primaryHome}/.bashrc ]; then
+          install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.bashrc ${primaryHome}/.bashrc
+        fi
 
-    if [ ! -e ${primaryHome}/.bash_profile ]; then
-      install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.bash_profile ${primaryHome}/.bash_profile
-    fi
-  '';
+        if [ ! -e ${primaryHome}/.bash_profile ]; then
+          install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.bash_profile ${primaryHome}/.bash_profile
+        fi
+      ''}";
+    };
+  };
 
   boot.kernel.sysctl."kernel.printk" = "4 4 1 7";
 }

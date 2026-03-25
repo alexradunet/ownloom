@@ -23,21 +23,29 @@ in
     "d ${stateDir}/services/element-web 0770 ${primaryUser} ${primaryUser} -"
   ];
 
-  system.activationScripts.nixpi-app = lib.stringAfter [ "users" ] ''
-    primary_group="$(id -gn ${primaryUser})"
-    default_pi_settings="${appPackage}/share/nixpi/.pi/settings.json"
+  systemd.services.nixpi-app-setup = {
+    description = "NixPI app setup: create agent state dir and seed default settings";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-tmpfiles-setup.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "root";
+      ExecStart = "${pkgs.writeShellScript "nixpi-app-setup" ''
+        primary_group="$(id -gn ${primaryUser})"
+        default_pi_settings="${appPackage}/share/nixpi/.pi/settings.json"
 
-    install -d -m 0755 -o ${primaryUser} -g "$primary_group" ${primaryHome}
-    install -d -m 0770 -o ${primaryUser} -g "$primary_group" ${stateDir}
-    install -d -m 0700 -o ${primaryUser} -g "$primary_group" ${agentStateDir}
+        install -d -m 0700 -o ${primaryUser} -g "$primary_group" ${agentStateDir}
 
-    if [ ! -e ${agentStateDir}/settings.json ] && [ -f "$default_pi_settings" ]; then
-      install -m 0600 -o ${primaryUser} -g "$primary_group" "$default_pi_settings" ${agentStateDir}/settings.json
-    fi
+        if [ ! -e ${agentStateDir}/settings.json ] && [ -f "$default_pi_settings" ]; then
+          install -m 0600 -o ${primaryUser} -g "$primary_group" "$default_pi_settings" ${agentStateDir}/settings.json
+        fi
 
-    chown -R ${primaryUser}:"$primary_group" ${agentStateDir}
-    chmod 0700 ${agentStateDir}
-  '';
+        chown -R ${primaryUser}:"$primary_group" ${agentStateDir}
+        chmod 0700 ${agentStateDir}
+      ''}";
+    };
+  };
 
   system.services.nixpi-daemon = {
     imports = [ (lib.modules.importApply ../services/nixpi-daemon.nix { inherit pkgs; }) ];
