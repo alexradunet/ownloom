@@ -1,8 +1,45 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { ClientEvent, createClient, type MatrixClient, type MatrixEvent, MemoryStore, SyncState } from "matrix-js-sdk";
+import { getDaemonStateDir } from "../../lib/filesystem.js";
 import { renderMatrixHtml } from "../../lib/matrix-format.js";
 import type { MatrixIdentity, MatrixTextEvent } from "../../lib/types.js";
 import { emitMatrixConnected, emitMatrixDisconnected, emitMatrixError } from "../metrics.js";
 import { enforceMapLimit, pruneExpiredEntries } from "../ordered-cache.js";
+
+// ---------------------------------------------------------------------------
+// Session persistence helpers
+// ---------------------------------------------------------------------------
+
+interface PersistedSession {
+	userId: string;
+	deviceId: string;
+	accessToken: string;
+}
+
+function getMatrixStateDir(): string {
+	return join(getDaemonStateDir(), "matrix");
+}
+
+function sessionPath(stateDir: string, agentId: string): string {
+	return join(stateDir, agentId, "session.json");
+}
+
+function loadSession(stateDir: string, agentId: string): PersistedSession | null {
+	const path = sessionPath(stateDir, agentId);
+	if (!existsSync(path)) return null;
+	try {
+		return JSON.parse(readFileSync(path, "utf-8")) as PersistedSession;
+	} catch {
+		return null;
+	}
+}
+
+function saveSession(stateDir: string, agentId: string, session: PersistedSession): void {
+	const dir = join(stateDir, agentId);
+	mkdirSync(dir, { recursive: true });
+	writeFileSync(sessionPath(stateDir, agentId), JSON.stringify(session, null, 2), "utf-8");
+}
 
 // ---------------------------------------------------------------------------
 // Type guards for Matrix event content
@@ -45,6 +82,8 @@ export interface MatrixJsSdkBridgeOptions {
 	initialSyncLimit?: number;
 	seenEventTtlMs?: number;
 	maxSeenEventIds?: number;
+	/** Directory under which per-agent Matrix sessions are persisted. Defaults to `<daemonStateDir>/matrix`. */
+	stateDir?: string;
 }
 
 const DEFAULT_SEEN_EVENT_TTL_MS = 10 * 60 * 1000;
@@ -74,17 +113,31 @@ export class MatrixJsSdkBridge {
 	}
 
 	async start(): Promise<void> {
+		const stateDir = this.options.stateDir ?? getMatrixStateDir();
 		for (const identity of this.options.identities) {
+			const saved = loadSession(stateDir, identity.id);
 			const client = createClient({
 				baseUrl: identity.homeserver,
-				accessToken: identity.accessToken,
-				userId: identity.userId,
+				accessToken: saved?.accessToken ?? identity.accessToken,
+				userId: saved?.userId ?? identity.userId,
+				deviceId: saved?.deviceId,
 				store: new MemoryStore({ localStorage: undefined }),
 			});
 			this.clients.set(identity.id, { identity, client });
 			this.attachEventHandlers(identity, client);
 			try {
 				await this.startClient(client);
+				// Persist the resolved session (deviceId assigned by server on first login)
+				const resolvedDeviceId = client.getDeviceId();
+				const resolvedUserId = client.getUserId();
+				const resolvedToken = client.getAccessToken();
+				if (resolvedDeviceId && resolvedUserId && resolvedToken) {
+					saveSession(stateDir, identity.id, {
+						userId: resolvedUserId,
+						deviceId: resolvedDeviceId,
+						accessToken: resolvedToken,
+					});
+				}
 				emitMatrixConnected(identity.id);
 			} catch (error) {
 				emitMatrixError(identity.id, String(error));
@@ -143,6 +196,11 @@ export class MatrixJsSdkBridge {
 	}
 
 	private async startClient(client: MatrixClient): Promise<void> {
+		// Enable Rust-based end-to-end crypto if available (matrix-js-sdk v41+).
+		if (typeof client.initRustCrypto === "function") {
+			await client.initRustCrypto();
+		}
+
 		await new Promise<void>((resolve, reject) => {
 			const onSync = (state: SyncState, _prevState: SyncState | null, data?: { error?: Error }) => {
 				if (state === SyncState.Prepared || state === SyncState.Syncing) {

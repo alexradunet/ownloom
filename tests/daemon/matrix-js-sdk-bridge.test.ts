@@ -1,5 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("node:fs", () => ({
+	existsSync: vi.fn().mockReturnValue(false),
+	mkdirSync: vi.fn(),
+	readFileSync: vi.fn().mockReturnValue("{}"),
+	writeFileSync: vi.fn(),
+}));
+
+vi.mock("../../core/lib/filesystem.js", () => ({
+	getDaemonStateDir: vi.fn().mockReturnValue("/tmp/test-daemon-state"),
+}));
+
 const { mockClients, mockCreateClient } = vi.hoisted(() => ({
 	mockClients: [] as MockClient[],
 	mockCreateClient: vi.fn(),
@@ -80,6 +91,10 @@ class MockClient {
 	public readonly joinRoom = vi.fn().mockResolvedValue({});
 	public readonly getLocalAliases = vi.fn().mockResolvedValue({ aliases: [] as string[] });
 	public readonly getRoom = vi.fn().mockReturnValue(null);
+	public readonly initRustCrypto = vi.fn().mockResolvedValue(undefined);
+	public readonly getDeviceId = vi.fn().mockReturnValue("TESTDEVICE");
+	public readonly getUserId = vi.fn().mockReturnValue("@pi:nixpi");
+	public readonly getAccessToken = vi.fn().mockReturnValue("test-token");
 
 	on(event: string, handler: Handler): void {
 		this.handlers.set(event, [...(this.handlers.get(event) ?? []), handler]);
