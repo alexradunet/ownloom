@@ -18,7 +18,9 @@ log() {
 
 WIZARD_STATE="$HOME/.nixpi/wizard-state"
 SYSTEM_READY="$WIZARD_STATE/system-ready"
-NIXPI_DIR="${NIXPI_DIR:-/srv/nixpi}"
+# Appliance promotion must always target the canonical system checkout.
+# Do not inherit the interactive shell's NIXPI_DIR, which points at ~/nixpi.
+NIXPI_DIR="/srv/nixpi"
 NIXPI_CONFIG="${NIXPI_CONFIG_DIR:-${NIXPI_STATE_DIR:-$HOME/.config/nixpi}/services}"
 PI_DIR="${NIXPI_PI_DIR:-$HOME/.pi}"
 MATRIX_HOMESERVER="http://localhost:6167"
