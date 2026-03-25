@@ -22,13 +22,14 @@ For VM install-flow testing:
 
 - `just vm-install-iso` runs the installer in the default user-mode NAT network with host forwards
 - use this path to validate install flow, XFCE startup, and local access from the host machine
-- use the printed localhost forwards for SSH, Home, Element Web, and Matrix access
+- use the printed localhost forwards for host-side recovery and debugging only
 
 ## Security Note: NetBird Is Mandatory
 
 NetBird is the network security boundary for all NixPI services. The firewall configuration (`trustedInterfaces = ["wt0"]`) only protects services when the NetBird interface (`wt0`) is active. Without NetBird:
 
-- Matrix, Home (ports 80 and 8080), and Element Web (port 8081) are exposed to the local network
+- the canonical HTTPS gateway cannot serve the intended NetBird hostname
+- backend service ports may be exposed beyond the intended trusted-interface boundary if the firewall is relaxed
 - A compromised local device could access OS tools via prompt injection
 
 **Complete NetBird setup and verify `wt0` is active before exposing this machine to any network.**
@@ -65,9 +66,9 @@ NixPI's first-boot experience has two phases.
 
 **Built-in services provisioned**:
 
-- Home status page on port `8080`
-- Home front door on port `80`
-- Element Web on port `8081`
+- Canonical HTTPS front door on port `443`
+- Local recovery entry at `http://localhost/`
+- Internal Home, Element Web, and Matrix backends behind that gateway
 
 **Bootstrap security lifecycle**:
 
@@ -115,7 +116,7 @@ If you want to redo persona setup, remove `~/.nixpi/wizard-state/persona-done` a
 - XFCE is the only supported automatic first-boot entry path
 - The wizard enables `nixpi-daemon.service` as part of setup completion
 - The wizard refreshes Matrix policy so public registration is no longer left open after setup
-- The wizard refreshes the built-in service configs so NetBird peers have a stable page listing service URLs and shareable host info
+- The wizard refreshes the built-in service configs so NetBird peers get one canonical HTTPS host, with localhost reserved for recovery
 
 ## Related
 

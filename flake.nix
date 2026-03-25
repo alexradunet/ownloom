@@ -13,7 +13,7 @@
       lib = nixpkgs.lib;
       nixpiSource = lib.cleanSource ./.;
       installerHelper = pkgs.callPackage ./core/os/pkgs/installer {
-        inherit nixpiSource;
+        inherit nixpiSource piAgent appPackage;
         nixpkgsSource = nixpkgs.outPath;
       };
       setupPackage = pkgs.callPackage ./core/os/pkgs/setup {};
@@ -198,6 +198,8 @@
             pkgs.writeText "nixpi-install-generated.nix" (
               lib.replaceStrings
                 [
+                  "@piAgent@"
+                  "@appPackage@"
                   "@setupPackage@"
                   "@firstbootModule@"
                   "@desktopXfceModule@"
@@ -208,6 +210,8 @@
                   "@@password@@"
                 ]
                 [
+                  (toString piAgent)
+                  (toString appPackage)
                   (toString setupPackage)
                   "${toString nixpiSource}/core/os/modules/firstboot.nix"
                   "${toString nixpiSource}/core/os/modules/desktop-xfce.nix"

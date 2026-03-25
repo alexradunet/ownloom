@@ -53,8 +53,13 @@ EOF
     password,
   }: {
     services.matrix-continuwuity.settings.admin_execute = [
-      "users create-user ${username} ${password}"
+      "users create ${username} ${password}"
     ];
+  };
+
+  mkMatrixMultiSeedConfig = users: {
+    services.matrix-continuwuity.settings.admin_execute =
+      map ({ username, password }: "users create ${username} ${password}") users;
   };
 
   mkTestFilesystems = {
@@ -100,10 +105,12 @@ EOF
 
     async def main():
         homeserver, username, password, room_alias, outbound, expected = sys.argv[1:7]
-        client = AsyncClient(homeserver)
-        response = await ensure_registered(client, username, password)
-        client.access_token = response.access_token
-        client.user_id = response.user_id
+        client = AsyncClient(homeserver, user=username)
+        login_resp = await client.login(password)
+        if not hasattr(login_resp, "access_token"):
+            response = await ensure_registered(client, username, password)
+            client.access_token = response.access_token
+            client.user_id = response.user_id
 
         join = await client.join(room_alias)
         if not isinstance(join, JoinResponse):
@@ -272,7 +279,7 @@ EOF
 
     def register_matrix_user(machine, homeserver, username, password, token=""):
         if not token:
-            token = machine.succeed("get_matrix_token").strip()
+            token = machine.succeed("cat /var/lib/nixpi/secrets/matrix-registration-shared-secret").strip()
         response = machine.succeed(
             "curl -s -X POST " + homeserver + "/_matrix/client/v3/register "
             + "-H 'Content-Type: application/json' "

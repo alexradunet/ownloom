@@ -38,6 +38,7 @@
     nixpi.succeed("grep -q 'NixPI Home' /etc/system-services/nixpi-home/webroot/index.html")
     nixpi.succeed("grep -q 'default_server_config' /etc/system-services/nixpi-element-web/config.json")
     nixpi.succeed("grep -q 'Matrix' /etc/system-services/nixpi-home/webroot/index.html")
+    nixpi.fail("grep -q 'Home direct port' /etc/system-services/nixpi-home/webroot/index.html")
     nixpi.fail("grep -q 'CHAT_URL' /etc/system-services/nixpi-home/webroot/index.html")
 
     nixpi.succeed("systemctl cat nixpi-home.service | grep -q 'static-web-server'")
@@ -47,8 +48,10 @@
 
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'", timeout=60)
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8081/config.json | grep -q 'default_server_config'", timeout=60)
-    nixpi.wait_until_succeeds("curl -skf https://127.0.0.1:8443/config.json | grep -q 'default_server_config'", timeout=60)
-    nixpi.wait_until_succeeds("curl -skf https://127.0.0.1:8443/_matrix/client/versions | grep -q 'versions'", timeout=60)
+    nixpi.wait_until_succeeds("curl -skf https://127.0.0.1/ | grep -q 'NixPI Home'", timeout=60)
+    nixpi.wait_until_succeeds("curl -skf https://127.0.0.1/element/config.json | grep -q 'default_server_config'", timeout=60)
+    nixpi.wait_until_succeeds("curl -skf https://127.0.0.1/_matrix/client/versions | grep -q 'versions'", timeout=60)
+    nixpi.wait_until_succeeds("curl -skf https://127.0.0.1/.well-known/matrix/server | grep -q 'm.server'", timeout=60)
 
     print("NixPI modular service tests passed!")
   '';

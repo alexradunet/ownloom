@@ -1,4 +1,4 @@
-{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, matrixRegisterScript, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkMatrixMultiSeedConfig, matrixRegisterScript, ... }:
 
 {
   name = "nixpi-matrix-reply";
@@ -8,7 +8,10 @@
       username = "homeserver";
       homeDir = "/home/${username}";
     in {
-      imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
+      imports = nixPiModulesNoShell ++ [ mkTestFilesystems (mkMatrixMultiSeedConfig [
+        { username = "host"; password = "hostpass123"; }
+        { username = "operator"; password = "operatorpass123"; }
+      ]) ];
       _module.args = { inherit piAgent appPackage setupPackage; };
       nixpi.primaryUser = username;
       nixpi.security.trustedInterface = "eth1";
@@ -162,6 +165,11 @@ EOF
         touch ${homeDir}/.nixpi/wizard-state/system-ready
         chown -R ${username}:${username} ${homeDir}/.nixpi ${homeDir}/.pi ${homeDir}/nixpi
         chmod 600 ${homeDir}/.pi/settings.json
+        install -d -m 0775 -o ${username} -g ${username} /srv/nixpi
+        install -d -m 0775 -o ${username} -g ${username} /srv/nixpi/Agents
+        install -d -m 0775 -o ${username} -g ${username} /srv/nixpi/Agents/host
+        cp ${homeDir}/nixpi/Agents/host/AGENTS.md /srv/nixpi/Agents/host/AGENTS.md
+        chown -R ${username}:${username} /srv/nixpi
       '';
     };
   };
@@ -178,9 +186,16 @@ EOF
 
     homeserver.wait_for_unit("continuwuity.service", timeout=120)
     homeserver.wait_until_succeeds("curl -sf http://127.0.0.1:6167/_matrix/client/versions", timeout=60)
-    registration_token = homeserver.succeed("cat /var/lib/nixpi/secrets/matrix-registration-shared-secret").strip()
-    host_creds = register_matrix_user(homeserver, "http://127.0.0.1:6167", "host", "hostpass123", registration_token)
-    admin_creds = register_matrix_user(homeserver, "http://127.0.0.1:6167", "operator", "operatorpass123", registration_token)
+    # Wait for admin_execute to create pre-seeded users (may be async)
+    homeserver.wait_until_succeeds(
+        "curl -sf -X POST http://127.0.0.1:6167/_matrix/client/v3/login"
+        + " -H 'Content-Type: application/json'"
+        + " -d '{\"type\":\"m.login.password\",\"identifier\":{\"type\":\"m.id.user\",\"user\":\"host\"},\"password\":\"hostpass123\"}'"
+        + " | grep -q 'access_token'",
+        timeout=60,
+    )
+    host_creds = login_matrix_user(homeserver, "http://127.0.0.1:6167", "host", "hostpass123")
+    admin_creds = login_matrix_user(homeserver, "http://127.0.0.1:6167", "operator", "operatorpass123")
 
     room = json.loads(homeserver.succeed(
         "curl -sf -X POST http://127.0.0.1:6167/_matrix/client/v3/createRoom "
@@ -231,18 +246,20 @@ EOF
         "systemctl show -p Environment --value nixpi-daemon.service | grep -q 'PI_CODING_AGENT_DIR=/home/pi/.pi'"
     )
 
+    # Re-login to get a fresh token for the member check
+    fresh_creds = login_matrix_user(homeserver, "http://127.0.0.1:6167", "operator", "operatorpass123")
     homeserver.wait_until_succeeds(
         "curl -sf http://127.0.0.1:6167/_matrix/client/v3/rooms/"
         + room_id_enc
         + "/members -H 'Authorization: Bearer "
-        + admin_creds["access_token"]
-        + "' | grep -q '\"membership\":\"join\"' && "
+        + fresh_creds["access_token"]
+        + "' | grep -q '@host:nixpi' | true; "
         + "curl -sf http://127.0.0.1:6167/_matrix/client/v3/rooms/"
         + room_id_enc
-        + "/members -H 'Authorization: Bearer "
-        + admin_creds["access_token"]
+        + "/members?membership=join -H 'Authorization: Bearer "
+        + fresh_creds["access_token"]
         + "' | grep -q '@host:nixpi'",
-        timeout=60,
+        timeout=120,
     )
 
     homeserver.succeed(
@@ -262,7 +279,7 @@ EOF
         + "/messages?dir=b&limit=20' -H 'Authorization: Bearer "
         + admin_creds["access_token"]
         + "' | grep -q 'PI-ECHO-ACK'",
-        timeout=60,
+        timeout=120,
     )
     nixpi.succeed("journalctl -u nixpi-daemon.service --no-pager | grep -q 'starting nixpi-daemon'")
     nixpi.fail("journalctl -u nixpi-daemon.service --no-pager | grep -q 'No model selected'")

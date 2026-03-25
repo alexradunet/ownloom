@@ -16,16 +16,19 @@ The current built-in service set is:
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Home | `:8080` | Service directory and status page |
-| Element Web | `:8081` | Element Web Matrix client |
-| Matrix | `:6167` | Continuwuity Matrix homeserver |
+| HTTPS gateway | `:443` | Canonical host for Home, Element Web, and Matrix |
+| Local recovery | `:80` | `localhost` recovery entry point |
+| Home backend | `:8080` | Internal Home service |
+| Element Web backend | `:8081` | Internal Element Web service |
+| Matrix backend | `:6167` | Internal Continuwuity homeserver |
 
 These are declared as user systemd services in the OS modules and are expected to exist on every NixPI node.
 
 ## Operational Notes
 
-- Home is a minimal status page for the service surface
-- ElementWeb is preconfigured for the local NixPI Matrix server
+- Home is served at `/` on the canonical HTTPS host
+- Element Web is served at `/element/` on the canonical HTTPS host
+- Matrix is exposed on the same host through the standard `/_matrix/*` paths
 - Use `systemd_control` to inspect and restart these units
 
 ## Related

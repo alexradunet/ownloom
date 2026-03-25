@@ -3,6 +3,12 @@ let
   bootstrapPasswordFile = "${config.nixpi.stateDir}/bootstrap/primary-user-password";
 in
 {
+  _module.args = {
+    piAgent = @piAgent@;
+    appPackage = @appPackage@;
+    setupPackage = @setupPackage@;
+  };
+
   imports = [
     @firstbootModule@
     @desktopXfceModule@

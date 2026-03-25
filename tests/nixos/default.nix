@@ -12,6 +12,7 @@ let
       nixPiModulesNoShell
       mkTestFilesystems
       mkMatrixAdminSeedConfig
+      mkMatrixMultiSeedConfig
       matrixTestClient
       matrixRegisterScript
       mkManagedUserConfig

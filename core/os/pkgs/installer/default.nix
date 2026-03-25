@@ -1,4 +1,4 @@
-{ pkgs, python3, makeWrapper, nixpiSource, nixpkgsSource }:
+{ pkgs, python3, makeWrapper, nixpiSource, nixpkgsSource, piAgent, appPackage }:
 
 let
   setupPackage = pkgs.callPackage ../setup {};
@@ -23,6 +23,8 @@ pkgs.stdenvNoCC.mkDerivation {
       --replace-fail "@nixpiInstallModuleTemplate@" "$out/share/nixpi-installer/nixpi-install-module.nix.in"
 
     substituteInPlace "$out/share/nixpi-installer/nixpi-install-module.nix.in" \
+      --replace-fail "@piAgent@" "${piAgent}" \
+      --replace-fail "@appPackage@" "${appPackage}" \
       --replace-fail "@setupPackage@" "${setupPackage}" \
       --replace-fail "@firstbootModule@" "${nixpiSource}/core/os/modules/firstboot.nix" \
       --replace-fail "@desktopXfceModule@" "${nixpiSource}/core/os/modules/desktop-xfce.nix" \

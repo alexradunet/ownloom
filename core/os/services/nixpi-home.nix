@@ -59,35 +59,26 @@ in
         <body>
           <h1>NixPI Home</h1>
           <p>Primary interfaces: terminal, Matrix, and Element Web.</p>
-          <h2>Local access</h2>
+          <h2>Canonical access</h2>
+          <p>Use the NetBird host over HTTPS during normal operation.</p>
           <ul>
-            <li>Home: <a href="http://localhost:${toString config.nixpi-home.port}">http://localhost:${toString config.nixpi-home.port}</a></li>
-            <li>Element Web: <a href="http://localhost:${toString config.nixpi-home.elementWebPort}">http://localhost:${toString config.nixpi-home.elementWebPort}</a></li>
-            <li>Matrix: <a href="http://localhost:${toString config.nixpi-home.matrixPort}">http://localhost:${toString config.nixpi-home.matrixPort}</a></li>
-          </ul>
-          <h2>Remote access</h2>
-          <p>Use your NetBird hostname or mesh IP on interface ${config.nixpi-home.trustedInterface}. Home stays on bare HTTP. Element Web and Matrix use the secure HTTPS entry point on port 8443 for browser-safe remote access.</p>
-          <ul>
-            <li>Home: <a data-page-link href="http://localhost/">http://localhost/</a></li>
-            <li>Home direct port: <a data-home-direct-link href="http://localhost:${toString config.nixpi-home.port}/">http://localhost:${toString config.nixpi-home.port}/</a></li>
-            <li>Element Web: <a data-element-link href="http://localhost:${toString config.nixpi-home.elementWebPort}/">http://localhost:${toString config.nixpi-home.elementWebPort}/</a></li>
+            <li>Home: <a data-page-link href="https://nixpi/">https://nixpi/</a></li>
+            <li>Element Web: <a data-element-link href="https://nixpi/element/">https://nixpi/element/</a></li>
             <li>Matrix URL: <a data-matrix-link href="${config.nixpi-home.matrixClientBaseUrl}">${config.nixpi-home.matrixClientBaseUrl}</a></li>
           </ul>
+          <h2>Recovery</h2>
+          <p>Use <a href="http://localhost/">http://localhost/</a> only when NetBird access is unavailable on the box.</p>
           <script>
             (function () {
               const currentHost = window.location.hostname;
               if (!currentHost) return;
-              const pageUrl = window.location.origin.replace(/\/$/, "") + "/";
-              const homeDirectUrl = "http://" + currentHost + ":${toString config.nixpi-home.port}/";
-              const elementUrl = "https://" + currentHost + ":8443/";
-              const matrixUrl = "https://" + currentHost + ":8443";
+              const canonicalHost = /^(localhost|127\.0\.0\.1)$/.test(currentHost) ? "nixpi" : currentHost;
+              const pageUrl = "https://" + canonicalHost + "/";
+              const elementUrl = "https://" + canonicalHost + "/element/";
+              const matrixUrl = "https://" + canonicalHost;
               for (const node of document.querySelectorAll("[data-page-link]")) {
                 node.textContent = pageUrl;
                 node.href = pageUrl;
-              }
-              for (const node of document.querySelectorAll("[data-home-direct-link]")) {
-                node.textContent = homeDirectUrl;
-                node.href = homeDirectUrl;
               }
               for (const node of document.querySelectorAll("[data-element-link]")) {
                 node.textContent = elementUrl;

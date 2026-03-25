@@ -22,6 +22,11 @@ vi.mock("node:fs", async () => {
 		if (asString.startsWith(`${PROPOSAL_REPO_DIR}/`)) {
 			return path.join(proposalRepoState.tempDir, asString.slice(PROPOSAL_REPO_DIR.length + 1));
 		}
+		// Redirect the parent dir (/var/lib/nixpi) to the temp dir's parent
+		const proposalParent = PROPOSAL_REPO_DIR.slice(0, PROPOSAL_REPO_DIR.lastIndexOf("/"));
+		if (asString === proposalParent) {
+			return proposalRepoState.tempDir.slice(0, proposalRepoState.tempDir.lastIndexOf("/"));
+		}
 		return target;
 	};
 

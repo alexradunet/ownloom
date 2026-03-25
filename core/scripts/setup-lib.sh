@@ -49,6 +49,55 @@ netbird_ip() {
 	jq -r '.netbirdIp // empty | split("/")[0]' <<< "$status"
 }
 
+canonical_state_dir() {
+	printf '%s/access-state' "$NIXPI_CONFIG"
+}
+
+stored_canonical_host() {
+	local path
+	path="$(canonical_state_dir)/canonical-host"
+	[[ -f "$path" ]] && cat "$path" || true
+}
+
+current_canonical_host() {
+	netbird_fqdn
+}
+
+record_canonical_host() {
+	local host="$1"
+	[[ -n "$host" ]] || return 0
+	mkdir -p "$(canonical_state_dir)"
+	printf '%s' "$host" > "$(canonical_state_dir)/canonical-host"
+}
+
+canonical_access_mode() {
+	local current stored
+	current=$(current_canonical_host)
+	stored=$(stored_canonical_host)
+	if [[ -n "$current" ]]; then
+		echo "healthy"
+	elif [[ -n "$stored" ]]; then
+		echo "degraded"
+	else
+		echo "not-ready"
+	fi
+}
+
+canonical_service_host() {
+	local current stored
+	current=$(current_canonical_host)
+	if [[ -n "$current" ]]; then
+		record_canonical_host "$current"
+		printf '%s' "$current"
+		return 0
+	fi
+	stored=$(stored_canonical_host)
+	if [[ -n "$stored" ]]; then
+		printf '%s' "$stored"
+	fi
+	return 0
+}
+
 root_command() {
 	if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
 		"$@"
@@ -291,24 +340,42 @@ load_existing_matrix_credentials() {
 }
 
 write_service_home_runtime() {
-	local mesh_ip="$1" mesh_fqdn="$2"
-	local mesh_host page_url home_direct_url element_web_url matrix_url generated_at
-	mesh_host="${mesh_fqdn:-$mesh_ip}"
-	[[ -n "$mesh_host" ]] || mesh_host="localhost"
-	page_url="http://${mesh_host}"
-	home_direct_url="http://${mesh_host}:8080/"
-	element_web_url="https://${mesh_host}:8443/"
-	matrix_url="https://${mesh_host}:8443"
+	local _mesh_ip="$1" _mesh_fqdn="$2"
+	local canonical_host mode page_url element_web_url matrix_url generated_at access_message
+	canonical_host=$(canonical_service_host)
+	mode=$(canonical_access_mode)
+
+	if [[ -n "$canonical_host" ]]; then
+		page_url="https://${canonical_host}/"
+		element_web_url="https://${canonical_host}/element/"
+		matrix_url="https://${canonical_host}"
+	else
+		page_url="http://localhost/"
+		element_web_url="http://localhost/"
+		matrix_url="unavailable"
+	fi
+
+	case "$mode" in
+		healthy)
+			access_message="Use the NetBird hostname below as the one canonical access path for Home, Element Web, and Matrix."
+			;;
+		degraded)
+			access_message="Canonical NetBird access is temporarily unavailable on this box. Recover locally via http://localhost/ without changing the canonical host."
+			;;
+		*)
+			access_message="Canonical NetBird access is not ready yet. Finish NetBird setup, then use localhost only as an on-box recovery path."
+			;;
+	esac
 	generated_at=$(date -Iseconds)
 
 	local template="/usr/local/share/nixpi/home-template.html"
 	mkdir -p "$NIXPI_CONFIG/home"
 	sed \
-		-e "s|@@MESH_HOST@@|${mesh_host}|g" \
+		-e "s|@@CANONICAL_HOST@@|${canonical_host:-not available}|g" \
 		-e "s|@@PAGE_URL@@|${page_url}|g" \
-		-e "s|@@HOME_DIRECT_URL@@|${home_direct_url}|g" \
 		-e "s|@@ELEMENT_WEB_URL@@|${element_web_url}|g" \
 		-e "s|@@MATRIX_URL@@|${matrix_url}|g" \
+		-e "s|@@ACCESS_MESSAGE@@|${access_message}|g" \
 		-e "s|@@GENERATED_AT@@|${generated_at}|g" \
 		"$template" > "$NIXPI_CONFIG/home/index.html"
 }
@@ -318,14 +385,12 @@ install_home_infrastructure() {
 }
 
 write_element_web_runtime_config() {
-	local mesh_fqdn mesh_ip primary_host primary_matrix_url
-	mesh_fqdn=$(netbird_fqdn)
-	mesh_ip=$(netbird_ip)
-	primary_host="${mesh_fqdn:-$mesh_ip}"
-	primary_matrix_url="http://localhost:6167"
+	local primary_host primary_matrix_url
+	primary_host=$(canonical_service_host)
+	primary_matrix_url="https://nixpi"
 
 	if [[ -n "$primary_host" ]]; then
-		primary_matrix_url="https://${primary_host}:8443"
+		primary_matrix_url="https://${primary_host}"
 	fi
 
 	mkdir -p "$NIXPI_CONFIG/element-web"
@@ -334,7 +399,7 @@ write_element_web_runtime_config() {
 	  "default_server_config": {
 	    "m.homeserver": {
 	      "base_url": "${primary_matrix_url}",
-	      "server_name": "${primary_host:-localhost}"
+	      "server_name": "${primary_host:-nixpi}"
 	    }
 	  },
 	  "brand": "Element",

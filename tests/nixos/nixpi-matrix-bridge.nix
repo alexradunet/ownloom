@@ -1,4 +1,4 @@
-{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, matrixTestClient, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkMatrixMultiSeedConfig, matrixRegisterScript, matrixTestClient, ... }:
 
 {
   name = "nixpi-matrix-bridge";
@@ -8,7 +8,11 @@
       username = "homeserver";
       homeDir = "/home/${username}";
     in {
-      imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
+      imports = nixPiModulesNoShell ++ [ mkTestFilesystems (mkMatrixMultiSeedConfig [
+        { username = "host"; password = "hostpass123"; }
+        { username = "operator"; password = "operatorpass123"; }
+        { username = "clientuser"; password = "clientpass123"; }
+      ]) ];
       _module.args = { inherit piAgent appPackage setupPackage; };
       nixpi.primaryUser = username;
       nixpi.security.trustedInterface = "eth1";
@@ -77,6 +81,11 @@ EOF
         install -d -m 0755 -o ${username} -g ${username} ${homeDir}/.nixpi/wizard-state
         touch ${homeDir}/.nixpi/wizard-state/system-ready
         chown ${username}:${username} ${homeDir}/.nixpi/wizard-state/system-ready
+        install -d -m 0775 -o ${username} -g ${username} /srv/nixpi
+        install -d -m 0775 -o ${username} -g ${username} /srv/nixpi/Agents
+        install -d -m 0775 -o ${username} -g ${username} /srv/nixpi/Agents/host
+        cp ${homeDir}/nixpi/Agents/host/AGENTS.md /srv/nixpi/Agents/host/AGENTS.md
+        chown -R ${username}:${username} /srv/nixpi
         install -d -m 0700 -o ${username} -g ${username} ${homeDir}/.pi/matrix-agents
       '';
 
@@ -100,8 +109,9 @@ EOF
   };
 
   testScript = ''
-    import json
     import urllib.parse
+
+    ${matrixRegisterScript}
 
     client = machines[0]
     homeserver = machines[1]
@@ -111,60 +121,16 @@ EOF
 
     homeserver.wait_for_unit("continuwuity.service", timeout=120)
     homeserver.wait_until_succeeds("curl -sf http://127.0.0.1:6167/_matrix/client/versions", timeout=60)
-    token = homeserver.succeed("get_matrix_token").strip()
-
-    def register(username, password):
-        response = homeserver.succeed(
-            "curl -s -X POST http://127.0.0.1:6167/_matrix/client/v3/register "
-            + "-H 'Content-Type: application/json' "
-            + "-d '{\"username\":\"" + username + "\",\"password\":\"" + password + "\",\"inhibit_login\":false}'"
-        )
-        data = json.loads(response)
-        if "access_token" in data:
-            return data
-        for _ in range(4):
-            session = data.get("session")
-            assert session, response
-
-            completed = set(data.get("completed", []))
-            auth = None
-            for flow in data.get("flows", []):
-                for stage in flow.get("stages", []):
-                    if stage in completed:
-                        continue
-                    if stage == "m.login.registration_token" and token:
-                        auth = {"type": stage, "session": session, "token": token}
-                        break
-                    if stage == "m.login.dummy":
-                        auth = {"type": stage, "session": session}
-                        break
-                if auth:
-                    break
-            if not auth and token and "m.login.registration_token" not in completed:
-                auth = {"type": "m.login.registration_token", "session": session, "token": token}
-            if not auth and "m.login.dummy" not in completed:
-                auth = {"type": "m.login.dummy", "session": session}
-            assert auth, response
-
-            payload = json.dumps({
-                "username": username,
-                "password": password,
-                "inhibit_login": False,
-                "auth": auth,
-            })
-            response = homeserver.succeed(
-                "curl -sf -X POST http://127.0.0.1:6167/_matrix/client/v3/register "
-                + "-H 'Content-Type: application/json' "
-                + "-d '" + payload + "'"
-            )
-            data = json.loads(response)
-            if "access_token" in data:
-                return data
-
-        raise AssertionError("Matrix registration did not complete: " + response)
-
-    host_creds = register("host", "hostpass123")
-    admin_creds = register("operator", "operatorpass123")
+    # Wait for admin_execute to create pre-seeded users (may be async)
+    homeserver.wait_until_succeeds(
+        "curl -sf -X POST http://127.0.0.1:6167/_matrix/client/v3/login"
+        + " -H 'Content-Type: application/json'"
+        + " -d '{\"type\":\"m.login.password\",\"identifier\":{\"type\":\"m.id.user\",\"user\":\"host\"},\"password\":\"hostpass123\"}'"
+        + " | grep -q 'access_token'",
+        timeout=60,
+    )
+    host_creds = login_matrix_user(homeserver, "http://127.0.0.1:6167", "host", "hostpass123")
+    admin_creds = login_matrix_user(homeserver, "http://127.0.0.1:6167", "operator", "operatorpass123")
 
     room = json.loads(homeserver.succeed(
         "curl -sf -X POST http://127.0.0.1:6167/_matrix/client/v3/createRoom "

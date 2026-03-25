@@ -21,7 +21,8 @@ The Matrix server starts automatically on boot. User accounts are created during
 | Setting | Value |
 |---------|-------|
 | Server name | `nixpi` |
-| Port | `6167` |
+| Internal port | `6167` |
+| Canonical client URL | `https://<netbird-host>` |
 | Registration | token-required |
 | Federation | disabled |
 | Data directory | `/var/lib/continuwuity/` |
@@ -57,6 +58,14 @@ EU-hosted mesh networking for secure remote access to your NixPI device. Uses Ne
 
 NetBird provides the security layer for SSH remote access and the built-in NixPI web surface.
 
+Normal operator access uses one canonical NetBird host over HTTPS:
+
+- `https://<netbird-host>/`
+- `https://<netbird-host>/element/`
+- `https://<netbird-host>`
+
+`http://localhost/` remains available only as an on-box recovery path.
+
 NetBird is installed as a native system service (not a container) because WireGuard requires real kernel-level CAP_NET_ADMIN.
 
 ### Setup
@@ -86,6 +95,10 @@ sudo systemctl stop netbird
 # Start
 sudo systemctl start netbird
 ```
+
+### TLS Note
+
+NixPI only needs HTTPS with a certificate matching the NetBird host or IP to satisfy browser secure-context requirements for mesh access. A publicly trusted certificate is optional; a self-signed or private-CA certificate may be sufficient if the client device trusts it.
 
 ## Related
 

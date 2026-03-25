@@ -88,6 +88,14 @@
     server.wait_for_unit("multi-user.target", timeout=300)
     server.wait_for_unit("continuwuity.service", timeout=60)
     server.wait_until_succeeds("curl -sf http://localhost:6167/_matrix/client/versions", timeout=60)
+    # admin_execute may create the user asynchronously after server startup; poll until login works
+    server.wait_until_succeeds(
+        "curl -sf -X POST http://localhost:6167/_matrix/client/v3/login"
+        + " -H 'Content-Type: application/json'"
+        + " -d '{\"type\":\"m.login.password\",\"identifier\":{\"type\":\"m.id.user\",\"user\":\"server\"},\"password\":\"testpass123\"}'"
+        + " | grep -q 'access_token'",
+        timeout=60,
+    )
     login_payload = login_matrix_user(server, "http://localhost:6167", "server", "testpass123")
     access_token = login_payload["access_token"]
     user_id = login_payload["user_id"]

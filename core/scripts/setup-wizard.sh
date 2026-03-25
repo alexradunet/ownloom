@@ -349,30 +349,22 @@ pi_ai_ready() {
 
 print_service_access_summary() {
 	local _installed_services="$1" mesh_ip="$2" mesh_fqdn="$3"
-	local mesh_host="${mesh_fqdn:-$mesh_ip}"
+	local canonical_host=""
+	canonical_host=$(canonical_service_host)
+	local access_mode=""
+	access_mode=$(canonical_access_mode)
 
 	echo "  Service access:"
-	if [[ -n "$mesh_host" ]]; then
-		echo "    NixPI Home   - http://${mesh_host}"
+	if [[ -n "$canonical_host" ]]; then
+		echo "    NixPI Home   - https://${canonical_host}/"
+		echo "    Share this   - send other NetBird peers the NixPI Home URL"
+		echo "    Element Web  - https://${canonical_host}/element/"
+		echo "    Element Web  - preconfigured for this NixPI server"
+		echo "    Matrix       - https://${canonical_host}"
+	elif [[ "$access_mode" == "not-ready" ]]; then
+		echo "    Canonical host - not ready yet (finish NetBird setup)"
 	fi
-	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-		echo "    NixPI Home   - http://${mesh_ip}"
-	fi
-	echo "    Share this   - send other NetBird peers the NixPI Home URL"
-	if [[ -n "$mesh_host" ]]; then
-		echo "    Element Web  - https://${mesh_host}:8443"
-	fi
-	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-		echo "    Element Web  - https://${mesh_ip}:8443"
-	fi
-	echo "    Elmenet Web   - preconfigured for this NixPI server"
-	if [[ -n "$mesh_host" ]]; then
-		echo "    Matrix       - https://${mesh_host}:8443"
-	fi
-	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-		echo "    Matrix       - https://${mesh_ip}:8443"
-	fi
-	echo "    Matrix       - http://localhost:6167 (local access on the box)"
+	echo "    Recovery     - http://localhost/ (on-box only)"
 }
 
 

@@ -1,5 +1,11 @@
 { lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, ... }:
 
+let
+  repoSource = lib.cleanSource ../..;
+  bootstrapRepoDir = "/var/lib/nixpi-bootstrap";
+  bootstrapOriginDir = "${bootstrapRepoDir}/origin.git";
+  bootstrapRepoUrl = "file://${bootstrapOriginDir}";
+in
 {
   name = "nixpi-e2e";
 
@@ -35,10 +41,23 @@
       };
       users.groups.${username} = {};
       system.activationScripts.nixpi-e2e-prefill = lib.stringAfter [ "users" ] ''
-      mkdir -p ${homeDir}/.nixpi
-      cat > ${homeDir}/.nixpi/prefill.env << 'EOF'
+        mkdir -p ${homeDir}/.nixpi
+        rm -rf ${bootstrapRepoDir}
+        mkdir -p ${bootstrapRepoDir}/worktree
+        cp -R ${repoSource}/. ${bootstrapRepoDir}/worktree/
+        chmod -R u+w ${bootstrapRepoDir}/worktree
+        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree init --initial-branch main
+        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree config user.name "NixPI Test"
+        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree config user.email "nixpi-tests@example.invalid"
+        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree add .
+        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree commit -m "bootstrap source"
+        ${pkgs.git}/bin/git init --bare --initial-branch main ${bootstrapOriginDir}
+        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree remote add origin ${bootstrapOriginDir}
+        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree push ${bootstrapOriginDir} main
+        cat > ${homeDir}/.nixpi/prefill.env << 'EOF'
     PREFILL_USERNAME=e2etest
     PREFILL_MATRIX_PASSWORD=e2etestpass123
+    NIXPI_BOOTSTRAP_REPO=${bootstrapRepoUrl}
     EOF
         chown -R ${username}:${username} ${homeDir}/.nixpi
         chmod 755 ${homeDir}/.nixpi
@@ -127,7 +146,8 @@
     print(f"netbird-watcher account: {watcher_check}")
     print("  - NetBird provisioner and watcher services registered")
     
-    nixpi.succeed("test -d " + home + "/nixpi")
+    nixpi.succeed("test -d /srv/nixpi/.git")
+    nixpi.fail("test -e " + home + "/nixpi")
     nixpi.succeed("test -d " + home + "/.nixpi")
     nixpi.succeed("test -d " + home + "/.pi")
     nixpi.succeed("test ! -L " + home + "/.pi")

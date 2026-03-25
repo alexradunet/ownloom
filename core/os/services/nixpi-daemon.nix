@@ -48,7 +48,7 @@ in
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
-      unitConfig.ConditionPathExists = systemReadyFile;
+      unitConfig.ConditionPathExists = [ systemReadyFile canonicalRepoDir ];
       serviceConfig = {
         User = config.nixpi-daemon.primaryUser;
         Group = config.nixpi-daemon.primaryUser;

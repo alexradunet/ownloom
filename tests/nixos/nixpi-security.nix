@@ -113,7 +113,7 @@ in
 
     steady.succeed("fail2ban-client status sshd | grep -q 'Status for the jail: sshd'")
 
-    blocked_ports = [80, 6167, 8080, 8081, 5000, 8443]
+    blocked_ports = [80, 443, 6167, 8080, 8081, 5000]
     for host in ["nixpi-bootstrap", "nixpi-steady"]:
         for port in blocked_ports:
             client.succeed(f"! nc -z -w 2 {host} {port}")

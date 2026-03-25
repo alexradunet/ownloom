@@ -4,12 +4,18 @@ let
   primaryUser = config.nixpi.primaryUser;
   cfg = config.nixpi.services;
   securityCfg = config.nixpi.security;
-  stateDir = config.nixpi.stateDir;
-  tlsDir = "${stateDir}/tls";
+  tlsDir = "/var/lib/nixpi-tls";
   tlsCertPath = "${tlsDir}/nixpi-secure.crt";
   tlsKeyPath = "${tlsDir}/nixpi-secure.key";
-  secureWebPort = toString cfg.secureWeb.port;
-  secureWebMatrixBaseUrl = "https://${config.networking.hostName}:${secureWebPort}";
+  secureWebMatrixBaseUrl = "https://${config.networking.hostName}";
+  matrixClientWellKnown = builtins.toJSON {
+    "m.homeserver" = {
+      base_url = "https://$host";
+    };
+  };
+  matrixServerWellKnown = builtins.toJSON {
+    "m.server" = "$host:443";
+  };
   secureWebTlsSetup = pkgs.writeShellScript "nixpi-secure-web-tls-setup" ''
     set -euo pipefail
 
@@ -77,13 +83,20 @@ in
   imports = [ ./options.nix ];
 
   config = {
+    assertions = [
+      {
+        assertion = (!cfg.home.enable) || cfg.secureWeb.enable;
+        message = "Canonical hosted access requires nixpi.services.secureWeb.enable = true.";
+      }
+    ];
+
     system.services = lib.mkMerge [
       (lib.mkIf cfg.home.enable {
         nixpi-home = {
           imports = [ (lib.modules.importApply ../services/nixpi-home.nix { inherit pkgs; }) ];
           nixpi-home = {
             port = cfg.home.port;
-            bindAddress = cfg.bindAddress;
+            bindAddress = "127.0.0.1";
             inherit primaryUser;
             elementWebPort = cfg.elementWeb.port;
             matrixPort = config.nixpi.matrix.port;
@@ -103,7 +116,7 @@ in
           imports = [ (lib.modules.importApply ../services/nixpi-element-web.nix { inherit pkgs; }) ];
           nixpi-element-web = {
             port = cfg.elementWeb.port;
-            bindAddress = cfg.bindAddress;
+            bindAddress = "127.0.0.1";
             inherit primaryUser;
             matrixServerName = config.networking.hostName;
             matrixClientBaseUrl =
@@ -136,35 +149,56 @@ in
       };
     };
 
-    services.nginx = lib.mkIf cfg.home.enable {
-      enable = true;
-      recommendedProxySettings = true;
-      virtualHosts.nixpi-home = {
-        default = true;
-        listen = [
-          {
-            addr = cfg.bindAddress;
-            port = 80;
-          }
-        ];
-        locations."/".proxyPass = "http://127.0.0.1:${toString cfg.home.port}";
-      };
-    } // lib.optionalAttrs cfg.secureWeb.enable {
-      virtualHosts.nixpi-secure-web = {
-        default = true;
-        listen = [
-          {
-            addr = cfg.bindAddress;
-            port = cfg.secureWeb.port;
-            ssl = true;
-          }
-        ];
-        sslCertificate = tlsCertPath;
-        sslCertificateKey = tlsKeyPath;
-        locations."/".proxyPass = "http://127.0.0.1:${toString cfg.elementWeb.port}";
-        locations."/_matrix".proxyPass = "http://127.0.0.1:${toString config.nixpi.matrix.port}";
-        locations."/_synapse".proxyPass = "http://127.0.0.1:${toString config.nixpi.matrix.port}";
-      };
-    };
+    services.nginx = lib.mkMerge [
+      (lib.mkIf cfg.home.enable {
+        enable = true;
+        recommendedProxySettings = true;
+        virtualHosts.nixpi-home = {
+          default = true;
+          listen = [
+            {
+              addr = cfg.bindAddress;
+              port = 80;
+            }
+          ];
+          locations."/".proxyPass = "http://127.0.0.1:${toString cfg.home.port}";
+          locations."/".extraConfig = lib.optionalString cfg.secureWeb.enable ''
+            if ($host !~* ^(localhost|127\.0\.0\.1)$) {
+              return 308 https://$host$request_uri;
+            }
+          '';
+        };
+      })
+      (lib.mkIf cfg.secureWeb.enable {
+        enable = true;
+        recommendedProxySettings = true;
+        virtualHosts.nixpi-secure-web = {
+          default = true;
+          onlySSL = true;
+          listen = [
+            {
+              addr = cfg.bindAddress;
+              port = cfg.secureWeb.port;
+              ssl = true;
+            }
+          ];
+          sslCertificate = tlsCertPath;
+          sslCertificateKey = tlsKeyPath;
+          locations."/".proxyPass = "http://127.0.0.1:${toString cfg.home.port}";
+          locations."= /element".return = "302 /element/";
+          locations."/element/".proxyPass = "http://127.0.0.1:${toString cfg.elementWeb.port}/";
+          locations."/_matrix".proxyPass = "http://127.0.0.1:${toString config.nixpi.matrix.port}";
+          locations."/_synapse".proxyPass = "http://127.0.0.1:${toString config.nixpi.matrix.port}";
+          locations."= /.well-known/matrix/client".extraConfig = ''
+            default_type application/json;
+            return 200 '${matrixClientWellKnown}';
+          '';
+          locations."= /.well-known/matrix/server".extraConfig = ''
+            default_type application/json;
+            return 200 '${matrixServerWellKnown}';
+          '';
+        };
+      })
+    ];
   };
 }
