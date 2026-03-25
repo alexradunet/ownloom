@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { run } from "../../../lib/exec.js";
-import { textToolResult } from "../../../lib/extension-tools.js";
+import { textToolResult } from "../../../lib/utils.js";
 import { readPackageVersion, resolvePackageDir, safePath } from "../../../lib/filesystem.js";
 import { stringifyFrontmatter } from "../../../lib/frontmatter.js";
 import {

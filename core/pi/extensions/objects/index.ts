@@ -6,7 +6,7 @@
  */
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { defineTool, type RegisteredExtensionTool, registerTools } from "../../../lib/extension-tools.js";
+import { type RegisteredExtensionTool, registerTools } from "../../../lib/utils.js";
 import { createObject, linkObjects, readObject, updateObject, upsertObject } from "./actions.js";
 import { listObjects, queryObjects, searchObjects } from "./actions-query.js";
 
@@ -29,7 +29,7 @@ const fieldValueSchema = Type.Union([
 
 export default function (pi: ExtensionAPI) {
 	const tools: RegisteredExtensionTool[] = [
-		defineTool({
+		{
 			name: "memory_create",
 			label: "Memory Create",
 			description: "Create a new markdown object in ~/nixpi/Objects/",
@@ -55,8 +55,8 @@ export default function (pi: ExtensionAPI) {
 			async execute(_toolCallId, params) {
 				return createObject(params as MemoryCreateParams);
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "memory_update",
 			label: "Memory Update",
 			description: "Update an existing markdown object in ~/nixpi/Objects/",
@@ -70,8 +70,8 @@ export default function (pi: ExtensionAPI) {
 			async execute(_toolCallId, params) {
 				return updateObject(params as MemoryUpdateParams);
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "memory_upsert",
 			label: "Memory Upsert",
 			description: "Create or update a markdown object in ~/nixpi/Objects/",
@@ -85,8 +85,8 @@ export default function (pi: ExtensionAPI) {
 			async execute(_toolCallId, params) {
 				return upsertObject(params as MemoryUpsertParams);
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "memory_read",
 			label: "Memory Read",
 			description: "Read a markdown object from ~/nixpi/Objects/",
@@ -98,8 +98,8 @@ export default function (pi: ExtensionAPI) {
 			async execute(_toolCallId, params) {
 				return readObject(params as MemoryReadParams);
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "memory_query",
 			label: "Memory Query",
 			description: "Rank matching objects by metadata and content heuristics",
@@ -126,8 +126,8 @@ export default function (pi: ExtensionAPI) {
 			async execute(_toolCallId, params, signal) {
 				return queryObjects(params as MemoryQueryParams, signal);
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "memory_search",
 			label: "Memory Search",
 			description: "Search markdown files for a pattern (simple string match)",
@@ -139,8 +139,8 @@ export default function (pi: ExtensionAPI) {
 			async execute(_toolCallId, params, signal) {
 				return searchObjects(params as MemorySearchParams, signal);
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "memory_link",
 			label: "Memory Link",
 			description: "Add bidirectional links between two objects",
@@ -155,8 +155,8 @@ export default function (pi: ExtensionAPI) {
 			async execute(_toolCallId, params) {
 				return linkObjects(params as MemoryLinkParams);
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "memory_list",
 			label: "Memory List",
 			description: "List objects, optionally filtered by type or frontmatter fields",
@@ -172,7 +172,7 @@ export default function (pi: ExtensionAPI) {
 			async execute(_toolCallId, params, signal) {
 				return listObjects(params as MemoryListParams, signal);
 			},
-		}),
+		},
 	];
 	registerTools(pi, tools);
 }

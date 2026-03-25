@@ -7,7 +7,7 @@ import path from "node:path";
  */
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { defineTool, type RegisteredExtensionTool, registerTools } from "../../../lib/extension-tools.js";
+import { type RegisteredExtensionTool, registerTools } from "../../../lib/utils.js";
 import { truncate } from "../../../lib/utils.js";
 import { consolidateEpisodes, createEpisode, listEpisodes, promoteEpisode } from "./actions.js";
 
@@ -26,7 +26,7 @@ function projectNameFromCtx(ctx: { cwd?: string } | undefined): string | undefin
 
 export default function (pi: ExtensionAPI) {
 	const tools: RegisteredExtensionTool[] = [
-		defineTool({
+		{
 			name: "episode_create",
 			label: "Episode Create",
 			description: "Append a markdown episode under ~/nixpi/Episodes/ for later memory consolidation.",
@@ -86,8 +86,8 @@ export default function (pi: ExtensionAPI) {
 					},
 				};
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "episode_list",
 			label: "Episode List",
 			description: "List stored markdown episodes under ~/nixpi/Episodes/.",
@@ -104,8 +104,8 @@ export default function (pi: ExtensionAPI) {
 					details: { count: matches.length },
 				};
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "episode_promote",
 			label: "Episode Promote",
 			description: "Promote a stored episode into a durable memory object in ~/nixpi/Objects/.",
@@ -134,8 +134,8 @@ export default function (pi: ExtensionAPI) {
 					projectName: projectNameFromCtx(ctx),
 				});
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "episode_consolidate",
 			label: "Episode Consolidate",
 			description: "Propose or apply conservative promotion candidates from recent episodes.",
@@ -149,7 +149,7 @@ export default function (pi: ExtensionAPI) {
 				const typedParams = params as EpisodeConsolidateParams;
 				return consolidateEpisodes({ ...typedParams, projectName: projectNameFromCtx(ctx) });
 			},
-		}),
+		},
 	];
 	registerTools(pi, tools);
 }

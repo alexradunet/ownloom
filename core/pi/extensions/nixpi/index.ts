@@ -8,11 +8,10 @@
  */
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import {
-	defineTool,
 	EmptyToolParams,
 	type RegisteredExtensionTool,
 	registerTools,
-} from "../../../lib/extension-tools.js";
+} from "../../../lib/utils.js";
 import { getNixPiDir } from "../../../lib/filesystem.js";
 import { discoverSkillPaths, ensureNixPi, getPackageDir, handleNixPiStatus } from "./actions.js";
 import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
@@ -23,7 +22,7 @@ export default function (pi: ExtensionAPI) {
 	const nixPiDir = getNixPiDir();
 	const packageDir = getPackageDir();
 	const tools: RegisteredExtensionTool[] = [
-		defineTool({
+		{
 			name: "nixpi_status",
 			label: "NixPI Status",
 			description: "Show NixPI directory location and blueprint state",
@@ -31,7 +30,7 @@ export default function (pi: ExtensionAPI) {
 			async execute() {
 				return handleNixPiStatus(nixPiDir);
 			},
-		}),
+		},
 	];
 	registerTools(pi, tools);
 

@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import { Type } from "@sinclair/typebox";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { defineTool, registerTools } from "../../../lib/extension-tools.js";
+import { registerTools } from "../../../lib/utils.js";
 import { getPiDir } from "../../../lib/filesystem.js";
 import { matrixCredentialsPath } from "../../../lib/matrix.js";
 import type { MatrixCredentials } from "../../../lib/matrix.js";
@@ -42,7 +42,7 @@ export default function (pi: ExtensionAPI) {
   }
 
   registerTools(pi, [
-    defineTool({
+    {
       name: "matrix_admin",
       label: "Matrix Admin",
       description:
@@ -121,6 +121,6 @@ export default function (pi: ExtensionAPI) {
           details: { command: params.command, response: result.response },
         };
       },
-    }),
+    },
   ]);
 }

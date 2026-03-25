@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { textToolResult } from "../../../lib/extension-tools.js";
+import { textToolResult } from "../../../lib/utils.js";
 import { getNixPiDir, safePath } from "../../../lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../../lib/frontmatter.js";
 import { errorResult, nowIso, truncate } from "../../../lib/utils.js";

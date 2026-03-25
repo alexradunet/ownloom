@@ -9,11 +9,10 @@ import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
 import {
-	defineTool,
 	EmptyToolParams,
 	type RegisteredExtensionTool,
 	registerTools,
-} from "../../../lib/extension-tools.js";
+} from "../../../lib/utils.js";
 import {
 	checkPendingUpdates,
 	handleNixosUpdate,
@@ -53,7 +52,7 @@ const SystemHealthParams = EmptyToolParams;
 
 export default function (pi: ExtensionAPI) {
 	const tools: RegisteredExtensionTool[] = [
-		defineTool({
+		{
 			name: "nixos_update",
 			label: "NixOS Update Management",
 			description:
@@ -63,8 +62,8 @@ export default function (pi: ExtensionAPI) {
 				const p = params as Static<typeof NixosUpdateParams>;
 				return handleNixosUpdate(p.action, signal, ctx);
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "nix_config_proposal",
 			label: "Local Nix Config Proposal",
 			description:
@@ -74,8 +73,8 @@ export default function (pi: ExtensionAPI) {
 				const p = params as Static<typeof NixConfigProposalParams>;
 				return handleNixConfigProposal(p.action, signal, ctx);
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "systemd_control",
 			label: "Systemd Service Control",
 			description: "Manage a NixPI user-systemd service (start, stop, restart, status). Only nixpi-* services allowed.",
@@ -84,8 +83,8 @@ export default function (pi: ExtensionAPI) {
 				const p = params as Static<typeof SystemdControlParams>;
 				return handleSystemdControl(p.service, p.action, signal, ctx);
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "update_status",
 			label: "Update Status",
 			description: "Reads the NixPI update status from the last scheduled check.",
@@ -93,8 +92,8 @@ export default function (pi: ExtensionAPI) {
 			async execute() {
 				return handleUpdateStatus();
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "schedule_reboot",
 			label: "Schedule Reboot",
 			description: "Schedule a system reboot after a delay (in minutes). Requires user confirmation.",
@@ -103,8 +102,8 @@ export default function (pi: ExtensionAPI) {
 				const p = params as Static<typeof ScheduleRebootParams>;
 				return handleScheduleReboot(p.delay_minutes, signal, ctx);
 			},
-		}),
-		defineTool({
+		},
+		{
 			name: "system_health",
 			label: "System Health",
 			description: "Composite health check: OS image status, containers, disk usage, system load, and memory.",
@@ -112,7 +111,7 @@ export default function (pi: ExtensionAPI) {
 			async execute(_toolCallId, _params, signal) {
 				return handleSystemHealth(signal);
 			},
-		}),
+		},
 	];
 	registerTools(pi, tools);
 
