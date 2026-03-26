@@ -4,11 +4,8 @@ let
   primaryUser = config.nixpi.primaryUser;
   primaryHome = "/home/${primaryUser}";
   stateDir = config.nixpi.stateDir;
-  netbirdApiTokenFile =
-    if config.nixpi.netbird.apiTokenFile != null then
-      config.nixpi.netbird.apiTokenFile
-    else
-      "${stateDir}/netbird-api-token";
+  # netbirdApiTokenFile removed: deleted in NetBird simplification (Task 5)
+  netbirdApiTokenFile = "${stateDir}/netbird-api-token";
   systemReadyFile = "${primaryHome}/.nixpi/wizard-state/system-ready";
   matrixRegistrationSecretFile =
     if config.nixpi.matrix.registrationSharedSecretFile != null then
