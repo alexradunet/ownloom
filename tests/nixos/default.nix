@@ -46,6 +46,7 @@ let
     nixpi-post-setup-lockdown  = runTest ./nixpi-post-setup-lockdown.nix;
     nixpi-broker               = runTest ./nixpi-broker.nix;
     nixpi-installer-smoke      = runInstallerTest ./nixpi-installer-smoke.nix;
+    nixpi-install-wizard       = runTest ./nixpi-install-wizard.nix;
     nixpi-update               = runTest ./nixpi-update.nix;
     nixpi-options-validation   = runTest ./nixpi-options-validation.nix;
     nixpi-netbird-provisioner  = runTest ./nixpi-netbird-provisioner.nix;
@@ -54,7 +55,8 @@ let
 
   smokeAliases = {
     smoke-matrix    = tests.nixpi-matrix;
-    smoke-firstboot = tests.nixpi-firstboot;
+    smoke-firstboot        = tests.nixpi-firstboot;
+    smoke-install-wizard   = tests.nixpi-install-wizard;
     smoke-security  = tests.nixpi-security;
     smoke-broker    = tests.nixpi-broker;
     smoke-desktop   = tests.nixpi-desktop;

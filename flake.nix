@@ -336,6 +336,7 @@
           nixos-smoke = mkCheckLane "nixos-smoke" [
             { name = "smoke-matrix"; path = nixosTests.smoke-matrix; }
             { name = "smoke-firstboot"; path = nixosTests.smoke-firstboot; }
+            { name = "smoke-install-wizard"; path = nixosTests.smoke-install-wizard; }
             { name = "smoke-security"; path = nixosTests.smoke-security; }
             { name = "smoke-broker"; path = nixosTests.smoke-broker; }
             { name = "smoke-desktop"; path = nixosTests.smoke-desktop; }
@@ -346,6 +347,7 @@
             { name = "boot"; path = bootCheck; }
             { name = "nixpi-matrix"; path = nixosTests.nixpi-matrix; }
             { name = "nixpi-firstboot"; path = nixosTests.nixpi-firstboot; }
+            { name = "nixpi-install-wizard"; path = nixosTests.nixpi-install-wizard; }
             { name = "nixpi-network"; path = nixosTests.nixpi-network; }
             { name = "nixpi-daemon"; path = nixosTests.nixpi-daemon; }
             { name = "nixpi-e2e"; path = nixosTests.nixpi-e2e; }
