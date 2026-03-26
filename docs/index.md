@@ -4,7 +4,7 @@ layout: home
 hero:
   name: NixPI
   text: Pi-native AI companion OS on NixOS
-  tagline: A self-hosted, inspectable operating model for one-person AI computing. NixPI combines NixOS, a persistent agent runtime, file-native memory, and a private messaging surface into a machine you can actually operate and evolve.
+  tagline: A self-hosted, inspectable operating model for one-person AI computing. NixPI combines NixOS, a persistent agent runtime, file-native memory, and a local-only web chat into a machine you can actually operate and evolve.
   image:
     src: /nixpi-mark.svg
     alt: NixPI
@@ -25,7 +25,7 @@ features:
   - title: Built for one operator
     details: NixPI is opinionated around a single-user machine that acts like a personal assistant, knowledge system, and controlled automation surface.
   - title: AI lives inside the system
-    details: Pi is not just a browser session. The runtime includes Matrix, a resident daemon, host integrations, and first-class OS workflows.
+    details: Pi is not just a browser session. The runtime includes a local web chat, a resident daemon, host integrations, and first-class OS workflows.
   - title: Minimal default surface
     details: The base stays deliberately small so the operator can evolve the machine through Pi without inheriting a large fixed platform.
 ---
@@ -66,9 +66,9 @@ features:
 | Subsystem | What it contributes |
 | --- | --- |
 | NixOS foundation | Reproducible machine state, modules, packaging, and deployment workflow |
-| Matrix daemon | Persistent room runtime with scheduling, routing, and multi-agent support |
+| Local runtime daemon | Persistent Pi runtime with scheduling, routing, and multi-agent support |
 | Memory model | Markdown-native durable memory and append-only episodes |
-| Built-in services | Home, Element Web, and a private Matrix surface |
+| Built-in services | Pi Web Chat and the local runtime surface around it |
 | First-boot workflow | Installer path plus operator-guided setup and persona completion |
 
 <PresentationBand

@@ -2,103 +2,42 @@
 
 > External services and infrastructure
 
-## Matrix Infrastructure
+## Local Chat Infrastructure
 
 ### Overview
 
-NixPI runs its own Matrix homeserver through `continuwuity.service`. Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
+NixPI exposes a local web chat through `nixpi-chat.service`. The operator talks to Pi on the machine itself. No external messaging network is required for the default product surface.
 
 ### Setup
 
-The Matrix server starts automatically on boot. User accounts are created during the first-boot setup:
+The local chat service starts automatically on boot. The operator-facing surface is prepared during first-boot setup:
 
-1. Pi creates a bot account (`@pi:nixpi`) automatically
-2. Pi guides the user to register with their preferred Matrix client
-3. User creates a DM with `@pi:nixpi`
+1. The wizard enables the local chat service
+2. Pi finalizes its persona and runtime defaults
+3. The operator opens the on-box web chat and starts talking to Pi
 
 ### Configuration
 
 | Setting | Value |
 |---------|-------|
-| Server name | `nixpi` |
-| Internal port | `6167` |
-| Canonical client URL | `https://<netbird-host>` |
-| Registration | token-required |
-| Federation | disabled |
-| Data directory | `/var/lib/continuwuity/` |
-| Registration token | `/var/lib/continuwuity/registration_token` |
-
-### Bridges
-
-External messaging platforms (WhatsApp, Telegram, Signal) connect via mautrix bridge containers. Bridge packaging still exists in the repo catalog, but bridge lifecycle helpers are no longer part of the default NixPI runtime and should be treated as maintainer-only setup.
+| Service name | `nixpi-chat.service` |
+| Local port | `8080` |
+| Canonical local URL | `http://localhost:8080/` |
+| Service scope | system service |
+| Product scope | on-box web chat for one operator |
 
 ### Troubleshooting
 
 ```bash
 # Logs
-journalctl -u continuwuity -n 100
+journalctl -u nixpi-chat.service -n 100
 
 # Status
-systemctl status continuwuity
+systemctl status nixpi-chat.service
 
 # Restart
-sudo systemctl restart continuwuity
-
-# Restart after config changes
-sudo systemctl restart continuwuity
+sudo systemctl restart nixpi-chat.service
 ```
-
----
-
-## NetBird Infrastructure
-
-### Overview
-
-EU-hosted mesh networking for secure remote access to your NixPI device. Uses NetBird cloud management (free tier, up to 5 peers).
-
-NetBird provides the security layer for SSH remote access and the built-in NixPI web surface.
-
-Normal operator access uses one canonical NetBird host over HTTPS:
-
-- `https://<netbird-host>/`
-- `https://<netbird-host>/element/`
-- `https://<netbird-host>`
-
-`http://localhost/` remains available only as an on-box recovery path.
-
-NetBird is installed as a native system service (not a container) because WireGuard requires real kernel-level CAP_NET_ADMIN.
-
-### Setup
-
-NetBird authentication is handled during NixPI's first-boot wizard using a setup key. If you need to re-authenticate:
-
-1. Get a new setup key from https://app.netbird.io -> Setup Keys
-2. Run: `sudo netbird up --setup-key <KEY>`
-3. Verify: `sudo netbird status`
-
-### Adding Peers
-
-Install NetBird on your other devices (laptop, phone) from https://netbird.io/download and sign in with the same account. All devices on the same account can reach each other.
-
-### Operations
-
-```bash
-# Status
-sudo netbird status
-
-# Logs
-sudo journalctl -u netbird -n 100
-
-# Stop
-sudo systemctl stop netbird
-
-# Start
-sudo systemctl start netbird
-```
-
-### TLS Note
-
-NixPI only needs HTTPS with a certificate matching the NetBird host or IP to satisfy browser secure-context requirements for mesh access. A publicly trusted certificate is optional; a self-signed or private-CA certificate may be sufficient if the client device trusts it.
 
 ## Related
 

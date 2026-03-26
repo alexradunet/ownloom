@@ -21,18 +21,8 @@ Before first-boot setup, you need a system installed from the NixPI installer im
 For VM install-flow testing:
 
 - `just vm-install-iso` runs the installer in the default user-mode NAT network with host forwards
-- use this path to validate install flow, XFCE startup, and local access from the host machine
-- use the printed localhost forwards for host-side recovery and debugging only
-
-## Security Note: NetBird Is Mandatory
-
-NetBird is the network security boundary for all NixPI services. The firewall configuration (`trustedInterfaces = ["wt0"]`) only protects services when the NetBird interface (`wt0`) is active. Without NetBird:
-
-- the canonical HTTPS gateway cannot serve the intended NetBird hostname
-- backend service ports may be exposed beyond the intended trusted-interface boundary if the firewall is relaxed
-- A compromised local device could access OS tools via prompt injection
-
-**Complete NetBird setup and verify `wt0` is active before exposing this machine to any network.**
+- use this path to validate install flow, XFCE startup, and the local chat/runtime path inside the guest
+- host-side forwards are optional debugging aids, not part of the active operator workflow
 
 ## Why Setup Is Split In Two
 
@@ -57,25 +47,19 @@ NixPI's first-boot experience has two phases.
 1. Password change and WiFi/internet setup, with WiFi preferred over Ethernet when available
 2. Prepare `/srv/nixpi` and write the host-specific `/etc/nixos` flake
 3. Promote the minimal base into the full appliance with `nixos-rebuild switch`
-4. NetBird enrollment
-   OAuth web login works from the desktop flow. Use a setup key only if a browser session is unavailable.
-5. Primary Matrix account bootstrap
-6. AI provider defaults for Pi
-7. Built-in service provisioning
-8. User-facing system update guidance for operating the canonical `/srv/nixpi` repo
+4. Local web chat bootstrap
+5. AI provider defaults for Pi
+6. Built-in service provisioning
+7. User-facing system update guidance for operating the canonical `/srv/nixpi` repo
 
 **Built-in services provisioned**:
 
-- Canonical HTTPS front door on port `443`
-- Local recovery entry at `http://localhost/`
-- Internal Home, Element Web, and Matrix backends behind that gateway
+- Pi Web Chat on `:8080` through `nixpi-chat.service`
 
 **Bootstrap security lifecycle**:
 
-- SSH on port `22` is available during bootstrap
-- The installed desktop profile keeps SSH available after setup so the machine remains reachable for remote administration and VM debugging
-- Matrix registration is available during bootstrap and disabled by default after setup completes
-- Lower-level test and custom module compositions can still set `nixpi.bootstrap.keepSshAfterSetup = false` if they need bootstrap-only SSH
+- Pi Web Chat is brought up during bootstrap and refreshed as part of setup completion
+- The active operator path remains on-box through the local desktop and web chat surface
 
 ### Phase 2: Pi Persona Step
 
@@ -90,12 +74,8 @@ During that Pi-side first conversation, Pi should also orient the user to the pl
 - NixPI keeps durable state in `~/nixpi/` using inspectable files
 - `/srv/nixpi` is the canonical git working tree for syncing and rebuilding the system, while `~/nixpi` remains the user-editable workspace for Pi data such as persona, objects, episodes, guardrails, and agent overlays
 - NixPI can propose persona or workflow changes through tracked evolutions instead of silently changing itself
-- Matrix is the native messaging surface, with `nixpi-daemon.service` keeping Pi active in rooms outside the local terminal session as a system service running under the primary operator account
-- Multi-agent rooms are optional and activate when valid overlays exist in `~/nixpi/Agents/*/AGENTS.md`
-
-## Recovery
-
-If you want to redo persona setup, remove `~/.nixpi/wizard-state/persona-done` and open Pi again.
+- Pi Web Chat is the native interaction surface, served by `nixpi-chat.service` under the primary operator account
+- Multi-agent overlays are optional and activate when valid definitions exist in `~/nixpi/Agents/*/AGENTS.md`
 
 ## Reference
 
@@ -105,7 +85,7 @@ If you want to redo persona setup, remove `~/.nixpi/wizard-state/persona-done` a
 |------|---------|
 | `~/.nixpi/.setup-complete` | Wizard complete sentinel |
 | `~/.nixpi/wizard-state/persona-done` | Persona step complete marker |
-| `~/.pi/matrix-credentials.json` | Primary Matrix credentials |
+| `nixpi-chat.service` | Local web chat service exposed on the machine itself |
 
 ### Current Behavior
 
@@ -113,10 +93,11 @@ If you want to redo persona setup, remove `~/.nixpi/wizard-state/persona-done` a
 - After the wizard completes, opening Pi checks only for `persona-done`
 - If persona setup is still pending, Pi starts that flow first and defers unrelated conversation
 - After `persona-done` exists, Pi resumes normal conversation
+- If you need to restart persona setup, remove `~/.nixpi/wizard-state/persona-done` and open Pi again
 - XFCE is the only supported automatic first-boot entry path
-- The wizard enables `nixpi-daemon.service` as part of setup completion
-- The wizard refreshes Matrix policy so public registration is no longer left open after setup
-- The wizard refreshes the built-in service configs so NetBird peers get one canonical HTTPS host, with localhost reserved for recovery
+- The wizard enables `nixpi-chat.service` as part of setup completion
+- The wizard refreshes the local chat config so the on-box interaction surface is ready after reboot
+- The wizard leaves the machine ready for local web-chat use without requiring any additional access layer
 
 ## Related
 

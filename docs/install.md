@@ -135,11 +135,10 @@ The wizard walks through these steps in order:
 2. **Identity** — prompts for a display name, email address, and Linux username.
 3. **Password** — sets the primary account password.
 4. **Timezone and keyboard** — sets locale preferences.
-5. **Matrix** — creates a local Matrix account used by the Pi AI agent.
-6. **NetBird** — joins the secure overlay network so you can reach the machine remotely.
-7. **System promotion** — prepares `/srv/nixpi`, writes `/etc/nixos`, and runs a full `nixos-rebuild switch` to activate the complete appliance profile.
+5. **Pi chat** — prepares the local web chat surface used to talk to Pi on the machine itself.
+6. **System promotion** — prepares `/srv/nixpi`, writes `/etc/nixos`, and runs a full `nixos-rebuild switch` to activate the complete appliance profile.
 
-The promotion step (step 7) downloads and compiles NixOS packages. On a fast connection this takes **10–20 minutes**. The screen shows a progress log throughout.
+The promotion step (step 6) downloads and compiles NixOS packages. On a fast connection this takes **10–20 minutes**. The screen shows a progress log throughout.
 
 After the wizard completes the machine reboots one final time into the fully configured appliance. The default login credentials are whatever username and password you entered during the wizard.
 
@@ -155,8 +154,6 @@ PREFILL_NAME="Alice Smith"
 PREFILL_EMAIL="alice@example.com"
 PREFILL_USERNAME="alice"
 PREFILL_PRIMARY_PASSWORD="change-me-on-first-login"
-PREFILL_MATRIX_PASSWORD="another-strong-password"
-PREFILL_NETBIRD_KEY="nbkey-xxxxxxxxxxxxxxxxxxxx"
 NIXPI_TIMEZONE="America/New_York"
 NIXPI_KEYBOARD="us"
 ```
@@ -198,11 +195,8 @@ setup-wizard
 ### Checking service status
 
 ```bash
-# Check all NixPI-related systemd services
-systemctl --user status
-
-# Check a specific service, e.g. the Matrix homeserver
-systemctl status matrix-conduit
+# Check a specific service, e.g. the local chat service
+systemctl status nixpi-chat.service
 
 # Follow wizard log in real time
 tail -f ~/.nixpi/wizard.log

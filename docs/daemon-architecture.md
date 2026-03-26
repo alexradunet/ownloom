@@ -1,15 +1,15 @@
 # Daemon Architecture
 
-Audience: maintainers changing daemon behavior or diagnosing room-runtime issues.
+Audience: maintainers changing daemon behavior or diagnosing the local Pi runtime.
 
 ## Why The Daemon Exists
 
-`nixpi-daemon.service` is NixPI's always-on room runtime.
+NixPI includes a local runtime layer that keeps chat sessions and proactive work alive beyond a single browser request.
 
 It exists to:
 
-- bridge Matrix rooms into Pi sessions
-- preserve room continuity outside interactive local sessions
+- bridge local web-chat conversations into Pi sessions
+- preserve Pi session continuity outside interactive local sessions
 - support simple default-host deployments and optional multi-agent overlays
 - schedule proactive turns without external orchestration
 
@@ -17,9 +17,9 @@ It exists to:
 
 NixPI runs through one supervisor/runtime path:
 
-- if valid agent overlays exist, it uses those Matrix identities
+- if valid agent overlays exist, it uses those configured agent identities
 - if no valid overlays exist, it synthesizes a default host agent from the primary Pi account
-- session management is always one Pi session per `(room, agent)`
+- session management is always one Pi session per active conversation surface and agent
 
 At startup:
 
@@ -38,8 +38,8 @@ Primary files:
 
 Current behavior:
 
-- one Matrix client per configured or synthesized agent identity
-- one Pi session per `(room, agent)`
+- one runtime client per configured or synthesized agent identity
+- one Pi session per active conversation surface and agent
 - routing based on host mode, the first eligible explicit mention, cooldowns, and per-root reply budgets
 - supervisor shutdown suppresses fresh message and proactive dispatch
 
@@ -52,16 +52,16 @@ proactive:
   jobs:
     - id: daily-heartbeat
       kind: heartbeat
-      room: "!ops:nixpi"
+      surface: local-web-chat
       interval_minutes: 1440
       prompt: |
-        Review the room and host state.
+        Review the current conversation context and host state.
         Reply HEARTBEAT_OK if nothing needs surfacing.
       quiet_if_noop: true
       no_op_token: HEARTBEAT_OK
     - id: morning-check
       kind: cron
-      room: "!ops:nixpi"
+      surface: local-web-chat
       cron: "0 9 * * *"
       prompt: Send the morning operational check-in.
 ```
@@ -70,8 +70,8 @@ Current rules:
 
 - `heartbeat` jobs use `interval_minutes`
 - `cron` jobs support `@hourly`, `@daily`, and fixed `minute hour * * *`
-- proactive job ids must be unique per `(room, id)` within one agent overlay
-- scheduler state is persisted per `(agent, room, job)`
+- proactive job ids must be unique per `(surface, id)` within one agent overlay
+- scheduler state is persisted per `(agent, surface, job)`
 - heartbeat failures back off by the configured interval instead of tight-loop retrying
 - heartbeat replies can be suppressed when `quiet_if_noop: true` and the reply exactly matches `no_op_token`
 
@@ -150,8 +150,6 @@ States:
 Important implementation files:
 
 - [`../core/daemon/index.ts`](../core/daemon/index.ts): bootstrap and mode selection
-- [`../core/daemon/contracts/matrix.ts`](../core/daemon/contracts/matrix.ts): Matrix bridge contract
-- [`../core/daemon/runtime/matrix-js-sdk-bridge.ts`](../core/daemon/runtime/matrix-js-sdk-bridge.ts): Matrix SDK transport bridge
 - [`../core/daemon/runtime/pi-room-session.ts`](../core/daemon/runtime/pi-room-session.ts): Pi SDK-backed session lifecycle
 - [`../core/daemon/lifecycle.ts`](../core/daemon/lifecycle.ts): startup retry/backoff helper
 - [`../core/daemon/scheduler.ts`](../core/daemon/scheduler.ts): proactive heartbeat and cron scheduling

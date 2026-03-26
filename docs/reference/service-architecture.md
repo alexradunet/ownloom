@@ -16,19 +16,14 @@ The current built-in service set is:
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| HTTPS gateway | `:443` | Canonical host for Home, Element Web, and Matrix |
-| Local recovery | `:80` | `localhost` recovery entry point |
-| Home backend | `:8080` | Internal Home service |
-| Element Web backend | `:8081` | Internal Element Web service |
-| Matrix backend | `:6167` | Internal Continuwuity homeserver |
+| Pi Web Chat | `:8080` | Local web chat service for talking to Pi on the machine itself |
 
-These are declared as user systemd services in the OS modules and are expected to exist on every NixPI node.
+This service is declared as a system service in the OS modules and is expected to exist on every NixPI node.
 
 ## Operational Notes
 
-- Home is served at `/` on the canonical HTTPS host
-- Element Web is served at `/element/` on the canonical HTTPS host
-- Matrix is exposed on the same host through the standard `/_matrix/*` paths
+- Pi Web Chat is served through the primary local interface on `:8080`
+- Use `systemctl status nixpi-chat.service` or `journalctl -u nixpi-chat.service` for host-level inspection
 - Use `systemd_control` to inspect and restart these units
 
 ## Related

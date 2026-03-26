@@ -26,7 +26,7 @@ description: Why this project exists, what it optimizes for, and how it differs 
   </div>
   <div class="signal-card">
     <strong>Agent as system citizen</strong>
-    Pi is wired into NixOS workflows, local services, and a Matrix runtime instead of living only in a browser session.
+    Pi is wired into NixOS workflows, local services, and a resident local runtime instead of living only in a browser session.
   </div>
   <div class="signal-card">
     <strong>Minimal base, extensible edge</strong>
@@ -56,8 +56,8 @@ description: Why this project exists, what it optimizes for, and how it differs 
 >
 
 - NixOS modules for provisioning and service composition
-- A Matrix-backed daemon that keeps Pi available outside terminal sessions
-- Built-in services including Home and Element Web
+- A resident daemon that keeps Pi available outside terminal sessions
+- A built-in local web chat service for on-box conversation
 - Markdown-native durable memory and append-only episodic capture
 - First-boot setup flows and proposal-based local system evolution
 
@@ -68,7 +68,7 @@ description: Why this project exists, what it optimizes for, and how it differs 
 | Layer | Role |
 | --- | --- |
 | NixOS | Provisions the base system, networking, services, and trusted boundaries |
-| Daemon | Keeps the assistant available in a persistent Matrix room runtime |
+| Daemon | Keeps the assistant available in a persistent local runtime |
 | Extensions | Exposes tool surfaces for memory, host operations, and project workflows |
 | Memory | Stores durable objects and episodes in files the operator can read directly |
 

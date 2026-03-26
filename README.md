@@ -17,7 +17,7 @@ NixPI exists to give Pi:
 - a durable home directory under `~/nixpi/`
 - first-class host tools for NixOS workflows
 - a local repo proposal workflow for human-reviewed system changes
-- a private Matrix-based messaging surface
+- a local web-chat surface for talking to Pi on the machine itself
 - a minimal but inspectable operating model based on files, NixOS, and systemd
 
 ## 🚀 What Ships Today
@@ -27,11 +27,11 @@ Current platform capabilities:
 - NixPI directory management and blueprint seeding for `~/nixpi/`
 - persona injection, shell guardrails, durable-memory digest injection, and compaction context persistence
 - local-only Nix proposal support for checking the seeded repo clone, refreshing `flake.lock`, and validating config before review
-- host OS management tools for NixOS updates, local/remote switch, systemd, health, and reboot scheduling
-- built-in user services for Home and Element Web
+- host OS management tools for NixOS updates, local rebuild/switch, systemd, health, and reboot scheduling
+- a built-in local web chat service
 - markdown-native durable memory in `~/nixpi/Objects/`
 - append-only episodic memory in `~/nixpi/Episodes/`
-- a unified Matrix room daemon with synthesized host-agent fallback and optional multi-agent overlays
+- a local-first Pi runtime focused on web chat, host tools, and durable files
 - proactive daemon jobs for heartbeat and simple cron-style scheduled turns
 - a first-boot flow split between a bash wizard and a Pi-guided persona step
 
@@ -52,17 +52,17 @@ nix build .#installerIso
 setup-wizard.sh
 ```
 
-After install, edit and sync NixPI from the local `~/nixpi` git checkout, and rebuild the machine through the host flake in `/etc/nixos`:
+After install, edit and sync NixPI from the canonical `/srv/nixpi` git checkout, and rebuild the machine through the host flake in `/etc/nixos`:
 
 ```bash
-cd ~/nixpi
+cd /srv/nixpi
 sudo nixos-rebuild switch --flake /etc/nixos#$(hostname -s)
 ```
 
 To sync with upstream later:
 
 ```bash
-cd ~/nixpi
+cd /srv/nixpi
 git fetch upstream
 git rebase upstream/main
 sudo nixos-rebuild switch --flake /etc/nixos#$(hostname -s)
@@ -95,12 +95,7 @@ npm run docs:dev
 
 Installed by default:
 
-- `sshd.service`
-- `netbird.service`
-- `continuwuity.service`
-- `nixpi-daemon.service` after setup once AI auth and defaults are ready
-- `nixpi-home.service`
-- `nixpi-element-web.service`
+- `nixpi-chat.service`
 
 ## 🌿 Repository Layout
 
@@ -108,7 +103,7 @@ Installed by default:
 |------|---------|
 | `core/` | NixPI core: NixOS modules, daemon, persona, skills, built-in extensions, and shared runtime code |
 | `core/os/` | NixOS modules and host configurations |
-| `core/daemon/` | Matrix room daemon and multi-agent runtime |
+| `core/daemon/` | Local Pi runtime, session orchestration, and multi-agent support |
 | `core/pi/extensions/` | Pi-facing NixPI extensions shipped in the default runtime |
 | `tests/` | unit, integration, daemon, and extension tests |
 | `docs/` | live project documentation (VitePress site) |
@@ -124,9 +119,7 @@ NixPI extends Pi through two active runtime layers:
 
 Built-in service surface is part of the base NixOS system:
 
-- `Home` on `:8080`
-- `Element Web` on `:8081`
-- `Matrix` on `:6167`
+- `Pi Web Chat` on `:8080`
 
 ## 📚 Documentation Structure
 
