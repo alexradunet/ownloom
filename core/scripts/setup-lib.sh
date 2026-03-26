@@ -341,18 +341,16 @@ load_existing_matrix_credentials() {
 
 write_service_home_runtime() {
 	local _mesh_ip="$1" _mesh_fqdn="$2"
-	local canonical_host mode page_url element_web_url matrix_url generated_at access_message
+	local canonical_host mode page_url element_web_url generated_at access_message
 	canonical_host=$(canonical_service_host)
 	mode=$(canonical_access_mode)
 
 	if [[ -n "$canonical_host" ]]; then
 		page_url="https://${canonical_host}/"
 		element_web_url="https://${canonical_host}/element/"
-		matrix_url="https://${canonical_host}"
 	else
 		page_url="http://localhost/"
 		element_web_url="http://localhost/"
-		matrix_url="unavailable"
 	fi
 
 	case "$mode" in
@@ -374,7 +372,6 @@ write_service_home_runtime() {
 		-e "s|@@CANONICAL_HOST@@|${canonical_host:-not available}|g" \
 		-e "s|@@PAGE_URL@@|${page_url}|g" \
 		-e "s|@@ELEMENT_WEB_URL@@|${element_web_url}|g" \
-		-e "s|@@MATRIX_URL@@|${matrix_url}|g" \
 		-e "s|@@ACCESS_MESSAGE@@|${access_message}|g" \
 		-e "s|@@GENERATED_AT@@|${generated_at}|g" \
 		"$template" > "$NIXPI_CONFIG/home/index.html"
@@ -385,27 +382,19 @@ install_home_infrastructure() {
 }
 
 write_element_web_runtime_config() {
-	local primary_host primary_matrix_url
-	primary_host=$(canonical_service_host)
-	primary_matrix_url="https://nixpi"
-
-	if [[ -n "$primary_host" ]]; then
-		primary_matrix_url="https://${primary_host}"
-	fi
-
 	mkdir -p "$NIXPI_CONFIG/element-web"
-	cat > "$NIXPI_CONFIG/element-web/config.json" <<-CONFIG
-	{
-	  "default_server_config": {
-	    "m.homeserver": {
-	      "base_url": "${primary_matrix_url}",
-	      "server_name": "${primary_host:-nixpi}"
-	    }
-	  },
-	  "brand": "Element",
-	  "disable_guests": true
-	}
-	CONFIG
+	cat > "$NIXPI_CONFIG/element-web/config.json" <<'EOF'
+{
+  "default_server_config": {
+    "m.homeserver": {
+      "base_url": "https://matrix.org",
+      "server_name": "matrix.org"
+    }
+  },
+  "disable_custom_urls": true,
+  "brand": "NixPI Element Web"
+}
+EOF
 }
 
 start_matrix_homeserver() {

@@ -204,7 +204,6 @@
       <ul>
         <li>Home: <a class="service-link" data-page-link href="@@PAGE_URL@@">@@PAGE_URL@@</a></li>
         <li>Element Web: <a class="service-link" data-element-link href="@@ELEMENT_WEB_URL@@">@@ELEMENT_WEB_URL@@</a></li>
-        <li>Matrix URL: <a class="service-link" data-matrix-link href="@@MATRIX_URL@@">@@MATRIX_URL@@</a></li>
         <li>Local recovery: <a class="service-link" href="http://localhost/">http://localhost/</a></li>
       </ul>
     </section>
@@ -232,17 +231,6 @@
         <p class="service-meta"><span class="service-label">URL</span><a class="service-link" data-element-link href="@@ELEMENT_WEB_URL@@">@@ELEMENT_WEB_URL@@</a></p>
         <p class="service-meta"><span class="service-label">Note</span>Terminal and Matrix-native clients remain the primary interfaces.</p>
       </article>
-      <article class="service-card">
-        <div class="service-head">
-          <div class="service-icon">MX</div>
-          <div>
-            <h2>Matrix</h2>
-            <p class="service-description">Homeserver endpoint for chat clients, rooms, and the always-on Pi daemon</p>
-          </div>
-          <span class="service-status status-live">Running</span>
-        </div>
-        <p class="service-meta"><span class="service-label">URL</span><a class="service-link" data-matrix-link href="@@MATRIX_URL@@">@@MATRIX_URL@@</a></p>
-      </article>
     </section>
     <section class="footer-note">
       Generated @@GENERATED_AT@@. Canonical access stays pinned to the NetBird hostname when known, with localhost reserved for recovery on the box.
@@ -262,7 +250,6 @@
       const origin = window.location.origin.replace(/\/$/, "");
       const pageUrl = origin + "/";
       const elementUrl = origin + "/element/";
-      const matrixUrl = origin;
 
       for (const node of document.querySelectorAll("[data-page-url]")) {
         node.textContent = pageUrl;
@@ -277,10 +264,6 @@
       for (const node of document.querySelectorAll("[data-element-link]")) {
         node.textContent = elementUrl;
         node.href = elementUrl;
-      }
-      for (const node of document.querySelectorAll("[data-matrix-link]")) {
-        node.textContent = matrixUrl;
-        node.href = matrixUrl;
       }
     })();
   </script>

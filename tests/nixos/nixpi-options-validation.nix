@@ -43,7 +43,6 @@
       i18n.defaultLocale = "en_US.UTF-8";
       system.stateVersion = "25.05";
 
-      nixpi.matrix.port = 7777;
       nixpi.services.home.port = 9090;
       nixpi.security.fail2ban.enable = false;
       nixpi.security.ssh.passwordAuthentication = true;
@@ -58,9 +57,6 @@
     defaults.wait_for_unit("multi-user.target", timeout=300)
 
     defaults.succeed("id pi")
-
-    defaults.wait_for_unit("continuwuity.service", timeout=60)
-    defaults.succeed("curl -sf http://localhost:6167/_matrix/client/versions")
 
     defaults.wait_for_unit("nixpi-home.service", timeout=60)
     defaults.succeed("curl -sf http://localhost:8080/")
@@ -80,10 +76,6 @@
 
     overrides.start()
     overrides.wait_for_unit("multi-user.target", timeout=300)
-
-    overrides.wait_for_unit("continuwuity.service", timeout=60)
-    overrides.succeed("curl -sf http://localhost:7777/_matrix/client/versions")
-    overrides.fail("curl -sf http://localhost:6167/_matrix/client/versions")
 
     overrides.wait_for_unit("nixpi-home.service", timeout=60)
     overrides.succeed("curl -sf http://localhost:9090/")
