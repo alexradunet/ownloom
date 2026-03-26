@@ -6,27 +6,26 @@ description: Secure mesh networking via NetBird (system service)
 
 # NetBird
 
-EU-hosted mesh networking for secure remote access to your NixPI device. Uses NetBird cloud management (free tier, up to 5 peers).
+Mesh networking for secure remote access to your NixPI device. NetBird creates a private WireGuard tunnel so you can reach the device from anywhere.
 
-NetBird provides the security layer for SSH remote access and the built-in NixPI web surface.
-
-NetBird is installed as a native system service (not a container) because WireGuard requires real kernel-level CAP_NET_ADMIN.
+NetBird is installed as a native system service (not a container) because WireGuard requires kernel-level CAP_NET_ADMIN.
 
 ## Setup
 
-NetBird authentication is handled during NixPI's first-boot wizard using a setup key. If you need to re-authenticate:
+NetBird is configured during the first-boot wizard. You can connect via:
 
-1. Get a new setup key from https://app.netbird.io -> Setup Keys
-2. Run: `sudo netbird up --setup-key <KEY>`
-3. Verify: `sudo netbird status`
+- **Web login (OAuth)** — opens a browser to authenticate
+- **Setup key** — headless/automated setup; get one from https://app.netbird.io/setup-keys
+- **Skip** — configure later with `sudo netbird up`
 
 ## Adding Peers
 
-Install NetBird on your other devices (laptop, phone) from https://netbird.io/download and sign in with the same account. All devices on the same account can reach each other.
+Install NetBird on your other devices (laptop, phone) from https://netbird.io/download and sign in with the same account. Devices on the same account reach each other through the NetBird mesh.
 
 ## Operations
 
-- Status: `sudo netbird status`
-- Logs: `sudo journalctl -u netbird -n 100`
+- Status: `netbird status`
+- Logs: `journalctl -u netbird -n 100`
+- Re-connect: `sudo netbird up`
 - Stop: `sudo systemctl stop netbird`
 - Start: `sudo systemctl start netbird`

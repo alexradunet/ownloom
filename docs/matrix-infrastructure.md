@@ -1,40 +1,35 @@
 ---
 name: matrix
-version: 0.1.0
-description: Continuwuity Matrix homeserver (native OS service, no federation)
+version: 0.2.0
+description: Matrix messaging via external matrix.org homeserver
 ---
 
-# Matrix Homeserver
+# Matrix Messaging
 
-Native Continuwuity Matrix server baked into the NixPI image.
-
-## Overview
-
-NixPI runs its own Matrix homeserver through `continuwuity.service`. Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
+NixPI uses a bot account on [matrix.org](https://matrix.org) to send you messages and accept commands.
 
 ## Setup
 
-The Matrix server starts automatically on boot. User accounts are created during the first-boot setup:
+During the first-boot wizard, you will be prompted to provide:
 
-1. Pi creates a bot account (`@pi:nixpi`) automatically
-2. Pi guides the user to register with their preferred Matrix client
-3. User creates a DM with `@pi:nixpi`
+1. A bot account user ID (e.g. `@mypi:matrix.org`) — register one at [app.element.io](https://app.element.io)
+2. An access token for that account
 
-## Configuration
+These are written to `~/.pi/matrix-credentials.json`. Element Web is pre-configured to connect to matrix.org.
 
-- Server name: `nixpi`
-- Port: `6167`
-- Registration: enabled during bootstrap, disabled after setup by default
-- Federation: disabled
-- Data: `/var/lib/continuwuity/`
+## Credentials file
 
-## Bridges
+Located at `~/.pi/matrix-credentials.json`:
 
-External messaging platforms (WhatsApp, Telegram, Signal) connect via mautrix bridge containers. Bridge packaging still exists in the repo catalog, but bridge lifecycle helpers are no longer part of the default NixPI runtime and should be treated as maintainer-only setup.
+```json
+{
+  "homeserver": "https://matrix.org",
+  "botUserId": "@mypi:matrix.org",
+  "botAccessToken": "<token>"
+}
+```
 
 ## Troubleshooting
 
-- Logs: `journalctl -u continuwuity -n 100`
-- Status: `systemctl status continuwuity`
-- Restart: `sudo systemctl restart continuwuity`
-- Reload (after config changes): `sudo systemctl restart continuwuity`
+- Logs: `journalctl -u nixpi-daemon -n 100`
+- The bot connects to matrix.org on daemon startup; check daemon logs if messages are not arriving.
