@@ -57,11 +57,6 @@ EOF
     ];
   };
 
-  mkMatrixMultiSeedConfig = users: {
-    services.matrix-continuwuity.settings.admin_execute =
-      map ({ username, password }: "users create ${username} ${password}") users;
-  };
-
   mkTestFilesystems = {
     fileSystems."/" = { device = "/dev/vda"; fsType = "ext4"; };
     fileSystems."/boot" = { device = "/dev/vda1"; fsType = "vfat"; };
@@ -74,79 +69,6 @@ EOF
   nixPiModulesNoShell = [
     self.nixosModules.nixpi-no-shell
   ];
-
-  matrixTestClient = pkgs.writers.writePython3Bin "nixpi-matrix-client" {
-    libraries = with pkgs.python3Packages; [ matrix-nio ];
-    flakeIgnore = [ "E501" ];
-  } ''
-    import asyncio
-    import json
-    import sys
-
-    from nio import AsyncClient, JoinResponse, RoomMessageText
-
-
-    async def ensure_registered(client, username, password):
-        response = await client.register(username, password)
-        if hasattr(response, "access_token"):
-            return response
-        session = getattr(response, "session", None)
-        if not session:
-            raise RuntimeError(f"register failed: {response}")
-        response = await client.register(
-            username,
-            password,
-            auth={"type": "m.login.dummy", "session": session},
-        )
-        if not hasattr(response, "access_token"):
-            raise RuntimeError(f"dummy auth register failed: {response}")
-        return response
-
-
-    async def main():
-        homeserver, username, password, room_alias, outbound, expected = sys.argv[1:7]
-        client = AsyncClient(homeserver, user=username)
-        login_resp = await client.login(password)
-        if not hasattr(login_resp, "access_token"):
-            response = await ensure_registered(client, username, password)
-            client.access_token = response.access_token
-            client.user_id = response.user_id
-
-        join = await client.join(room_alias)
-        if not isinstance(join, JoinResponse):
-            raise RuntimeError(f"join failed: {join}")
-        room_id = join.room_id
-
-        got_expected = False
-
-        async def on_message(_room, event):
-            nonlocal got_expected
-            if isinstance(event, RoomMessageText) and expected in event.body:
-                got_expected = True
-                await client.close()
-
-        client.add_event_callback(on_message, RoomMessageText)
-        await client.room_send(
-            room_id=room_id,
-            message_type="m.room.message",
-            content={"msgtype": "m.text", "body": outbound},
-        )
-
-        if expected == "-":
-            print(json.dumps({"room_id": room_id, "user_id": client.user_id}))
-            await client.close()
-            return
-
-        for _ in range(30):
-            await client.sync(timeout=1000)
-            if got_expected:
-                print(json.dumps({"room_id": room_id, "user_id": client.user_id}))
-                return
-
-        raise RuntimeError("timed out waiting for expected reply")
-
-    asyncio.run(main())
-  '';
 
   testUtils = pkgs.writeShellScriptBin "nixpi-test-utils" ''
     wait_for_unit_active() {

@@ -11,6 +11,8 @@ let
       nixPiModules
       nixPiModulesNoShell
       mkTestFilesystems
+      mkMatrixAdminSeedConfig
+      matrixRegisterScript
       mkManagedUserConfig
       mkPrefillActivation;
   };
