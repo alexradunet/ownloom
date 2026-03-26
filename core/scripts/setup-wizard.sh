@@ -48,8 +48,8 @@ fi
 source "$SETUP_LIB"
 # shellcheck source=wizard-identity.sh
 source "${SCRIPT_DIR}/wizard-identity.sh"
-# shellcheck source=wizard-matrix.sh
-source "${SCRIPT_DIR}/wizard-matrix.sh"
+# shellcheck source=wizard-services.sh
+source "${SCRIPT_DIR}/wizard-services.sh"
 # shellcheck source=wizard-repo.sh
 source "${SCRIPT_DIR}/wizard-repo.sh"
 # shellcheck source=wizard-promote.sh

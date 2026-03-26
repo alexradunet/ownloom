@@ -125,7 +125,7 @@ EOF
     # Verify all wizard scripts are in PATH (regression guard for missing installs).
     nixpi.succeed("command -v setup-wizard.sh")
     nixpi.succeed("command -v wizard-identity.sh")
-    nixpi.succeed("command -v wizard-matrix.sh")
+    nixpi.succeed("command -v wizard-services.sh")
     nixpi.succeed("command -v wizard-repo.sh")
     nixpi.succeed("command -v wizard-promote.sh")
 

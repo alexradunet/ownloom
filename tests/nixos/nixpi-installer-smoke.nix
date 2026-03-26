@@ -134,7 +134,7 @@
         installer.succeed("nixos-enter --root " + target_mount + " -c 'getent passwd installer'")
         installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v setup-wizard.sh'")
         installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v wizard-identity.sh'")
-        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v wizard-matrix.sh'")
+        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v wizard-services.sh'")
         installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v wizard-repo.sh'")
         installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v wizard-promote.sh'")
         installer.fail("nixos-enter --root " + target_mount + " -c 'test -e /etc/nixos/flake.nix'")
