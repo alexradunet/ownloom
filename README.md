@@ -101,11 +101,11 @@ Installed by default:
 
 | Path | Purpose |
 |------|---------|
-| `core/` | NixPI core: NixOS modules, daemon, persona, skills, built-in extensions, and shared runtime code |
+| `core/` | NixPI core: NixOS modules, chat server, persona, skills, built-in extensions, and shared runtime code |
 | `core/os/` | NixOS modules and host configurations |
-| `core/daemon/` | Local Pi runtime, session orchestration, and multi-agent support |
+| `core/chat-server/` | Local Pi chat runtime and web interface |
 | `core/pi/extensions/` | Pi-facing NixPI extensions shipped in the default runtime |
-| `tests/` | unit, integration, daemon, and extension tests |
+| `tests/` | unit, integration, chat-server, and extension tests |
 | `docs/` | live project documentation (VitePress site) |
 
 ## 🧩 Capability Model
