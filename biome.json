@@ -40,16 +40,16 @@
 		"defaultBranch": "main"
 	},
 	"files": {
-		"includes": ["**"],
-		"ignore": [
-			"**/node_modules/**",
-			"**/dist/**",
-			"**/services/**/node_modules/**",
-			"**/.worktrees/**",
-			"**/core/os/output/**",
-			"**/.pi/**",
-			"**/.claude/**",
-			"**/coverage/**"
+		"includes": [
+			"**",
+			"!**/node_modules/**",
+			"!**/dist/**",
+			"!**/services/**/node_modules/**",
+			"!**/.worktrees/**",
+			"!**/core/os/output/**",
+			"!**/.pi/**",
+			"!**/.claude/**",
+			"!**/coverage/**"
 		]
 	},
 	"overrides": [
