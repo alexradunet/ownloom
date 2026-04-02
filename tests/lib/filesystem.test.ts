@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,14 +6,14 @@ import {
 	assertCanonicalRepo,
 	assertSupportedRebuildBranch,
 	assertValidPrimaryUser,
-	ensureDir,
 	atomicWriteFile,
+	ensureDir,
 	getCanonicalRepoDir,
 	getDaemonStateDir,
 	getNixPiDir,
 	getNixPiStateDir,
-	getPiDir,
 	getPersonaDonePath,
+	getPiDir,
 	getPrimaryUser,
 	getQuadletDir,
 	getSystemFlakeDir,
@@ -24,11 +24,7 @@ import {
 	resolvePackageDir,
 	safePath,
 } from "../../core/lib/filesystem.js";
-import {
-	getCanonicalRepoMetadataPath,
-	readCanonicalRepoMetadata,
-	writeCanonicalRepoMetadata,
-} from "../../core/lib/repo-metadata.js";
+import { getCanonicalRepoMetadataPath } from "../../core/lib/repo-metadata.js";
 
 const ROOT = path.join(os.tmpdir(), "nixpi-fs-test-root");
 
@@ -90,7 +86,7 @@ describe("getNixPiDir", () => {
 		expect(getNixPiDir()).toBe("/custom/nixpi");
 	});
 
-it("falls back to ~/nixpi for the user workspace when env var is not set", () => {
+	it("falls back to ~/nixpi for the user workspace when env var is not set", () => {
 		delete process.env.NIXPI_DIR;
 		const expected = path.join(os.homedir(), "nixpi");
 		expect(getNixPiDir()).toBe(expected);
@@ -170,7 +166,9 @@ describe("canonical repo policy", () => {
 		delete process.env.NIXPI_PRIMARY_USER;
 		const userInfoSpy = vi.spyOn(os, "userInfo").mockReturnValue({ username: "root" } as os.UserInfo<string>);
 
-		expect(() => getPrimaryUser()).toThrow("NIXPI_PRIMARY_USER is required when resolving canonical repo paths as root");
+		expect(() => getPrimaryUser()).toThrow(
+			"NIXPI_PRIMARY_USER is required when resolving canonical repo paths as root",
+		);
 
 		userInfoSpy.mockRestore();
 	});
@@ -313,12 +311,11 @@ describe("canonical repo metadata", () => {
 
 		const atomicWriteMock = vi.fn();
 		vi.doMock("../../core/lib/filesystem.js", async () => {
-			const actual = await vi.importActual<typeof import("../../core/lib/filesystem.js")>(
-				"../../core/lib/filesystem.js",
-			);
+			const actual =
+				await vi.importActual<typeof import("../../core/lib/filesystem.js")>("../../core/lib/filesystem.js");
 			return { ...actual, atomicWriteFile: atomicWriteMock };
 		});
-		const { writeCanonicalRepoMetadata, readCanonicalRepoMetadata } = await import("../../core/lib/repo-metadata.js");
+		const { writeCanonicalRepoMetadata } = await import("../../core/lib/repo-metadata.js");
 
 		const writtenPath = writeCanonicalRepoMetadata(metadata, "codex-test-user");
 
@@ -391,19 +388,21 @@ describe("canonical repo metadata", () => {
 	it("rejects writing canonical repo metadata with a non-canonical path", async () => {
 		const atomicWriteMock = vi.fn();
 		vi.doMock("../../core/lib/filesystem.js", async () => {
-			const actual = await vi.importActual<typeof import("../../core/lib/filesystem.js")>(
-				"../../core/lib/filesystem.js",
-			);
+			const actual =
+				await vi.importActual<typeof import("../../core/lib/filesystem.js")>("../../core/lib/filesystem.js");
 			return { ...actual, atomicWriteFile: atomicWriteMock };
 		});
 		const { writeCanonicalRepoMetadata } = await import("../../core/lib/repo-metadata.js");
 
 		expect(() =>
-			writeCanonicalRepoMetadata({
-				path: "/home/alex/nixpi",
-				origin: "https://github.com/example/nixpi.git",
-				branch: "main",
-			}, "codex-test-user"),
+			writeCanonicalRepoMetadata(
+				{
+					path: "/home/alex/nixpi",
+					origin: "https://github.com/example/nixpi.git",
+					branch: "main",
+				},
+				"codex-test-user",
+			),
 		).toThrow("Invalid canonical repo metadata path: expected /srv/nixpi, got /home/alex/nixpi");
 		expect(atomicWriteMock).not.toHaveBeenCalled();
 	});
