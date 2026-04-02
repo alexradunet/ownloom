@@ -142,12 +142,12 @@ describe("myModule", () => {
 
 ```typescript
 import { describe, it, expect } from "vitest";
-import { setupTestEnv } from "../helpers/temp-nixpi";
+import { createTempNixPi } from "../helpers/temp-nixpi.js";
 
 describe("feature integration", () => {
-  it("should work end to end", async () => {
-    const env = await setupTestEnv();
-    await env.cleanup();
+  it("should work end to end", () => {
+    const env = createTempNixPi();
+    env.cleanup();
   });
 });
 ```

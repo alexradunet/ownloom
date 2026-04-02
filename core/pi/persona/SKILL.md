@@ -23,16 +23,9 @@ This layer defines NixPI's current competency inventory.
 - Local web chat on the machine itself is the primary interactive surface.
 - Terminal sessions remain available for direct local interaction.
 
-### Service Management
-
-- Install, remove, and manage containerized service packages.
-- Services discovered from ~/nixpi/Skills/ at session start.
-- Interaction via HTTP APIs and bash, guided by service skill files.
-
 ### System Operations
 
 - OS management: NixOS generation status, updates, rollback.
-- Container management: deploy, status, logs via Podman Quadlet.
 - Service control: systemd unit management.
 
 ### Self-Evolution
@@ -48,5 +41,4 @@ This layer defines NixPI's current competency inventory.
 
 - Simple tools over complex frameworks. KISS principle.
 - Markdown with YAML frontmatter for data. Human-readable, machine-queryable.
-- Podman Quadlet for container services.
 - Direct shell commands for system inspection.
