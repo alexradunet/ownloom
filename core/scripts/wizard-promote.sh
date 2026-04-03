@@ -50,23 +50,23 @@ finalize() {
 			chmod 600 "$PI_DIR/settings.json" 2>/dev/null || true
 		fi
 	fi
-	if command -v nixpi-bootstrap-remove-primary-password >/dev/null 2>&1; then
-		root_command nixpi-bootstrap-remove-primary-password || echo "warning: failed to remove bootstrap primary password file" >&2
+	if command -v nixpi-bootstrap >/dev/null 2>&1; then
+		root_command nixpi-bootstrap remove-primary-password || echo "warning: failed to remove bootstrap primary password file" >&2
 	fi
 	if [[ "${NIXPI_KEEP_SSH_AFTER_SETUP:-0}" != "1" ]]; then
-		root_command nixpi-bootstrap-sshd-systemctl stop sshd.service || echo "warning: failed to stop sshd.service" >&2
+		root_command nixpi-bootstrap sshd-systemctl stop sshd.service || echo "warning: failed to stop sshd.service" >&2
 	fi
 	touch "$SYSTEM_READY"
 	if has_systemd_unit nixpi-chat.service; then
-		if ! root_command nixpi-finalize-service-systemctl enable nixpi-chat.service; then
+		if ! root_command nixpi-finalize enable nixpi-chat.service; then
 			echo "warning: failed to enable nixpi-chat.service during wizard finalization" >&2
 		fi
-		if ! root_command nixpi-finalize-service-systemctl restart nixpi-chat.service; then
+		if ! root_command nixpi-finalize restart nixpi-chat.service; then
 			echo "warning: failed to start nixpi-chat.service during wizard finalization" >&2
 		fi
 	fi
 	if has_systemd_unit display-manager.service; then
-		root_command nixpi-finalize-service-systemctl start display-manager.service || echo "warning: failed to start display-manager.service" >&2
+		root_command nixpi-finalize start display-manager.service || echo "warning: failed to start display-manager.service" >&2
 	fi
 
 	local mesh_ip

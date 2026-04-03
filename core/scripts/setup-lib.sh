@@ -2,30 +2,46 @@
 # setup-lib.sh — Shared function library for setup-wizard.sh.
 # Source this file; do not execute directly.
 #
-# Provides: checkpoint management, NetBird utilities.
+# Provides: step state management, NetBird utilities.
 #
 # Required env vars (callers must set before sourcing):
-#   WIZARD_STATE        — path to checkpoint directory (e.g. ~/.nixpi/wizard-state)
+#   WIZARD_STATE        — path to state directory (e.g. ~/.nixpi/wizard-state)
+#   WIZARD_STATE_FILE   — path to JSON step state file
 #   PI_DIR              — path to Pi config dir (typically ~/.pi)
 #   NIXPI_CONFIG        — path to NixPI service config dir
 #   NIXPI_DIR           — path to the user-editable NixPI workspace (typically ~/nixpi)
 
-# --- Checkpoint helpers ---
+# --- Step state helpers (JSON-backed) ---
+
+_state_read() {
+	[[ -f "$WIZARD_STATE_FILE" ]] && cat "$WIZARD_STATE_FILE" || echo '{}'
+}
+
+_state_write() {
+	mkdir -p "$(dirname "$WIZARD_STATE_FILE")"
+	echo "$1" > "$WIZARD_STATE_FILE"
+}
 
 mark_done() {
-	mkdir -p "$WIZARD_STATE"
-	echo "$(date -Iseconds)" > "$WIZARD_STATE/$1"
+	local step="$1"
+	local updated
+	updated=$(jq --arg step "$step" --arg ts "$(date -Iseconds)" \
+		'.[$step] = {status: "done", ts: $ts}' <<< "$(_state_read)")
+	_state_write "$updated"
 }
 
-# Store data alongside a checkpoint (e.g., mesh IP)
+# Store data alongside a step completion (e.g., mesh IP)
 mark_done_with() {
-	mkdir -p "$WIZARD_STATE"
-	printf '%s\n%s\n' "$(date -Iseconds)" "$2" > "$WIZARD_STATE/$1"
+	local step="$1" data="$2"
+	local updated
+	updated=$(jq --arg step "$step" --arg ts "$(date -Iseconds)" --arg data "$data" \
+		'.[$step] = {status: "done", ts: $ts, data: $data}' <<< "$(_state_read)")
+	_state_write "$updated"
 }
 
-# Read stored data from a checkpoint (line 2+)
+# Read stored data from a step
 read_checkpoint_data() {
-	[[ -f "$WIZARD_STATE/$1" ]] && sed -n '2p' "$WIZARD_STATE/$1" || echo ""
+	jq -r --arg step "$1" '.[$step].data // empty' <<< "$(_state_read)"
 }
 
 netbird_status_json() {
@@ -116,14 +132,10 @@ root_command() {
 }
 
 read_bootstrap_primary_password() {
-	if command -v nixpi-bootstrap-read-primary-password >/dev/null 2>&1; then
-		root_command nixpi-bootstrap-read-primary-password 2>/dev/null || true
+	if command -v nixpi-bootstrap >/dev/null 2>&1; then
+		root_command nixpi-bootstrap read-primary-password 2>/dev/null || true
 	fi
 }
-
-
-
-
 
 
 

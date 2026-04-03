@@ -1,4 +1,4 @@
-{ lib, pkgs, modulesPath, installerHelper, self, ... }:
+{ lib, pkgs, modulesPath, installerHelper, self, disko, ... }:
 
 {
   imports = [
@@ -51,6 +51,7 @@
 
   environment.systemPackages = [
     installerHelper
+    disko.packages.${pkgs.stdenv.hostPlatform.system}.disko
   ];
 
   system.extraDependencies = [

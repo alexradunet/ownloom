@@ -3,7 +3,7 @@
 
 prepare_local_state() {
 	mkdir -p "$WIZARD_STATE"
-	rm -f "$LEGACY_SETUP_STATE"
+	rm -f "$HOME/.nixpi/setup-state.json"  # remove legacy state file if present
 	if [[ ! -f "$PI_DIR/settings.json" && -f /usr/local/share/nixpi/.pi/settings.json ]]; then
 		mkdir -p "$PI_DIR"
 		cp /usr/local/share/nixpi/.pi/settings.json "$PI_DIR/settings.json"
@@ -67,7 +67,7 @@ step_locale() {
 		return 1
 	}
 
-	root_command nixpi-bootstrap-write-host-nix "$hostname" "$primary_user" "$tz" "$kb"
+	root_command nixpi-bootstrap write-host-nix "$hostname" "$primary_user" "$tz" "$kb"
 
 	echo "Applying locale settings (this may take a minute)..."
 	root_command nixpi-bootstrap-nixos-rebuild-switch || {
@@ -110,10 +110,10 @@ step_password() {
 	fi
 
 	if [[ -n "${PREFILL_PRIMARY_PASSWORD:-}" ]]; then
-		echo "$(whoami):${PREFILL_PRIMARY_PASSWORD}" | root_command nixpi-bootstrap-chpasswd
+		echo "$(whoami):${PREFILL_PRIMARY_PASSWORD}" | root_command nixpi-bootstrap chpasswd
 		echo "Password set."
 	else
-		while ! root_command nixpi-bootstrap-passwd; do
+		while ! root_command nixpi-bootstrap passwd; do
 			echo ""
 			echo "Password setup failed. Please try again."
 		done
