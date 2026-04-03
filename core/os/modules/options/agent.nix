@@ -45,5 +45,25 @@
         Whether the broker may apply or roll back NixOS generations.
       '';
     };
+
+    packagePaths = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ "/usr/local/share/nixpi" ];
+      description = ''
+        List of package root paths passed to the Pi agent's settings.json
+        "packages" field. The Pi agent loads extensions and skills from each
+        path. The default points to the stable runtime symlink created by
+        systemd-tmpfiles.
+      '';
+    };
+
+    workspaceDir = lib.mkOption {
+      type = lib.types.str;
+      description = ''
+        Root directory for the Pi agent workspace (Objects, Episodes, Skills,
+        Persona, etc.). Propagated as NIXPI_DIR to the shell environment and
+        the nixpi-chat systemd service.
+      '';
+    };
   };
 }

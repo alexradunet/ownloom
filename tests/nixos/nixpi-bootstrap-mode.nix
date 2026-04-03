@@ -65,9 +65,30 @@
     bootstrap.wait_for_unit("sshd.service", timeout=60)
     client.succeed("nc -z nixpi-bootstrap 22")
 
-    # Bootstrap-only helper commands remain usable.
-    bootstrap.succeed("su - pi -c 'sudo -n /run/current-system/sw/bin/nixpi-bootstrap-brokerctl status | grep -q effectiveAutonomy'")
-    bootstrap.succeed("grep -q 'nixpi-bootstrap-sshd-systemctl stop sshd.service' /etc/sudoers")
+    # nixpi-bootstrap dispatcher subcommands are available and guarded.
+    # brokerctl delegation works during bootstrap.
+    bootstrap.succeed(
+        "su - pi -c 'sudo -n /run/current-system/sw/bin/nixpi-bootstrap brokerctl status"
+        " | grep -q effectiveAutonomy'"
+    )
+    # The sshd-systemctl subcommand is in sudoers (new dispatcher format).
+    bootstrap.succeed(
+        "grep -q 'nixpi-bootstrap sshd-systemctl stop sshd.service' /etc/sudoers"
+    )
+    # Unknown subcommands fail.
+    bootstrap.fail(
+        "nixpi-bootstrap unknown-subcommand 2>/dev/null"
+    )
+    # Password file subcommands are in sudoers.
+    bootstrap.succeed(
+        "grep -q 'nixpi-bootstrap read-primary-password' /etc/sudoers"
+    )
+    # After system-ready is set, all subcommands are blocked.
+    bootstrap.succeed("mkdir -p /home/pi/.nixpi/wizard-state")
+    bootstrap.succeed("touch /home/pi/.nixpi/wizard-state/system-ready")
+    bootstrap.fail("nixpi-bootstrap brokerctl status 2>/dev/null")
+    bootstrap.fail("nixpi-bootstrap write-host-nix h u UTC us 2>/dev/null")
+    bootstrap.succeed("rm /home/pi/.nixpi/wizard-state/system-ready")
 
     # Service ports remain local-only until the trusted interface exists.
     for port in [8080, 8081, 5000, 8443]:

@@ -6,6 +6,8 @@ let
   primaryHome = "/home/${primaryUser}";
   stateDir = config.nixpi.stateDir;
   agentStateDir = "${primaryHome}/.pi";
+  defaultSettings = pkgs.writeText "pi-settings.json"
+    (builtins.toJSON { packages = config.nixpi.agent.packagePaths; });
 in
 
 {
@@ -13,18 +15,19 @@ in
 
   environment.systemPackages = [ appPackage piAgent ];
 
-  systemd.tmpfiles.rules = [
-    "L+ /usr/local/share/nixpi - - - - ${appPackage}/share/nixpi"
-    "d /etc/nixpi/appservices 0755 root root -"
-    "d ${stateDir} 0770 ${primaryUser} ${primaryUser} -"
-    "d ${stateDir}/services 0770 ${primaryUser} ${primaryUser} -"
-  ];
+  systemd.tmpfiles.settings.nixpi-app = {
+    "/usr/local/share/nixpi"."L+" = { argument = "${appPackage}/share/nixpi"; };
+    "/etc/nixpi/appservices".d = { mode = "0755"; user = "root"; group = "root"; };
+    "${stateDir}".d = { mode = "0770"; user = primaryUser; group = primaryUser; };
+    "${stateDir}/services".d = { mode = "0770"; user = primaryUser; group = primaryUser; };
+  };
 
   system.services.nixpi-chat = {
     imports = [ (lib.modules.importApply ../services/nixpi-chat.nix { inherit pkgs; }) ];
     nixpi-chat = {
       package = appPackage;
       inherit primaryUser agentStateDir;
+      workspaceDir = config.nixpi.agent.workspaceDir;
     };
   };
 
@@ -38,12 +41,11 @@ in
       User = "root";
       ExecStart = "${pkgs.writeShellScript "nixpi-app-setup" ''
         primary_group="$(id -gn ${primaryUser})"
-        default_pi_settings="${appPackage}/share/nixpi/.pi/settings.json"
 
         install -d -m 0700 -o ${primaryUser} -g "$primary_group" ${agentStateDir}
 
-        if [ ! -e ${agentStateDir}/settings.json ] && [ -f "$default_pi_settings" ]; then
-          install -m 0600 -o ${primaryUser} -g "$primary_group" "$default_pi_settings" ${agentStateDir}/settings.json
+        if [ ! -e ${agentStateDir}/settings.json ]; then
+          install -m 0600 -o ${primaryUser} -g "$primary_group" ${defaultSettings} ${agentStateDir}/settings.json
         fi
 
         chown -R ${primaryUser}:"$primary_group" ${agentStateDir}

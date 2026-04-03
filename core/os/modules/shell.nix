@@ -5,9 +5,10 @@ let
   primaryUser = config.nixpi.primaryUser;
   primaryHome = "/home/${primaryUser}";
   stateDir = config.nixpi.stateDir;
+  workspaceDir = config.nixpi.agent.workspaceDir;
 
   bashrc = pkgs.writeText "nixpi-bashrc" ''
-    export NIXPI_DIR="${primaryHome}/nixpi"
+    export NIXPI_DIR="${workspaceDir}"
     export NIXPI_STATE_DIR="${stateDir}"
     export NIXPI_PI_DIR="${primaryHome}/.pi"
     export PI_CODING_AGENT_DIR="${primaryHome}/.pi"
@@ -54,32 +55,12 @@ in
     }
   ];
 
+  nixpi.agent.workspaceDir = lib.mkDefault "${primaryHome}/nixpi";
+
   environment.etc = {
     "skel/.bashrc".source = bashrc;
     "skel/.bash_profile".source = bashProfile;
     "issue".text = "NixPI\n";
-  };
-
-  systemd.services.nixpi-shell-setup = {
-    description = "NixPI shell setup: seed .bashrc and .bash_profile for primary user";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "systemd-tmpfiles-setup.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      User = "root";
-      ExecStart = "${pkgs.writeShellScript "nixpi-shell-setup" ''
-        primary_group="$(id -gn ${primaryUser})"
-
-        if [ ! -e ${primaryHome}/.bashrc ]; then
-          install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.bashrc ${primaryHome}/.bashrc
-        fi
-
-        if [ ! -e ${primaryHome}/.bash_profile ]; then
-          install -m 0644 -o ${primaryUser} -g "$primary_group" /etc/skel/.bash_profile ${primaryHome}/.bash_profile
-        fi
-      ''}";
-    };
   };
 
   boot.kernel.sysctl."kernel.printk" = "4 4 1 7";

@@ -7,7 +7,7 @@ in
 {
   imports = [ ../options.nix ];
 
-  systemd.tmpfiles.rules = [
-    "d ${stateDir}/bootstrap 0770 ${primaryUser} ${primaryUser} -"
-  ];
+  systemd.tmpfiles.settings.nixpi-bootstrap = {
+    "${stateDir}/bootstrap".d = { mode = "0770"; user = primaryUser; group = primaryUser; };
+  };
 }

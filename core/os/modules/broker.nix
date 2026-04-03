@@ -42,9 +42,9 @@ in
 
     environment.systemPackages = [ brokerCtl ];
 
-    systemd.tmpfiles.rules = [
-      "d ${brokerStateDir} 0770 root ${primaryUser} -"
-    ];
+    systemd.tmpfiles.settings.nixpi-broker = {
+      "${brokerStateDir}".d = { mode = "0770"; user = "root"; group = primaryUser; };
+    };
 
     system.services.nixpi-broker = {
       imports = [ ../services/nixpi-broker.nix ];

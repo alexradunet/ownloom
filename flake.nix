@@ -263,6 +263,21 @@
           };
           mkCheckLane = name: entries:
             pkgs.linkFarm name entries;
+          diskoLayoutsCheck = pkgs.runCommandLocal "disko-layouts-check" {
+            nativeBuildInputs = [ pkgs.nix ];
+          } ''
+            nix-instantiate --parse \
+              ${./core/os/installer/layouts/standard.nix} >/dev/null
+            nix-instantiate --parse \
+              ${./core/os/installer/layouts/swap.nix} >/dev/null
+
+            grep -F '"@DISK@"' ${./core/os/installer/layouts/standard.nix} >/dev/null
+            grep -F '"@DISK@"' ${./core/os/installer/layouts/swap.nix} >/dev/null
+            grep -F '"@SWAP_SIZE@"' ${./core/os/installer/layouts/swap.nix} >/dev/null
+            grep -F 'disko.devices' ${./core/os/installer/layouts/standard.nix} >/dev/null
+            grep -F 'disko.devices' ${./core/os/installer/layouts/swap.nix} >/dev/null
+            touch "$out"
+          '';
         in
         {
           # Fast: build the installed system closure locally — catches locale
@@ -281,6 +296,8 @@
             grep -F 'nixpi.primaryUser = "@@username@@";' "$install_template" >/dev/null
             touch "$out"
           '';
+
+          disko-layouts = diskoLayoutsCheck;
 
           installer-generated-config = mkInstallerGeneratedConfig {
             hostName = "installer-vm";
@@ -309,6 +326,7 @@
           boot = bootCheck;
 
           nixos-smoke = mkCheckLane "nixos-smoke" [
+            { name = "disko-layouts"; path = diskoLayoutsCheck; }
             { name = "smoke-firstboot"; path = nixosTests.smoke-firstboot; }
             { name = "smoke-install-wizard"; path = nixosTests.smoke-install-wizard; }
             { name = "smoke-security"; path = nixosTests.smoke-security; }
