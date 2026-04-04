@@ -13,6 +13,8 @@ MIN_DISK_BYTES=$((16 * 1024 * 1024 * 1024))
 HOST_REPO_PATH="${NIXPI_VM_HOST_REPO_PATH:-$PWD}"
 HOST_NIXPI_PATH="${NIXPI_VM_HOST_STATE_PATH:-$HOME/.nixpi}"
 PREFILL_SOURCE="${NIXPI_VM_PREFILL_SOURCE:-core/scripts/prefill.env}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+DEV_KEY_PATH="${NIXPI_VM_DEV_KEY_PATH:-${SCRIPT_DIR}/dev-key}"
 
 resolve_runner() {
     local preferred="${OUTPUT}/bin/run-nixos-vm"
@@ -33,6 +35,16 @@ resolve_runner() {
 host_port_busy() {
     local port="$1"
     ss -ltn "( sport = :${port} )" 2>/dev/null | tail -n +2 | grep -q .
+}
+
+ssh_ready() {
+    local key_path="$1"
+    ssh -i "$key_path" \
+        -o BatchMode=yes \
+        -o ConnectTimeout=2 \
+        -o StrictHostKeyChecking=no \
+        -o UserKnownHostsFile=/dev/null \
+        -p 2222 pi@localhost true >/dev/null 2>&1
 }
 
 create_empty_filesystem_image() {
@@ -113,8 +125,20 @@ echo "  - Stop:     just vm-stop"
 nohup "$RUNNER" >"${LOG_FILE}" 2>&1 &
 
 echo "Waiting for VM to boot..."
+temp_key=""
+if [[ -f "$DEV_KEY_PATH" ]]; then
+    temp_key="$(mktemp)"
+    trap 'rm -f "$temp_key"' EXIT
+    install -m 600 "$DEV_KEY_PATH" "$temp_key"
+fi
+
 for i in {1..60}; do
-    if nc -z localhost 2222 2>/dev/null; then
+    if [[ -n "$temp_key" ]]; then
+        if ssh_ready "$temp_key"; then
+            echo "VM is ready! SSH available on port 2222"
+            exit 0
+        fi
+    elif nc -z localhost 2222 2>/dev/null; then
         echo "VM is ready! SSH available on port 2222"
         exit 0
     fi
