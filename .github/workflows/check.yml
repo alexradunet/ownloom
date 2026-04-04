@@ -21,4 +21,5 @@ jobs:
       - run: npm run test:unit
       - run: npm run test:integration
       - run: npm run check
+      - run: nix flake lock
       - run: nix build .#checks.x86_64-linux.config --no-link
