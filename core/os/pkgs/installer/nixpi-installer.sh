@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-HELPER_BIN="@helperBin@"
+INSTALL_MODULE_TEMPLATE="@installModuleTemplate@"
+LAYOUT_STANDARD="@layoutStandard@"
+LAYOUT_SWAP="@layoutSwap@"
 
 ROOT_MOUNT="/mnt"
 HOSTNAME_VALUE=""
@@ -20,8 +22,8 @@ usage() {
 Usage: nixpi-installer [--disk /dev/sdX] [--hostname NAME] [--primary-user USER] [--password VALUE] [--layout no-swap|swap] [--swap-size 8GiB] [--yes] [--system PATH]
 
 Performs a destructive UEFI install with:
-- EFI system partition: 1 MiB - 1 GiB
-- ext4 root partition: 1 GiB - end of disk or swap
+- EFI system partition: 1 GiB
+- ext4 root partition: remainder (or remainder minus swap)
 
 The installer creates a minimal bootable NixPI base. The first-boot setup
 wizard handles WiFi, internet validation, and promotion into the full
@@ -51,7 +53,6 @@ enable_logging() {
   if [[ "$LOG_REDIRECTED" -eq 1 ]]; then
     return
   fi
-
   : >"$INSTALLER_LOG"
   exec > >(tee -a "$INSTALLER_LOG") 2>&1
   LOG_REDIRECTED=1
@@ -182,58 +183,32 @@ choose_layout() {
 
   require_tty
 
-  local choice=""
-
   echo "Choose the disk layout:"
   echo "  1) EFI + ext4 root"
   echo "  2) EFI + ext4 root + 8GiB swap"
   echo "  3) EFI + ext4 root + custom swap"
 
+  local choice=""
   while true; do
     read -rp "Select option [1/2/3]: " choice
     case "$choice" in
-      1)
-        choice="no-swap"
-        break
-        ;;
-      2)
-        choice="swap:8GiB"
-        break
-        ;;
+      1) LAYOUT_MODE="no-swap"; break ;;
+      2) LAYOUT_MODE="swap"; SWAP_SIZE="8GiB"; break ;;
       3)
-        choice="swap:custom"
+        LAYOUT_MODE="swap"
+        while true; do
+          read -rp "Swap size [8GiB]: " SWAP_SIZE
+          SWAP_SIZE="${SWAP_SIZE:-8GiB}"
+          if validate_swap_size "$SWAP_SIZE"; then
+            break
+          fi
+          printf '%s\n' "Swap size must look like 8GiB, 4096MiB, 8GB, or 4096MB." >&2
+        done
         break
         ;;
-      *)
-        echo "Invalid option." >&2
-        ;;
+      *) echo "Invalid option." >&2 ;;
     esac
   done
-
-  case "$choice" in
-    no-swap)
-      LAYOUT_MODE="no-swap"
-      ;;
-    swap:8GiB)
-      LAYOUT_MODE="swap"
-      SWAP_SIZE="8GiB"
-      ;;
-    swap:custom)
-      LAYOUT_MODE="swap"
-      while true; do
-        read -rp "Swap size [8GiB]: " SWAP_SIZE
-        SWAP_SIZE="${SWAP_SIZE:-8GiB}"
-        if validate_swap_size "$SWAP_SIZE"; then
-          break
-        fi
-        printf '%s\n' "Swap size must look like 8GiB, 4096MiB, 8GB, or 4096MB." >&2
-      done
-      ;;
-    *)
-      echo "Unknown layout selection: $choice" >&2
-      exit 1
-      ;;
-  esac
 }
 
 normalize_layout_inputs() {
@@ -242,9 +217,7 @@ normalize_layout_inputs() {
   fi
 
   case "$LAYOUT_MODE" in
-    no-swap)
-      SWAP_SIZE=""
-      ;;
+    no-swap) SWAP_SIZE="" ;;
     swap)
       if [[ -z "$SWAP_SIZE" ]]; then
         SWAP_SIZE="8GiB"
@@ -288,135 +261,82 @@ confirm_install() {
   fi
 }
 
-partition_prefix() {
-  if [[ "$TARGET_DISK" =~ [0-9]$ ]]; then
-    printf "%sp" "$TARGET_DISK"
-  else
-    printf "%s" "$TARGET_DISK"
-  fi
-}
+run_install() {
+  enable_logging
 
-run_install_steps() {
-  local boot_part="$1"
-  local root_part="$2"
-  local swap_part="$3"
-
-  echo "=== [2/5] Partitioning ==="
-  log_step "Partitioning $TARGET_DISK"
-  parted -s "$TARGET_DISK" mklabel gpt
-  parted -s "$TARGET_DISK" mkpart ESP fat32 1MiB 1GiB
-  parted -s "$TARGET_DISK" set 1 esp on
-  if [[ "$LAYOUT_MODE" == "swap" ]]; then
-    parted -s -- "$TARGET_DISK" mkpart root ext4 1GiB "-$SWAP_SIZE"
-    parted -s -- "$TARGET_DISK" mkpart swap linux-swap "-$SWAP_SIZE" 100%
-  else
-    parted -s "$TARGET_DISK" mkpart root ext4 1GiB 100%
-  fi
-  udevadm settle
-
-  log_step "Formatting $boot_part as FAT32"
-  mkfs.fat -F 32 -n boot "$boot_part"
-
-  log_step "Formatting $root_part as ext4"
-  mkfs.ext4 -F -L nixos "$root_part"
+  echo "=== [2/5] Partitioning and formatting ==="
+  local disko_config
+  disko_config="$(mktemp /tmp/nixpi-disko-XXXXXX.nix)"
 
   if [[ "$LAYOUT_MODE" == "swap" ]]; then
-    log_step "Creating swap on $swap_part (${SWAP_SIZE})"
-    mkswap -L swap "$swap_part"
-    swapon "$swap_part"
+    sed \
+      -e "s|@DISK@|${TARGET_DISK}|g" \
+      -e "s|@SWAP_SIZE@|${SWAP_SIZE}|g" \
+      "$LAYOUT_SWAP" > "$disko_config"
+  else
+    sed \
+      -e "s|@DISK@|${TARGET_DISK}|g" \
+      "$LAYOUT_STANDARD" > "$disko_config"
   fi
 
-  log_step "Mounting target filesystem at $ROOT_MOUNT"
-  mount "$root_part" "$ROOT_MOUNT"
-  mkdir -p "$ROOT_MOUNT/boot"
-  mount -o umask=077 "$boot_part" "$ROOT_MOUNT/boot"
+  log_step "Running disko on $TARGET_DISK"
+  disko --mode destroy,format,mount "$disko_config"
 
   echo "=== [3/5] Writing boot configuration ==="
-  log_step "Generating base NixOS config"
-  nixos-generate-config --root "$ROOT_MOUNT"
+  log_step "Generating NixOS hardware config"
+  nixos-generate-config --root "$ROOT_MOUNT" --no-filesystems
 
-  log_step "Writing NixPI install artifacts"
-  "$HELPER_BIN" \
-    --root "$ROOT_MOUNT" \
-    --hostname "$HOSTNAME_VALUE" \
-    --primary-user "$PRIMARY_USER_VALUE" \
-    --password "$PRIMARY_PASSWORD_VALUE" \
-    >/tmp/nixpi-installer-artifacts.json
-  log_step "Installer artifacts written to /tmp/nixpi-installer-artifacts.json"
-  log_step "First boot will prepare the canonical repo checkout at /srv/nixpi"
+  log_step "Writing NixPI install module"
+  local password_hash
+  password_hash="$(openssl passwd -6 -stdin <<< "$PRIMARY_PASSWORD_VALUE")"
+
+  # Escape for sed replacement (& and / are special in sed RHS)
+  local esc_user esc_password esc_hash
+  esc_user="$(printf '%s\n' "$PRIMARY_USER_VALUE" | sed 's/[&/\]/\\&/g')"
+  esc_password="$(printf '%s\n' "$PRIMARY_PASSWORD_VALUE" | sed 's/[&/\]/\\&/g')"
+  esc_hash="$(printf '%s\n' "$password_hash" | sed 's/[&/\]/\\&/g')"
+
+  sed \
+    -e "s/@@username@@/${esc_user}/g" \
+    -e "s/@@password@@/\"${esc_password}\"/g" \
+    -e "s/@@passwordHash@@/\"${esc_hash}\"/g" \
+    "$INSTALL_MODULE_TEMPLATE" \
+    > "$ROOT_MOUNT/etc/nixos/nixpi-install.nix"
+
+  log_step "Writing configuration.nix"
+  cat > "$ROOT_MOUNT/etc/nixos/configuration.nix" <<'EOF'
+{ ... }: {
+  imports = [
+    ./hardware-configuration.nix
+    ./nixpi-install.nix
+  ];
+}
+EOF
 
   echo "=== [4/5] Installing NixOS (this may take 10-20 minutes) ==="
   if [[ -n "$SYSTEM_CLOSURE" ]]; then
     log_step "Installing prebuilt system closure"
     nixos-install --no-root-passwd --system "$SYSTEM_CLOSURE" --root "$ROOT_MOUNT"
   else
-    log_step "Running nixos-install from configuration.nix"
+    log_step "Running nixos-install"
     NIX_CONFIG="experimental-features = nix-command flakes" \
-      NIXOS_INSTALL_BOOTLOADER=1 \
-      nixos-install --no-root-passwd --root "$ROOT_MOUNT" --no-channel-copy -I "nixos-config=$ROOT_MOUNT/etc/nixos/configuration.nix"
+      nixos-install --no-root-passwd --root "$ROOT_MOUNT" --no-channel-copy
   fi
-}
-
-run_install() {
-  local prefix boot_part root_part swap_part
-  prefix="$(partition_prefix)"
-  boot_part="${prefix}1"
-  root_part="${prefix}2"
-  swap_part="${prefix}3"
-
-  mkdir -p "$ROOT_MOUNT"
-  swapoff "$swap_part" 2>/dev/null || true
-  umount "$ROOT_MOUNT/boot" 2>/dev/null || true
-  umount "$ROOT_MOUNT" 2>/dev/null || true
-  enable_logging
-
-  run_install_steps "$boot_part" "$root_part" "$swap_part"
 }
 
 main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --disk)
-        TARGET_DISK="$2"
-        shift 2
-        ;;
-      --hostname)
-        HOSTNAME_VALUE="$2"
-        shift 2
-        ;;
-      --primary-user)
-        PRIMARY_USER_VALUE="$2"
-        shift 2
-        ;;
-      --password)
-        PRIMARY_PASSWORD_VALUE="$2"
-        shift 2
-        ;;
-      --layout)
-        LAYOUT_MODE="$2"
-        shift 2
-        ;;
-      --swap-size)
-        SWAP_SIZE="$2"
-        shift 2
-        ;;
-      --yes)
-        FORCE_YES=1
-        shift
-        ;;
-      --system)
-        SYSTEM_CLOSURE="$2"
-        shift 2
-        ;;
-      -h|--help)
-        usage
-        exit 0
-        ;;
-      *)
-        echo "Unknown argument: $1" >&2
-        usage >&2
-        exit 1
-        ;;
+      --disk) TARGET_DISK="$2"; shift 2 ;;
+      --hostname) HOSTNAME_VALUE="$2"; shift 2 ;;
+      --primary-user) PRIMARY_USER_VALUE="$2"; shift 2 ;;
+      --password) PRIMARY_PASSWORD_VALUE="$2"; shift 2 ;;
+      --layout) LAYOUT_MODE="$2"; shift 2 ;;
+      --swap-size) SWAP_SIZE="$2"; shift 2 ;;
+      --yes) FORCE_YES=1; shift ;;
+      --system) SYSTEM_CLOSURE="$2"; shift 2 ;;
+      -h|--help) usage; exit 0 ;;
+      *) echo "Unknown argument: $1" >&2; usage >&2; exit 1 ;;
     esac
   done
 

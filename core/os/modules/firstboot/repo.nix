@@ -101,20 +101,24 @@ EOF
 {
   description = "NixPI installed host";
 
-  inputs.nixpkgs.url = "path:${pkgs.path}";
+  # Use the upstream nixpkgs channel so \`nix flake update\` stays current.
+  # Do NOT use a path: input here — local store paths disappear after GC.
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
   outputs = { nixpkgs, ... }:
     let
       system = "${pkgs.stdenv.hostPlatform.system}";
       repoDir = /srv/nixpi;
+      pkgs = nixpkgs.legacyPackages.''${system};
+      # Build packages directly from the canonical repo so they stay in sync
+      # with the local checkout and are never GC-vulnerable store paths.
+      piAgent = pkgs.callPackage (repoDir + "/core/os/pkgs/pi") {};
+      appPackage = pkgs.callPackage (repoDir + "/core/os/pkgs/app") { inherit piAgent; };
+      setupPackage = pkgs.callPackage (repoDir + "/core/os/pkgs/setup") {};
     in {
       nixosConfigurations.nixpi = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = {
-          piAgent = ${piAgent};
-          appPackage = ${appPackage};
-          setupPackage = ${setupPackage};
-        };
+        specialArgs = { inherit piAgent appPackage setupPackage; };
         modules = [
           (repoDir + "/core/os/hosts/x86_64.nix")
           ./configuration.nix

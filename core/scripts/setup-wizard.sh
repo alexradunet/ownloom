@@ -15,11 +15,11 @@ log() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 WIZARD_STATE="$HOME/.nixpi/wizard-state"
+WIZARD_STATE_FILE="$WIZARD_STATE/steps.json"
 SYSTEM_READY="$WIZARD_STATE/system-ready"
 NIXPI_DIR="/srv/nixpi"
 NIXPI_CONFIG="${NIXPI_CONFIG_DIR:-${NIXPI_STATE_DIR:-$HOME/.config/nixpi}/services}"
 PI_DIR="${NIXPI_PI_DIR:-$HOME/.pi}"
-LEGACY_SETUP_STATE="$HOME/.nixpi/setup-state.json"
 BOOTSTRAP_STATE_DIR="$HOME/.nixpi/bootstrap"
 BOOTSTRAP_UPGRADE_STATUS_FILE="${BOOTSTRAP_STATE_DIR}/full-appliance-upgrade.status"
 BOOTSTRAP_UPGRADE_LOG_FILE="${BOOTSTRAP_STATE_DIR}/full-appliance-upgrade.log"
@@ -55,7 +55,7 @@ source "${SCRIPT_DIR}/wizard-repo.sh"
 # shellcheck source=wizard-promote.sh
 source "${SCRIPT_DIR}/wizard-promote.sh"
 
-step_done() { [[ -f "$WIZARD_STATE/$1" ]]; }
+step_done() { jq -e --arg step "$1" '.[$step].status == "done"' "$WIZARD_STATE_FILE" >/dev/null 2>&1; }
 
 has_command() {
 	command -v "$1" >/dev/null 2>&1
@@ -210,7 +210,7 @@ main() {
 		return 0
 	fi
 
-	if [[ -d "$WIZARD_STATE" ]] && ls "$WIZARD_STATE"/* &>/dev/null; then
+	if [[ -f "$WIZARD_STATE_FILE" ]] && jq -e '. != {}' "$WIZARD_STATE_FILE" >/dev/null 2>&1; then
 		echo "Resuming setup..."
 	fi
 

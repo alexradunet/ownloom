@@ -134,9 +134,9 @@ in
         };
       };
 
-      systemd.tmpfiles.rules = [
-        "d ${primaryHome}/nixpi 2775 ${primaryUser} ${primaryUser} -"
-      ];
+      systemd.tmpfiles.settings.nixpi-workspace = {
+        "${config.nixpi.agent.workspaceDir}".d = { mode = "2775"; user = primaryUser; group = primaryUser; };
+      };
 
       environment.systemPackages = with pkgs; [
         jq

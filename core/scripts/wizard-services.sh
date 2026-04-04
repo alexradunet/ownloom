@@ -26,7 +26,7 @@ step_netbird() {
 
 	if ! systemctl is-active --quiet netbird.service; then
 		echo "Starting NetBird daemon..."
-		root_command nixpi-bootstrap-netbird-systemctl start netbird.service 2>/dev/null || true
+		root_command nixpi-bootstrap netbird-systemctl start netbird.service 2>/dev/null || true
 	fi
 	local wait_count=0
 	while [[ ! -S /var/run/netbird/sock ]]; do
@@ -63,7 +63,7 @@ step_netbird() {
 					echo "NetBird may print a login URL, but it cannot open a browser window here."
 					echo "Use option 2 with a setup key, or retry once the XFCE desktop is running."
 				fi
-				if root_command nixpi-bootstrap-netbird-up 2>&1; then
+				if root_command nixpi-bootstrap netbird-up 2>&1; then
 					for _ in $(seq 1 30); do
 						sleep 1
 						local status
@@ -103,7 +103,7 @@ step_netbird() {
 					fi
 
 					echo "Connecting to NetBird..."
-					if root_command nixpi-bootstrap-netbird-up --setup-key "$setup_key" 2>&1; then
+					if root_command nixpi-bootstrap netbird-up --setup-key "$setup_key" 2>&1; then
 						sleep 3
 						local status
 						status=$(netbird status 2>/dev/null || true)
@@ -143,6 +143,6 @@ step_services() {
 		mark_done_with services "skipped"
 		return
 	fi
-	root_command nixpi-bootstrap-service-systemctl restart nixpi-chat.service || echo "  chat restart failed."
+	root_command nixpi-bootstrap service-systemctl restart nixpi-chat.service || echo "  chat restart failed."
 	mark_done_with services "chat"
 }

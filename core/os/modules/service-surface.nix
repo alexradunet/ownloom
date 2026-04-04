@@ -79,9 +79,9 @@ in
       }
     ];
 
-    systemd.tmpfiles.rules = lib.mkIf cfg.secureWeb.enable [
-      "d ${tlsDir} 0750 nginx nginx -"
-    ];
+    systemd.tmpfiles.settings = lib.mkIf cfg.secureWeb.enable {
+      nixpi-tls."${tlsDir}".d = { mode = "0750"; user = "nginx"; group = "nginx"; };
+    };
 
     systemd.services.nixpi-secure-web-tls = lib.mkIf cfg.secureWeb.enable {
       description = "Generate self-signed TLS certificate for secure NixPI web entry point";

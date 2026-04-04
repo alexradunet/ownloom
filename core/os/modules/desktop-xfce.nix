@@ -73,20 +73,8 @@ let
         if [ -z "''${PI_SESSION:-}" ] && command -v pi >/dev/null 2>&1 && mkdir /tmp/.nixpi-pi-session 2>/dev/null; then
           trap "rmdir /tmp/.nixpi-pi-session 2>/dev/null" EXIT
           export PI_SESSION=1
-          _nixpi_pkg="/usr/local/share/nixpi"
-          _pi_settings="${primaryHome}/.pi/settings.json"
-          if [ -d "$_nixpi_pkg" ]; then
-            mkdir -p "$(dirname "$_pi_settings")"
-            if [ -f "$_pi_settings" ] && command -v jq >/dev/null 2>&1; then
-              if ! jq -e ".packages // [] | index(\"$_nixpi_pkg\")" "$_pi_settings" >/dev/null 2>&1; then
-                jq ".packages = ((.packages // []) + [\"$_nixpi_pkg\"] | unique)" "$_pi_settings" > "''${_pi_settings}.tmp" && \
-                  mv "''${_pi_settings}.tmp" "$_pi_settings"
-              fi
-            elif [ ! -f "$_pi_settings" ]; then
-              cp "$_nixpi_pkg/.pi/settings.json" "$_pi_settings"
-            fi
-          fi
-          unset _nixpi_pkg _pi_settings
+          # settings.json is seeded by nixpi-app-setup.service on first boot;
+          # no runtime mutation needed here.
           if ! pi; then
             echo ""
             echo "Pi exited unexpectedly."
@@ -181,10 +169,10 @@ in
     "skel/.xprofile".source = xprofile;
   };
 
-  systemd.tmpfiles.rules = [
-    "d ${primaryHome}/.config 0755 ${primaryUser} ${primaryUser} -"
-    "d ${primaryHome}/.config/autostart 0755 ${primaryUser} ${primaryUser} -"
-  ];
+  systemd.tmpfiles.settings.nixpi-desktop = {
+    "${primaryHome}/.config".d = { mode = "0755"; user = primaryUser; group = primaryUser; };
+    "${primaryHome}/.config/autostart".d = { mode = "0755"; user = primaryUser; group = primaryUser; };
+  };
 
   systemd.services.nixpi-xfce-desktop-setup = {
     description = "NixPI XFCE desktop setup: seed autostart entry and xprofile";

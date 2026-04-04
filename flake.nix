@@ -4,9 +4,14 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nixos-hardware.url = "github:NixOS/nixos-hardware";
   };
 
-  outputs = { self, nixpkgs, ... }:
+  outputs = { self, nixpkgs, disko, nixos-hardware, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -14,7 +19,6 @@
       nixpiSource = lib.cleanSource ./.;
       installerHelper = pkgs.callPackage ./core/os/pkgs/installer {
         inherit nixpiSource piAgent appPackage;
-        nixpkgsSource = nixpkgs.outPath;
       };
       setupPackage = pkgs.callPackage ./core/os/pkgs/setup {};
       # pkgsUnfree is used only for boot nixosTest.  pkgs.testers.nixosTest
@@ -25,7 +29,7 @@
       piAgent = pkgs.callPackage ./core/os/pkgs/pi {};
       appPackage = pkgs.callPackage ./core/os/pkgs/app { inherit piAgent; };
 
-      specialArgs = { inherit piAgent appPackage self installerHelper setupPackage; };
+      specialArgs = { inherit piAgent appPackage self installerHelper setupPackage disko; };
     in {
       packages.${system} = {
         pi = piAgent;
@@ -110,6 +114,36 @@
         ];
       };
 
+      # Raspberry Pi 4 target (aarch64-linux).
+      # Build on native aarch64 hardware or with binfmt/QEMU:
+      #   nix build .#nixosConfigurations.rpi4.config.system.build.toplevel
+      nixosConfigurations.rpi4 = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        specialArgs = specialArgs // { inherit nixos-hardware; };
+        modules = [
+          nixos-hardware.nixosModules.raspberry-pi-4
+          ./core/os/hosts/rpi4.nix
+          {
+            nixpkgs.hostPlatform = "aarch64-linux";
+            nixpkgs.config.allowUnfree = true;
+          }
+        ];
+      };
+
+      # Raspberry Pi 5 target (aarch64-linux).
+      nixosConfigurations.rpi5 = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        specialArgs = specialArgs // { inherit nixos-hardware; };
+        modules = [
+          nixos-hardware.nixosModules.raspberry-pi-5
+          ./core/os/hosts/rpi5.nix
+          {
+            nixpkgs.hostPlatform = "aarch64-linux";
+            nixpkgs.config.allowUnfree = true;
+          }
+        ];
+      };
+
       # Minimal installer ISO built on top of the standard NixOS minimal image.
       nixosConfigurations.installer-iso = nixpkgs.lib.nixosSystem {
         inherit system specialArgs;
@@ -136,12 +170,9 @@
         ];
       };
 
-      checks.${system} = 
+      checks.${system} =
         let
-          installerHelperSource = ./core/os/pkgs/installer/nixpi_installer.py;
-          installerHelperTests = ./core/os/pkgs/installer/test_nixpi_installer.py;
           installerFrontendSource = ./core/os/pkgs/installer/nixpi-installer.sh;
-          installerFrontendTests = ./core/os/pkgs/installer/test_nixpi_installer.sh;
           mkInstallerGeneratedConfig = {
             hostName,
             rootDevice,
@@ -191,38 +222,6 @@
               })
             ];
           }).config.system.build.toplevel;
-          generatedInstallModule =
-            let
-              template = builtins.readFile ./core/os/pkgs/installer/nixpi-install-module.nix.in;
-            in
-            pkgs.writeText "nixpi-install-generated.nix" (
-              lib.replaceStrings
-                [
-                  "@piAgent@"
-                  "@appPackage@"
-                  "@setupPackage@"
-                  "@firstbootModule@"
-                  "@desktopXfceModule@"
-                  "@networkModule@"
-                  "@shellModule@"
-                  "@updateModule@"
-                  "@@username@@"
-                  "@@password@@"
-                ]
-                [
-                  (toString piAgent)
-                  (toString appPackage)
-                  (toString setupPackage)
-                  "${toString nixpiSource}/core/os/modules/firstboot/default.nix"
-                  "${toString nixpiSource}/core/os/modules/desktop-xfce.nix"
-                  "${toString nixpiSource}/core/os/modules/network.nix"
-                  "${toString nixpiSource}/core/os/modules/shell.nix"
-                  "${toString nixpiSource}/core/os/modules/update.nix"
-                  "installer"
-                  "\"installerpass123\""
-                ]
-                template
-            );
           # Import the NixOS integration test suite
           # Using pkgsUnfree so tests can use packages that require allowUnfree
           nixosTests = import ./tests/nixos {
@@ -264,6 +263,21 @@
           };
           mkCheckLane = name: entries:
             pkgs.linkFarm name entries;
+          diskoLayoutsCheck = pkgs.runCommandLocal "disko-layouts-check" {
+            nativeBuildInputs = [ pkgs.nix ];
+          } ''
+            nix-instantiate --parse \
+              ${./core/os/installer/layouts/standard.nix} >/dev/null
+            nix-instantiate --parse \
+              ${./core/os/installer/layouts/swap.nix} >/dev/null
+
+            grep -F '"@DISK@"' ${./core/os/installer/layouts/standard.nix} >/dev/null
+            grep -F '"@DISK@"' ${./core/os/installer/layouts/swap.nix} >/dev/null
+            grep -F '"@SWAP_SIZE@"' ${./core/os/installer/layouts/swap.nix} >/dev/null
+            grep -F 'disko.devices' ${./core/os/installer/layouts/standard.nix} >/dev/null
+            grep -F 'disko.devices' ${./core/os/installer/layouts/swap.nix} >/dev/null
+            touch "$out"
+          '';
         in
         {
           # Fast: build the installed system closure locally — catches locale
@@ -271,41 +285,19 @@
           # evaluation failures without touching QEMU.
           config = self.nixosConfigurations.installed-test.config.system.build.toplevel;
 
-          # Fast installer-specific guard: validate the thin installer helper
-          # used by the minimal ISO and ensure it remains importable.
-          installer-helper = pkgs.runCommandLocal "installer-helper-check" {
-            nativeBuildInputs = [ pkgs.python3 ];
-          } ''
-            module="${installerHelper}/share/nixpi-installer/nixpi_installer.py"
-            install_template="${installerHelper}/share/nixpi-installer/nixpi-install-module.nix.in"
-            grep -F 'def write_nixpi_install_artifacts(' "$module" >/dev/null
-            grep -F 'nix.settings.experimental-features = [ "nix-command" "flakes" ];' "$install_template" >/dev/null
-            grep -F '{ config, ... }:' "$install_template" >/dev/null
-            grep -F 'environment.systemPackages = [ ' "$install_template" >/dev/null
-            grep -F 'def ensure_import(' "$module" >/dev/null
-            grep -F 'nixpi.primaryUser = "@@username@@";' "$install_template" >/dev/null
-            PYTHONPYCACHEPREFIX="$TMPDIR/pycache" ${pkgs.python3}/bin/python3 -m py_compile "$module"
-            touch "$out"
-          '';
-
+          # Validate installer script syntax and that install module template is intact.
           installer-frontend = pkgs.runCommandLocal "installer-frontend-check" {
             nativeBuildInputs = [ pkgs.bash ];
           } ''
-            script="${installerFrontendSource}"
-            test_script="${installerFrontendTests}"
-            bash -n "$script"
-            ${pkgs.bash}/bin/bash "$test_script" "$script"
+            bash -n "${installerFrontendSource}"
+            install_template="${installerHelper}/share/nixpi-installer/nixpi-install-module.nix.in"
+            grep -F 'nix.settings.experimental-features = [ "nix-command" "flakes" ];' "$install_template" >/dev/null
+            grep -F '{ config, ... }:' "$install_template" >/dev/null
+            grep -F 'nixpi.primaryUser = "@@username@@";' "$install_template" >/dev/null
             touch "$out"
           '';
 
-          installer-backend = pkgs.runCommandLocal "installer-backend-check" {
-            nativeBuildInputs = [ pkgs.python3 ];
-          } ''
-            export NIXPI_INSTALLER_HELPER="${installerHelperSource}"
-            export NIXPI_INSTALLER_TEMPLATE="${./core/os/pkgs/installer/nixpi-install-module.nix.in}"
-            ${pkgs.python3}/bin/python3 "${installerHelperTests}"
-            touch "$out"
-          '';
+          disko-layouts = diskoLayoutsCheck;
 
           installer-generated-config = mkInstallerGeneratedConfig {
             hostName = "installer-vm";
@@ -334,6 +326,7 @@
           boot = bootCheck;
 
           nixos-smoke = mkCheckLane "nixos-smoke" [
+            { name = "disko-layouts"; path = diskoLayoutsCheck; }
             { name = "smoke-firstboot"; path = nixosTests.smoke-firstboot; }
             { name = "smoke-install-wizard"; path = nixosTests.smoke-install-wizard; }
             { name = "smoke-security"; path = nixosTests.smoke-security; }

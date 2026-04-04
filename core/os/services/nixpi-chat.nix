@@ -31,6 +31,12 @@ in
       default = "/usr/local/share/nixpi";
     };
 
+    workspaceDir = mkOption {
+      type = types.str;
+      default = "";
+      description = "Pi agent workspace root (NIXPI_DIR). Defaults to empty (agent falls back to ~/nixpi).";
+    };
+
     idleTimeoutSecs = mkOption {
       type = types.int;
       default = 1800;
@@ -59,6 +65,8 @@ in
         PI_DIR = toString config.nixpi-chat.agentStateDir;
         NIXPI_CHAT_IDLE_TIMEOUT = toString config.nixpi-chat.idleTimeoutSecs;
         NIXPI_CHAT_MAX_SESSIONS = toString config.nixpi-chat.maxSessions;
+      } // lib.optionalAttrs (config.nixpi-chat.workspaceDir != "") {
+        NIXPI_DIR = config.nixpi-chat.workspaceDir;
       };
       serviceConfig = {
         Environment = [

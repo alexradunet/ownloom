@@ -151,6 +151,19 @@ EOF
     nixpi.succeed("test -d /srv/nixpi/.git")
     nixpi.succeed("test -f /etc/nixpi/canonical-repo.json")
 
+    # Verify steps.json exists and key wizard steps are marked done.
+    steps_json = nixpi.succeed("cat " + home + "/.nixpi/wizard-state/steps.json")
+    print("=== steps.json ===")
+    print(steps_json)
+    print("=== End steps.json ===")
+    import json
+    steps = json.loads(steps_json)
+    for step in ["welcome", "network", "locale", "password", "appliance", "git", "services"]:
+        assert step in steps, f"steps.json missing step: {step}"
+        assert steps[step].get("status") == "done", (
+            f"steps.json step '{step}' not done: {steps[step]}"
+        )
+
     print("All nixpi-install-wizard tests passed!")
   '';
 }
