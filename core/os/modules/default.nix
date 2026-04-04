@@ -10,5 +10,6 @@
     ./tooling.nix
     ./shell.nix
     ./firstboot
+    ./ttyd.nix
   ];
 }
