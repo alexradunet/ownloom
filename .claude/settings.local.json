@@ -40,7 +40,10 @@
       "Bash(kill %1)",
       "Bash(gh api:*)",
       "mcp__exa__web_search_exa",
-      "mcp__exa__crawling_exa"
+      "mcp__exa__crawling_exa",
+      "Bash(ssh:*)",
+      "Bash(ssh-keygen -R \"[localhost]:2222\")",
+      "Bash(nc -z -w3 localhost 2222)"
     ]
   }
 }

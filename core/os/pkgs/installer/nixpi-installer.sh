@@ -171,6 +171,17 @@ validate_swap_size() {
   [[ "$size" =~ ^[1-9][0-9]*(MiB|GiB|MB|GB)$ ]]
 }
 
+# Convert user-friendly sizes (8GiB, 4096MiB) to disko-compatible format (8G, 4096M).
+# Disko's size field requires [0-9]+[KMGTP]? — the "iB" suffix is not accepted.
+disko_swap_size() {
+  local size="$1"
+  size="${size/GiB/G}"
+  size="${size/MiB/M}"
+  size="${size/GB/G}"
+  size="${size/MB/M}"
+  echo "$size"
+}
+
 choose_layout() {
   if [[ -n "$LAYOUT_MODE" ]]; then
     return
@@ -226,6 +237,7 @@ normalize_layout_inputs() {
         echo "Invalid --swap-size value: $SWAP_SIZE" >&2
         exit 1
       fi
+      SWAP_SIZE="$(disko_swap_size "$SWAP_SIZE")"
       ;;
     *)
       echo "Invalid --layout value: $LAYOUT_MODE" >&2
@@ -284,7 +296,7 @@ run_install() {
 
   echo "=== [3/5] Writing boot configuration ==="
   log_step "Generating NixOS hardware config"
-  nixos-generate-config --root "$ROOT_MOUNT" --no-filesystems
+  nixos-generate-config --root "$ROOT_MOUNT"
 
   log_step "Writing NixPI install module"
   local password_hash
@@ -304,12 +316,15 @@ run_install() {
     > "$ROOT_MOUNT/etc/nixos/nixpi-install.nix"
 
   log_step "Writing configuration.nix"
-  cat > "$ROOT_MOUNT/etc/nixos/configuration.nix" <<'EOF'
+  cat > "$ROOT_MOUNT/etc/nixos/configuration.nix" <<EOF
 { ... }: {
   imports = [
     ./hardware-configuration.nix
     ./nixpi-install.nix
   ];
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+  networking.hostName = "${HOSTNAME_VALUE}";
 }
 EOF
 
