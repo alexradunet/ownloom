@@ -127,33 +127,43 @@ function getSetupHtml(autoApply: boolean): string {
       const err = document.getElementById("err-keys");
       const log = document.getElementById("progress-log");
       const append = (text) => { log.textContent += text + "\\n"; log.scrollTop = log.scrollHeight; };
-      const res = await fetch("/api/setup/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ netbirdKey: "" }),
-      });
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\\n\\n");
-        buffer = lines.pop() ?? "";
-        for (const block of lines) {
-          const data = block.replace(/^data: /, "");
-          if (data === "SETUP_COMPLETE") {
-            window.location.href = "/";
-            return;
-          } else if (data.startsWith("SETUP_FAILED")) {
-            err.textContent = "Setup failed. Check the log above.";
-            append(data);
-            return;
-          } else {
-            append(data);
+      try {
+        const res = await fetch("/api/setup/apply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ netbirdKey: "" }),
+        });
+        if (!res.ok || !res.body) {
+          err.textContent = "Setup failed. Check the log above.";
+          append("SETUP_FAILED:request");
+          return;
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\\n\\n");
+          buffer = lines.pop() ?? "";
+          for (const block of lines) {
+            const data = block.replace(/^data: /, "");
+            if (data === "SETUP_COMPLETE") {
+              window.location.href = "/";
+              return;
+            } else if (data.startsWith("SETUP_FAILED")) {
+              err.textContent = "Setup failed. Check the log above.";
+              append(data);
+              return;
+            } else {
+              append(data);
+            }
           }
         }
+      } catch (error) {
+        err.textContent = "Setup failed. Check the log above.";
+        append("SETUP_FAILED:network");
       }
     });
   </script>`

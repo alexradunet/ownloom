@@ -85,7 +85,9 @@ in
         WorkingDirectory = toString config.nixpi-chat.agentStateDir;
         Restart = "on-failure";
         RestartSec = "10";
-        NoNewPrivileges = true;
+        # The setup wizard invokes nixpi-setup-apply through sudo -n.
+        # Keep the rest of the service hardening, but allow that privilege transition.
+        NoNewPrivileges = false;
         PrivateTmp = true;
         ProtectSystem = "strict";
         ProtectHome = false;

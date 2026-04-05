@@ -223,6 +223,7 @@ describe("setup gate integration", () => {
 				fetchCalls.push({ url, body: init?.body ?? "" });
 				const chunks = ["data: SETUP_COMPLETE\n\n"];
 				return {
+					ok: true,
 					body: {
 						getReader() {
 							let index = 0;
@@ -269,6 +270,7 @@ describe("setup gate integration", () => {
 				getElementById: (id: string) => (id === "err-keys" ? errNode : logNode),
 			},
 			fetch: async () => ({
+				ok: true,
 				body: {
 					getReader() {
 						let done = false;
@@ -290,5 +292,39 @@ describe("setup gate integration", () => {
 
 		expect(errNode.textContent).toBe("Setup failed. Check the log above.");
 		expect(logNode.textContent).toContain("SETUP_FAILED:1");
+	});
+
+	it("shows an error when auto-apply request fails before SSE starts", async () => {
+		fs.writeFileSync(prefillFile, "PREFILL_PASSWORD=test\n");
+		const res = await fetch(`http://127.0.0.1:${gatePort}/setup`);
+		const html = await res.text();
+		const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
+		const autoApplyScript = scripts.at(-1);
+		expect(autoApplyScript).toBeTruthy();
+
+		let loadHandler: (() => Promise<void>) | undefined;
+		const errNode = { textContent: "" };
+		const logNode = { textContent: "", scrollTop: 0, scrollHeight: 0 };
+		const context = vm.createContext({
+			window: {
+				location: { href: "/setup" },
+				addEventListener: (event: string, handler: () => Promise<void>) => {
+					if (event === "load") loadHandler = handler;
+				},
+			},
+			document: {
+				getElementById: (id: string) => (id === "err-keys" ? errNode : logNode),
+			},
+			fetch: async () => {
+				throw new Error("network down");
+			},
+			TextDecoder,
+		});
+
+		vm.runInContext(autoApplyScript ?? "", context);
+		await loadHandler?.();
+
+		expect(errNode.textContent).toBe("Setup failed. Check the log above.");
+		expect(logNode.textContent).toContain("SETUP_FAILED:network");
 	});
 });
