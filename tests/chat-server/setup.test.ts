@@ -206,6 +206,8 @@ describe("setup gate integration", () => {
 
 		let loadHandler: (() => Promise<void>) | undefined;
 		const fetchCalls: Array<{ url: string; body: string }> = [];
+		const errNode = { textContent: "" };
+		const logNode = { textContent: "", scrollTop: 0, scrollHeight: 0 };
 		const window = {
 			location: { href: "/setup" },
 			addEventListener: (event: string, handler: () => Promise<void>) => {
@@ -214,6 +216,9 @@ describe("setup gate integration", () => {
 		};
 		const context = vm.createContext({
 			window,
+			document: {
+				getElementById: (id: string) => (id === "err-keys" ? errNode : logNode),
+			},
 			fetch: async (url: string, init?: { body?: string }) => {
 				fetchCalls.push({ url, body: init?.body ?? "" });
 				const chunks = ["data: SETUP_COMPLETE\n\n"];
@@ -240,5 +245,50 @@ describe("setup gate integration", () => {
 
 		expect(fetchCalls).toEqual([{ url: "/api/setup/apply", body: '{"netbirdKey":""}' }]);
 		expect(window.location.href).toBe("/");
+	});
+
+	it("shows an error when auto-apply fails", async () => {
+		fs.writeFileSync(prefillFile, "PREFILL_PASSWORD=test\n");
+		const res = await fetch(`http://127.0.0.1:${gatePort}/setup`);
+		const html = await res.text();
+		const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
+		const autoApplyScript = scripts.at(-1);
+		expect(autoApplyScript).toBeTruthy();
+
+		let loadHandler: (() => Promise<void>) | undefined;
+		const errNode = { textContent: "" };
+		const logNode = { textContent: "", scrollTop: 0, scrollHeight: 0 };
+		const context = vm.createContext({
+			window: {
+				location: { href: "/setup" },
+				addEventListener: (event: string, handler: () => Promise<void>) => {
+					if (event === "load") loadHandler = handler;
+				},
+			},
+			document: {
+				getElementById: (id: string) => (id === "err-keys" ? errNode : logNode),
+			},
+			fetch: async () => ({
+				body: {
+					getReader() {
+						let done = false;
+						return {
+							async read() {
+								if (done) return { done: true, value: undefined };
+								done = true;
+								return { done: false, value: Buffer.from("data: SETUP_FAILED:1\n\n") };
+							},
+						};
+					},
+				},
+			}),
+			TextDecoder,
+		});
+
+		vm.runInContext(autoApplyScript ?? "", context);
+		await loadHandler?.();
+
+		expect(errNode.textContent).toBe("Setup failed. Check the log above.");
+		expect(logNode.textContent).toContain("SETUP_FAILED:1");
 	});
 });

@@ -124,6 +124,9 @@ function getSetupHtml(autoApply: boolean): string {
 		? `
   <script>
     window.addEventListener("load", async () => {
+      const err = document.getElementById("err-keys");
+      const log = document.getElementById("progress-log");
+      const append = (text) => { log.textContent += text + "\\n"; log.scrollTop = log.scrollHeight; };
       const res = await fetch("/api/setup/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -143,6 +146,12 @@ function getSetupHtml(autoApply: boolean): string {
           if (data === "SETUP_COMPLETE") {
             window.location.href = "/";
             return;
+          } else if (data.startsWith("SETUP_FAILED")) {
+            err.textContent = "Setup failed. Check the log above.";
+            append(data);
+            return;
+          } else {
+            append(data);
           }
         }
       }
