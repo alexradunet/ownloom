@@ -313,6 +313,13 @@
             wrapped="${setupApplyPackage}/bin/nixpi-setup-apply"
             ! grep -E '/jq-[^/]+/bin' "$wrapped"
             ! grep -E '/git-[^/]+/bin' "$wrapped"
+            ! grep -F 'SETUP_NAME is required' "${./core/scripts/nixpi-setup-apply.sh}"
+            ! grep -F 'SETUP_EMAIL is required' "${./core/scripts/nixpi-setup-apply.sh}"
+            ! grep -F 'SETUP_USERNAME is required' "${./core/scripts/nixpi-setup-apply.sh}"
+            ! grep -F 'SETUP_PASSWORD is required' "${./core/scripts/nixpi-setup-apply.sh}"
+            ! grep -F 'git clone' "${./core/scripts/nixpi-setup-apply.sh}"
+            ! grep -F 'nixos-rebuild switch' "${./core/scripts/nixpi-setup-apply.sh}"
+            ! grep -F 'jq --arg key' "${./core/scripts/nixpi-setup-apply.sh}"
             touch "$out"
           '';
 
