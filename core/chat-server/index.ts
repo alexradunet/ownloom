@@ -2,7 +2,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { RpcClientManager } from "./rpc-client-manager.js";
+import { PiSessionBridge } from "./pi-session.js";
 
 export interface ChatServerOptions {
 	/** Path to /usr/local/share/nixpi (the deployed app share dir). */
@@ -14,11 +14,11 @@ export interface ChatServerOptions {
 }
 
 export function createChatServer(opts: ChatServerOptions): http.Server {
-	const rpc = new RpcClientManager({ nixpiShareDir: opts.nixpiShareDir, cwd: opts.agentCwd });
+	const piSession = new PiSessionBridge({ cwd: opts.agentCwd });
 
-	// Pre-spawn the Pi subprocess so first request latency stays low.
-	rpc.start().catch((err: unknown) => {
-		console.error("Failed to start Pi RPC process:", err);
+	// Pre-create the in-process Pi SDK session so first request latency stays low.
+	piSession.start().catch((err: unknown) => {
+		console.error("Failed to start Pi SDK session:", err);
 	});
 
 	const server = http.createServer(async (req, res) => {
@@ -49,7 +49,7 @@ export function createChatServer(opts: ChatServerOptions): http.Server {
 			});
 
 			try {
-				for await (const event of rpc.sendMessage(parsed.message)) {
+				for await (const event of piSession.sendMessage(parsed.message)) {
 					res.write(`${JSON.stringify(event)}\n`);
 				}
 			} catch (err) {
@@ -61,7 +61,7 @@ export function createChatServer(opts: ChatServerOptions): http.Server {
 
 		// Session id in the URL is tolerated for compatibility but ignored.
 		if (req.method === "DELETE" && /^\/chat\/[^/]+$/.test(url.pathname)) {
-			await rpc.reset();
+			await piSession.reset();
 			res.writeHead(204).end();
 			return;
 		}
@@ -100,7 +100,7 @@ export function createChatServer(opts: ChatServerOptions): http.Server {
 	});
 
 	server.on("close", () => {
-		rpc.stop().catch(() => {});
+		piSession.stop().catch(() => {});
 	});
 
 	return server;

@@ -4,9 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-// Mock RpcClientManager so the server test never spawns a real Pi process.
-vi.mock("../../core/chat-server/rpc-client-manager.js", () => ({
-	RpcClientManager: vi.fn().mockImplementation(function () {
+// Mock PiSessionBridge so the server test never instantiates a real Pi SDK session.
+vi.mock("../../core/chat-server/pi-session.js", () => ({
+	PiSessionBridge: vi.fn().mockImplementation(function () {
 		return {
 			start: vi.fn().mockResolvedValue(undefined),
 			stop: vi.fn().mockResolvedValue(undefined),
