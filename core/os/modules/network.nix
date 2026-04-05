@@ -100,6 +100,9 @@ in
       systemd.services.sshd.unitConfig = lib.mkIf (!config.nixpi.bootstrap.keepSshAfterSetup) {
         ConditionPathExists = "!${systemReadyFile}";
       };
+      systemd.sockets.sshd.unitConfig = lib.mkIf (!config.nixpi.bootstrap.keepSshAfterSetup) {
+        ConditionPathExists = "!${systemReadyFile}";
+      };
 
       networking.firewall.enable = true;
       networking.firewall.allowedTCPPorts = [ 22 ];

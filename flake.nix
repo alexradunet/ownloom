@@ -68,6 +68,7 @@
             ./core/os/modules/runtime.nix
             ./core/os/modules/collab.nix
             ./core/os/modules/tooling.nix
+            ./core/os/modules/setup-apply.nix
           ];
         };
 
@@ -214,7 +215,7 @@
           # Using pkgsUnfree so tests can use packages that require allowUnfree
           nixosTests = import ./tests/nixos {
             pkgs = pkgsUnfree;
-            inherit lib piAgent appPackage self installerHelper;
+            inherit lib piAgent appPackage self installerHelper setupApplyPackage;
           };
           bootCheck = pkgsUnfree.testers.runNixOSTest {
             name = "boot";

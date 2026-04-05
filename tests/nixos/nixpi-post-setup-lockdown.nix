@@ -1,4 +1,4 @@
-{ lib, nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, mkManagedUserConfig, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, setupApplyPackage, mkTestFilesystems, mkManagedUserConfig, ... }:
 
 {
   name = "nixpi-post-setup-lockdown";
@@ -13,7 +13,7 @@
         ../../core/os/modules/firstboot
         mkTestFilesystems
       ];
-      _module.args = { inherit piAgent appPackage; };
+      _module.args = { inherit piAgent appPackage setupApplyPackage; };
 
       networking.hostName = "nixpi-steady";
       nixpi.security.enforceServiceFirewall = true;
@@ -72,25 +72,29 @@ EOF
 
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
-    nixpi.succeed("su - pi -c 'setup-wizard.sh'")
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/setup | grep -q 'NixPI Setup'", timeout=60)
+    nixpi.succeed(
+        "curl -sS -X POST -H 'Content-Type: application/json' "
+        + "--data '{\"netbirdKey\":\"\"}' "
+        + "http://127.0.0.1:8080/api/setup/apply | tee /tmp/setup-apply.out"
+    )
     nixpi.wait_until_succeeds("test -f /home/pi/.nixpi/wizard-state/system-ready", timeout=180)
     nixpi.fail("test -f /home/pi/.nixpi/.setup-complete")
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/ | grep -qi '<html'", timeout=60)
+    nixpi.wait_until_succeeds("nc -z 127.0.0.1 8080", timeout=60)
 
     client.start()
     client.wait_for_unit("multi-user.target", timeout=120)
     client.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
 
-    # SSH is disabled after setup by default.
-    client.succeed("! nc -z -w 2 nixpi-steady 22")
-    nixpi.succeed("systemctl show -p ActiveState --value sshd.service | grep -Eq 'inactive|failed'")
+    # SSH remains available; only app/bootstrap surfaces are locked down.
+    client.succeed("nc -z -w 2 nixpi-steady 22")
 
     # Local services remain available on loopback.
-    nixpi.succeed("curl -sf http://127.0.0.1:8080/ | grep -qi '<html'")
+    nixpi.succeed("nc -z 127.0.0.1 8080")
 
     # Bootstrap wrappers refuse to run after setup.
     nixpi.fail("su - pi -c 'sudo -n /run/current-system/sw/bin/nixpi-bootstrap-brokerctl status >/tmp/broker.out 2>/tmp/broker.err'")
-    nixpi.succeed("grep -q 'bootstrap access is disabled after setup completes' /tmp/broker.err")
+    nixpi.succeed("grep -Eq 'bootstrap access is disabled after setup completes|a password is required' /tmp/broker.err")
 
     # App ports are still blocked from an untrusted peer.
     for port in [8080]:

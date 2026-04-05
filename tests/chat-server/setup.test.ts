@@ -108,7 +108,7 @@ describe("setup gate integration", () => {
 		const sudoScript = path.join(scriptsDir, "sudo");
 		fs.writeFileSync(
 			applyScript,
-			"#!/usr/bin/env bash\nset -euo pipefail\necho \"netbird=${SETUP_NETBIRD_KEY:-}\" \n",
+			"#!/usr/bin/env bash\nset -euo pipefail\necho \"netbird=${SETUP_NETBIRD_KEY:-}\" \necho \"primary=${NIXPI_PRIMARY_USER:-}\" \n",
 		);
 		fs.writeFileSync(
 			sudoScript,
@@ -120,6 +120,7 @@ describe("setup gate integration", () => {
 		originalPath = process.env.PATH ?? "";
 		process.env.PATH = `${scriptsDir}:${originalPath}`;
 		process.env.NIXPI_SETUP_SUDO = sudoScript;
+		process.env.NIXPI_PRIMARY_USER = "wizarduser";
 
 		const { createChatServer } = await import("../../core/chat-server/index.js");
 		gatelessServer = createChatServer({
@@ -144,6 +145,7 @@ describe("setup gate integration", () => {
 		gatelessServer.close();
 		process.env.PATH = originalPath;
 		delete process.env.NIXPI_SETUP_SUDO;
+		delete process.env.NIXPI_PRIMARY_USER;
 		fs.rmSync(scriptsDir, { recursive: true, force: true });
 	});
 
@@ -195,6 +197,7 @@ describe("setup gate integration", () => {
 		expect(res.status).toBe(200);
 		const body = await res.text();
 		expect(body).toContain("data: netbird=");
+		expect(body).toContain("data: primary=wizarduser");
 		expect(body).toContain("data: SETUP_COMPLETE");
 	});
 

@@ -1,4 +1,4 @@
-{ pkgs, lib, piAgent, appPackage, self, installerHelper ? null }:
+{ pkgs, lib, piAgent, appPackage, self, installerHelper ? null, setupApplyPackage ? null }:
 
 let
   testLib = import ./lib.nix { inherit pkgs lib self; };
@@ -6,7 +6,7 @@ let
   # self is forwarded independently (not from testLib) so test node modules
   # can reference self.nixosModules.* via _module.args.
   sharedArgs = {
-    inherit piAgent appPackage self;
+    inherit piAgent appPackage self setupApplyPackage;
     inherit (testLib)
       nixPiModules
       nixPiModulesNoShell

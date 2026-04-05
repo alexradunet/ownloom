@@ -1,4 +1,4 @@
-{ nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
+{ nixPiModulesNoShell, piAgent, appPackage, setupApplyPackage, mkTestFilesystems, ... }:
 
 {
   name = "nixpi-chat";
@@ -8,7 +8,7 @@
     homeDir = "/home/${username}";
   in {
     imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
-    _module.args = { inherit piAgent appPackage; };
+    _module.args = { inherit piAgent appPackage setupApplyPackage; };
     nixpi.primaryUser = username;
 
     virtualisation.diskSize = 10240;

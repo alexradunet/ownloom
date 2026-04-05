@@ -1,4 +1,4 @@
-{ nixPiModules, mkTestFilesystems, piAgent, appPackage, ... }:
+{ nixPiModules, mkTestFilesystems, piAgent, appPackage, setupApplyPackage, ... }:
 
 {
   name = "nixpi-broker";
@@ -9,7 +9,7 @@
         ../../core/os/modules/broker.nix
         mkTestFilesystems
       ];
-      _module.args = { inherit piAgent appPackage; };
+      _module.args = { inherit piAgent appPackage setupApplyPackage; };
 
       nixpi.primaryUser = "maintainer";
       nixpi.agent.autonomy = "maintain";
@@ -33,7 +33,7 @@
         ../../core/os/modules/broker.nix
         mkTestFilesystems
       ];
-      _module.args = { inherit piAgent appPackage; };
+      _module.args = { inherit piAgent appPackage setupApplyPackage; };
 
       nixpi.primaryUser = "observer";
       nixpi.agent.autonomy = "observe";

@@ -1,4 +1,4 @@
-{ nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
+{ nixPiModulesNoShell, piAgent, appPackage, setupApplyPackage, mkTestFilesystems, ... }:
 
 let
   mkNode = { hostName, username, prefill ? false }: { pkgs, ... }: let
@@ -8,7 +8,7 @@ let
       ../../core/os/modules/firstboot
       mkTestFilesystems
     ];
-    _module.args = { inherit piAgent appPackage; };
+    _module.args = { inherit piAgent appPackage setupApplyPackage; };
 
     nixpi.primaryUser = username;
     nixpi.security.enforceServiceFirewall = true;
@@ -99,7 +99,12 @@ in
 
     steady.start()
     steady.wait_for_unit("multi-user.target", timeout=300)
-    steady.succeed("su - pi -c 'setup-wizard.sh'")
+    steady.wait_until_succeeds("curl -sf http://127.0.0.1:8080/setup | grep -q 'NixPI Setup'", timeout=60)
+    steady.succeed(
+        "curl -sS -X POST -H 'Content-Type: application/json' "
+        + "--data '{\"netbirdKey\":\"\"}' "
+        + "http://127.0.0.1:8080/api/setup/apply | tee /tmp/setup-apply.out"
+    )
     steady.wait_until_succeeds("test -f /home/pi/.nixpi/wizard-state/system-ready", timeout=120)
     steady.wait_for_unit("fail2ban.service", timeout=60)
 
@@ -109,10 +114,10 @@ in
 
     client.succeed("nc -z nixpi-bootstrap 22")
 
-    client.succeed("! nc -z -w 2 nixpi-steady 22")
+    client.succeed("nc -z -w 2 nixpi-steady 22")
 
-    steady.wait_until_succeeds("curl -sf http://127.0.0.1 | grep -q 'NixPI Home'", timeout=60)
-    steady.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'", timeout=60)
+    steady.wait_until_succeeds("nc -z 127.0.0.1 80", timeout=60)
+    steady.wait_until_succeeds("nc -z 127.0.0.1 8080", timeout=60)
 
     steady.succeed("fail2ban-client status sshd | grep -q 'Status for the jail: sshd'")
 

@@ -1,11 +1,5 @@
-{ lib, nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, setupApplyPackage, mkTestFilesystems, ... }:
 
-let
-  repoSource = lib.cleanSource ../..;
-  bootstrapRepoDir = "/var/lib/nixpi-bootstrap";
-  bootstrapOriginDir = "${bootstrapRepoDir}/origin.git";
-  bootstrapRepoUrl = "file://${bootstrapOriginDir}";
-in
 {
   name = "nixpi-e2e";
 
@@ -18,7 +12,7 @@ in
         ../../core/os/modules/firstboot
         mkTestFilesystems 
       ];
-      _module.args = { inherit piAgent appPackage; };
+      _module.args = { inherit piAgent appPackage setupApplyPackage; };
       nixpi.primaryUser = username;
 
       virtualisation.diskSize = 20480;
@@ -50,21 +44,8 @@ in
       nixpi.primaryUser = "${username}";
     }
     EOF
-        rm -rf ${bootstrapRepoDir}
-        mkdir -p ${bootstrapRepoDir}/worktree
-        cp -R ${repoSource}/. ${bootstrapRepoDir}/worktree/
-        chmod -R u+w ${bootstrapRepoDir}/worktree
-        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree init --initial-branch main
-        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree config user.name "NixPI Test"
-        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree config user.email "nixpi-tests@example.invalid"
-        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree add .
-        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree commit -m "bootstrap source"
-        ${pkgs.git}/bin/git init --bare --initial-branch main ${bootstrapOriginDir}
-        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree remote add origin ${bootstrapOriginDir}
-        ${pkgs.git}/bin/git -C ${bootstrapRepoDir}/worktree push ${bootstrapOriginDir} main
         cat > ${homeDir}/.nixpi/prefill.env << 'EOF'
-    PREFILL_USERNAME=e2etest
-    NIXPI_BOOTSTRAP_REPO=${bootstrapRepoUrl}
+    PREFILL_PRIMARY_PASSWORD=testpass123
     EOF
         chown -R ${username}:${username} ${homeDir}/.nixpi
         chmod 755 ${homeDir}/.nixpi
@@ -102,32 +83,39 @@ in
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
     nixpi.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/setup | grep -q 'NixPI Setup'", timeout=60)
     
     client.start()
     client.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
     
     client.succeed("ping -c 3 pi")
 
-    nixpi.succeed("su - pi -c 'setup-wizard.sh'")
+    apply_output = nixpi.succeed(
+        "curl -sS -X POST -H 'Content-Type: application/json' "
+        + "--data '{\"netbirdKey\":\"\"}' "
+        + "http://127.0.0.1:8080/api/setup/apply | tee /tmp/setup-apply.out"
+    )
+    print(apply_output)
+    assert "SETUP_FAILED" not in apply_output, apply_output
     nixpi.wait_until_succeeds("test -f " + home + "/.nixpi/wizard-state/system-ready", timeout=180)
     nixpi.fail("test -f " + home + "/.nixpi/.setup-complete")
 
-    wizard_log = nixpi.succeed("cat " + home + "/.nixpi/wizard.log")
-    assert "setup complete" in wizard_log.lower(), "Wizard log missing setup completion marker"
-
-    client.succeed("! nc -z -w 2 pi 22")
-    nixpi.succeed("systemctl show -p ActiveState --value sshd.service | grep -Eq 'inactive|failed'")
+    client.succeed("nc -z -w 2 pi 22")
 
     services = ["netbird", "NetworkManager"]
     for svc in services:
         nixpi.succeed("systemctl is-active " + svc + ".service")
 
-    nixpi.succeed("test -d /srv/nixpi/.git")
-    nixpi.fail("test -e " + home + "/nixpi")
+    nixpi.fail("test -e " + home + "/nixpi/.git")
+    nixpi.fail("test -e " + home + "/nixpi/flake.nix")
     nixpi.succeed("test -d " + home + "/.nixpi")
     nixpi.succeed("test -d " + home + "/.pi")
     nixpi.succeed("test ! -L " + home + "/.pi")
     nixpi.succeed("test -d /usr/local/share/nixpi")
+    nixpi.fail("test -e /etc/nixos/flake.nix")
+    nixpi.fail("command -v nixpi-bootstrap-ensure-repo-target")
+    nixpi.fail("command -v nixpi-bootstrap-prepare-repo")
+    nixpi.fail("command -v nixpi-bootstrap-nixos-rebuild-switch")
     
     groups = nixpi.succeed("groups " + username).strip()
     assert "wheel" in groups, "User not in wheel group: " + groups
@@ -149,10 +137,10 @@ in
     print("All E2E tests passed!")
     print("=" * 60)
     print("Verified:")
-    print("  - Firstboot logged unattended setup completion")
-    print("  - SSH is disabled from an untrusted peer after setup")
+    print("  - Web setup apply completed")
+    print("  - SSH remains reachable on the LAN after setup")
     print("  - App ports stay closed without wt0")
-    print("  - Firstboot automation completes")
+    print("  - Setup API completes")
     print("  - All core services start correctly")
     print("  - Network connectivity between nodes")
     print("  - File system and user setup correct")

@@ -94,6 +94,7 @@ export async function handleSetupApply(
 	const child = spawn(opts.applyScript, [], {
 		env: {
 			PATH: process.env.PATH ?? "",
+			NIXPI_PRIMARY_USER: process.env.NIXPI_PRIMARY_USER ?? "",
 			SETUP_NETBIRD_KEY: netbirdKey,
 		},
 	});
