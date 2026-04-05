@@ -17,6 +17,7 @@
       pkgs = nixpkgs.legacyPackages.${system};
       lib = nixpkgs.lib;
       nixpiSource = lib.cleanSource ./.;
+      bootstrapPackage = pkgs.callPackage ./core/os/pkgs/bootstrap {};
       installerHelper = pkgs.callPackage ./core/os/pkgs/installer {
         inherit nixpiSource piAgent appPackage setupApplyPackage self;
       };
@@ -34,6 +35,7 @@
       packages.${system} = {
         pi = piAgent;
         app = appPackage;
+        nixpi-bootstrap-vps = bootstrapPackage;
         nixpi-installer = installerHelper;
         nixpi-setup-apply = setupApplyPackage;
         installerIso = self.nixosConfigurations.installer-iso.config.system.build.isoImage;
@@ -101,6 +103,8 @@
           }
         ];
       };
+
+      nixosConfigurations.nixpi = self.nixosConfigurations.vps;
 
       # Compatibility alias for downstream code that still expects the legacy desktop output name.
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
@@ -173,6 +177,7 @@
       checks.${system} =
         let
           installerFrontendSource = ./core/os/pkgs/installer/nixpi-installer.sh;
+          bootstrapScriptSource = ./core/os/pkgs/bootstrap/nixpi-bootstrap-vps.sh;
           mkInstallerGeneratedConfig = {
             rootDevice,
             bootDevice,
@@ -325,6 +330,15 @@
             ! grep -F 'git clone' "${./core/scripts/nixpi-setup-apply.sh}"
             ! grep -F 'nixos-rebuild switch' "${./core/scripts/nixpi-setup-apply.sh}"
             ! grep -F 'jq --arg key' "${./core/scripts/nixpi-setup-apply.sh}"
+            touch "$out"
+          '';
+
+          bootstrap-script = pkgs.runCommandLocal "bootstrap-script-check" { } ''
+            test -x "${bootstrapPackage}/bin/nixpi-bootstrap-vps"
+            test -x "${bootstrapScriptSource}"
+            grep -F '/srv/nixpi' "${bootstrapScriptSource}" >/dev/null
+            grep -F 'nixos-rebuild switch --flake /srv/nixpi#nixpi' "${bootstrapScriptSource}" >/dev/null
+            ! test -e ${./.}/tools/run-installer-iso.sh
             touch "$out"
           '';
 

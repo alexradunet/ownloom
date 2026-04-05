@@ -2,16 +2,18 @@
 
 system    := "x86_64-linux"
 flake     := "."
-host      := "desktop"
+host      := "nixpi"
 output    := "result"
-ovmf      := "/usr/share/edk2/ovmf/OVMF_CODE.fd"
-ovmf_vars := "/usr/share/edk2/ovmf/OVMF_VARS.fd"
 nix_opts  := "--option substituters https://cache.nixos.org/"
 nix_vm_lane_opts := "--option substituters https://cache.nixos.org/ --max-jobs 1"
 
 # Build NixPI TypeScript app derivation only
 build:
     nix build {{ flake }}#app
+
+# Bootstrap a NixOS-capable VPS into the canonical /srv/nixpi checkout.
+bootstrap-vps:
+    nix run {{ flake }}#nixpi-bootstrap-vps
 
 # Apply current flake config to the running system (local dev iteration)
 switch:
@@ -29,50 +31,26 @@ rollback:
 iso:
     nix build {{ flake }}#installerIso
 
-# Boot the minimal installer ISO in QEMU for full install-flow testing.
-# This opens the standard QEMU graphical window.
-# Override with:
-#   NIXPI_INSTALL_VM_DISK_PATH=$HOME/custom.qcow2
-#   NIXPI_INSTALL_VM_DISK_SIZE=32G
-#   NIXPI_INSTALL_VM_MEMORY_MB=8192
-#   NIXPI_INSTALL_VM_CPUS=4
-#   NIXPI_INSTALL_VM_SSH_PORT=2222
-vm-install-iso: iso
-    NIXPI_INSTALL_VM_OVMF_CODE={{ ovmf }} NIXPI_INSTALL_VM_OVMF_VARS_TEMPLATE={{ ovmf_vars }} bash tools/run-installer-iso.sh
-
-# SSH into the installer VM or freshly installed system
-vm-ssh:
-    #!/usr/bin/env bash
-    ssh_user="${NIXPI_INSTALL_VM_SSH_USER:-human}"
-    ssh_port="${NIXPI_INSTALL_VM_SSH_PORT:-2222}"
-    disk_path="${NIXPI_INSTALL_VM_DISK_PATH:-$HOME/nixpi-install-vm.qcow2}"
-    disk_name="$(basename "$disk_path")"
-    if ! pgrep -f "[q]emu-system-x86_64.*${disk_name}" > /dev/null; then
-        echo "No installer VM running. Start with: just vm-install-iso"
-        exit 1
-    fi
-    key_file="$(mktemp)"
-    trap 'rm -f "$key_file"' EXIT
-    install -m 600 tools/dev-key "$key_file"
-    echo "Connecting to VM using committed dev key..."
-    ssh -i "$key_file" \
-        -o StrictHostKeyChecking=no \
-        -o UserKnownHostsFile=/dev/null \
-        -p "${ssh_port}" "${ssh_user}@localhost"
-
-# Remove build results and VM disk
+# Remove build results
 clean:
     rm -f result result-*
-    rm -f /tmp/nixpi-vm-disk.qcow2 /tmp/nixpi-ovmf-vars.fd
 
 # Install host dependencies (Fedora build host; NixOS devs use nix develop)
 deps:
-    sudo dnf install -y just qemu-system-x86 edk2-ovmf
+    sudo dnf install -y just
 
 # Fast config check: build the NixOS closure locally.
 # Catches locale errors, bad module references, and evaluation failures
 check-config:
     nix {{ nix_opts }} build {{ flake }}#checks.{{ system }}.config --no-link
+
+# Fast bootstrap packaging contract check.
+check-bootstrap-script:
+    nix {{ nix_opts }} build {{ flake }}#checks.{{ system }}.bootstrap-script --no-link
+
+# PR-oriented headless VPS smoke lane.
+check-headless-smoke:
+    nix {{ nix_vm_lane_opts }} build {{ flake }}#checks.{{ system }}.nixpi-vps-bootstrap --no-link -L
 
 # Fast installer helper regression tests without booting the ISO.
 check-installer:
