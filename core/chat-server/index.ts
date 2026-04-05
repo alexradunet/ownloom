@@ -3,7 +3,7 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ChatSessionManager, type ChatSessionManagerOptions } from "./session.js";
-import { handleSetupApply, serveSetupPage, shouldRedirectToSetup } from "./setup.js";
+import { handleSetupApply, serveSetupPage, shouldAutoApply, shouldRedirectToSetup } from "./setup.js";
 
 export interface ChatServerOptions extends ChatSessionManagerOptions {
 	/** Directory containing the pre-built frontend (index.html + assets). */
@@ -12,6 +12,8 @@ export interface ChatServerOptions extends ChatSessionManagerOptions {
 	systemReadyFile: string;
 	/** Path to the setup apply script. */
 	applyScript: string;
+	/** Optional path to a wizard prefill file that enables auto-apply. */
+	prefillFile: string;
 }
 
 export function createChatServer(opts: ChatServerOptions): http.Server {
@@ -26,7 +28,9 @@ export function createChatServer(opts: ChatServerOptions): http.Server {
 		}
 
 		if (req.method === "GET" && url.pathname === "/setup") {
-			serveSetupPage(res);
+			serveSetupPage(res, {
+				autoApply: shouldAutoApply(opts.prefillFile, opts.systemReadyFile),
+			});
 			return;
 		}
 
@@ -137,6 +141,7 @@ if (isMainModule(process.argv[1], import.meta.url)) {
 	const systemReadyFile =
 		process.env.NIXPI_SYSTEM_READY_FILE ?? `/home/${primaryUser}/.nixpi/wizard-state/system-ready`;
 	const applyScript = process.env.NIXPI_SETUP_APPLY_SCRIPT ?? "/run/current-system/sw/bin/nixpi-setup-apply";
+	const prefillFile = process.env.NIXPI_SETUP_PREFILL_FILE ?? `${piDir}/prefill.env`;
 	const chatSessionsDir = `${piDir}/chat-sessions`;
 	const staticDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "frontend/dist");
 
@@ -148,6 +153,7 @@ if (isMainModule(process.argv[1], import.meta.url)) {
 		staticDir,
 		systemReadyFile,
 		applyScript,
+		prefillFile,
 	});
 
 	server.listen(port, "127.0.0.1", () => {

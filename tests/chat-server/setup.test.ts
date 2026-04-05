@@ -3,7 +3,7 @@ import type http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { isSystemReady, shouldRedirectToSetup } from "../../core/chat-server/setup.js";
+import { hasWizardPrefill, isSystemReady, shouldAutoApply, shouldRedirectToSetup } from "../../core/chat-server/setup.js";
 
 let tmpDir: string;
 let systemReadyFile: string;
@@ -25,6 +25,31 @@ describe("isSystemReady", () => {
 	it("returns true when system-ready file exists", () => {
 		fs.writeFileSync(systemReadyFile, "");
 		expect(isSystemReady(systemReadyFile)).toBe(true);
+	});
+});
+
+describe("prefill helpers", () => {
+	it("returns false when wizard prefill file is absent", () => {
+		expect(hasWizardPrefill(path.join(tmpDir, "prefill.env"))).toBe(false);
+	});
+
+	it("returns true when wizard prefill file exists", () => {
+		const prefillFile = path.join(tmpDir, "prefill.env");
+		fs.writeFileSync(prefillFile, "PREFILL_PASSWORD=test\n");
+		expect(hasWizardPrefill(prefillFile)).toBe(true);
+	});
+
+	it("returns true for auto-apply when prefill exists and system is not ready", () => {
+		const prefillFile = path.join(tmpDir, "prefill.env");
+		fs.writeFileSync(prefillFile, "PREFILL_PASSWORD=test\n");
+		expect(shouldAutoApply(prefillFile, systemReadyFile)).toBe(true);
+	});
+
+	it("returns false for auto-apply when system is already ready", () => {
+		const prefillFile = path.join(tmpDir, "prefill.env");
+		fs.writeFileSync(prefillFile, "PREFILL_PASSWORD=test\n");
+		fs.writeFileSync(systemReadyFile, "");
+		expect(shouldAutoApply(prefillFile, systemReadyFile)).toBe(false);
 	});
 });
 
@@ -71,8 +96,29 @@ describe("shouldRedirectToSetup", () => {
 describe("setup gate integration", () => {
 	let gatelessServer: http.Server;
 	let gatePort: number;
+	let applyScript: string;
+	let prefillFile: string;
+	let scriptsDir: string;
+	let originalPath: string;
 
 	beforeAll(async () => {
+		scriptsDir = fs.mkdtempSync(path.join(os.tmpdir(), "nixpi-setup-script-"));
+		applyScript = path.join(scriptsDir, "apply.sh");
+		const sudoScript = path.join(scriptsDir, "sudo");
+		fs.writeFileSync(
+			applyScript,
+			"#!/usr/bin/env bash\nset -euo pipefail\necho \"netbird=${SETUP_NETBIRD_KEY:-}\" \n",
+		);
+		fs.writeFileSync(
+			sudoScript,
+			"#!/usr/bin/env bash\nset -euo pipefail\nif [[ \"${1:-}\" == '-n' ]]; then shift; fi\nexec \"$@\"\n",
+		);
+		fs.chmodSync(applyScript, 0o755);
+		fs.chmodSync(sudoScript, 0o755);
+		prefillFile = path.join(scriptsDir, "prefill.env");
+		originalPath = process.env.PATH ?? "";
+		process.env.PATH = `${scriptsDir}:${originalPath}`;
+
 		const { createChatServer } = await import("../../core/chat-server/index.js");
 		gatelessServer = createChatServer({
 			nixpiShareDir: "/mock/share",
@@ -81,7 +127,8 @@ describe("setup gate integration", () => {
 			maxSessions: 4,
 			staticDir: "/tmp/nonexistent",
 			systemReadyFile: "/tmp/this-file-does-not-exist-abc123",
-			applyScript: "/bin/false",
+			applyScript,
+			prefillFile,
 		});
 		await new Promise<void>((resolve) => {
 			gatelessServer.listen(0, "127.0.0.1", () => {
@@ -93,6 +140,8 @@ describe("setup gate integration", () => {
 
 	afterAll(() => {
 		gatelessServer.close();
+		process.env.PATH = originalPath;
+		fs.rmSync(scriptsDir, { recursive: true, force: true });
 	});
 
 	it("redirects / to /setup when system-ready is absent", async () => {
@@ -107,6 +156,8 @@ describe("setup gate integration", () => {
 		expect(res.headers.get("content-type")).toContain("text/html");
 		const html = await res.text();
 		expect(html).toContain("NixPI Setup");
+		expect(html).toContain("Netbird");
+		expect(html).toContain("pi /login");
 	});
 
 	it("does not redirect /terminal when system-ready is absent", async () => {
@@ -114,12 +165,32 @@ describe("setup gate integration", () => {
 		expect(res.status).not.toBe(302);
 	});
 
-	it("returns 400 for /api/setup/apply with missing fields", async () => {
+	it("returns 400 for /api/setup/apply with invalid JSON", async () => {
 		const res = await fetch(`http://127.0.0.1:${gatePort}/api/setup/apply`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ name: "Test" }),
+			body: "{",
 		});
 		expect(res.status).toBe(400);
+	});
+
+	it("accepts an empty netbirdKey payload", async () => {
+		const res = await fetch(`http://127.0.0.1:${gatePort}/api/setup/apply`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ netbirdKey: "" }),
+		});
+		expect(res.status).toBe(200);
+		const body = await res.text();
+		expect(body).toContain("data: netbird=");
+		expect(body).toContain("data: SETUP_COMPLETE");
+	});
+
+	it("renders auto-apply setup page when a prefill marker file exists", async () => {
+		fs.writeFileSync(prefillFile, "PREFILL_PASSWORD=test\n");
+		const res = await fetch(`http://127.0.0.1:${gatePort}/setup`);
+		const html = await res.text();
+		expect(html).toContain('fetch("/api/setup/apply"');
+		expect(html).toContain('JSON.stringify({ netbirdKey: "" })');
 	});
 });
