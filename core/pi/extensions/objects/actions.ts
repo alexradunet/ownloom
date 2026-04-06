@@ -9,6 +9,14 @@ import { parseFrontmatter, stringifyFrontmatter } from "../../../lib/frontmatter
 import { errorResult, nowIso, textToolResult, truncate } from "../../../lib/utils.js";
 import { defaultObjectBody, mergeObjectState, readMemoryRecord, writeMemoryRecord } from "./memory.js";
 
+type ObjectWriteParams = {
+	type: string;
+	slug: string;
+	fields?: Record<string, unknown>;
+	path?: string;
+	body?: string;
+};
+
 /** Parse a `type/slug` reference string into its components. Throws if format is invalid. */
 export function parseRef(ref: string): { type: string; slug: string } {
 	const slash = ref.indexOf("/");
@@ -22,26 +30,63 @@ export function walkMdFiles(dir: string): string[] {
 	return fs.globSync("**/*.md", { cwd: dir }).map((f) => path.join(dir, f));
 }
 
-/** Create a new markdown object. */
-export function createObject(params: {
-	type: string;
-	slug: string;
-	fields?: Record<string, unknown>;
-	path?: string;
-	body?: string;
-}) {
-	const workspaceDir = getNixPiDir();
-	let filepath: string;
+function objectsDir(): string {
+	return path.join(getNixPiDir(), "Objects");
+}
+
+function resolveObjectPath(slug: string, filePath?: string): string {
+	return filePath ? safePath(os.homedir(), filePath) : safePath(objectsDir(), `${slug}.md`);
+}
+
+function tryResolveObjectPath(slug: string, filePath: string | undefined, invalidMessage: string) {
 	try {
-		filepath = params.path
-			? safePath(os.homedir(), params.path)
-			: safePath(workspaceDir, "Objects", `${params.slug}.md`);
+		return { filepath: resolveObjectPath(slug, filePath) };
 	} catch {
-		return errorResult("Path traversal blocked: invalid path");
+		return { error: errorResult(invalidMessage) };
 	}
+}
+
+function mergedAttributes(params: ObjectWriteParams, existing?: Record<string, unknown>) {
+	return mergeObjectState({
+		type: params.type,
+		slug: params.slug,
+		fields: params.fields,
+		existing,
+	});
+}
+
+function writeObjectRecord(filepath: string, attributes: Record<string, unknown>, body: string): void {
+	writeMemoryRecord({
+		filepath,
+		attributes,
+		body,
+	});
+}
+
+function readObjectRaw(filepath: string) {
+	const raw = fs.readFileSync(filepath, "utf-8");
+	const { attributes, body } = parseFrontmatter<Record<string, unknown>>(raw);
+	return { raw, attributes, body };
+}
+
+function appendObjectLink(filepath: string, linkRef: string): void {
+	const { attributes, body } = readObjectRaw(filepath);
+	const links: string[] = Array.isArray(attributes.links) ? [...(attributes.links as string[])] : [];
+	if (!links.includes(linkRef)) {
+		links.push(linkRef);
+		attributes.links = links;
+		fs.writeFileSync(filepath, stringifyFrontmatter(attributes, body));
+	}
+}
+
+/** Create a new markdown object. */
+export function createObject(params: ObjectWriteParams) {
+	const resolved = tryResolveObjectPath(params.slug, params.path, "Path traversal blocked: invalid path");
+	if (resolved.error) return resolved.error;
+	const { filepath } = resolved;
 	fs.mkdirSync(path.dirname(filepath), { recursive: true });
 
-	const data = mergeObjectState({ type: params.type, slug: params.slug, fields: params.fields });
+	const data = mergedAttributes(params);
 	const body = params.body ?? defaultObjectBody(data);
 
 	try {
@@ -58,95 +103,37 @@ export function createObject(params: {
 	return textToolResult(`created ${params.type}/${params.slug}`);
 }
 
-export function updateObject(params: {
-	type: string;
-	slug: string;
-	fields?: Record<string, unknown>;
-	path?: string;
-	body?: string;
-}) {
-	let filepath: string;
-	if (params.path) {
-		try {
-			filepath = safePath(os.homedir(), params.path);
-		} catch {
-			return errorResult("Path traversal blocked: invalid path");
-		}
-	} else {
-		const workspaceDir = getNixPiDir();
-		try {
-			filepath = safePath(path.join(workspaceDir, "Objects"), `${params.slug}.md`);
-		} catch {
-			return errorResult("Path traversal blocked: invalid slug");
-		}
-	}
+export function updateObject(params: ObjectWriteParams) {
+	const invalidMessage = params.path ? "Path traversal blocked: invalid path" : "Path traversal blocked: invalid slug";
+	const resolved = tryResolveObjectPath(params.slug, params.path, invalidMessage);
+	if (resolved.error) return resolved.error;
+	const { filepath } = resolved;
 	const record = readMemoryRecord(filepath);
 	if (!record) return errorResult(`object not found: ${params.type}/${params.slug}`);
-	const attributes = mergeObjectState({
-		type: params.type,
-		slug: params.slug,
-		fields: params.fields,
-		existing: record.attributes,
-	});
-	writeMemoryRecord({
-		filepath,
-		attributes,
-		body: params.body ?? record.body,
-	});
+	const attributes = mergedAttributes(params, record.attributes);
+	writeObjectRecord(filepath, attributes, params.body ?? record.body);
 	return textToolResult(`updated ${params.type}/${params.slug}`);
 }
 
-export function upsertObject(params: {
-	type: string;
-	slug: string;
-	fields?: Record<string, unknown>;
-	path?: string;
-	body?: string;
-}) {
-	const workspaceDir = getNixPiDir();
-	let filepath: string;
-	try {
-		filepath = params.path
-			? safePath(os.homedir(), params.path)
-			: safePath(path.join(workspaceDir, "Objects"), `${params.slug}.md`);
-	} catch {
-		return errorResult("Path traversal blocked: invalid path");
-	}
+export function upsertObject(params: ObjectWriteParams) {
+	const resolved = tryResolveObjectPath(params.slug, params.path, "Path traversal blocked: invalid path");
+	if (resolved.error) return resolved.error;
+	const { filepath } = resolved;
 	const existing = readMemoryRecord(filepath);
 	if (!existing) {
 		return createObject(params);
 	}
-	const attributes = mergeObjectState({
-		type: params.type,
-		slug: params.slug,
-		fields: params.fields,
-		existing: existing.attributes,
-	});
-	writeMemoryRecord({
-		filepath,
-		attributes,
-		body: params.body ?? existing.body,
-	});
+	const attributes = mergedAttributes(params, existing.attributes);
+	writeObjectRecord(filepath, attributes, params.body ?? existing.body);
 	return textToolResult(`upserted ${params.type}/${params.slug}`, { existed: true });
 }
 
 /** Read a markdown object. */
 export function readObject(params: { type: string; slug: string; path?: string }) {
-	let filepath: string;
-	if (params.path) {
-		try {
-			filepath = safePath(os.homedir(), params.path);
-		} catch {
-			return errorResult("Path traversal blocked: invalid path");
-		}
-	} else {
-		const workspaceDir = getNixPiDir();
-		try {
-			filepath = safePath(path.join(workspaceDir, "Objects"), `${params.slug}.md`);
-		} catch {
-			return errorResult("Path traversal blocked: invalid slug");
-		}
-	}
+	const invalidMessage = params.path ? "Path traversal blocked: invalid path" : "Path traversal blocked: invalid slug";
+	const resolved = tryResolveObjectPath(params.slug, params.path, invalidMessage);
+	if (resolved.error) return resolved.error;
+	const { filepath } = resolved;
 
 	if (!fs.existsSync(filepath)) {
 		return errorResult(`object not found: ${params.type}/${params.slug}`);
@@ -167,34 +154,21 @@ export function readObject(params: { type: string; slug: string; path?: string }
 
 /** Add bidirectional links between two objects. */
 export function linkObjects(params: { ref_a: string; ref_b: string }) {
-	const workspaceDir = getNixPiDir();
 	const a = parseRef(params.ref_a);
 	const b = parseRef(params.ref_b);
-	let pathA: string;
-	let pathB: string;
-	try {
-		pathA = safePath(path.join(workspaceDir, "Objects"), `${a.slug}.md`);
-		pathB = safePath(path.join(workspaceDir, "Objects"), `${b.slug}.md`);
-	} catch {
+	const resolvedA = tryResolveObjectPath(a.slug, undefined, "Path traversal blocked: invalid slug");
+	const resolvedB = tryResolveObjectPath(b.slug, undefined, "Path traversal blocked: invalid slug");
+	if (resolvedA.error || resolvedB.error) {
 		return errorResult("Path traversal blocked: invalid slug");
 	}
+	const pathA = resolvedA.filepath;
+	const pathB = resolvedB.filepath;
 
 	if (!fs.existsSync(pathA)) return errorResult(`object not found: ${params.ref_a}`);
 	if (!fs.existsSync(pathB)) return errorResult(`object not found: ${params.ref_b}`);
 
-	function addLink(fp: string, linkRef: string): void {
-		const raw = fs.readFileSync(fp, "utf-8");
-		const { attributes, body } = parseFrontmatter<Record<string, unknown>>(raw);
-		const links: string[] = Array.isArray(attributes.links) ? [...(attributes.links as string[])] : [];
-		if (!links.includes(linkRef)) {
-			links.push(linkRef);
-			attributes.links = links;
-			fs.writeFileSync(fp, stringifyFrontmatter(attributes, body));
-		}
-	}
-
-	addLink(pathA, params.ref_b);
-	addLink(pathB, params.ref_a);
+	appendObjectLink(pathA, params.ref_b);
+	appendObjectLink(pathB, params.ref_a);
 
 	return textToolResult(`linked ${params.ref_a} <-> ${params.ref_b}`);
 }
