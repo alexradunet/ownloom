@@ -5,7 +5,6 @@ REPO_DIR="/srv/nixpi"
 REPO_URL="${NIXPI_REPO_URL:-https://github.com/alexradunet/nixpi.git}"
 BRANCH="${NIXPI_REPO_BRANCH:-main}"
 HOSTNAME_VALUE="${NIXPI_HOSTNAME:-$(hostname -s)}"
-PRIMARY_USER_VALUE="${NIXPI_PRIMARY_USER:-${SUDO_USER:-human}}"
 TIMEZONE_VALUE="${NIXPI_TIMEZONE:-UTC}"
 KEYBOARD_VALUE="${NIXPI_KEYBOARD:-us}"
 
@@ -43,6 +42,47 @@ run_as_root() {
     return 1
   fi
 }
+
+resolve_primary_user() {
+  if [ -n "${NIXPI_PRIMARY_USER:-}" ]; then
+    printf '%s\n' "$NIXPI_PRIMARY_USER"
+    return 0
+  fi
+
+  if [ -n "${SUDO_USER:-}" ]; then
+    printf '%s\n' "$SUDO_USER"
+    return 0
+  fi
+
+  if [ "$(id -u)" -ne 0 ]; then
+    id -un
+    return 0
+  fi
+
+  if command -v logname >/dev/null 2>&1; then
+    local login_name
+    login_name="$(logname 2>/dev/null || true)"
+    if [ -n "$login_name" ] && [ "$login_name" != "root" ]; then
+      printf '%s\n' "$login_name"
+      return 0
+    fi
+  fi
+
+  local discovered_user
+  discovered_user="$(
+    getent passwd | awk -F: '$3 >= 1000 && $3 < 60000 && $1 != "nobody" { print $1; exit }'
+  )"
+  if [ -n "$discovered_user" ]; then
+    printf '%s\n' "$discovered_user"
+    return 0
+  fi
+
+  log "Could not infer the existing non-root user."
+  log "Set NIXPI_PRIMARY_USER explicitly before running bootstrap as root."
+  return 1
+}
+
+PRIMARY_USER_VALUE="$(resolve_primary_user)"
 
 if [ ! -d "$REPO_DIR/.git" ]; then
   log "Cloning $REPO_URL#$BRANCH into $REPO_DIR"

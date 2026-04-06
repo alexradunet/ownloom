@@ -88,6 +88,7 @@ if should_write_host_flake; then
   inputs = {
     nixpkgs.url = "${NIXPKGS_FLAKE_URL}";
     nixpi.url = "path:${REPO_DIR}";
+    nixpi.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = { nixpkgs, nixpi, ... }:
