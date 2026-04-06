@@ -21,6 +21,7 @@
       bootstrapPackage = pkgs.callPackage ./core/os/pkgs/bootstrap { };
       nixpiRebuildPackage = pkgs.callPackage ./core/os/pkgs/nixpi-rebuild { };
       setupApplyPackage = pkgs.callPackage ./core/os/pkgs/nixpi-setup-apply { };
+      nixpiRebuildPackage = pkgs.callPackage ./core/os/pkgs/nixpi-rebuild { };
       # pkgsUnfree is used only for boot nixosTest.  pkgs.testers.nixosTest
       # injects its own pkgs as nixpkgs.pkgs for test nodes, which means modules
       # cannot set nixpkgs.config (NixOS assertion).  Using a pkgs already created
@@ -279,6 +280,8 @@
             grep -F 'run_as_root git -C "$REPO_DIR" reset --hard "origin/$BRANCH"' "${bootstrapScriptSource}" >/dev/null
             grep -F 'nixpi-init-host-flake.sh' "${bootstrapScriptSource}" >/dev/null
             grep -F 'nixos-rebuild switch --flake /etc/nixos --impure' "${bootstrapScriptSource}" >/dev/null
+            grep -F 'nixos-rebuild switch --flake /etc/nixos --impure' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
+            grep -F '"$@"' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
             grep -F "Use 'nixpi-rebuild' to rebuild" "${bootstrapScriptSource}" >/dev/null
             ! grep -F 'nixos-rebuild switch --flake /srv/nixpi#nixpi' "${bootstrapScriptSource}" >/dev/null
             grep -F 'nixos-rebuild switch --flake /etc/nixos --impure' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
@@ -311,9 +314,11 @@
 
           vps-topology = pkgs.runCommandLocal "vps-topology-check" { } ''
             grep -F 'nixosConfigurations.vps' ${./flake.nix} >/dev/null
+            ! grep -F 'nixosConfigurations.nixpi = self.nixosConfigurations.vps' ${./flake.nix} >/dev/null
             ! grep -F 'Managed NixPI desktop profile' ${./flake.nix} >/dev/null
             grep -F './core/os/hosts/vps.nix' ${./flake.nix} >/dev/null
             grep -F 'headless VPS profile' ${./core/os/hosts/vps.nix} >/dev/null
+            grep -F 'enableRedistributableFirmware' ${./core/os/hosts/vps.nix} >/dev/null
             sed -n '/nixosConfigurations.installed-test = nixpkgs.lib.nixosSystem {/,/checks\.\${system} =/p' ${./flake.nix} \
               | grep -F './core/os/hosts/vps.nix' >/dev/null
             sed -n '/bootCheck = pkgsUnfree.testers.runNixOSTest {/,/mkCheckLane = name: entries:/p' ${./flake.nix} \
