@@ -262,6 +262,7 @@
           bootstrap-script = pkgs.runCommandLocal "bootstrap-script-check" { } ''
             test -x "${bootstrapPackage}/bin/nixpi-bootstrap-vps"
             test -x "${bootstrapScriptSource}"
+            test -x "${./core/scripts/nixpi-init-host-flake.sh}"
             grep -F 'REPO_DIR="/srv/nixpi"' "${bootstrapScriptSource}" >/dev/null
             grep -F 'REPO_URL="''${NIXPI_REPO_URL:-https://github.com/alexradunet/nixpi.git}"' "${bootstrapScriptSource}" >/dev/null
             grep -F 'BRANCH="''${NIXPI_REPO_BRANCH:-main}"' "${bootstrapScriptSource}" >/dev/null
@@ -271,8 +272,20 @@
             grep -F 'run_as_root git -C "$REPO_DIR" fetch origin "$BRANCH"' "${bootstrapScriptSource}" >/dev/null
             grep -F 'run_as_root git -C "$REPO_DIR" checkout "$BRANCH"' "${bootstrapScriptSource}" >/dev/null
             grep -F 'run_as_root git -C "$REPO_DIR" reset --hard "origin/$BRANCH"' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'nixos-rebuild switch --flake /srv/nixpi#nixpi' "${bootstrapScriptSource}" >/dev/null
+            grep -F 'nixpi-init-host-flake.sh' "${bootstrapScriptSource}" >/dev/null
+            grep -F 'nixos-rebuild switch --flake /etc/nixos --impure' "${bootstrapScriptSource}" >/dev/null
+            ! grep -F 'nixos-rebuild switch --flake /srv/nixpi#nixpi' "${bootstrapScriptSource}" >/dev/null
             ! test -e ${./.}/tools/run-installer-iso.sh
+            touch "$out"
+          '';
+
+          host-flake-bootstrap = pkgs.runCommandLocal "host-flake-bootstrap-check" { } ''
+            script=${./core/os/pkgs/bootstrap/nixpi-bootstrap-vps.sh}
+            helper=${./core/scripts/nixpi-init-host-flake.sh}
+            test -x "$helper"
+            grep -F 'core/scripts/nixpi-init-host-flake.sh' "$script" >/dev/null
+            grep -F 'nixos-rebuild switch --flake /etc/nixos --impure' "$script" >/dev/null
+            ! grep -F 'nixos-rebuild switch --flake /srv/nixpi#nixpi' "$script" >/dev/null
             touch "$out"
           '';
 

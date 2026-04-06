@@ -4,6 +4,10 @@ set -euo pipefail
 REPO_DIR="/srv/nixpi"
 REPO_URL="${NIXPI_REPO_URL:-https://github.com/alexradunet/nixpi.git}"
 BRANCH="${NIXPI_REPO_BRANCH:-main}"
+HOSTNAME_VALUE="${NIXPI_HOSTNAME:-$(hostname -s)}"
+PRIMARY_USER_VALUE="${NIXPI_PRIMARY_USER:-${SUDO_USER:-human}}"
+TIMEZONE_VALUE="${NIXPI_TIMEZONE:-UTC}"
+KEYBOARD_VALUE="${NIXPI_KEYBOARD:-us}"
 
 log() {
   printf '[nixpi-bootstrap-vps] %s\n' "$*"
@@ -60,5 +64,13 @@ if ! run_as_root grep -q 'experimental-features' "$NIXCONF" 2>/dev/null; then
   run_as_root sh -c "echo 'experimental-features = nix-command flakes' >> $NIXCONF"
 fi
 
-log "Running nixos-rebuild switch --flake /srv/nixpi#nixpi"
-run_as_root nixos-rebuild switch --flake /srv/nixpi#nixpi
+log "Initializing host-owned /etc/nixos flake"
+run_as_root bash "$REPO_DIR/core/scripts/nixpi-init-host-flake.sh" \
+  "$REPO_DIR" \
+  "$HOSTNAME_VALUE" \
+  "$PRIMARY_USER_VALUE" \
+  "$TIMEZONE_VALUE" \
+  "$KEYBOARD_VALUE"
+
+log "Running nixos-rebuild switch --flake /etc/nixos --impure"
+run_as_root nixos-rebuild switch --flake /etc/nixos --impure
