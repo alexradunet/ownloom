@@ -20,57 +20,89 @@ import type { UpdateStatus } from "./types.js";
 
 // --- NixOS update handler ---
 
-export async function handleNixosUpdate(
-	action: "status" | "apply" | "rollback",
-	signal: AbortSignal | undefined,
-	ctx: ExtensionContext,
-) {
-	if (action === "apply" || action === "rollback") {
-		const target = `OS ${action}`;
-		const denied = await requireConfirmation(ctx, target);
-		if (denied) return errorResult(denied);
+function generationStatusText(result: { stdout: string; stderr: string; exitCode: number }): string {
+	return result.exitCode === 0 ? result.stdout.trim() || "No generation info available." : `Error: ${result.stderr}`;
+}
+
+async function confirmOsMutation(action: "apply" | "rollback", ctx: ExtensionContext): Promise<{ denied?: string }> {
+	const denied = await requireConfirmation(ctx, `OS ${action}`);
+	return denied ? { denied } : {};
+}
+
+async function handleNixosStatus(signal: AbortSignal | undefined) {
+	const gen = await run("nixos-rebuild", ["list-generations"], signal);
+	return {
+		content: [{ type: "text" as const, text: truncate(generationStatusText(gen)) }],
+		details: { exitCode: gen.exitCode },
+	};
+}
+
+async function handleNixosRollback(signal: AbortSignal | undefined) {
+	const result = await run("nixpi-brokerctl", ["nixos-update", "rollback"], signal);
+	const text =
+		result.exitCode === 0
+			? "Rolled back to previous generation. Reboot to complete."
+			: `Rollback failed: ${result.stderr}`;
+	return {
+		content: [{ type: "text" as const, text }],
+		details: { exitCode: result.exitCode },
+		isError: result.exitCode !== 0,
+	};
+}
+
+function ensureSystemFlakeExists(flake: string) {
+	if (fs.existsSync(path.join(flake, "flake.nix"))) {
+		return null;
 	}
 
-	if (action === "status") {
-		const gen = await run("nixos-rebuild", ["list-generations"], signal);
-		const text = gen.exitCode === 0 ? gen.stdout.trim() || "No generation info available." : `Error: ${gen.stderr}`;
-		return { content: [{ type: "text" as const, text: truncate(text) }], details: { exitCode: gen.exitCode } };
-	}
+	return errorResult(
+		`System flake not found at ${flake}. Supported rebuilds use /etc/nixos with the canonical repo at /srv/nixpi; switch to main in /srv/nixpi and ensure ${flake}/flake.nix exists.`,
+	);
+}
 
-	if (action === "rollback") {
-		const result = await run("nixpi-brokerctl", ["nixos-update", "rollback"], signal);
-		const text =
-			result.exitCode === 0
-				? "Rolled back to previous generation. Reboot to complete."
-				: `Rollback failed: ${result.stderr}`;
-		return {
-			content: [{ type: "text" as const, text }],
-			details: { exitCode: result.exitCode },
-			isError: result.exitCode !== 0,
-		};
-	}
-
-	// apply
-	const flake = getSystemFlakeDir();
-	if (!fs.existsSync(path.join(flake, "flake.nix"))) {
-		return errorResult(
-			`System flake not found at ${flake}. Supported rebuilds use /etc/nixos with the canonical repo at /srv/nixpi; switch to main in /srv/nixpi and ensure ${flake}/flake.nix exists.`,
-		);
-	}
+async function ensureCanonicalMainBranch(signal: AbortSignal | undefined): Promise<
+	| { branchOk: true }
+	| {
+			branchOk: false;
+			errorResult: ReturnType<typeof errorResult>;
+	  }
+> {
 	const repoDir = getCanonicalRepoDir();
 	const branchResult = await run("git", ["-C", repoDir, "branch", "--show-current"], signal);
 	if (branchResult.exitCode !== 0) {
-		return errorResult(`Failed to determine canonical repo branch at ${repoDir}: ${branchResult.stderr}`);
+		return {
+			branchOk: false,
+			errorResult: errorResult(`Failed to determine canonical repo branch at ${repoDir}: ${branchResult.stderr}`),
+		};
 	}
+
 	try {
 		assertSupportedRebuildBranch(branchResult.stdout.trim());
+		return { branchOk: true };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
-		return errorResult(`${message}. switch to main in ${repoDir} before rebuilding from ${flake}.`);
+		return {
+			branchOk: false,
+			errorResult: errorResult(
+				`${message}. switch to main in ${repoDir} before rebuilding from ${getSystemFlakeDir()}.`,
+			),
+		};
 	}
-	const args = ["nixos-update", "apply"];
-	args.push(flake);
-	const result = await run("nixpi-brokerctl", args, signal);
+}
+
+async function handleNixosApply(signal: AbortSignal | undefined) {
+	const flake = getSystemFlakeDir();
+	const flakeError = ensureSystemFlakeExists(flake);
+	if (flakeError) {
+		return flakeError;
+	}
+
+	const branchCheck = await ensureCanonicalMainBranch(signal);
+	if (!branchCheck.branchOk) {
+		return branchCheck.errorResult;
+	}
+
+	const result = await run("nixpi-brokerctl", ["nixos-update", "apply", flake], signal);
 	const text =
 		result.exitCode === 0
 			? `Update applied successfully from ${flake}. New generation is active.`
@@ -80,6 +112,26 @@ export async function handleNixosUpdate(
 		details: { exitCode: result.exitCode, flake },
 		isError: result.exitCode !== 0,
 	};
+}
+
+export async function handleNixosUpdate(
+	action: "status" | "apply" | "rollback",
+	signal: AbortSignal | undefined,
+	ctx: ExtensionContext,
+) {
+	if (action === "apply" || action === "rollback") {
+		const confirmation = await confirmOsMutation(action, ctx);
+		if (confirmation.denied) return errorResult(confirmation.denied);
+	}
+
+	switch (action) {
+		case "status":
+			return handleNixosStatus(signal);
+		case "rollback":
+			return handleNixosRollback(signal);
+		case "apply":
+			return handleNixosApply(signal);
+	}
 }
 
 // --- Systemd handler ---
