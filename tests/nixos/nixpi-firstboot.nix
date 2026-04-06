@@ -75,7 +75,7 @@ in
     nixpi.wait_for_unit("nixpi-chat.service", timeout=120)
     nixpi.wait_for_unit("nixpi-ttyd.service", timeout=120)
     nixpi.wait_for_unit("nginx.service", timeout=120)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/ | grep -qi '<html'", timeout=60)
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/ | grep -q 'nixpi-shell'", timeout=60)
     nixpi.wait_until_succeeds(
         "test \"$(curl -s -o /dev/null -w '%{http_code}' -X POST "
         + "http://127.0.0.1:8080/chat -H 'Content-Type: application/json' -d '{}')\" = 400",
