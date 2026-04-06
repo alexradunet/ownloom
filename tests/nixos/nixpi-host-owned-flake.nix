@@ -26,15 +26,21 @@
 
     machine.start()
     machine.wait_for_unit("multi-user.target", timeout=300)
+    expected_release = machine.succeed("nixos-version | sed -En 's/^([0-9]{2}\\.[0-9]{2}).*/\\1/p' | head -n1").strip()
 
     machine.succeed("test -f /etc/host-owned-marker")
     machine.succeed("grep -q 'preserved' /etc/host-owned-marker")
-    machine.succeed("env NIXPI_NIXPKGS_FLAKE_URL='" + nixpkgs_url + "' nixpi-bootstrap write-host-nix host-owned-test pi UTC us")
+    machine.succeed("nixpi-bootstrap write-host-nix host-owned-test pi UTC us")
     machine.succeed("test -f /etc/nixos/flake.nix")
     machine.succeed("test -f /etc/nixos/nixpi-integration.nix")
     machine.succeed("grep -q 'host-owned-test' /etc/nixos/nixpi-host.nix")
-    machine.succeed("grep -q '" + nixpkgs_url + "' /etc/nixos/flake.nix")
+    machine.succeed("grep -q 'github:NixOS/nixpkgs/nixos-" + expected_release + "' /etc/nixos/flake.nix")
+    machine.fail("grep -q '/channels/nixos' /etc/nixos/flake.nix")
     machine.fail("grep -q 'nixos-unstable' /etc/nixos/flake.nix")
+
+    machine.succeed("rm -f /etc/nixos/flake.nix")
+    machine.succeed("env NIXPI_NIXPKGS_FLAKE_URL='" + nixpkgs_url + "' nixpi-bootstrap write-host-nix host-owned-test pi UTC us")
+    machine.succeed("grep -q '" + nixpkgs_url + "' /etc/nixos/flake.nix")
     machine.succeed("test -f /etc/host-owned-marker")
     machine.succeed("grep -q 'preserved' /etc/host-owned-marker")
 

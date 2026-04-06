@@ -285,6 +285,7 @@
             test -x "$helper"
             grep -F 'core/scripts/nixpi-init-host-flake.sh' "$script" >/dev/null
             grep -F 'NIXPI_NIXPKGS_FLAKE_URL' "$helper" >/dev/null
+            grep -F 'nixos-version' "$helper" >/dev/null
             grep -F 'nixos-rebuild switch --flake /etc/nixos --impure' "$script" >/dev/null
             ! grep -F 'nixos-rebuild switch --flake /srv/nixpi#nixpi' "$script" >/dev/null
             ! grep -F 'github:NixOS/nixpkgs/nixos-unstable' "$helper" >/dev/null

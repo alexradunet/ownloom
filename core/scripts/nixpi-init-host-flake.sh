@@ -21,6 +21,15 @@ resolve_nixpkgs_flake_url() {
     return 0
   fi
 
+  if command -v nixos-version >/dev/null 2>&1; then
+    local release
+    release="$(nixos-version | sed -En 's/^([0-9]{2}\.[0-9]{2}).*/\1/p' | head -n1)"
+    if [ -n "$release" ]; then
+      printf 'github:NixOS/nixpkgs/nixos-%s\n' "$release"
+      return 0
+    fi
+  fi
+
   for candidate in \
     /nix/var/nix/profiles/per-user/root/channels/nixos \
     /nix/var/nix/profiles/system/channels/nixos \
@@ -32,7 +41,7 @@ resolve_nixpkgs_flake_url() {
     fi
   done
 
-  echo "could not determine the host nixpkgs flake source" >&2
+  echo "could not determine the running NixOS release or a fallback nixpkgs source" >&2
   echo "set NIXPI_NIXPKGS_FLAKE_URL to the nixpkgs flake you want /etc/nixos to follow" >&2
   return 1
 }
