@@ -305,6 +305,14 @@
             touch "$out"
           '';
 
+          vps-console-config = pkgs.runCommandLocal "vps-console-config-check" { } ''
+            params='${lib.concatStringsSep " " self.nixosConfigurations.vps.config.boot.kernelParams}'
+            printf '%s\n' "$params" | grep -Eq '(^| )console=tty0($| )'
+            printf '%s\n' "$params" | grep -Eq '(^| )console=ttyS0,115200($| )'
+            test '${if self.nixosConfigurations.vps.config.systemd.services."getty@tty1".enable then "true" else "false"}' = true
+            touch "$out"
+          '';
+
           # Thorough: boot the installed system in a NixOS test VM and verify
           # that critical services come up.
           boot = bootCheck;
