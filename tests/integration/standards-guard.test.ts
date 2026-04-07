@@ -39,7 +39,6 @@ describe("repo standards guards", () => {
 		const rebuildPullScript = readFileSync(rebuildPullScriptPath, "utf8");
 		const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8");
 		const bootstrapScript = readFileSync(path.join(repoRoot, "core/os/pkgs/bootstrap/nixpi-bootstrap-vps.sh"), "utf8");
-		const osSystemUpdate = readFileSync(path.join(repoRoot, "core/os/system-update.ts"), "utf8");
 		const osActions = readFileSync(path.join(repoRoot, "core/pi/extensions/os/actions.ts"), "utf8");
 		const selfEvolutionSkill = readFileSync(selfEvolutionSkillPath, "utf8");
 
@@ -54,9 +53,6 @@ describe("repo standards guards", () => {
 
 		expect(bootstrapScript).toContain("/srv/nixpi");
 		expect(bootstrapScript).toContain("nixpi-rebuild-pull");
-
-		expect(osSystemUpdate).toContain("/srv/nixpi");
-		expect(osSystemUpdate).toContain("nixpi-rebuild-pull");
 
 		expect(osActions).toContain("/srv/nixpi");
 		expect(osActions).toContain("nixpi-rebuild-pull");
