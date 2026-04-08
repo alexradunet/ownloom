@@ -32,6 +32,7 @@ let
     lib.unique ([ wgCfg.privateKeyFile ] ++ lib.filter (path: path != null) (map (peer: peer.presharedKeyFile) wgCfg.peers));
   wireguardSecretDirs = lib.unique (map builtins.dirOf wireguardSecretFiles);
   networkctlBin = lib.getExe' pkgs.systemd "networkctl";
+  sleepBin = lib.getExe' pkgs.coreutils "sleep";
   wireguardKeySetup = pkgs.writeShellScript "nixpi-wireguard-key-setup" ''
     set -euo pipefail
 
@@ -56,7 +57,20 @@ let
   wireguardCompatService = pkgs.writeShellScript "nixpi-wireguard-up" ''
     set -euo pipefail
 
-    ${networkctlBin} up ${lib.escapeShellArg wgCfg.interface} >/dev/null 2>&1 || true
+    ${networkctlBin} reload >/dev/null 2>&1 || true
+
+    attempt=0
+    while [ "$attempt" -lt 50 ]; do
+      ${networkctlBin} up ${lib.escapeShellArg wgCfg.interface} >/dev/null 2>&1 || true
+      if ${pkgs.iproute2}/bin/ip link show dev ${lib.escapeShellArg wgCfg.interface} >/dev/null 2>&1; then
+        ${networkctlBin} reconfigure ${lib.escapeShellArg wgCfg.interface} >/dev/null 2>&1 || true
+        exit 0
+      fi
+
+      attempt=$((attempt + 1))
+      ${sleepBin} 0.1
+    done
+
     ${pkgs.iproute2}/bin/ip link show dev ${lib.escapeShellArg wgCfg.interface} >/dev/null
   '';
   preferWifi = pkgs.writeShellScriptBin "nixpi-prefer-wifi" ''

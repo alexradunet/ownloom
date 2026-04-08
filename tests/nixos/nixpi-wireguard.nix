@@ -159,6 +159,12 @@ in
     nixpi.succeed("test -f /etc/systemd/network/50-wg0.network")
     nixpi.succeed("grep -q '^Kind=wireguard$' /etc/systemd/network/50-wg0.netdev")
     nixpi.succeed("grep -q '^Name=wg0$' /etc/systemd/network/50-wg0.netdev")
+    nixpi.succeed("systemctl stop wireguard-wg0.service")
+    nixpi.succeed("ip link delete wg0")
+    nixpi.succeed("systemctl start wireguard-wg0.service")
+    nixpi.wait_for_unit("wireguard-wg0.service", timeout=120)
+    nixpi.succeed("systemctl is-active wireguard-wg0.service")
+    nixpi.succeed("ip link show wg0 >/dev/null")
 
     client.start()
     client.wait_for_unit("multi-user.target", timeout=120)
