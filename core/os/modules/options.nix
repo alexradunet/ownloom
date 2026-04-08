@@ -20,6 +20,33 @@
       '';
     };
 
+    install = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Whether the installed system should seed the canonical /srv/nixpi checkout
+          and initialize /etc/nixos/flake.nix on first boot.
+        '';
+      };
+
+      repoUrl = lib.mkOption {
+        type = lib.types.str;
+        default = "https://github.com/alexradunet/nixpi.git";
+        description = ''
+          Git repository used to seed /srv/nixpi on first boot.
+        '';
+      };
+
+      repoBranch = lib.mkOption {
+        type = lib.types.str;
+        default = "main";
+        description = ''
+          Branch used when cloning the canonical /srv/nixpi checkout.
+        '';
+      };
+    };
+
     update = {
       onBootSec = lib.mkOption {
         type = lib.types.str;

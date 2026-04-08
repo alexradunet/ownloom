@@ -150,6 +150,7 @@ EOF_FLAKE
 
 log "WARNING: destructive install to ${TARGET_HOST} using disk ${DISK}"
 log "Using base configuration ${FLAKE_REF} with temporary hostname ${HOSTNAME}"
+log "First boot will seed /srv/nixpi and initialize /etc/nixos/flake.nix"
 if [[ -n "$BOOTSTRAP_USER" ]]; then
   log "Bootstrap login will be ${BOOTSTRAP_USER} using initialHashedPassword"
 fi

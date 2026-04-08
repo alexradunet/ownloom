@@ -14,6 +14,7 @@
 
   nixpiNoShell = [
     ./options.nix
+    ./install-finalize.nix
     ./network.nix
     ./update.nix
     ./app.nix
@@ -23,6 +24,7 @@
 
   nixpi = [
     ./options.nix
+    ./install-finalize.nix
     ./network.nix
     ./update.nix
     ./app.nix

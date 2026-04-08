@@ -26,6 +26,7 @@ in
   systemd.services."serial-getty@ttyS0".enable = lib.mkDefault true;
 
   nixpi = {
+    install.enable = lib.mkDefault true;
     bootstrap.keepSshAfterSetup = lib.mkDefault true;
     security.ssh.passwordAuthentication = lib.mkDefault false;
   };
@@ -35,8 +36,7 @@ in
   time.timeZone = config.nixpi.timezone;
   i18n.defaultLocale = "en_US.UTF-8";
   console.keyMap = config.nixpi.keyboard;
-  # Include redistributable GPU firmware (Intel, AMD) for reliable KMS
-  # initialization on monitor-attached hardware such as mini PCs.
+  # Include redistributable firmware for reliable guest/hardware bring-up.
   hardware.enableRedistributableFirmware = lib.mkDefault true;
 
   fileSystems."/" = lib.mkDefault {

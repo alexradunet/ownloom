@@ -6,7 +6,6 @@
 }:
 
 let
-  initSystemFlake = ../../core/scripts/nixpi-init-system-flake.sh;
   mkNode =
     {
       hostName ? "nixpi-firstboot-test",
@@ -19,6 +18,9 @@ let
     {
       imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
       nixpi.primaryUser = username;
+      nixpi.install.enable = true;
+      nixpi.install.repoUrl = "file:///var/lib/nixpi-source";
+      nixpi.install.repoBranch = "main";
 
       networking.hostName = hostName;
       users.users.${username} = {
@@ -34,11 +36,12 @@ let
       users.groups.${username} = { };
       environment.systemPackages = [
         pkgs.curl
+        pkgs.git
         pkgs.jq
       ];
       systemd.tmpfiles.rules = [ "d ${homeDir}/.nixpi 0755 ${username} ${username} -" ];
 
-      system.activationScripts.nixpi-bootstrap = lib.stringAfter [ "users" ] ''
+      system.activationScripts.nixpi-test-install-seed = lib.stringAfter [ "users" ] ''
           mkdir -p ${homeDir}/.nixpi
           install -d -m 0755 /etc/nixos
           cat > /etc/nixos/configuration.nix <<'EOF'
@@ -51,7 +54,15 @@ let
         { ... }:
         {}
         EOF
-          ${lib.getExe' pkgs.bash "bash"} ${initSystemFlake} /srv/nixpi ${hostName} ${username} UTC us
+          if [ ! -d /var/lib/nixpi-source/.git ]; then
+            rm -rf /var/lib/nixpi-source
+            install -d -m 0755 /var/lib/nixpi-source
+            cp -R ${../../.}/. /var/lib/nixpi-source/
+            chmod -R u+rwX /var/lib/nixpi-source
+            ${lib.getExe pkgs.git} -C /var/lib/nixpi-source init -b main
+            ${lib.getExe pkgs.git} -C /var/lib/nixpi-source add .
+            ${lib.getExe pkgs.git} -C /var/lib/nixpi-source -c user.name='Test User' -c user.email='test@example.com' commit -m 'seed repo'
+          fi
           chown -R ${username}:${username} ${homeDir}/.nixpi
           chmod 755 ${homeDir}/.nixpi
       '';
@@ -82,17 +93,12 @@ in
     nixpi.succeed("test -f " + home + "/.pi/settings.json")
     nixpi.succeed("test ! -L " + home + "/.pi")
     nixpi.succeed("test \"$(stat -c %U " + home + "/.pi)\" = pi")
-    nixpi.fail("test -e " + home + "/nixpi/.git")
-    nixpi.fail("test -e " + home + "/nixpi/flake.nix")
+    nixpi.succeed("test -d /srv/nixpi/.git")
+    nixpi.succeed("test -f /srv/nixpi/flake.nix")
     nixpi.fail("test -e /var/lib/nixpi/pi-nixpi")
     nixpi.succeed("test -f /etc/nixos/flake.nix")
-    nixpi.fail("test -e /etc/nixos/nixpi-host.nix")
-    nixpi.fail("test -e /etc/nixos/nixpi-integration.nix")
     nixpi.succeed("grep -q 'nixosConfigurations.nixos' /etc/nixos/flake.nix")
-    nixpi.fail("test -e /etc/nixpi/canonical-repo.json")
-    nixpi.fail("command -v nixpi-bootstrap-ensure-repo-target")
-    nixpi.fail("command -v nixpi-bootstrap-prepare-repo")
-    nixpi.fail("command -v nixpi-bootstrap-nixos-rebuild-switch")
+    nixpi.succeed("grep -q 'path:/srv/nixpi' /etc/nixos/flake.nix")
     nixpi.fail("command -v codex")
     nixpi.succeed(
         "su - pi -c 'test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi; "

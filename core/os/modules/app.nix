@@ -63,7 +63,8 @@ in
   systemd.services.nixpi-app-setup = {
     description = "NixPI app setup: create agent state dir and seed default settings";
     wantedBy = [ "multi-user.target" ];
-    after = [ "systemd-tmpfiles-setup.service" ];
+    after = [ "systemd-tmpfiles-setup.service" ] ++ lib.optional config.nixpi.install.enable "nixpi-install-finalize.service";
+    wants = lib.optional config.nixpi.install.enable "nixpi-install-finalize.service";
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;

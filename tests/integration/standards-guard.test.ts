@@ -161,28 +161,21 @@ describe("repo standards guards", () => {
 		const quickDeployDoc = readFileSync(path.join(repoRoot, "docs/operations/quick-deploy.md"), "utf8");
 		const liveTestingDoc = readFileSync(path.join(repoRoot, "docs/operations/live-testing.md"), "utf8");
 
-		expect(flake).not.toContain("nixpi-bootstrap-vps");
-		expect(flake).not.toContain("nixpi-bootstrap-fresh-install-harness");
-		expect(flake).not.toContain("qemu-installer");
-		expect(flake).not.toContain("qemu-preinstalled-stable");
-		expect(flake).not.toContain("qemu-prepare-preinstalled-stable");
-		expect(flake).not.toContain("qemu-clean");
+		expect(flake).toContain('nixos-anywhere.url = "github:nix-community/nixos-anywhere"');
+		expect(flake).toContain("ovh-vps = mkConfiguredStableSystem");
+		expect(flake).toContain("nixpi-deploy-ovh");
 
 		expect(readme).toContain("nix run .#nixpi-deploy-ovh --");
-		expect(readme).not.toContain("nixpi-bootstrap-vps");
+		expect(readme).toContain("/srv/nixpi");
 
 		expect(installDoc).toContain("headless VPS");
 		expect(installDoc).toContain("nixos-anywhere");
-		expect(installDoc).not.toContain("Already NixOS-capable machine");
-		expect(installDoc).not.toContain("mini PC");
-		expect(installDoc).not.toContain("headless VM");
+		expect(installDoc).toContain("OVH Rescue Deploy");
 
 		expect(quickDeployDoc).toContain("nixos-anywhere");
-		expect(quickDeployDoc).not.toContain("nixpi-bootstrap-vps");
-		expect(quickDeployDoc).not.toContain("mini PC");
-		expect(quickDeployDoc).not.toContain("headless VM");
+		expect(quickDeployDoc).toContain("/srv/nixpi");
 
-		expect(liveTestingDoc).not.toContain("qemu-lab");
-		expect(liveTestingDoc).not.toContain("nixpi-bootstrap-vps");
+		expect(liveTestingDoc).toContain("nixpi-deploy-ovh");
+		expect(liveTestingDoc).toContain("/srv/nixpi");
 	});
 });
