@@ -12,12 +12,6 @@
       nixpi.terminal.interface = "zellij";
       nixpi.terminal.zellij.enable = true;
 
-      systemd.tmpfiles.settings.nixpi-zellij-test."/home/pi/.config".d = {
-        mode = "0755";
-        user = "pi";
-        group = "pi";
-      };
-
       networking.hostName = "nixpi-zellij-test";
     };
 

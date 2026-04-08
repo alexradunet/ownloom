@@ -100,6 +100,11 @@ in
     ];
 
     systemd.tmpfiles.settings.nixpi-zellij = {
+      "${primaryHome}/.config".d = {
+        mode = "0755";
+        user = primaryUser;
+        group = primaryUser;
+      };
       "${primaryHome}/.config/zellij".d = {
         mode = "0755";
         user = primaryUser;
