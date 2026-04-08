@@ -220,14 +220,18 @@ describe("repo standards guards", () => {
 	it("supports a single bootstrap user with a hashed first-login password for OVH installs", () => {
 		const deployScript = readFileSync(deployOvhScriptPath, "utf8");
 		const deployDoc = readFileSync(ovhDeployDocPath, "utf8");
+		const ovhHost = readFileSync(ovhHostPath, "utf8");
 
 		expect(deployScript).toContain("--bootstrap-user");
 		expect(deployScript).toContain("--bootstrap-password-hash");
 		expect(deployScript).toContain("nixpi.primaryUser = lib.mkForce");
 		expect(deployScript).toContain("initialHashedPassword");
+		expect(ovhHost).toContain("nixpi-expire-bootstrap-password");
+		expect(ovhHost).toContain("/bin/chage -d 0");
 		expect(deployDoc).toContain("bootstrap user");
 		expect(deployDoc).toContain("bootstrap password hash");
 		expect(deployDoc).toContain("initialHashedPassword");
+		expect(deployDoc).toContain("forced to choose a new password");
 	});
 
 	it("documents the staged OVH kexec troubleshooting flow for disk renumbering", () => {
@@ -244,15 +248,22 @@ describe("repo standards guards", () => {
 		expect(deployDoc).toContain("Booting from Hard Disk...");
 		expect(deployDoc).toContain("SeaBIOS");
 		expect(deployDoc).toContain("reinstall from the updated repo");
+		expect(deployDoc).toContain("switched back");
+		expect(deployDoc).toContain("normal disk boot");
 
 		expect(quickDeployDoc).toContain("No space left on device");
 		expect(quickDeployDoc).toContain("temporary installer");
 		expect(quickDeployDoc).toContain("/dev/disk/by-id");
 		expect(quickDeployDoc).toContain("Booting from Hard Disk...");
+		expect(quickDeployDoc).toContain("rescue environment");
+		expect(quickDeployDoc).toContain("password-authenticated SSH flow");
+		expect(quickDeployDoc).toContain("trusted WireGuard");
 
 		expect(liveTestingDoc).toContain("/dev/disk/by-id");
 		expect(liveTestingDoc).toContain("installer-side target disk ID");
 		expect(liveTestingDoc).toContain("hybrid BIOS+EFI");
+		expect(liveTestingDoc).toContain("normal disk boot");
+		expect(liveTestingDoc).toContain("trusted WireGuard interface");
 	});
 
 	it("keeps headless VPS deployment as the documented install story", () => {

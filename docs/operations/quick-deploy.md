@@ -10,6 +10,11 @@ Operators and maintainers deploying NixPI onto a headless x86_64 VPS.
 
 WireGuard remains the preferred private network path for NixPI hosts. SSH stays available for administration, while WireGuard provides the trusted management overlay for host-to-device access.
 
+When the host has at least one configured WireGuard peer, NixPI should prefer a
+password-authenticated SSH flow that is reachable only on the trusted WireGuard
+interface rather than from the public internet. Bootstrap installs can still
+use public SSH temporarily until the private management path exists.
+
 ## Canonical Deployment Path
 
 NixPI now has one deployment flow:
@@ -40,6 +45,9 @@ nix run .#nixpi-deploy-ovh -- \
 
 The install is destructive and installs the final `ovh-vps` host configuration directly.
 
+If you use a bootstrap password for the initial OVH login, expect the installed
+host to force a password change on the first successful login.
+
 If the install fails with `No space left on device` during closure upload, do
 not assume the VPS disk is too small. On some OVH rescue hosts the disk order
 changes after `nixos-anywhere` kexecs into its temporary installer. Follow the
@@ -53,6 +61,10 @@ the hybrid BIOS+EFI OVH disk layout; reinstall from the updated repo if the
 failed run was created before that layout fix landed.
 
 ## 3. Validate first boot
+
+If the machine appears to reboot correctly but KVM still shows the OVH rescue
+environment, confirm the OVH control panel has been switched back from rescue
+mode to normal disk boot before debugging the installed system itself.
 
 Useful checks:
 

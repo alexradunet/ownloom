@@ -129,6 +129,9 @@ nix run .#nixpi-deploy-ovh -- \
   --bootstrap-password-hash "$PASSWORD_HASH"
 ```
 
+The OVH bootstrap profile now expires that temporary password after install, so
+the bootstrap user is forced to choose a new password on first successful login.
+
 What the wrapper does:
 
 - uses the repo's `ovh-vps` configuration as the base system
@@ -266,6 +269,11 @@ the provider's actual firmware mode.
 After installation, the machine reboots into the installed NixOS system.
 
 Because this is a reinstall, the SSH host key will change.
+
+Before judging the reinstall, make sure the OVH control panel is switched back
+from **rescue mode** to the normal disk boot mode. If OVH is still configured to
+boot rescue mode, the machine can reboot successfully yet still land back in
+the rescue environment instead of the installed NixOS system.
 
 Remove the old host key and reconnect:
 
