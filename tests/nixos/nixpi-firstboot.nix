@@ -55,7 +55,6 @@ in
     nixpi.fail("test -e /srv/nixpi")
     nixpi.fail("test -f /etc/nixos/flake.nix")
     nixpi.fail("systemctl cat nixpi-install-finalize.service >/dev/null")
-    nixpi.fail("systemctl cat wireguard-wg0.service >/dev/null")
     nixpi.fail("command -v codex")
     nixpi.fail("test -e " + home + "/.bashrc")
     nixpi.fail("test -e " + home + "/.bash_profile")

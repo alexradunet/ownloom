@@ -23,7 +23,7 @@ The primary surface is the shell runtime. The same setup should work from SSH or
      - `git config --global user.email "$(id -un)@$(hostname -s).local"`
      - if the operator already chose a checkout path, those same values can be written there instead (for example `git -C /srv/nixpi config ...`)
    - admin tailnet configuration
-     - treat the private management path as a Headscale-managed tailnet rather than raw WireGuard peer plumbing
+     - treat the private management path as a Headscale-managed tailnet rather than raw peer/interface plumbing
      - prefer checks like `systemctl status tailscaled.service`, `tailscale status`, and, on the control-plane host, `systemctl status headscale.service`
    - OS security configuration
    - a short NixPI intro/tutorial

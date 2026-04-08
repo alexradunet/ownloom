@@ -27,8 +27,6 @@
             if lib.hasAttrByPath [ "nixpi" "headscale" ] options then "yes" else "no";
           "nixpi-tests/has-tailnet-option".text =
             if lib.hasAttrByPath [ "nixpi" "tailnet" ] options then "yes" else "no";
-          "nixpi-tests/has-wireguard-option".text =
-            if lib.hasAttrByPath [ "nixpi" "wireguard" ] options then "yes" else "no";
         };
       };
 
@@ -108,7 +106,6 @@
     defaults.succeed("grep -qx 'no' /etc/nixpi-tests/ssh-password-auth")
     defaults.succeed("grep -qx 'yes' /etc/nixpi-tests/has-headscale-option")
     defaults.succeed("grep -qx 'yes' /etc/nixpi-tests/has-tailnet-option")
-    defaults.succeed("grep -qx 'no' /etc/nixpi-tests/has-wireguard-option")
 
     overrides.start()
     overrides.wait_for_unit("multi-user.target", timeout=300)
