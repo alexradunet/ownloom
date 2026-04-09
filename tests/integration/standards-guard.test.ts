@@ -24,7 +24,11 @@ const bootstrapHostTestPath = path.join(repoRoot, "tests/integration/nixpi-boots
 const ovhVpsConfigTestPath = path.join(repoRoot, "tests/integration/ovh-vps-config.test.ts");
 const reinstallOvhTestPath = path.join(repoRoot, "tests/integration/nixpi-reinstall-ovh.test.ts");
 const plainHostDeployProvisionerTestPath = path.join(repoRoot, "nixos_vps_provisioner/tests/plain-host-deploy.test.ts");
-const ovhVpsBaseProvisionerConfigTestPath = path.join(repoRoot, "nixos_vps_provisioner/tests/ovh-vps-base-config.test.ts");
+const ovhVpsBaseProvisionerConfigTestPath = path.join(
+	repoRoot,
+	"nixos_vps_provisioner/tests/ovh-vps-base-config.test.ts",
+);
+const provisionerAgentsPath = path.join(repoRoot, "nixos_vps_provisioner/AGENTS.md");
 const appModulePath = path.join(repoRoot, "core/os/modules/app.nix");
 const piPackagePath = path.join(repoRoot, "core/os/pkgs/pi/default.nix");
 const shellModulePath = path.join(repoRoot, "core/os/modules/shell.nix");
@@ -260,6 +264,11 @@ describe("repo standards guards", () => {
 		expect(existsSync(ovhVpsBaseProvisionerPresetPath)).toBe(true);
 		expect(existsSync(plainHostDeployProvisionerTestPath)).toBe(true);
 		expect(existsSync(ovhVpsBaseProvisionerConfigTestPath)).toBe(true);
+		expect(existsSync(provisionerAgentsPath)).toBe(true);
+		const provisionerAgents = readFileSync(provisionerAgentsPath, "utf-8");
+		expect(provisionerAgents).toContain("Automation begins at first SSH access, not at the web-panel step.");
+		expect(provisionerAgents).toContain("never auto-select a destructive target disk");
+		expect(provisionerAgents).toContain("stop and ask for the human to perform OVH panel actions");
 
 		expect(flake).not.toContain("nixpi-rebuild-pull");
 		expect(flake).not.toContain("nixpi-reinstall-ovh");
