@@ -240,7 +240,8 @@ describe("plain-host-deploy.sh", () => {
 
 	it("keeps packaged wrapper default flake resolution rooted at the repo checkout", () => {
 		const packageNix = fs.readFileSync(path.join(repoRoot, "core/os/pkgs/plain-host-deploy/default.nix"), "utf8");
+		const nixRepoRootExpr = "$" + "{../../../..}";
 
-		expect(packageNix).toContain("--set NIXPI_REPO_ROOT ${../../../..}");
+		expect(packageNix).toContain(`--set NIXPI_REPO_ROOT ${nixRepoRootExpr}`);
 	});
 });

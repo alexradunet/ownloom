@@ -54,7 +54,7 @@ const hostOwnedBootstrapDocCases = [
 		label: relativePath(installDocPath),
 		filePath: installDocPath,
 		contains: ["install a plain NixOS base", "run `nixpi-bootstrap-host` on the machine"],
-		absent: ["final host configuration directly", "nixpi-rebuild-pull", "/srv/nixpi"],
+		absent: ["final host configuration directly", "nixpi-deploy-ovh", "nixpi-rebuild-pull", "/srv/nixpi"],
 	},
 	{
 		label: relativePath(quickDeployDocPath),
@@ -78,7 +78,7 @@ const hostOwnedBootstrapDocCases = [
 		label: relativePath(runtimeFlowsPath),
 		filePath: runtimeFlowsPath,
 		contains: ["plain base system", "bootstrap writes narrow `/etc/nixos` helper files"],
-		absent: ["final host configuration directly", "nixpi-rebuild-pull", "/srv/nixpi"],
+		absent: ["final host configuration directly", "nixpi-deploy-ovh", "nixpi-rebuild-pull", "/srv/nixpi"],
 	},
 	{
 		label: relativePath(liveTestingDocPath),
@@ -99,13 +99,13 @@ const hostOwnedBootstrapDocCases = [
 			"Canonical rebuild path: `sudo nixpi-rebuild`.",
 			"Canonical bootstrap path: `nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- ...`.",
 		],
-		absent: ["nixpi-rebuild-pull", "/srv/nixpi"],
+		absent: ["nixpi-deploy-ovh", "nixpi-rebuild-pull", "/srv/nixpi"],
 	},
 	{
 		label: relativePath(recoverySkillPath),
 		filePath: recoverySkillPath,
 		contains: ["retry `sudo nixpi-rebuild`", "`sudo nixos-rebuild switch --flake /etc/nixos#nixos --impure`"],
-		absent: ["nixpi-rebuild-pull", "/srv/nixpi"],
+		absent: ["nixpi-deploy-ovh", "nixpi-rebuild-pull", "/srv/nixpi"],
 	},
 	{
 		label: relativePath(selfEvolutionSkillPath),
@@ -114,7 +114,7 @@ const hostOwnedBootstrapDocCases = [
 			"**Standard bootstrap command**: `nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- ...`",
 			"**Canonical rebuild command**: `sudo nixpi-rebuild`",
 		],
-		absent: ["nixpi-rebuild-pull", "/srv/nixpi"],
+		absent: ["nixpi-deploy-ovh", "nixpi-rebuild-pull", "/srv/nixpi"],
 	},
 ] as const;
 
@@ -198,7 +198,7 @@ describe("repo standards guards", () => {
 	it("keeps the example install artifact aligned with the host-owned bootstrap flow", () => {
 		const artifact = readUtf8(reinstallCommandPath);
 
-		expect(artifact).toContain("nix run .#nixpi-deploy-ovh --");
+		expect(artifact).toContain("# Day-0 base install from a local checkout");
 		expect(artifact).toContain("nix run github:alexradunet/nixpi#nixpi-bootstrap-host --");
 		for (const forbiddenTerm of ["nixpi-reinstall-ovh", "nixpi-rebuild-pull", "/srv/nixpi"]) {
 			expect(artifact).not.toContain(forbiddenTerm);
@@ -228,9 +228,11 @@ describe("repo standards guards", () => {
 		expect(flake).toContain('disko.url = "github:nix-community/disko"');
 		expect(flake).toContain('nixos-anywhere.url = "github:nix-community/nixos-anywhere"');
 		expect(flake).toContain("nixpi-bootstrap-host = pkgs.callPackage ./core/os/pkgs/nixpi-bootstrap-host { };");
+		expect(flake).toContain("plain-host-deploy = pkgs.callPackage ./core/os/pkgs/plain-host-deploy");
 		expect(flake).toContain("ovh-base = mkConfiguredStableSystem");
 		expect(flake).toContain("./core/os/hosts/ovh-base.nix");
 		expect(flake).toContain(`program = "\${self.packages.\${system}.nixpi-bootstrap-host}/bin/nixpi-bootstrap-host"`);
+		expect(flake).toContain(`program = "\${self.packages.\${system}.plain-host-deploy}/bin/plain-host-deploy"`);
 
 		expect(existsSync(bootstrapHostScriptPath)).toBe(true);
 		expect(existsSync(bootstrapHostPackagePath)).toBe(true);
@@ -240,6 +242,8 @@ describe("repo standards guards", () => {
 
 		expect(flake).not.toContain("nixpi-rebuild-pull");
 		expect(flake).not.toContain("nixpi-reinstall-ovh");
+		expect(flake).not.toContain("nixpi-deploy-ovh = pkgs.callPackage");
+		expect(flake).not.toContain(`program = "\${self.packages.\${system}.nixpi-deploy-ovh}/bin/nixpi-deploy-ovh"`);
 		expect(flake).not.toContain("ovh-vps = mkConfiguredStableSystem");
 		expect(existsSync(rebuildPullScriptPath)).toBe(false);
 		expect(existsSync(rebuildPullPackagePath)).toBe(false);
