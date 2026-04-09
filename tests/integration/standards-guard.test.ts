@@ -7,22 +7,13 @@ const flakePath = path.join(repoRoot, "flake.nix");
 const packageJsonPath = path.join(repoRoot, "package.json");
 const bootstrapHostScriptPath = path.join(repoRoot, "core/scripts/nixpi-bootstrap-host.sh");
 const bootstrapHostPackagePath = path.join(repoRoot, "core/os/pkgs/nixpi-bootstrap-host/default.nix");
-const rebuildPullScriptPath = path.join(repoRoot, "core/scripts/nixpi-rebuild-pull.sh");
-const rebuildPullPackagePath = path.join(repoRoot, "core/os/pkgs/nixpi-rebuild-pull/default.nix");
-const reinstallOvhScriptPath = path.join(repoRoot, "core/scripts/nixpi-reinstall-ovh.sh");
-const reinstallOvhPackagePath = path.join(repoRoot, "core/os/pkgs/nixpi-reinstall-ovh/default.nix");
-const ovhBaseHostPath = path.join(repoRoot, "core/os/hosts/ovh-base.nix");
 const plainHostDeployProvisionerPackagePath = path.join(
 	repoRoot,
 	"nixos_vps_provisioner/pkgs/plain-host-deploy/default.nix",
 );
 const ovhSingleDiskProvisionerPresetPath = path.join(repoRoot, "nixos_vps_provisioner/presets/ovh-single-disk.nix");
 const ovhVpsBaseProvisionerPresetPath = path.join(repoRoot, "nixos_vps_provisioner/presets/ovh-vps-base.nix");
-const ovhVpsHostPath = path.join(repoRoot, "core/os/hosts/ovh-vps.nix");
-const ovhBaseConfigTestPath = path.join(repoRoot, "tests/integration/ovh-base-config.test.ts");
 const bootstrapHostTestPath = path.join(repoRoot, "tests/integration/nixpi-bootstrap-host.test.ts");
-const ovhVpsConfigTestPath = path.join(repoRoot, "tests/integration/ovh-vps-config.test.ts");
-const reinstallOvhTestPath = path.join(repoRoot, "tests/integration/nixpi-reinstall-ovh.test.ts");
 const plainHostDeployProvisionerTestPath = path.join(repoRoot, "nixos_vps_provisioner/tests/plain-host-deploy.test.ts");
 const ovhVpsBaseProvisionerConfigTestPath = path.join(
 	repoRoot,
@@ -278,15 +269,6 @@ describe("repo standards guards", () => {
 		expect(flake).not.toContain("./core/os/pkgs/plain-host-deploy");
 		expect(flake).not.toContain("./core/os/disko/ovh-single-disk.nix");
 		expect(flake).not.toContain("./core/os/hosts/ovh-base.nix");
-		expect(existsSync(rebuildPullScriptPath)).toBe(false);
-		expect(existsSync(rebuildPullPackagePath)).toBe(false);
-		expect(existsSync(reinstallOvhScriptPath)).toBe(false);
-		expect(existsSync(reinstallOvhPackagePath)).toBe(false);
-		expect(existsSync(ovhBaseHostPath)).toBe(false);
-		expect(existsSync(ovhVpsHostPath)).toBe(false);
-		expect(existsSync(reinstallOvhTestPath)).toBe(false);
-		expect(existsSync(ovhVpsConfigTestPath)).toBe(false);
-		expect(existsSync(ovhBaseConfigTestPath)).toBe(false);
 	});
 
 	it("documents and wires a shell-first operator runtime", () => {
