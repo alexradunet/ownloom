@@ -25,19 +25,26 @@ After the machine boots, reconnect to the installed host and bootstrap NixPI on 
 ```bash
 nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- \
   --primary-user alex \
-  --hostname bloom-eu-1 \
+  --ssh-allowed-cidr YOUR_ADMIN_IP/32 \
+  --authorized-key-file /root/.ssh/authorized_keys \
   --timezone Europe/Bucharest \
   --keyboard us
 ```
+
+If you do not pass `--hostname`, the host keeps the default `nixos` hostname.
+Bootstrap stays enabled after the first rebuild so SSH remains reachable while you validate the machine and complete the operator handoff.
 
 Validate the running host:
 
 ```bash
 systemctl status sshd.service
-systemctl status netbird-wt0.service
 systemctl status nixpi-app-setup.service
-netbird-wt0 status
+systemctl status nixpi-update.timer
+sshd -T | grep -E 'passwordauthentication|permitrootlogin|allowtcpforwarding|allowagentforwarding'
+sudo nft list ruleset | grep 'dport 22'
 ```
+
+If the SSH allowlist is wrong, recover through the OVH console or rescue mode. There is no remote VPN fallback.
 
 Steady-state host model:
 

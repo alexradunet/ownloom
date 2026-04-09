@@ -22,9 +22,9 @@ The primary surface is the shell runtime. The same setup should work from SSH or
      - `git config --global user.name "$(id -un)"`
      - `git config --global user.email "$(id -un)@$(hostname -s).local"`
      - if the operator already chose a checkout path, those same values can be written there instead (for example `git -C /srv/nixpi config ...`)
-   - NetBird configuration
-     - treat the private management path as a managed NetBird client enrollment flow
-     - prefer checks like `systemctl status netbird-wt0.service` and `netbird-wt0 status`
+   - SSH security configuration
+     - treat the remote admin path as key-only SSH restricted to configured admin CIDRs
+     - prefer checks like `sshd -T` and `sudo nft list ruleset | grep 'dport 22'`
    - OS security configuration
    - a short NixPI intro/tutorial
 5. When onboarding is complete, have the operator switch the host to steady-state config (for example `nixpi.bootstrap.enable = false` or equivalent explicit settings) and rebuild. Do not write runtime completion markers.

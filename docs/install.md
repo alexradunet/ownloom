@@ -34,10 +34,14 @@ Run this on the installed host after the plain base system boots:
 ```bash
 nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- \
   --primary-user alex \
-  --hostname bloom-eu-1 \
+  --ssh-allowed-cidr YOUR_ADMIN_IP/32 \
+  --authorized-key-file /root/.ssh/authorized_keys \
   --timezone Europe/Bucharest \
   --keyboard us
 ```
+
+If you do not provide `--hostname`, NixPI keeps the host at the default `nixos` hostname.
+If you provide `--authorized-key-file` or `--authorized-key`, bootstrap also seeds SSH access for the primary user.
 
 If `/etc/nixos/flake.nix` already exists, follow the printed instructions and rebuild manually:
 
@@ -52,10 +56,12 @@ Validate the installed host:
 ```bash
 systemctl status nixpi-app-setup.service
 systemctl status sshd.service
-systemctl status netbird-wt0.service
 systemctl status nixpi-update.timer
-netbird-wt0 status
+sshd -T | grep -E 'passwordauthentication|permitrootlogin|allowtcpforwarding|allowagentforwarding'
+sudo nft list ruleset | grep 'dport 22'
 ```
+
+If the SSH allowlist is wrong, recover through OVH console or rescue mode.
 
 Routine rebuilds should use the installed `/etc/nixos#nixos` host flake:
 

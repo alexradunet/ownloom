@@ -19,6 +19,19 @@
       '';
     };
 
+    ssh.allowedSourceCIDRs = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [
+        "198.51.100.10/32"
+        "2001:db8::/48"
+      ];
+      description = ''
+        Source CIDRs allowed to reach the public SSH service. When SSH is
+        exposed on the public interface, this list must be non-empty.
+      '';
+    };
+
     ssh.allowUsers = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];

@@ -35,10 +35,14 @@ The first post-install action is to run `nixpi-bootstrap-host` on the machine.
 ```bash
 nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- \
   --primary-user alex \
-  --hostname bloom-eu-1 \
+  --ssh-allowed-cidr YOUR_ADMIN_IP/32 \
+  --authorized-key-file /root/.ssh/authorized_keys \
   --timezone Europe/Bucharest \
   --keyboard us
 ```
+
+Without `--hostname`, the installed host keeps the default `nixos` hostname.
+The generated host stays in bootstrap mode after the first rebuild so SSH remains reachable while you validate the machine and switch normal access to the primary user.
 
 If `/etc/nixos/flake.nix` already exists, follow the printed manual integration guidance and rebuild the host explicitly:
 
@@ -51,11 +55,10 @@ sudo nixos-rebuild switch --flake /etc/nixos#nixos --impure
 ```bash
 systemctl status nixpi-app-setup.service
 systemctl status sshd.service
-systemctl status netbird-wt0.service
 systemctl status nixpi-update.timer
 ```
 
-Expected result: all four services are active or activatable.
+Expected result: all three services are active or activatable.
 
 ### 3. Verify the runtime entry path
 
@@ -75,18 +78,19 @@ Expected result:
 
 After the first successful login, the default operator-facing interface is Zellij. The generated layout opens Pi and a shell tab. If you need a plain shell for recovery, use `NIXPI_NO_ZELLIJ=1` before starting the login shell.
 
-### 4. Verify NetBird bootstrap before normal use
+### 4. Verify the SSH hardening policy
 
 ```bash
-systemctl status netbird-wt0.service
-netbird-wt0 status
+sshd -T | grep -E 'passwordauthentication|permitrootlogin|allowtcpforwarding|allowagentforwarding'
+sudo nft list ruleset | grep 'dport 22'
 ```
 
 Expected result:
 
-- `netbird-wt0.service` is active
-- the host has enrolled into the managed NetBird network
-- `netbird-wt0 status` reports the local peer and connection state
+- `passwordauthentication no`
+- `permitrootlogin no`
+- SSH forwarding features remain disabled
+- port `22` is only allowed from the configured admin CIDRs
 
 ### 5. Verify the rebuild path
 
@@ -128,7 +132,6 @@ After first boot, keep these boundaries in mind:
 |------|---------|
 | `nixpi-app-setup.service` | Provides the Pi runtime entry path |
 | `sshd.service` | Remote shell access |
-| `netbird-wt0.service` | NetBird client for the private admin network |
 
 ### Current Behavior Target
 
@@ -136,3 +139,4 @@ After first boot, keep these boundaries in mind:
 - no desktop session is required to start operating NixPI
 - the primary user workflow is Pi in the terminal, reached from SSH via Zellij by default
 - updates run through native NixOS/systemd paths, and `sudo nixpi-rebuild` targets the installed host flake
+- recovery from a bad SSH allowlist happens through OVH console or rescue mode

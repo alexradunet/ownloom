@@ -22,9 +22,9 @@ sudo nixos-rebuild switch --rollback
 ```bash
 systemctl status nixpi-app-setup.service
 systemctl status sshd.service
-systemctl status netbird-wt0.service
 systemctl status nixpi-update.timer
-netbird-wt0 status
+sshd -T | grep -E 'passwordauthentication|permitrootlogin'
+sudo nft list ruleset | grep 'dport 22'
 ```
 
 ## Related

@@ -23,13 +23,15 @@
         environment.etc = {
           "nixpi-tests/ssh-password-auth".text =
             if config.services.openssh.settings.PasswordAuthentication then "yes" else "no";
-          "nixpi-tests/has-netbird-option".text =
-            if lib.hasAttrByPath [ "nixpi" "netbird" ] options then "yes" else "no";
+          "nixpi-tests/has-ssh-cidr-option".text =
+            if lib.hasAttrByPath [ "nixpi" "security" "ssh" "allowedSourceCIDRs" ] options then "yes" else "no";
+          "nixpi-tests/ssh-source-cidrs".text =
+            builtins.concatStringsSep "," config.nixpi.security.ssh.allowedSourceCIDRs;
         };
       };
 
     overrides =
-      { config, ... }:
+      { config, options, ... }:
       {
         imports = nixPiModulesNoShell ++ [
           mkTestFilesystems
@@ -42,23 +44,22 @@
           agent.autonomy = "observe";
           security = {
             fail2ban.enable = false;
-            ssh.passwordAuthentication = true;
-          };
-          netbird = {
-            enable = true;
-            setupKeyFile = "/run/secrets/netbird-setup-key";
-            clientName = "nixpi-managed-node";
-            managementUrl = "https://api.netbird.io:443";
+            ssh = {
+              allowedSourceCIDRs = [
+                "198.51.100.10/32"
+                "2001:db8::/48"
+              ];
+            };
           };
         };
 
         environment.etc = {
           "nixpi-tests/ssh-password-auth".text =
             if config.services.openssh.settings.PasswordAuthentication then "yes" else "no";
-          "nixpi-tests/netbird-enable".text = if config.nixpi.netbird.enable then "yes" else "no";
-          "nixpi-tests/netbird-setup-key-file".text = config.nixpi.netbird.setupKeyFile;
-          "nixpi-tests/netbird-client-name".text = config.nixpi.netbird.clientName or "";
-          "nixpi-tests/netbird-management-url".text = config.nixpi.netbird.managementUrl or "";
+          "nixpi-tests/has-ssh-cidr-option".text =
+            if lib.hasAttrByPath [ "nixpi" "security" "ssh" "allowedSourceCIDRs" ] options then "yes" else "no";
+          "nixpi-tests/ssh-source-cidrs".text =
+            builtins.concatStringsSep "," config.nixpi.security.ssh.allowedSourceCIDRs;
         };
       };
   };
@@ -78,19 +79,16 @@
 
     defaults.succeed("systemctl is-active fail2ban")
     defaults.succeed("grep -qx 'no' /etc/nixpi-tests/ssh-password-auth")
-    defaults.succeed("grep -qx 'yes' /etc/nixpi-tests/has-netbird-option")
+    defaults.succeed("grep -qx 'yes' /etc/nixpi-tests/has-ssh-cidr-option")
 
     overrides.start()
     overrides.wait_for_unit("multi-user.target", timeout=300)
 
     overrides.fail("systemctl is-active fail2ban")
-    overrides.succeed("grep -qx 'yes' /etc/nixpi-tests/ssh-password-auth")
+    overrides.succeed("grep -qx 'no' /etc/nixpi-tests/ssh-password-auth")
     overrides.succeed("nixpi-brokerctl status | jq -r .defaultAutonomy | grep -qx observe")
-
-    overrides.succeed("grep -qx 'yes' /etc/nixpi-tests/netbird-enable")
-    overrides.succeed("grep -qx '/run/secrets/netbird-setup-key' /etc/nixpi-tests/netbird-setup-key-file")
-    overrides.succeed("grep -qx 'nixpi-managed-node' /etc/nixpi-tests/netbird-client-name")
-    overrides.succeed("grep -qx 'https://api.netbird.io:443' /etc/nixpi-tests/netbird-management-url")
+    overrides.succeed("grep -qx 'yes' /etc/nixpi-tests/has-ssh-cidr-option")
+    overrides.succeed("grep -qx '198.51.100.10/32,2001:db8::/48' /etc/nixpi-tests/ssh-source-cidrs")
 
     print("All nixpi-options-validation tests passed!")
   '';

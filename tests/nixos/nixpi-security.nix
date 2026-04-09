@@ -23,7 +23,10 @@ let
 
       nixpi = {
         primaryUser = username;
-        security.enforceServiceFirewall = true;
+        security = {
+          enforceServiceFirewall = true;
+          ssh.allowedSourceCIDRs = [ "192.0.2.10/32" ];
+        };
         bootstrap.enable = bootstrapEnable;
         bootstrap.ssh.enable = sshEnable;
         bootstrap.temporaryAdmin.enable = temporaryAdminEnable;
@@ -82,6 +85,11 @@ in
     bootstrap.wait_for_unit("fail2ban.service", timeout=60)
     bootstrap.wait_for_unit("nixpi-app-setup.service", timeout=120)
     bootstrap.wait_for_unit("sshd.service", timeout=60)
+    bootstrap.succeed("sshd -T | grep -qx 'passwordauthentication no'")
+    bootstrap.succeed("sshd -T | grep -qx 'permitrootlogin no'")
+    bootstrap.fail("grep -q '^AllowUsers .*root' /etc/ssh/sshd_config")
+    bootstrap.succeed("grep -q '^AllowUsers .*pi' /etc/ssh/sshd_config")
+    bootstrap.succeed("ip addr add 192.0.2.20/24 dev eth1")
     bootstrap.succeed("sudo -u pi -- sudo -n true")
     bootstrap.succeed("test -f /home/pi/.pi/settings.json")
 
@@ -89,6 +97,11 @@ in
     steady.wait_for_unit("multi-user.target", timeout=300)
     steady.wait_for_unit("nixpi-app-setup.service", timeout=120)
     steady.wait_for_unit("sshd.service", timeout=60)
+    steady.succeed("sshd -T | grep -qx 'passwordauthentication no'")
+    steady.succeed("sshd -T | grep -qx 'permitrootlogin no'")
+    steady.fail("grep -q '^AllowUsers .*root' /etc/ssh/sshd_config")
+    steady.succeed("grep -q '^AllowUsers .*pi' /etc/ssh/sshd_config")
+    steady.succeed("ip addr add 192.0.2.21/24 dev eth1")
     steady.fail("sudo -u pi -- sudo -n true")
     steady.succeed("sudo -u pi -- bash -lc 'nixpi-brokerctl status >/tmp/steady-broker-status.json'")
     steady.wait_for_unit("fail2ban.service", timeout=60)
@@ -99,9 +112,13 @@ in
     client.start()
     client.wait_for_unit("multi-user.target", timeout=120)
     client.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
+    client.succeed("ip addr add 192.0.2.10/24 dev eth1")
+    client.succeed("ip addr add 192.0.2.11/24 dev eth1")
 
-    client.succeed("nc -z nixpi-bootstrap 22")
-    client.succeed("nc -z -w 2 nixpi-steady 22")
+    client.succeed("nc -z -w 2 -s 192.0.2.10 192.0.2.20 22")
+    client.succeed("nc -z -w 2 -s 192.0.2.10 192.0.2.21 22")
+    client.fail("nc -z -w 2 -s 192.0.2.11 192.0.2.20 22")
+    client.fail("nc -z -w 2 -s 192.0.2.11 192.0.2.21 22")
 
     steady.succeed("fail2ban-client status sshd | grep -q 'Status for the jail: sshd'")
 

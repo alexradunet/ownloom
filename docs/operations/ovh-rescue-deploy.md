@@ -97,8 +97,10 @@ Optional hostname override:
 nix run .#nixpi-deploy-ovh -- \
   --target-host root@SERVER_IP \
   --disk /dev/disk/by-id/PERSISTENT_TARGET_DISK_ID \
-  --hostname bloom-eu-1
+  --hostname my-host
 ```
+
+If you do not pass `--hostname`, the installed base system keeps the default `nixos` hostname.
 
 What the wrapper does:
 
@@ -107,7 +109,7 @@ What the wrapper does:
 - runs `nixos-anywhere` against the OVH rescue host
 - leaves NixPI bootstrapping for after the machine reboots into the installed system
 
-`nixpi-deploy-ovh` no longer accepts bootstrap-user, password-hash, or NetBird setup arguments. Install the plain base system first, then run `nixpi-bootstrap-host` on the machine.
+`nixpi-deploy-ovh` no longer accepts bootstrap-user, password-hash, or legacy VPN setup arguments. Install the plain base system first, then run `nixpi-bootstrap-host` on the machine.
 
 ## 4. Troubleshooting: staged kexec debug when the disk changes after kexec
 
@@ -204,12 +206,13 @@ Then bootstrap NixPI on the machine:
 ```bash
 nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- \
   --primary-user alex \
-  --hostname bloom-eu-1 \
+  --authorized-key-file /root/.ssh/authorized_keys \
   --timezone Europe/Bucharest \
   --keyboard us
 ```
 
 If `/etc/nixos/flake.nix` already exists, follow the printed manual integration steps and rebuild `/etc/nixos#nixos` explicitly.
+The generated host remains in bootstrap mode after the first rebuild so SSH stays reachable while you validate the machine and switch normal access to the primary user.
 
 ## 6. Switch to routine operations
 

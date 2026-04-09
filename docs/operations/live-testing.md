@@ -26,14 +26,15 @@ If KVM hangs at SeaBIOS `Booting from Hard Disk...` after an apparently successf
 
 If the machine reappears in the OVH rescue environment after reboot, fail the release check and verify the provider boot mode was switched back from rescue to normal disk boot.
 
-Once the host joins NetBird, confirm the administrative path works through NetBird and that public or rescue-mode SSH is only being kept as a bootstrap fallback.
+Confirm the administrative path works only from the configured SSH allowlist and that recovery remains an OVH console/rescue operation.
 
 ## First Remote Validation
 
-1. Confirm `nixpi-app-setup.service`, `sshd.service`, `netbird-wt0.service`, and `nixpi-update.timer` reach their expected state.
+1. Confirm `nixpi-app-setup.service`, `sshd.service`, and `nixpi-update.timer` reach their expected state.
 2. Confirm `pi` works from SSH.
-3. Confirm outbound networking works and the host enrolls into NetBird before treating it as ready for routine remote use.
-4. Confirm `sudo nixpi-rebuild` rebuilds the host-owned `/etc/nixos` tree.
+3. Confirm `sshd -T` reports key-only SSH with root login disabled.
+4. Confirm `nft list ruleset` scopes port `22` to the configured admin CIDRs.
+5. Confirm `sudo nixpi-rebuild` rebuilds the host-owned `/etc/nixos` tree.
 
 **Expected result:** the Pi runtime returns after reboot, the host remains operable without repo-seeding or machine-root replacement, and no second install path is needed for recovery.
 

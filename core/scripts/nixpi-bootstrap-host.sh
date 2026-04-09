@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
 	cat <<'EOF_USAGE'
-Usage: nixpi-bootstrap-host --primary-user USER [--hostname HOSTNAME] [--timezone TZ] [--keyboard LAYOUT] [--nixpi-input FLAKE_REF] [--force]
+Usage: nixpi-bootstrap-host --primary-user USER --ssh-allowed-cidr CIDR [--ssh-allowed-cidr CIDR ...] [--hostname HOSTNAME] [--timezone TZ] [--keyboard LAYOUT] [--nixpi-input FLAKE_REF] [--authorized-key KEY | --authorized-key-file PATH] [--force]
 
 Bootstrap NixPI onto an already-installed NixOS host by writing narrow /etc/nixos helper files.
 If /etc/nixos/flake.nix does not exist, a minimal host flake is generated automatically.
@@ -33,19 +33,38 @@ write_host_module() {
 	local primary_user_escaped=""
 	local timezone_escaped=""
 	local keyboard_escaped=""
+	local authorized_keys_block=""
+	local ssh_allowed_cidrs_block=""
 
 	hostname_escaped="$(escape_nix_string "$hostname")"
 	primary_user_escaped="$(escape_nix_string "$primary_user")"
 	timezone_escaped="$(escape_nix_string "$timezone")"
 	keyboard_escaped="$(escape_nix_string "$keyboard")"
 
+	if [[ "${#authorized_keys[@]}" -gt 0 ]]; then
+		authorized_keys_block=$'\n'"  users.users.${primary_user}.openssh.authorizedKeys.keys = ["
+		for authorized_key in "${authorized_keys[@]}"; do
+			authorized_keys_block+=$'\n'"    \"$(escape_nix_string "$authorized_key")\""
+		done
+		authorized_keys_block+=$'\n'"  ];"
+	fi
+
+	ssh_allowed_cidrs_block=$'\n'"  nixpi.security.ssh.allowedSourceCIDRs = ["
+	for ssh_allowed_cidr in "${ssh_allowed_cidrs[@]}"; do
+		ssh_allowed_cidrs_block+=$'\n'"    \"$(escape_nix_string "$ssh_allowed_cidr")\""
+	done
+	ssh_allowed_cidrs_block+=$'\n'"  ];"
+
 	cat >"$output_path" <<EOF_HOST
 { ... }:
 {
   networking.hostName = "${hostname_escaped}";
+  nixpi.bootstrap.enable = true;
   nixpi.primaryUser = "${primary_user_escaped}";
   nixpi.timezone = "${timezone_escaped}";
   nixpi.keyboard = "${keyboard_escaped}";
+${ssh_allowed_cidrs_block}
+${authorized_keys_block}
 }
 EOF_HOST
 }
@@ -76,16 +95,105 @@ require_writable_helper_path() {
 	return 1
 }
 
+read_authorized_keys_file() {
+	local source_file="$1"
+	local line=""
+
+	while IFS= read -r line || [[ -n "$line" ]]; do
+		if [[ "$line" =~ ^(ssh|ecdsa|sk)-[^[:space:]]+[[:space:]]+.+$ ]]; then
+			authorized_keys+=("$line")
+		fi
+	done <"$source_file"
+}
+
+load_authorized_keys() {
+	authorized_keys=()
+
+	if [[ -n "$authorized_key" && -n "$authorized_key_file" ]]; then
+		log "Use either --authorized-key or --authorized-key-file, not both."
+		exit 1
+	fi
+
+	if [[ -n "$authorized_key" ]]; then
+		authorized_keys+=("$authorized_key")
+		return 0
+	fi
+
+	if [[ -n "$authorized_key_file" ]]; then
+		if [[ ! -f "$authorized_key_file" ]]; then
+			log "--authorized-key-file must point to an existing file."
+			exit 1
+		fi
+		read_authorized_keys_file "$authorized_key_file"
+		return 0
+	fi
+
+	if [[ -f /root/.ssh/authorized_keys ]]; then
+		read_authorized_keys_file /root/.ssh/authorized_keys
+	fi
+}
+
+write_generated_configuration() {
+	local output_path="$1"
+
+	cat >"$output_path" <<'EOF_CONFIG'
+{ lib, modulesPath, ... }:
+{
+  imports = [
+    (modulesPath + "/profiles/qemu-guest.nix")
+  ];
+
+  system.stateVersion = "25.05";
+
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
+
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      PermitRootLogin = "prohibit-password";
+      PubkeyAuthentication = "yes";
+    };
+  };
+
+  networking.firewall.allowedTCPPorts = [ 22 ];
+
+  boot.loader = {
+    systemd-boot.enable = lib.mkForce false;
+    efi.canTouchEfiVariables = lib.mkForce false;
+    grub = {
+      enable = true;
+      efiSupport = true;
+      efiInstallAsRemovable = true;
+      device = "nodev";
+    };
+  };
+
+  services.qemuGuest.enable = lib.mkDefault true;
+}
+EOF_CONFIG
+}
+
+ensure_host_tree_prerequisites() {
+	if [[ ! -f "${etc_nixos_dir}/hardware-configuration.nix" ]]; then
+		log "hardware-configuration.nix is required at ${etc_nixos_dir}/hardware-configuration.nix."
+		log "Generate it first with nixos-generate-config --dir ${etc_nixos_dir}."
+		exit 1
+	fi
+
+	if [[ ! -f "${etc_nixos_dir}/configuration.nix" ]]; then
+		write_generated_configuration "${etc_nixos_dir}/configuration.nix"
+	fi
+}
+
 write_generated_flake() {
 	local output_path="$1"
 	local nixpi_input_escaped=""
-	local hardware_configuration_line=""
 
 	nixpi_input_escaped="$(escape_nix_string "$nixpi_input")"
-
-	if [[ -f "${etc_nixos_dir}/hardware-configuration.nix" ]]; then
-		hardware_configuration_line='        ./hardware-configuration.nix'
-	fi
 
 	cat >"$output_path" <<EOF_FLAKE
 {
@@ -100,7 +208,7 @@ write_generated_flake() {
       modules = [
         ./configuration.nix
         ./nixpi-integration.nix
-${hardware_configuration_line}
+        ./hardware-configuration.nix
       ];
     };
   };
@@ -139,6 +247,9 @@ main() {
 	timezone="UTC"
 	keyboard="us"
 	nixpi_input="${NIXPI_DEFAULT_INPUT:-github:alexradunet/nixpi}"
+	authorized_key=""
+	authorized_key_file=""
+	ssh_allowed_cidrs=()
 	force_overwrite="false"
 
 	while [[ $# -gt 0 ]]; do
@@ -163,6 +274,18 @@ main() {
 				nixpi_input="${2:?missing nixpi input}"
 				shift 2
 				;;
+			--authorized-key)
+				authorized_key="${2:?missing authorized key}"
+				shift 2
+				;;
+			--authorized-key-file)
+				authorized_key_file="${2:?missing authorized key file}"
+				shift 2
+				;;
+			--ssh-allowed-cidr)
+				ssh_allowed_cidrs+=("${2:?missing SSH allowed CIDR}")
+				shift 2
+				;;
 			--force)
 				force_overwrite="true"
 				shift
@@ -183,6 +306,11 @@ main() {
 		exit 1
 	fi
 
+	if [[ "${#ssh_allowed_cidrs[@]}" -eq 0 ]]; then
+		log "At least one --ssh-allowed-cidr value is required."
+		exit 1
+	fi
+
 	if [[ "$etc_nixos_dir" != "/etc/nixos" && "$nixos_rebuild_bin" == "nixos-rebuild" ]]; then
 		log "NIXPI_BOOTSTRAP_ROOT is for tests/staging only when it differs from /etc/nixos."
 		log "Refusing to use NIXPI_BOOTSTRAP_ROOT=${etc_nixos_dir} with the default nixos-rebuild because rebuild/manual instructions target /etc/nixos#nixos."
@@ -191,6 +319,8 @@ main() {
 	fi
 
 	mkdir -p "$etc_nixos_dir"
+	load_authorized_keys
+	ensure_host_tree_prerequisites
 
 	require_writable_helper_path "${etc_nixos_dir}/nixpi-host.nix"
 	require_writable_helper_path "${etc_nixos_dir}/nixpi-integration.nix"

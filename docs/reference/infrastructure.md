@@ -12,7 +12,7 @@ NixPI exposes a shell-first Pi runtime rather than a browser-hosted terminal sur
 |---------|-------|
 | Runtime setup unit | `nixpi-app-setup.service` |
 | Remote shell access | `sshd.service` |
-| Preferred private management network | `netbird-wt0.service` |
+| Remote admin boundary | Public SSH restricted to configured admin CIDRs |
 | Running host source of truth | `/etc/nixos` is the running host's source of truth |
 | Standard bootstrap command | `nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- ...` |
 | Standard rebuild command | `sudo nixpi-rebuild` |
@@ -33,7 +33,7 @@ The remaining imperative commands are operator-initiated wrappers, not boot-time
 ```bash
 systemctl status nixpi-app-setup.service
 systemctl status sshd.service
-systemctl status netbird-wt0.service
 systemctl status nixpi-update.timer
-netbird-wt0 status
+sshd -T | grep -E 'passwordauthentication|permitrootlogin'
+sudo nft list ruleset | grep 'dport 22'
 ```

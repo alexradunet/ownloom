@@ -27,7 +27,7 @@ const baseConfig: BrokerConfig = {
 	defaultAutonomy: "maintain",
 	elevationDuration: "30m",
 	osUpdateEnable: true,
-	allowedUnits: ["netbird-wt0.service", "nixpi-update.service"],
+	allowedUnits: ["nixpi-update.service"],
 	defaultFlake: "/etc/nixos#nixos",
 };
 

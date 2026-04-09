@@ -6,9 +6,9 @@
 
 Operators and maintainers deploying NixPI onto a headless x86_64 VPS.
 
-## Security Note: NetBird Is The Preferred Private Management Network
+## Security Note: Public SSH Is CIDR-Restricted
 
-The managed NetBird network is the preferred private network path for NixPI hosts. Public or rescue-mode SSH may still be needed during day-0 installation, while NetBird provides the trusted admin overlay after bootstrap.
+NixPI uses plain SSH for remote administration, but only from explicitly allowlisted admin CIDRs. If the allowlist is wrong, recover through OVH console or rescue mode rather than a separate VPN overlay.
 
 ## Canonical Deployment Path
 
@@ -53,10 +53,14 @@ After the base system boots, reconnect to the machine and run:
 ```bash
 nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- \
   --primary-user alex \
-  --hostname bloom-eu-1 \
+  --ssh-allowed-cidr YOUR_ADMIN_IP/32 \
+  --authorized-key-file /root/.ssh/authorized_keys \
   --timezone Europe/Bucharest \
   --keyboard us
 ```
+
+Without `--hostname`, the installed host keeps the default `nixos` hostname.
+The first rebuild stays in bootstrap mode so public SSH remains available from the configured admin CIDRs while you validate the host and complete the operator handoff.
 
 If `/etc/nixos/flake.nix` already exists, follow the printed manual integration instructions and rebuild `/etc/nixos#nixos` explicitly.
 
@@ -87,10 +91,11 @@ Smoke-check the core services on a running host:
 ```bash
 systemctl status nixpi-app-setup.service
 systemctl status sshd.service
-systemctl status netbird-wt0.service
 systemctl status nixpi-update.timer
 command -v pi
 su - <user> -c 'pi --help'
+sshd -T | grep -E 'passwordauthentication|permitrootlogin|allowtcpforwarding|allowagentforwarding'
+sudo nft list ruleset | grep 'dport 22'
 ```
 
 Expected result:
@@ -99,6 +104,7 @@ Expected result:
 - the deployed host mode comes from NixOS config rather than user-home markers
 - the installed `/etc/nixos` flake remains the source of truth for the running host
 - shell behavior already matches the deployed NixOS configuration
+- SSH is key-only and port `22` is scoped to the expected admin CIDRs
 
 For repo-side validation during development:
 
