@@ -28,6 +28,7 @@ const personaSkillPath = path.join(repoRoot, "core/pi/persona/SKILL.md");
 const recoverySkillPath = path.join(repoRoot, "core/pi/skills/recovery/SKILL.md");
 const selfEvolutionSkillPath = path.join(repoRoot, "core/pi/skills/self-evolution/SKILL.md");
 const readmePath = path.join(repoRoot, "README.md");
+const plainHostInstallDocPath = path.join(repoRoot, "docs/install-plain-host.md");
 const installDocPath = path.join(repoRoot, "docs/install.md");
 const quickDeployDocPath = path.join(repoRoot, "docs/operations/quick-deploy.md");
 const ovhRescueDeployDocPath = path.join(repoRoot, "docs/operations/ovh-rescue-deploy.md");
@@ -45,21 +46,28 @@ const hostOwnedBootstrapDocCases = [
 		filePath: readmePath,
 		contains: [
 			"plain OVH-compatible NixOS base system",
+			"plain-host-deploy",
 			"nixpi-bootstrap-host",
 			"`/etc/nixos` is the running host's source of truth",
 		],
 		absent: ["final host configuration installed directly by `nixos-anywhere`", "nixpi-rebuild-pull", "/srv/nixpi"],
 	},
 	{
+		label: relativePath(plainHostInstallDocPath),
+		filePath: plainHostInstallDocPath,
+		contains: ["Install Plain Host", "plain-host-deploy", "standard NixOS host"],
+		absent: ["nixpi-deploy-ovh", "final host configuration directly"],
+	},
+	{
 		label: relativePath(installDocPath),
 		filePath: installDocPath,
-		contains: ["install a plain NixOS base", "run `nixpi-bootstrap-host` on the machine"],
+		contains: ["Install a plain host first", "run `nixpi-bootstrap-host` on the machine"],
 		absent: ["final host configuration directly", "nixpi-deploy-ovh", "nixpi-rebuild-pull", "/srv/nixpi"],
 	},
 	{
 		label: relativePath(quickDeployDocPath),
 		filePath: quickDeployDocPath,
-		contains: ["install the `ovh-base` system", "bootstrap NixPI after first boot"],
+		contains: ["plain-host-deploy", "install the `ovh-base` system", "bootstrap NixPI after first boot"],
 		absent: ["final `ovh-vps` host configuration directly", "nixpi-rebuild-pull", "/srv/nixpi"],
 	},
 	{
@@ -199,8 +207,9 @@ describe("repo standards guards", () => {
 		const artifact = readUtf8(reinstallCommandPath);
 
 		expect(artifact).toContain("# Day-0 base install from a local checkout");
+		expect(artifact).toContain("nix run .#plain-host-deploy --");
 		expect(artifact).toContain("nix run github:alexradunet/nixpi#nixpi-bootstrap-host --");
-		for (const forbiddenTerm of ["nixpi-reinstall-ovh", "nixpi-rebuild-pull", "/srv/nixpi"]) {
+		for (const forbiddenTerm of ["nixpi-deploy-ovh", "nixpi-reinstall-ovh", "nixpi-rebuild-pull", "/srv/nixpi"]) {
 			expect(artifact).not.toContain(forbiddenTerm);
 		}
 	});

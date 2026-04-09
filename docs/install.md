@@ -1,27 +1,27 @@
 ---
-title: Install NixPI
-description: Install NixPI onto a fresh OVH VPS by provisioning a plain base system first, then bootstrapping on-host.
+title: Bootstrap NixPI
+description: Layer NixPI onto an already-installed plain NixOS host.
 ---
 
-# Install NixPI
+# Bootstrap NixPI
 
 ## Supported target
 
 - headless x86_64 VPS
-- provider rescue-mode access
 - SSH or console access to the installed machine
-- outbound internet access during installation and bootstrap
+- outbound internet access during bootstrap
+
+## Prerequisite
+
+Install a plain host first using [Install Plain Host](./install-plain-host) or the provider runbook in [OVH Rescue Deploy](./operations/ovh-rescue-deploy).
 
 ## Canonical install path
 
 NixPI supports one host-owned install story:
 
-1. install a plain NixOS base for the machine
-2. reconnect to the installed machine
-3. run `nixpi-bootstrap-host` on the machine
-4. rebuild only through `/etc/nixos#nixos`
-
-Use the dedicated [OVH Rescue Deploy](./operations/ovh-rescue-deploy) runbook for the base install.
+1. start from an already-installed plain NixOS host
+2. run `nixpi-bootstrap-host` on the machine
+3. rebuild only through `/etc/nixos#nixos`
 
 `nixos-anywhere` is used only for plain base-system provisioning. It does not install the final NixPI host directly.
 
@@ -79,6 +79,7 @@ sudo nixos-rebuild switch --rollback
 
 ## Next steps
 
+- [Install Plain Host](./install-plain-host)
 - [Operations](./operations/)
 - [OVH Rescue Deploy](./operations/ovh-rescue-deploy)
 - [First Boot Setup](./operations/first-boot-setup)

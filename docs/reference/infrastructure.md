@@ -25,7 +25,7 @@ The remaining imperative commands are operator-initiated wrappers, not boot-time
 
 | Command | Why it remains imperative |
 |---------|---------------------------|
-| `nix run .#nixpi-deploy-ovh -- ...` | Fresh provisioning still needs runtime inputs such as the rescue host, target disk, and optional staged `nixos-anywhere` flags. NixPI keeps that imperative surface at install time instead of trying to model rescue-mode disk selection as steady-state host config. |
+| `nix run .#plain-host-deploy -- ...` | Fresh provisioning still needs runtime inputs such as the rescue host, target disk, and optional staged `nixos-anywhere` flags. The plain-host installer keeps that imperative surface at install time instead of pretending rescue-mode inputs are steady-state host configuration. |
 | `nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- ...` | Host-local bootstrap still needs explicit machine details such as the primary user and hostname, and it may need to integrate with an already-existing `/etc/nixos` tree before rebuilding the host-owned configuration. |
 
 ### Troubleshooting

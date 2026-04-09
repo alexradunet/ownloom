@@ -1,10 +1,10 @@
 # Quick Deploy
 
-> Install a plain OVH base system with `nixos-anywhere`, then bootstrap NixPI onto the host-owned `/etc/nixos` tree
+> Install a plain OVH base system with `nixos-anywhere`, then optionally bootstrap NixPI onto the host-owned `/etc/nixos` tree
 
 ## Audience
 
-Operators and maintainers deploying NixPI onto a headless x86_64 VPS.
+Operators and maintainers provisioning a standard NixOS host on a headless x86_64 VPS, with optional NixPI bootstrap afterward.
 
 ## Security Note: Public SSH Is CIDR-Restricted
 
@@ -12,13 +12,14 @@ NixPI uses plain SSH for remote administration, but only from explicitly allowli
 
 ## Canonical Deployment Path
 
-NixPI now has one deployment flow:
+The recommended deployment flow is:
 
 1. Put the VPS into rescue mode.
-2. Run the `nixpi-deploy-ovh` wrapper.
+2. Run the `plain-host-deploy` wrapper.
 3. Let `nixos-anywhere` install the `ovh-base` system.
-4. Reconnect to the installed machine and bootstrap NixPI after first boot.
-5. Validate the running host and use `sudo nixpi-rebuild` for steady-state rebuilds.
+4. Reconnect to the installed machine after first boot.
+5. Optionally bootstrap NixPI on the host.
+6. Validate the running host and use `sudo nixpi-rebuild` for steady-state rebuilds.
 
 The machine converges from `/etc/nixos#nixos`; repo checkouts are not part of the supported install path.
 
@@ -33,9 +34,9 @@ For OVH-specific steps, follow [OVH Rescue Deploy](./ovh-rescue-deploy).
 From your local checkout:
 
 ```bash
-nix run .#nixpi-deploy-ovh -- \
+nix run .#plain-host-deploy -- \
   --target-host root@SERVER_IP \
-  --disk /dev/sdX
+  --disk /dev/disk/by-id/PERSISTENT_TARGET_DISK_ID
 ```
 
 The install is destructive and installs the plain `ovh-base` system only.
@@ -44,7 +45,7 @@ If the install fails with `No space left on device` during closure upload, do no
 
 If OVH KVM later stalls at SeaBIOS `Booting from Hard Disk...`, treat that as a boot-layout mismatch rather than a finished install. Reinstall from the updated repo so the current hybrid BIOS+EFI OVH disk layout is applied.
 
-## 3. Bootstrap NixPI after first boot
+## 3. Optionally bootstrap NixPI after first boot
 
 If the machine appears to reboot correctly but KVM still shows the OVH rescue environment, confirm the OVH control panel has been switched back from rescue mode to normal disk boot before debugging the installed system itself.
 

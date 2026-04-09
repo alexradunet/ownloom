@@ -1,10 +1,10 @@
 # OVH Rescue Deploy
 
-> Fresh-install a plain OVH base system from rescue mode, then bootstrap NixPI onto the machine
+> Fresh-install a plain OVH base system from rescue mode, then optionally bootstrap NixPI onto the machine
 
 ## Audience
 
-Operators provisioning a fresh OVH VPS that should end up as a host-owned NixPI machine.
+Operators provisioning a fresh OVH VPS that should first become a standard NixOS host, with optional NixPI bootstrap afterward.
 
 ## Before you start
 
@@ -86,7 +86,7 @@ Because of that renumbering, the final successful install used the installer's p
 From your local checkout of this repo:
 
 ```bash
-nix run .#nixpi-deploy-ovh -- \
+nix run .#plain-host-deploy -- \
   --target-host root@SERVER_IP \
   --disk /dev/disk/by-id/PERSISTENT_TARGET_DISK_ID
 ```
@@ -94,7 +94,7 @@ nix run .#nixpi-deploy-ovh -- \
 Optional hostname override:
 
 ```bash
-nix run .#nixpi-deploy-ovh -- \
+nix run .#plain-host-deploy -- \
   --target-host root@SERVER_IP \
   --disk /dev/disk/by-id/PERSISTENT_TARGET_DISK_ID \
   --hostname my-host
@@ -109,7 +109,7 @@ What the wrapper does:
 - runs `nixos-anywhere` against the OVH rescue host
 - leaves NixPI bootstrapping for after the machine reboots into the installed system
 
-`nixpi-deploy-ovh` no longer accepts bootstrap-user, password-hash, or legacy VPN setup arguments. Install the plain base system first, then run `nixpi-bootstrap-host` on the machine.
+`plain-host-deploy` installs the plain base system only. After the machine reboots, run `nixpi-bootstrap-host` on the machine if you want the NixPI layer.
 
 ## 4. Troubleshooting: staged kexec debug when the disk changes after kexec
 
@@ -122,7 +122,7 @@ This usually means the target disk was correct in the rescue system but mapped t
 Use staged mode to run only the `kexec` phase:
 
 ```bash
-nix run .#nixpi-deploy-ovh -- \
+nix run .#plain-host-deploy -- \
   --target-host root@SERVER_IP \
   --disk /dev/disk/by-id/PERSISTENT_TARGET_DISK_ID \
   --phases kexec
@@ -161,7 +161,7 @@ Identify which `/dev/disk/by-id/...` path points to the real target disk in the 
 After identifying the correct disk path inside the temporary installer, rerun the wrapper with the remaining phases only:
 
 ```bash
-nix run .#nixpi-deploy-ovh -- \
+nix run .#plain-host-deploy -- \
   --target-host root@SERVER_IP \
   --disk /dev/disk/by-id/INSTALLER_TARGET_DISK_ID \
   --phases disko,install,reboot
@@ -237,6 +237,7 @@ sudo nixos-rebuild switch --rollback
 
 ## Related
 
-- [Install NixPI](../install)
+- [Install Plain Host](../install-plain-host)
+- [Bootstrap NixPI](../install)
 - [Quick Deploy](./quick-deploy)
 - [First Boot Setup](./first-boot-setup)

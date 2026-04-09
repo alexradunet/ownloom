@@ -15,12 +15,12 @@ Interactive operator sessions stay in a plain shell by default. Pi remains avail
 Install a plain base system onto a fresh OVH VPS from rescue mode:
 
 ```bash
-nix run .#nixpi-deploy-ovh -- \
+nix run .#plain-host-deploy -- \
   --target-host root@SERVER_IP \
-  --disk /dev/sdX
+  --disk /dev/disk/by-id/PERSISTENT_TARGET_DISK_ID
 ```
 
-After the machine boots, reconnect to the installed host and bootstrap NixPI on the machine:
+After the machine boots, reconnect to the installed host and optionally bootstrap NixPI on the machine:
 
 ```bash
 nix run github:alexradunet/nixpi#nixpi-bootstrap-host -- \
@@ -61,7 +61,8 @@ sudo nixos-rebuild switch --rollback
 ## Docs
 
 - Documentation site: https://alexradunet.github.io/NixPI
-- Install guide: https://alexradunet.github.io/NixPI/install
+- Plain host install: https://alexradunet.github.io/NixPI/install-plain-host
+- NixPI bootstrap: https://alexradunet.github.io/NixPI/install
 - Operations: https://alexradunet.github.io/NixPI/operations/
 - Architecture: https://alexradunet.github.io/NixPI/architecture/
 - Reference: https://alexradunet.github.io/NixPI/reference/
