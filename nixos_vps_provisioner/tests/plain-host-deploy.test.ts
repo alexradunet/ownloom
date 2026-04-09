@@ -86,14 +86,19 @@ describe("plain-host-deploy.sh", () => {
 	it("exposes a sourceable pure flake builder for deterministic tests", async () => {
 		const result = await run(
 			"bash",
-			["-lc", `source "${deployScriptPath}"; build_deploy_flake "path:${repoRoot}" "ovh-vps-base" "plan-host" "/dev/vda"`],
+			[
+				"-lc",
+				`source "${deployScriptPath}"; build_deploy_flake "path:${repoRoot}" "ovh-vps-base" "plan-host" "/dev/vda"`,
+			],
 			undefined,
 			repoRoot,
 		);
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain(`inputs.nixpi.url = "path:${repoRoot}"`);
-		expect(result.stdout).toContain("nixosConfigurations.deploy = nixpi.nixosConfigurations.ovh-vps-base.extendModules");
+		expect(result.stdout).toContain(
+			"nixosConfigurations.deploy = nixpi.nixosConfigurations.ovh-vps-base.extendModules",
+		);
 		expect(result.stdout).toContain('networking.hostName = lib.mkForce "plan-host";');
 		expect(result.stdout).toContain('disko.devices.disk.main.device = lib.mkForce "/dev/vda";');
 		expect(result.stdout).not.toContain("nixpi.primaryUser");
@@ -104,7 +109,10 @@ describe("plain-host-deploy.sh", () => {
 	it("keeps the pure flake builder free of nixpi-specific bootstrap overrides", async () => {
 		const result = await run(
 			"bash",
-			["-lc", `source "${deployScriptPath}"; build_deploy_flake "path:${repoRoot}" "ovh-vps-base" "plan-host" "/dev/vda"`],
+			[
+				"-lc",
+				`source "${deployScriptPath}"; build_deploy_flake "path:${repoRoot}" "ovh-vps-base" "plan-host" "/dev/vda"`,
+			],
 			undefined,
 			repoRoot,
 		);
@@ -126,7 +134,10 @@ describe("plain-host-deploy.sh", () => {
 	it("defaults the generated deploy flake hostname to ovh-vps-base", async () => {
 		const result = await run(
 			"bash",
-			["-lc", `source "${deployScriptPath}"; build_deploy_flake "path:${repoRoot}" "ovh-vps-base" "ovh-vps-base" "/dev/vda"`],
+			[
+				"-lc",
+				`source "${deployScriptPath}"; build_deploy_flake "path:${repoRoot}" "ovh-vps-base" "ovh-vps-base" "/dev/vda"`,
+			],
 			undefined,
 			repoRoot,
 		);
@@ -227,7 +238,9 @@ describe("plain-host-deploy.sh", () => {
 
 			const generatedFlake = result.readGeneratedFlake();
 			expect(generatedFlake).toContain(`inputs.nixpi.url = "path:${repoRoot}"`);
-			expect(generatedFlake).toContain("nixosConfigurations.deploy = nixpi.nixosConfigurations.ovh-vps-base.extendModules");
+			expect(generatedFlake).toContain(
+				"nixosConfigurations.deploy = nixpi.nixosConfigurations.ovh-vps-base.extendModules",
+			);
 			expect(generatedFlake).toContain('networking.hostName = lib.mkForce "bloom-eu-1";');
 			expect(generatedFlake).toContain('disko.devices.disk.main.device = lib.mkForce "/dev/nvme0n1";');
 			expect(generatedFlake).not.toContain("nixpi.primaryUser");

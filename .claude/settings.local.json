@@ -72,7 +72,8 @@
       "Bash(find:*)",
       "Bash(wc -l /home/alex/pi-bloom/core/os/modules/*.nix)",
       "Bash(head -20 /home/alex/pi-bloom/core/os/modules/*.nix)",
-      "Bash(nix build:*)"
+      "Bash(nix build:*)",
+      "Bash(npx biome:*)"
     ]
   }
 }
