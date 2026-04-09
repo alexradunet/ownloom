@@ -12,7 +12,7 @@ NixPI exposes a shell-first Pi runtime rather than a browser-hosted terminal sur
 |---------|-------|
 | Runtime setup unit | `nixpi-app-setup.service` |
 | Remote shell access | `sshd.service` |
-| Preferred private management network | `tailscaled.service` |
+| Preferred private management network | `netbird-wt0.service` |
 | Running host source of truth | installed `/etc/nixos` flake |
 | Standard rebuild command | `sudo nixpi-rebuild` |
 | Optional `/srv/nixpi` sync helper | `sudo nixpi-rebuild-pull [branch]` |
@@ -33,8 +33,7 @@ The remaining imperative commands are operator-initiated wrappers, not boot-time
 ```bash
 systemctl status nixpi-app-setup.service
 systemctl status sshd.service
-systemctl status tailscaled.service
-systemctl status headscale.service  # only on the control-plane host
+systemctl status netbird-wt0.service
 systemctl status nixpi-update.timer
-tailscale status
+netbird-wt0 status
 ```

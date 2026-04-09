@@ -6,14 +6,11 @@
 
 Operators and maintainers deploying NixPI onto a headless x86_64 VPS.
 
-## Security Note: The Admin Tailnet Is the Preferred Private Management Network
+## Security Note: NetBird Is The Preferred Private Management Network
 
-The Headscale-managed admin tailnet is the preferred private network path for NixPI hosts. SSH stays available for administration, while the tailnet provides the trusted admin overlay for host-to-device access.
+The managed NetBird network is the preferred private network path for NixPI hosts. A password-authenticated SSH flow stays available during bootstrap, while NetBird provides the trusted admin overlay for host access after enrollment.
 
-Once a host is enrolled, NixPI should prefer a password-authenticated SSH flow
-that is reachable from the trusted admin tailnet rather than from the public
-internet. Bootstrap installs can still use public SSH temporarily until the
-private management path exists.
+Once a host is enrolled, NixPI should prefer NetBird-only administrative access rather than public SSH. Bootstrap installs can still use public SSH temporarily until NetBird is verified.
 
 ## Canonical Deployment Path
 
@@ -70,10 +67,10 @@ Useful checks:
 
 ```bash
 systemctl status sshd.service
-systemctl status tailscaled.service
+systemctl status netbird-wt0.service
 systemctl status nixpi-update.timer
 systemctl status nixpi-app-setup.service
-tailscale status
+netbird-wt0 status
 ```
 
 ## 4. Use the standard rebuild path, or sync an operator checkout when needed

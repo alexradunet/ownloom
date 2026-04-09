@@ -28,8 +28,7 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 |---------|---------|
 | `nixpi-app-setup.service` | Seeds `~/.pi` and runtime defaults |
 | `sshd.service` | Remote shell access |
-| `tailscaled.service` | Admin tailnet client on enrolled hosts |
-| `headscale.service` | Control plane on the designated admin-tailnet host |
+| `netbird-wt0.service` | NetBird client for the private admin path |
 
 ## Control Flow Summary
 

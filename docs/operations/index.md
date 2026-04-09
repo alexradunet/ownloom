@@ -22,9 +22,9 @@ sudo nixos-rebuild switch --rollback
 ```bash
 systemctl status nixpi-app-setup.service
 systemctl status sshd.service
-systemctl status tailscaled.service
+systemctl status netbird-wt0.service
 systemctl status nixpi-update.timer
-tailscale status
+netbird-wt0 status
 ```
 
 ## Related

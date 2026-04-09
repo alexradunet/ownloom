@@ -24,9 +24,9 @@ After install, validate the running host:
 
 ```bash
 systemctl status sshd.service
-systemctl status tailscaled.service
+systemctl status netbird-wt0.service
 systemctl status nixpi-app-setup.service
-tailscale status
+netbird-wt0 status
 ```
 
 Operator rebuild path and repo semantics are separate:

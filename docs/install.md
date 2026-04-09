@@ -28,9 +28,9 @@ Validate the installed host:
 ```bash
 systemctl status nixpi-app-setup.service
 systemctl status sshd.service
-systemctl status tailscaled.service
+systemctl status netbird-wt0.service
 systemctl status nixpi-update.timer
-tailscale status
+netbird-wt0 status
 ```
 
 Routine rebuilds should use the installed host flake:

@@ -29,15 +29,13 @@ If the machine reappears in the OVH rescue environment after reboot, fail the
 release check and verify the provider boot mode was switched back from rescue to
 normal disk boot.
 
-Once the host joins the admin tailnet, confirm the SSH management path is
-reachable from the trusted tailnet path and no longer relies on the public
-interface being open.
+Once the host joins NetBird, confirm the administrative path works through NetBird and that public SSH is only being kept for bootstrap fallback.
 
 ## First Remote Validation
 
-1. Confirm `nixpi-app-setup.service`, `sshd.service`, `tailscaled.service`, and `nixpi-update.timer` reach their expected state.
+1. Confirm `nixpi-app-setup.service`, `sshd.service`, `netbird-wt0.service`, and `nixpi-update.timer` reach their expected state.
 2. Confirm `pi` works from SSH.
-3. Confirm outbound networking works and enroll the host in the admin tailnet before treating it as ready for routine remote use.
+3. Confirm outbound networking works and the host enrolls into NetBird before treating it as ready for routine remote use.
 4. If you keep an operator checkout such as `/srv/nixpi`, confirm it remains usable for rebuilds after reboot.
 
 **Expected result:** the Pi runtime returns after reboot, the host remains operable without first-boot repo seeding or runtime host-flake generation, and no second install path is needed for recovery.

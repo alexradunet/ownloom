@@ -34,7 +34,7 @@ A fresh system should provide:
 ```bash
 systemctl status nixpi-app-setup.service
 systemctl status sshd.service
-systemctl status tailscaled.service
+systemctl status netbird-wt0.service
 systemctl status nixpi-update.timer
 ```
 
@@ -58,18 +58,18 @@ Expected result:
 
 After the first successful login, the default operator-facing interface is Zellij. The generated layout opens Pi and a shell tab. If you need a plain shell for recovery, use `NIXPI_NO_ZELLIJ=1` before starting the login shell.
 
-### 3. Verify the Admin Tailnet Before Normal Use
+### 3. Verify NetBird Bootstrap Before Normal Use
 
 ```bash
-systemctl status tailscaled.service
-tailscale status
+systemctl status netbird-wt0.service
+netbird-wt0 status
 ```
 
 Expected result:
 
-- `tailscaled.service` is active
-- the host can join and report its state on the admin tailnet
-- `tailscale status` shows the local node and any expected peers once you have enrolled your admin devices
+- `netbird-wt0.service` is active
+- the host has enrolled into the managed NetBird network
+- `netbird-wt0 status` reports the local peer and connection state
 
 ### 4. Optional: Verify the Operator Rebuild Path
 
@@ -120,7 +120,7 @@ After first boot, keep these boundaries in mind:
 |------|---------|
 | `nixpi-app-setup.service` | Provides the Pi runtime entry path |
 | `sshd.service` | Remote shell access |
-| `tailscaled.service` | Tailnet client for the private admin network |
+| `netbird-wt0.service` | NetBird client for the private admin network |
 
 ### Current Behavior Target
 
