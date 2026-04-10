@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 - `core/lib/`: shared TypeScript utilities for exec, filesystem, frontmatter, logging, and validation.
-- `core/pi/extensions/`: Pi extension entry points and action modules (`persona`, `os`, `objects`, `episodes`, `nixpi`).
+- `core/pi/extensions/`: Pi extension entry points and action modules (`persona`, `os`, `wiki`, `nixpi`).
 - `core/os/`: NixOS modules, package definitions, host profiles, and deployment helpers.
 - `core/scripts/`: operational shell scripts such as `nixpi-rebuild.sh`.
 - `tests/`: Vitest suites split by scope (`lib`, `extensions`, `integration`, `e2e`, `os`) plus NixOS fixtures in `tests/nixos/`.
@@ -21,7 +21,7 @@
 Use TypeScript ESM with tabs for indentation, double quotes, semicolons, and LF line endings; Biome enforces this (`biome.json`). Keep modules focused and prefer named exports. Match existing file patterns: kebab-case for Nix files (`ovh-base.nix`), descriptive action files (`actions-health.ts`), and `*.test.ts` for tests.
 
 ## Extension Action Pattern
-All extension action functions return `ActionResult = Result<{ text: string; details?: Record<string, unknown> }, string>` from `neverthrow` (imported via `core/lib/utils.ts`). Use `ok({ text, details })` for success and `err(message)` for failure. The `index.ts` entry point wraps every `execute()` return with `toToolResult(result)` before handing it to the agent. Never return the raw neverthrow `Result` from `execute()`. Split large action sets into focused files (e.g. `actions.ts`, `actions-health.ts`, `actions-proposal.ts`); keep `index.ts` as wiring-only.
+All extension action functions return `ActionResult = Result<{ text: string; details?: Record<string, unknown> }, string>` from `neverthrow` (imported via `core/lib/utils.ts`). Use `ok({ text, details })` for success and `err(message)` for failure. The `index.ts` entry point wraps every `execute()` return with `toToolResult(result)` before handing it to the agent. Never return the raw neverthrow `Result` from `execute()`. Split large action sets into focused files (e.g. `actions.ts`, `actions-health.ts`, `actions-proposal.ts`, `actions-capture.ts`, `actions-search.ts`); keep `index.ts` as wiring-only.
 
 ## Testing Guidelines
 Vitest runs in a Node environment and discovers `tests/**/*.test.ts`. Keep unit tests near their domain folder under `tests/`, and place broader workflow checks in `tests/integration/` or `tests/e2e/`. Coverage thresholds are enforced for `core/lib/**/*.ts` and `core/pi/extensions/**/*.ts`; do not lower them without justification.

@@ -18,7 +18,7 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 |-----------|---------|----------|
 | **NixOS Modules** | System provisioning and service definitions | `core/os/` |
 | **Shell Runtime** | Pi packaging and runtime-state setup | `core/os/modules/app.nix` |
-| **Pi Extensions** | Tool surface for Pi | `core/pi/extensions/` |
+| **Pi Extensions** | Tool surface for Pi, including the wiki memory extension | `core/pi/extensions/` |
 | **Core Library** | Shared runtime primitives | `core/lib/` |
 | **Persona & Skills** | Behavior configuration | `core/pi/persona/`, `core/pi/skills/` |
 
@@ -34,5 +34,5 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 1. **NixOS provisions runtime**: System boots with NixPI modules applied
 2. **Packaged app prepares Pi state**: `nixpi-app-setup.service` seeds the shell runtime
 3. **Operator enters through shell**: SSH or a local terminal launches `pi`
-4. **Extensions expose tools**: Pi uses extensions for OS operations
+4. **Extensions expose tools**: Pi uses extensions for OS operations and wiki memory maintenance
 5. **Scripts drive setup**: First-boot workflow configures the system

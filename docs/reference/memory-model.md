@@ -6,23 +6,24 @@
 
 Maintainers changing memory tools, storage rules, or retrieval behavior.
 
-## Why NixPI Uses Markdown Memory
+## Why NixPI Uses A Wiki
 
-NixPI memory is intentionally file-based.
+NixPI memory is intentionally file-based and page-first.
 
 The goal is to keep memory:
 
 - Inspectable by humans
 - Editable without special tooling
 - Lightweight enough for a minimal host footprint
-- Explicit about what is durable versus temporary
+- Explicit about evidence, synthesis, and uncertainty
 
 ## How The Memory Layers Work
 
-NixPI has two persistent layers:
+NixPI stores long-term memory under `~/nixpi/Wiki/` in three layers:
 
-- `~/nixpi/Objects/` for durable long-term memory
-- `~/nixpi/Episodes/` for append-only episodic capture
+- `raw/` for immutable source packets captured from text, files, or other raw inputs
+- `pages/` for editable wiki pages
+- `meta/` for generated registry, backlinks, index, and event logs
 
 ### Working Memory
 
@@ -36,39 +37,37 @@ Use this for:
 
 Do not treat working memory as canonical long-term truth.
 
-### Episodic Memory
+### Source Packets
 
-Episodes are raw observations stored under `~/nixpi/Episodes/YYYY-MM-DD/*.md`.
+Source packets live under `~/nixpi/Wiki/raw/SRC-YYYY-MM-DD-NNN/`.
 
-Use episodes for:
+Use source packets for:
 
-- Recent notable user statements
-- Tool outcomes worth revisiting
-- Decisions in progress
-- Troubleshooting observations
-- Raw material for later promotion
+- Raw observations
+- Imported notes or files
+- Immutable evidence snapshots
+- Material that still needs synthesis
 
-Episodes are cheap to write and should remain append-only.
+Each source packet gets a paired source page under `~/nixpi/Wiki/pages/sources/`.
 
-### Durable Memory
+### Canonical Wiki Pages
 
-Durable objects live in `~/nixpi/Objects/*.md`.
+Canonical pages live under `~/nixpi/Wiki/pages/*.md`.
 
-Use durable objects for:
+Use canonical pages for:
 
-- Stable facts
-- Confirmed preferences
-- Reusable procedures
-- Explicit decisions
-- Projects and open threads
+- Stable facts and concepts
+- Confirmed preferences and procedures
+- Decisions and open questions
+- Evolutions and analyses
 
-Durable objects are the canonical long-term memory store.
+Canonical pages are the long-term knowledge layer. They should reference sources explicitly via `source_ids` and wiki links.
 
-## Promotion Rules
+## Integration Rules
 
-Promotion is the process of turning one or more episodes into durable objects.
+Integration is the process of turning captured sources into canonical wiki pages.
 
-Auto-promote only when the information is:
+Integrate only when the information is:
 
 - Explicit rather than inferred
 - Durable rather than transient
@@ -85,51 +84,45 @@ Poor promotion candidates:
 
 ## Reference
 
-### Durable Object Required Fields
+### Source Page Fields
+
+- `type: source`
+- `source_id`
+- `title`
+- `status`
+- `captured_at`
+- `origin_type`
+- `origin_value`
+- `source_ids`
+
+### Canonical Page Fields
 
 - `type`
-- `slug`
 - `title`
-- `summary`
-- `scope`
-- `confidence`
-- `status`
-- `created`
-- `modified`
-
-### Common Optional Fields
-
-- `scope_value`
+- `aliases`
 - `tags`
-- `links`
-- `source`
-- `salience`
-- `last_accessed`
-- `last_confirmed`
+- `status`
+- `updated`
+- `source_ids`
+- `summary`
 
-### Common Enums
+### Canonical Page Types
 
-**scope**: `global`, `host`, `project`, `room`, `agent`
-
-**confidence**: `low`, `medium`, `high`
-
-**status**: `active`, `stale`, `superseded`, `archived`
-
-### Current Recommended Durable Types
-
-- `fact`
-- `preference`
-- `project`
-- `decision`
+- `concept`
+- `entity`
+- `synthesis`
+- `analysis`
+- `evolution`
 - `procedure`
-- `thread`
-- `relationship`
+- `decision`
 
 ### Current Memory Transitions
 
-1. `episode_create`
-2. `episode_promote`
-3. `episode_consolidate`
+1. `wiki_capture`
+2. Edit and enrich the generated source page
+3. `wiki_search`
+4. `wiki_ensure_page`
+5. `wiki_lint`
 
 ### Current Non-Goals
 
@@ -141,5 +134,5 @@ Poor promotion candidates:
 
 ## Related
 
-- [Runtime Flows](../architecture/runtime-flows)
+- [Wiki memory design spec](../superpowers/specs/2026-04-10-nixpi-wiki-memory-design)
 - [Reference](./)

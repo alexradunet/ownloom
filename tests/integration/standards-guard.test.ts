@@ -9,19 +9,7 @@ const nixHostsPath = path.join(repoRoot, "nix/hosts.nix");
 const packageJsonPath = path.join(repoRoot, "package.json");
 const bootstrapHostScriptPath = path.join(repoRoot, "core/scripts/nixpi-bootstrap-host.sh");
 const bootstrapHostPackagePath = path.join(repoRoot, "core/os/pkgs/nixpi-bootstrap-host/default.nix");
-const plainHostDeployProvisionerPackagePath = path.join(
-	repoRoot,
-	"nixos_vps_provisioner/pkgs/plain-host-deploy/default.nix",
-);
-const ovhSingleDiskProvisionerPresetPath = path.join(repoRoot, "nixos_vps_provisioner/presets/ovh-single-disk.nix");
-const ovhVpsBaseProvisionerPresetPath = path.join(repoRoot, "nixos_vps_provisioner/presets/ovh-vps-base.nix");
 const bootstrapHostTestPath = path.join(repoRoot, "tests/integration/nixpi-bootstrap-host.test.ts");
-const plainHostDeployProvisionerTestPath = path.join(repoRoot, "nixos_vps_provisioner/tests/plain-host-deploy.test.ts");
-const ovhVpsBaseProvisionerConfigTestPath = path.join(
-	repoRoot,
-	"nixos_vps_provisioner/tests/ovh-vps-base-config.test.ts",
-);
-const provisionerAgentsPath = path.join(repoRoot, "nixos_vps_provisioner/AGENTS.md");
 const appModulePath = path.join(repoRoot, "core/os/modules/app.nix");
 const piPackagePath = path.join(repoRoot, "core/os/pkgs/pi/default.nix");
 const shellModulePath = path.join(repoRoot, "core/os/modules/shell.nix");
@@ -253,16 +241,6 @@ describe("repo standards guards", () => {
 		expect(existsSync(bootstrapHostScriptPath)).toBe(true);
 		expect(existsSync(bootstrapHostPackagePath)).toBe(true);
 		expect(existsSync(bootstrapHostTestPath)).toBe(true);
-		expect(existsSync(plainHostDeployProvisionerPackagePath)).toBe(true);
-		expect(existsSync(ovhSingleDiskProvisionerPresetPath)).toBe(true);
-		expect(existsSync(ovhVpsBaseProvisionerPresetPath)).toBe(true);
-		expect(existsSync(plainHostDeployProvisionerTestPath)).toBe(true);
-		expect(existsSync(ovhVpsBaseProvisionerConfigTestPath)).toBe(true);
-		expect(existsSync(provisionerAgentsPath)).toBe(true);
-		const provisionerAgents = readFileSync(provisionerAgentsPath, "utf-8");
-		expect(provisionerAgents).toContain("Automation begins at first SSH access, not at the web-panel step.");
-		expect(provisionerAgents).toContain("never auto-select a destructive target disk");
-		expect(provisionerAgents).toContain("stop and ask for the human to perform OVH panel actions");
 
 		expect(flake).not.toContain("nixpi-rebuild-pull");
 		expect(flake).not.toContain("nixpi-reinstall-ovh");

@@ -35,8 +35,7 @@ describe("runtime package extension list", () => {
 		expect(extensionList).toEqual([
 			"./core/pi/extensions/persona",
 			"./core/pi/extensions/os",
-			"./core/pi/extensions/episodes",
-			"./core/pi/extensions/objects",
+			"./core/pi/extensions/wiki",
 			"./core/pi/extensions/nixpi",
 		]);
 	});
@@ -58,43 +57,25 @@ describe("nixpi registration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// episodes
+// wiki
 // ---------------------------------------------------------------------------
-describe("episodes registration", () => {
-	it("registers episodic tools without events", async () => {
-		const mod = await import("../../core/pi/extensions/episodes/index.js");
-		const api = createMockExtensionAPI();
-		mod.default(api as never);
-
-		expect(toolNames(api)).toEqual(
-			expect.arrayContaining(["episode_create", "episode_list", "episode_promote", "episode_consolidate"]),
-		);
-		expect(eventNames(api)).toEqual([]);
-	});
-});
-
-// ---------------------------------------------------------------------------
-// objects
-// ---------------------------------------------------------------------------
-describe("objects registration", () => {
-	it("registers expected tools (no events)", async () => {
-		const mod = await import("../../core/pi/extensions/objects/index.js");
+describe("wiki registration", () => {
+	it("registers expected tools and events", async () => {
+		const mod = await import("../../core/pi/extensions/wiki/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
 		expect(toolNames(api)).toEqual(
 			expect.arrayContaining([
-				"memory_create",
-				"memory_update",
-				"memory_upsert",
-				"memory_read",
-				"memory_query",
-				"memory_search",
-				"memory_link",
-				"memory_list",
+				"wiki_status",
+				"wiki_capture",
+				"wiki_search",
+				"wiki_ensure_page",
+				"wiki_lint",
+				"wiki_rebuild",
 			]),
 		);
-		expect(eventNames(api)).toEqual([]);
+		expect(eventNames(api)).toEqual(expect.arrayContaining(["tool_call", "agent_end", "before_agent_start"]));
 	});
 });
 

@@ -167,8 +167,9 @@ describe("nixpi-bootstrap-host.sh", () => {
 			expect(result.readEtcNixosFile("configuration.nix")).toContain('system.stateVersion = "25.05";');
 			expect(result.readEtcNixosFile("configuration.nix")).toContain('    "nix-command"');
 			expect(result.readEtcNixosFile("configuration.nix")).toContain('    "flakes"');
-			expect(result.readEtcNixosFile("configuration.nix")).toContain("services.openssh");
 			expect(result.readEtcNixosFile("configuration.nix")).toContain("networking.firewall.allowedTCPPorts = [ 22 ];");
+			expect(result.readEtcNixosFile("configuration.nix")).toContain("services.qemuGuest.enable = lib.mkDefault true;");
+			expect(result.readEtcNixosFile("nixpi-host.nix")).toContain("nixpi.security.ssh.allowedSourceCIDRs = [");
 			expect(result.readEtcNixosFile("flake.nix")).toContain("./hardware-configuration.nix");
 		} finally {
 			result.cleanup();

@@ -9,7 +9,7 @@ import { stringifyFrontmatter } from "../../../lib/frontmatter.js";
 import { errorResult, textToolResult, truncate } from "../../../lib/utils.js";
 import { readBlueprintVersions } from "./actions-blueprints.js";
 
-const NIXPI_DIRS = ["Persona", "Skills", "Evolutions", "Objects", "Episodes", "Agents", "audit"];
+const NIXPI_DIRS = ["Persona", "Skills", "Agents", "audit", "Wiki/raw", "Wiki/pages/sources", "Wiki/meta"];
 
 // --- Package helpers ---
 

@@ -30,7 +30,7 @@ describe("nixpi seeding", () => {
 	it("creates NixPI subdirectories", async () => {
 		await runNixpiExtension();
 
-		const expected = ["Persona", "Skills", "Evolutions", "audit"];
+		const expected = ["Persona", "Skills", "Agents", "audit", "Wiki/raw", "Wiki/pages/sources", "Wiki/meta"];
 		for (const dir of expected) {
 			expect(existsSync(join(temp.nixPiDir, dir))).toBe(true);
 		}

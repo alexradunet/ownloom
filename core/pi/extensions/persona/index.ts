@@ -5,7 +5,8 @@
  * @see {@link ../../AGENTS.md#persona} Extension reference
  */
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { buildMemoryDigest } from "../objects/digest.js";
+import { buildWikiDigest } from "../wiki/actions-meta.js";
+import { getWikiRoot } from "../wiki/paths.js";
 import {
 	buildRestoredContextBlock,
 	buildSystemSetupBlock,
@@ -61,7 +62,7 @@ export default function (pi: ExtensionAPI) {
 		memoryDigest = undefined;
 	});
 
-	pi.on("before_agent_start", async (event, ctx) => {
+	pi.on("before_agent_start", async (event, _ctx) => {
 		personaBlock ??= loadPersona();
 		let systemPrompt = `${personaBlock}\n\n${event.systemPrompt}`;
 
@@ -70,7 +71,7 @@ export default function (pi: ExtensionAPI) {
 		systemPrompt = appendRestoredContext(systemPrompt, restoredContext);
 		restoredContext = null;
 
-		memoryDigest ??= buildMemoryDigest(ctx.cwd);
+		memoryDigest ??= buildWikiDigest(getWikiRoot());
 		systemPrompt = appendMemoryDigest(systemPrompt, memoryDigest);
 
 		systemPrompt = appendSystemSetup(systemPrompt);

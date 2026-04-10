@@ -20,7 +20,7 @@ When extending capabilities, prefer the lightest option: **Skill → Extension �
 ## Evolution Workflow
 
 1. **Detect**: Recognize a capability gap or improvement opportunity
-2. **Propose**: Create an evolution object using `memory_create`
+2. **Propose**: Create or resolve an evolution page using `wiki_ensure_page`
 3. **Plan**: Design the implementation approach
 4. **Implement**: Make the changes locally in the repo or NixPI directory
 5. **Verify**: Test and validate
@@ -28,16 +28,16 @@ When extending capabilities, prefer the lightest option: **Skill → Extension �
 
 ## Available Tools
 
-### Object Store (for tracking)
-- `memory_create` — Create evolution tracking objects
-- `memory_read` — Read evolution details
-- `memory_search` — Find existing evolutions
+### Wiki Memory (for tracking)
+- `wiki_ensure_page` — Create or resolve evolution tracking pages
+- `wiki_search` — Find existing evolution pages and related context
+- `wiki_capture` — Capture supporting evidence before integration
 
-## Evolution Object Fields
+## Evolution Page Fields
 
 - `status`: proposed | planning | implementing | reviewing | approved | applied | rejected
 - `risk`: low | medium | high
-- `area`: objects | persona | skills | services | system
+- `area`: wiki | persona | skills | services | system
 
 ## Safety Rules
 
@@ -45,7 +45,7 @@ When extending capabilities, prefer the lightest option: **Skill → Extension �
 - Always test changes before deploying
 - Document what each evolution changes and why
 - Keep a rollback plan for NixOS and service changes
-- Persona changes are tracked as evolution objects — never modify persona files directly
+- Persona changes are tracked as `type: evolution` wiki pages before they land in persona files
 
 ## Code Evolution Workflow
 

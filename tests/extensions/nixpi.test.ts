@@ -30,7 +30,7 @@ afterEach(() => {
 describe("ensureNixPi", () => {
 	it("creates all required subdirectories", () => {
 		ensureNixPi(nixPiDir);
-		for (const dir of ["Persona", "Skills", "Evolutions", "audit"]) {
+		for (const dir of ["Persona", "Skills", "Agents", "audit", "Wiki/raw", "Wiki/pages/sources", "Wiki/meta"]) {
 			expect(fs.existsSync(path.join(nixPiDir, dir))).toBe(true);
 		}
 	});
@@ -312,7 +312,7 @@ describe("/nixpi command handler", () => {
 		const handler = getCommandHandler();
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handler("init", ctx);
-		for (const dir of ["Persona", "Skills", "Evolutions", "Objects", "Episodes", "Agents", "audit"]) {
+		for (const dir of ["Persona", "Skills", "Agents", "audit", "Wiki/raw", "Wiki/pages/sources", "Wiki/meta"]) {
 			expect(fs.existsSync(path.join(temp.nixPiDir, dir))).toBe(true);
 		}
 	});

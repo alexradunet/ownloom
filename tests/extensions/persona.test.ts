@@ -113,52 +113,61 @@ describe("persona session_start", () => {
 	});
 
 	it("injects a durable memory digest into the system prompt", async () => {
-		const objectsDir = path.join(temp.nixPiDir, "Objects");
-		fs.mkdirSync(objectsDir, { recursive: true });
+		const { rebuildAllMeta } = await import("../../core/pi/extensions/wiki/actions-meta.js");
+		const wikiPagesDir = path.join(temp.nixPiDir, "Wiki", "pages");
+		const wikiMetaDir = path.join(temp.nixPiDir, "Wiki", "meta");
+		fs.mkdirSync(wikiPagesDir, { recursive: true });
+		fs.mkdirSync(wikiMetaDir, { recursive: true });
+
 		fs.writeFileSync(
-			path.join(objectsDir, "ts-style.md"),
+			path.join(wikiPagesDir, "typescript-style.md"),
 			stringifyFrontmatter(
 				{
-					type: "preference",
-					slug: "ts-style",
+					type: "concept",
 					title: "TypeScript Style",
-					summary: "User prefers 2-space indentation.",
+					summary: "House style for TypeScript changes.",
 					status: "active",
-					salience: 0.9,
+					aliases: ["TS style"],
+					tags: ["typescript"],
+					updated: "2026-04-10",
+					source_ids: [],
 				},
-				"# TypeScript Style\n",
+				"# TypeScript Style\n\nUse tabs for indentation.\n",
 			),
 		);
 		fs.writeFileSync(
-			path.join(objectsDir, "chat-runtime-recovery.md"),
+			path.join(wikiPagesDir, "chat-runtime-recovery.md"),
 			stringifyFrontmatter(
 				{
 					type: "procedure",
-					slug: "chat-runtime-recovery",
 					title: "Terminal Surface Recovery",
 					summary: "Verify SSH or local shell access, then recover the Pi runtime if needed.",
 					status: "active",
-					salience: 0.8,
+					aliases: [],
+					tags: ["recovery"],
+					updated: "2026-04-10",
+					source_ids: [],
 				},
-				"# Terminal Surface Recovery\n",
+				"# Terminal Surface Recovery\n\nCheck SSH first.\n",
 			),
 		);
 		fs.writeFileSync(
-			path.join(objectsDir, "project-recovery.md"),
+			path.join(wikiPagesDir, "project-recovery.md"),
 			stringifyFrontmatter(
 				{
 					type: "procedure",
-					slug: "project-recovery",
 					title: "Project Recovery",
 					summary: "Project-specific recovery path.",
 					status: "active",
-					scope: "project",
-					scope_value: "pi-nixpi",
-					salience: 0.4,
+					aliases: [],
+					tags: ["project"],
+					updated: "2026-04-10",
+					source_ids: [],
 				},
-				"# Project Recovery\n",
+				"# Project Recovery\n\nRecover the active project checkout first.\n",
 			),
 		);
+		rebuildAllMeta(path.join(temp.nixPiDir, "Wiki"));
 
 		const result = (await api.fireEvent(
 			"before_agent_start",
@@ -168,10 +177,10 @@ describe("persona session_start", () => {
 			createMockExtensionContext({ cwd: "/tmp/pi-nixpi" }),
 		)) as { systemPrompt: string };
 
-		expect(result.systemPrompt).toContain("[WORKSPACE MEMORY DIGEST]");
-		expect(result.systemPrompt).toContain("preference/ts-style");
-		const procedureIndex = result.systemPrompt.indexOf("procedure/project-recovery");
-		const globalProcedureIndex = result.systemPrompt.indexOf("procedure/chat-runtime-recovery");
+		expect(result.systemPrompt).toContain("[WIKI MEMORY DIGEST]");
+		expect(result.systemPrompt).toContain("TypeScript Style (concept)");
+		const procedureIndex = result.systemPrompt.indexOf("Project Recovery (procedure)");
+		const globalProcedureIndex = result.systemPrompt.indexOf("Terminal Surface Recovery (procedure)");
 		expect(procedureIndex).toBeGreaterThan(-1);
 		expect(globalProcedureIndex).toBeGreaterThan(-1);
 		expect(procedureIndex).toBeLessThan(globalProcedureIndex);
@@ -257,8 +266,8 @@ describe("persona guardrails", () => {
 
 	it("does NOT block non-bash tool calls", async () => {
 		const result = await api.fireEvent("tool_call", {
-			toolName: "memory_create",
-			input: { type: "note", slug: "rm -rf /" },
+			toolName: "wiki_status",
+			input: {},
 		});
 		expect(result).toBeUndefined();
 	});

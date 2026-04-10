@@ -16,6 +16,13 @@ function asString(v: unknown, fallback = ""): string {
 	return fallback;
 }
 
+function pickField(fm: Record<string, unknown>, ...keys: string[]): unknown {
+	for (const key of keys) {
+		if (key in fm) return fm[key];
+	}
+	return undefined;
+}
+
 function asStringArray(v: unknown): string[] {
 	if (Array.isArray(v)) {
 		return v.filter((x): x is string => typeof x === "string");
@@ -106,7 +113,7 @@ export function buildRegistry(pages: ParsedPage[]): RegistryData {
 			status: asString(fm.status, "draft") as RegistryEntry["status"],
 			tags: asStringArray(fm.tags),
 			updated: asString(fm.updated),
-			sourceIds: asStringArray(fm.sourceIds),
+			sourceIds: asStringArray(pickField(fm, "sourceIds", "source_ids")),
 			linksOut: p.normalizedLinks,
 			headings: p.headings,
 			wordCount: p.wordCount,

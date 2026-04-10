@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { captureFile, captureText } from "../../core/pi/extensions/wiki/actions-capture.js";
 import {
 	appendEvent,
 	buildBacklinks,
@@ -12,7 +13,6 @@ import {
 	rebuildAllMeta,
 	scanPages,
 } from "../../core/pi/extensions/wiki/actions-meta.js";
-import { captureFile, captureText } from "../../core/pi/extensions/wiki/actions-capture.js";
 import { handleEnsurePage } from "../../core/pi/extensions/wiki/actions-pages.js";
 import { handleWikiSearch, searchRegistry } from "../../core/pi/extensions/wiki/actions-search.js";
 import {
@@ -392,6 +392,25 @@ Hello world.
 		const indexContent = readFileSync(path.join(metaDir, "index.md"), "utf-8");
 		expect(indexContent).toContain("# Wiki Index");
 		expect(indexContent).toContain("Test Page");
+	});
+
+	it("rebuildAllMeta preserves source_ids from snake_case frontmatter", () => {
+		const content = `---
+title: Grounded Claim
+type: concept
+status: active
+updated: "2026-04-10"
+source_ids:
+  - SRC-2026-04-10-001
+summary: Uses a captured source
+---
+Claim body.
+`;
+		writeFileSync(path.join(tmpDir, "pages", "grounded-claim.md"), content, "utf-8");
+
+		const { registry } = rebuildAllMeta(tmpDir);
+		expect(registry.pages).toHaveLength(1);
+		expect(registry.pages[0]?.sourceIds).toEqual(["SRC-2026-04-10-001"]);
 	});
 
 	// -------------------------------------------------------------------------
@@ -826,6 +845,68 @@ summary: ""
 		if (result.isOk()) {
 			const relPath = result.value.details?.path as string;
 			expect(relPath).toContain("deep-learning-fundamentals");
+		}
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Task 6: handleWikiLint
+// ---------------------------------------------------------------------------
+
+describe("handleWikiLint", () => {
+	let wikiRoot: string;
+
+	beforeEach(() => {
+		wikiRoot = mkdtempSync(path.join(os.tmpdir(), "wiki-lint-test-"));
+		mkdirSync(path.join(wikiRoot, "pages"), { recursive: true });
+		mkdirSync(path.join(wikiRoot, "meta"), { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(wikiRoot, { recursive: true, force: true });
+	});
+
+	it("detects missing frontmatter fields", async () => {
+		const { handleWikiLint } = await import("../../core/pi/extensions/wiki/actions-lint.js");
+		writeFileSync(path.join(wikiRoot, "pages", "bad.md"), "---\ntype: concept\n---\n# Bad\n", "utf-8");
+
+		const result = handleWikiLint(wikiRoot, "frontmatter");
+		expect(result.isOk()).toBe(true);
+		if (result.isOk()) {
+			expect(result.value.details?.counts).toMatchObject({ frontmatter: expect.any(Number) });
+			expect((result.value.details?.counts as { frontmatter: number }).frontmatter).toBeGreaterThan(0);
+		}
+	});
+
+	it("detects broken wikilinks", async () => {
+		const { handleWikiLint } = await import("../../core/pi/extensions/wiki/actions-lint.js");
+		writeFileSync(
+			path.join(wikiRoot, "pages", "linker.md"),
+			"---\ntype: concept\ntitle: Linker\naliases: []\ntags: []\nstatus: active\nupdated: 2026-04-10\nsource_ids: []\nsummary: \n---\n# Linker\n\nSee [[nonexistent-page]].\n",
+			"utf-8",
+		);
+
+		const result = handleWikiLint(wikiRoot, "links");
+		expect(result.isOk()).toBe(true);
+		if (result.isOk()) {
+			expect(result.value.details?.counts).toMatchObject({ brokenLinks: expect.any(Number) });
+			expect((result.value.details?.counts as { brokenLinks: number }).brokenLinks).toBeGreaterThan(0);
+		}
+	});
+
+	it("detects orphan pages", async () => {
+		const { handleWikiLint } = await import("../../core/pi/extensions/wiki/actions-lint.js");
+		writeFileSync(
+			path.join(wikiRoot, "pages", "orphan.md"),
+			"---\ntype: concept\ntitle: Orphan\naliases: []\ntags: []\nstatus: active\nupdated: 2026-04-10\nsource_ids: []\nsummary: \n---\n# Orphan\n\nNo links.\n",
+			"utf-8",
+		);
+
+		const result = handleWikiLint(wikiRoot, "orphans");
+		expect(result.isOk()).toBe(true);
+		if (result.isOk()) {
+			expect(result.value.details?.counts).toMatchObject({ orphans: expect.any(Number) });
+			expect((result.value.details?.counts as { orphans: number }).orphans).toBeGreaterThan(0);
 		}
 	});
 });

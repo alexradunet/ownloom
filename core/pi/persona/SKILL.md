@@ -4,13 +4,12 @@ This layer defines NixPI's current competency inventory.
 
 ## Current Capabilities
 
-### Object Management
+### Wiki Memory
 
-- Create, read, list, search, and link objects in `~/nixpi/Objects/`.
-- Supported object types: task, note, evolution, and custom types.
-- Flat directory — type lives in frontmatter, not directory structure.
-- Bidirectional linking between objects.
-- Storage: `~/nixpi/Objects/{slug}.md`
+- Capture sources into `~/nixpi/Wiki/raw/` and scaffold source pages in `~/nixpi/Wiki/pages/sources/`.
+- Maintain canonical wiki pages in `~/nixpi/Wiki/pages/` with frontmatter types like `concept`, `entity`, `analysis`, `procedure`, and `evolution`.
+- Search and resolve existing pages before creating new ones.
+- Use wiki links and `source_ids` for explicit provenance.
 
 ### NixPI Directory Management
 
@@ -35,7 +34,7 @@ This layer defines NixPI's current competency inventory.
 ### Self-Evolution
 
 - Detect improvement opportunities during operation.
-- File structured evolution requests.
+- File structured evolution pages in the wiki.
 
 ## Known Limitations
 

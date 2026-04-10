@@ -1,23 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getNixPiDir, safePathWithin } from "../../core/lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../core/lib/frontmatter.js";
-import {
-	_clearInteractionStore,
-	formatResumeMessage,
-	getPendingInteractions,
-	requestInteraction,
-	requestSelection,
-	requestTextInput,
-	requireConfirmation,
-	resolveInteractionReply,
-} from "../../core/lib/interactions.js";
+import { requireConfirmation } from "../../core/lib/interactions.js";
 import { createLogger } from "../../core/lib/logging.js";
 import { errorResult, nowIso, registerTools, textToolResult } from "../../core/lib/utils.js";
 import { guardServiceName } from "../../core/lib/validation.js";
-
-afterEach(() => {
-	_clearInteractionStore();
-});
 
 // ---------------------------------------------------------------------------
 // safePathWithin
@@ -44,7 +31,9 @@ describe("safePathWithin", () => {
 	});
 
 	it("throws on traversal hidden in nested segments", () => {
-		expect(() => safePathWithin("/workspace", "Projects", "..", "..", "etc", "shadow")).toThrow("Path traversal blocked");
+		expect(() => safePathWithin("/workspace", "Projects", "..", "..", "etc", "shadow")).toThrow(
+			"Path traversal blocked",
+		);
 	});
 
 	it("allows segments that contain dots but don't escape", () => {
@@ -302,22 +291,9 @@ const fakeCtx = { hasUI: false } as never;
 // requireConfirmation
 // ---------------------------------------------------------------------------
 describe("requireConfirmation", () => {
-	it("returns local chat confirmation instructions when no UI and requireUi is true", async () => {
+	it("returns a non-interactive error when no UI is available", async () => {
 		const result = await requireConfirmation(fakeCtx, "delete file");
-		expect(result).toMatch(
-			/^Confirmation required for "delete file"\. Reply here with "confirm [a-z0-9]+" to approve or "deny [a-z0-9]+" to cancel\.$/,
-		);
-	});
-
-	it("returns null when no UI and requireUi is false", async () => {
-		const result = await requireConfirmation(fakeCtx, "delete file", { requireUi: false });
-		expect(result).toBeNull();
-	});
-
-	it("reuses the same pending token for repeated no-UI requests", async () => {
-		const first = await requireConfirmation(fakeCtx, "delete file");
-		const second = await requireConfirmation(fakeCtx, "delete file");
-		expect(first).toBe(second);
+		expect(result).toBe('Cannot perform "delete file" without interactive user confirmation.');
 	});
 
 	it("returns null when user confirms", async () => {
@@ -330,239 +306,6 @@ describe("requireConfirmation", () => {
 		const ctx = { hasUI: true, ui: { confirm: async () => false } } as never;
 		const result = await requireConfirmation(ctx, "delete file");
 		expect(result).toBe("User declined: delete file");
-	});
-
-	it("consumes an approved confirmation on retry", async () => {
-		// Set up a pending interaction
-		const pending = requestInteraction(fakeCtx, {
-			kind: "confirm",
-			key: "delete file",
-			prompt: "Allow: delete file?",
-		});
-		if (!pending || pending.state !== "pending") throw new Error("expected pending");
-
-		// Resolve it
-		resolveInteractionReply(fakeCtx, `yes ${pending.record.token}`);
-
-		// Now requireConfirmation should consume the resolved record and return null
-		const result = await requireConfirmation(fakeCtx, "delete file");
-		expect(result).toBeNull();
-	});
-
-	it("returns a decline after denial and consumes it", async () => {
-		const pending = requestInteraction(fakeCtx, {
-			kind: "confirm",
-			key: "delete file",
-			prompt: "Allow: delete file?",
-		});
-		if (!pending || pending.state !== "pending") throw new Error("expected pending");
-
-		resolveInteractionReply(fakeCtx, `no ${pending.record.token}`);
-
-		const result = await requireConfirmation(fakeCtx, "delete file");
-		expect(result).toBe("User declined: delete file");
-	});
-
-	it("re-prompts instead of consuming an ambiguous untokened approval", async () => {
-		requestInteraction(fakeCtx, {
-			kind: "input",
-			key: "nickname",
-			prompt: "Enter nickname",
-		});
-		const confirmation = requestInteraction(fakeCtx, {
-			kind: "confirm",
-			key: "delete file",
-			prompt: "Allow: delete file?",
-		});
-		if (!confirmation || confirmation.state !== "pending") throw new Error("expected pending confirmation");
-
-		resolveInteractionReply(fakeCtx, "yes");
-
-		const result = await requireConfirmation(fakeCtx, "delete file");
-		expect(result).not.toBeNull();
-		expect(result).toContain('Confirmation required for "delete file"');
-		expect(result).toContain("confirm ");
-	});
-});
-
-describe("requestSelection", () => {
-	it("returns a numbered prompt for no-UI sessions and resolves the saved choice", async () => {
-		const first = await requestSelection(fakeCtx, "pick-action", "Choose action", ["init", "status"]);
-		expect(first.value).toBeNull();
-		expect(first.prompt).toContain("1. init");
-		expect(first.prompt).toContain("2. status");
-
-		// Resolve the pending interaction directly
-		const pending = getPendingInteractions(fakeCtx);
-		expect(pending).toHaveLength(1);
-		resolveInteractionReply(fakeCtx, `2 ${pending[0]?.token}`);
-
-		const second = await requestSelection(fakeCtx, "pick-action", "Choose action", ["init", "status"]);
-		expect(second.value).toBe("status");
-	});
-});
-
-describe("requestTextInput", () => {
-	it("returns a chat prompt and consumes resolved input", async () => {
-		const first = await requestTextInput(fakeCtx, "note", "Enter a short note", { placeholder: "one sentence" });
-		expect(first.value).toBeNull();
-		expect(first.prompt).toContain("Enter a short note");
-
-		const pending = getPendingInteractions(fakeCtx);
-		expect(pending).toHaveLength(1);
-		resolveInteractionReply(fakeCtx, `hello world ${pending[0]?.token}`);
-
-		const second = await requestTextInput(fakeCtx, "note", "Enter a short note");
-		expect(second.value).toBe("hello world");
-	});
-});
-
-describe("interaction store helpers", () => {
-	it("returns null when requestInteraction is called (always works with in-memory store)", () => {
-		// The in-memory store always works; ctx is ignored
-		const result = requestInteraction(fakeCtx, {
-			kind: "confirm",
-			key: "delete file",
-			prompt: "Allow: delete file?",
-		});
-		expect(result).not.toBeNull();
-		expect(result?.state).toBe("pending");
-	});
-
-	it("resolves confirm replies using synonyms", () => {
-		const pending = requestInteraction(fakeCtx, {
-			kind: "confirm",
-			key: "delete file",
-			prompt: "Allow: delete file?",
-		});
-
-		if (!pending || pending.state !== "pending") throw new Error("expected pending interaction");
-		const resolved = resolveInteractionReply(fakeCtx, `yes ${pending.record.token}`);
-
-		expect(resolved?.value).toBe("approved");
-		expect(resolved?.record.status).toBe("resolved");
-	});
-
-	it("supports select replies by number or exact option text", () => {
-		const first = requestInteraction(fakeCtx, {
-			kind: "select",
-			key: "mode",
-			prompt: "Choose mode",
-			options: ["fast", "safe"],
-		});
-		if (!first || first.state !== "pending") throw new Error("expected first pending interaction");
-		const byNumber = resolveInteractionReply(fakeCtx, `2 ${first.record.token}`);
-		expect(byNumber?.value).toBe("safe");
-
-		const second = requestInteraction(fakeCtx, {
-			kind: "select",
-			key: "theme",
-			prompt: "Choose theme",
-			options: ["Light", "Dark"],
-		});
-		if (!second || second.state !== "pending") throw new Error("expected second pending interaction");
-		const byExactText = resolveInteractionReply(fakeCtx, `dark ${second.record.token}`);
-		expect(byExactText?.value).toBe("Dark");
-	});
-
-	it("marks untokened replies as ambiguous when multiple pending interactions exist", () => {
-		requestInteraction(fakeCtx, {
-			kind: "input",
-			key: "first",
-			prompt: "First prompt",
-		});
-		const second = requestInteraction(fakeCtx, {
-			kind: "input",
-			key: "second",
-			prompt: "Second prompt",
-		});
-
-		if (!second || second.state !== "pending") throw new Error("expected second pending interaction");
-		const resolved = resolveInteractionReply(fakeCtx, "typed answer");
-
-		expect(resolved?.value).toBe("typed answer");
-		expect(resolved?.record.key).toBe("second");
-		expect(resolved?.ambiguous).toBe(true);
-	});
-
-	it("extracts tokens from the start of replies and ignores invalid replies", () => {
-		const pending = requestInteraction(fakeCtx, {
-			kind: "input",
-			key: "nickname",
-			prompt: "Enter nickname",
-		});
-
-		if (!pending || pending.state !== "pending") throw new Error("expected pending interaction");
-		expect(resolveInteractionReply(fakeCtx, "   ")).toBeNull();
-		const resolved = resolveInteractionReply(fakeCtx, `${pending.record.token} Bloom`);
-		expect(resolved?.value).toBe("Bloom");
-	});
-
-	it("lists only pending interactions", () => {
-		requestInteraction(fakeCtx, {
-			kind: "confirm",
-			key: "first",
-			prompt: "First prompt",
-		});
-		const second = requestInteraction(fakeCtx, {
-			kind: "input",
-			key: "second",
-			prompt: "Second prompt",
-		});
-		if (!second || second.state !== "pending") throw new Error("expected second pending interaction");
-		resolveInteractionReply(fakeCtx, `${second.record.token} hello`);
-
-		const pending = getPendingInteractions(fakeCtx);
-		expect(pending).toHaveLength(1);
-		expect(pending[0]?.key).toBe("first");
-	});
-
-	it("formats default and templated resume messages", () => {
-		expect(
-			formatResumeMessage(
-				{
-					token: "tok123",
-					kind: "confirm",
-					key: "deploy",
-					prompt: "Deploy now?",
-					status: "resolved",
-					createdAt: "2026-03-15T00:00:00Z",
-					updatedAt: "2026-03-15T00:00:00Z",
-				},
-				"denied",
-			),
-		).toContain("denied confirmation tok123");
-
-		expect(
-			formatResumeMessage(
-				{
-					token: "sel123",
-					kind: "select",
-					key: "theme",
-					prompt: "Theme?",
-					status: "resolved",
-					createdAt: "2026-03-15T00:00:00Z",
-					updatedAt: "2026-03-15T00:00:00Z",
-				},
-				"Dark",
-			),
-		).toContain('selected "Dark"');
-
-		expect(
-			formatResumeMessage(
-				{
-					token: "inp123",
-					kind: "input",
-					key: "nickname",
-					prompt: "Nickname?",
-					status: "resolved",
-					resumeMessage: "Resume with {{value}} using {{token}}.",
-					createdAt: "2026-03-15T00:00:00Z",
-					updatedAt: "2026-03-15T00:00:00Z",
-				},
-				"Bloom",
-			),
-		).toBe("Resume with Bloom using inp123.");
 	});
 });
 

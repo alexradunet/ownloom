@@ -22,7 +22,7 @@ description: Why this project exists, what it optimizes for, and how it differs 
   </div>
   <div class="signal-card">
     <strong>Inspectable memory</strong>
-    Durable memory stays in Markdown under <code>~/nixpi/Objects/</code>, not inside an opaque hosted database.
+    Durable memory stays in Markdown under <code>~/nixpi/Wiki/</code>, not inside an opaque hosted database.
   </div>
   <div class="signal-card">
     <strong>Agent as system citizen</strong>
