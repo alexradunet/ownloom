@@ -20,7 +20,7 @@ in {
   options.nixpi.plannerEnvVars = lib.mkOption {
     type = lib.types.attrsOf lib.types.str;
     default = {};
-    description = ''Planner environment variables for injection into Pi service environments.  Set by service-nixpi-planner when the planner is enabled.'';
+    description = ''Planner environment variables for injection into Pi service environments.  Set by service-planner when the planner is enabled.'';
   };
 
   options.nixpi = {

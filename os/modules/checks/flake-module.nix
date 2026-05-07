@@ -82,7 +82,7 @@
           # without forbidding intentional NixPI branding or test fixtures.
           ! rg -ni --glob '!**/tests/**' --glob '!**/*.md' \
             '/home/alex|vps-nixos|evo-nixos|nixpi-mini-pc|syncthing|personal-second-brain|pi_llm|nixpi-tool|assistant-profile' \
-            os/pkgs/nixpi-wiki
+            os/pkgs/wiki
 
           touch $out
         '';
@@ -95,14 +95,14 @@
           cd ${../../..}
 
           ! rg -n --glob '!**/tests/**' --glob '!node_modules' --glob '!dist*' 'nixpi-wiki/src/(wiki|tools)' \
-            os/pkgs/nixpi-pi-adapter \
-            os/pkgs/nixpi-gateway \
+            os/pkgs/pi-adapter \
+            os/pkgs/gateway \
             os/modules
 
           touch $out
         '';
 
-      nixpi-wiki-npm-pack-smoke = pkgs.callPackage ./nixpi-wiki-npm-pack-smoke.nix {};
+      nixpi-wiki-npm-pack-smoke = pkgs.callPackage ./wiki-npm-pack-smoke.nix {};
 
       # Build package derivations in flake checks so their package-local test suites run.
       nixpi-wiki-package = pkgs.nixpi-wiki;
@@ -127,7 +127,7 @@
           set +e
           repo=${../../..}
           pi \
-            --extension "$repo/os/pkgs/nixpi-pi-adapter/extensions/nixpi/nixpi" \
+            --extension "$repo/os/pkgs/pi-adapter/extension" \
             --provider nonexistent \
             --model fake \
             --print \
@@ -195,7 +195,7 @@
                 })
               ];
             }
-            ../features/nixos/service-nixpi-gateway/module.nix
+            ../features/nixos/service-gateway/module.nix
             {
               networking.hostName = "nixpi-gateway-module-test";
               system.stateVersion = "26.05";
@@ -326,7 +326,7 @@
 
       nixos-gateway-loopback = import ./nixos-tests/gateway-loopback.nix {inherit lib pkgs;};
 
-      nixos-nixpi-services-boot-smoke = import ./nixos-tests/nixpi-services-boot-smoke.nix {inherit lib pkgs;};
+      nixos-nixpi-services-boot-smoke = import ./nixos-tests/services-boot-smoke.nix {inherit lib pkgs;};
 
       nixpi-host-configurations-eval = let
         vps = inputs.self.nixosConfigurations.nixpi-vps;

@@ -7,7 +7,7 @@
   cfg = config.nixpi.secrets.synthetic;
 in {
   imports = [
-    ../nixpi-paths/module.nix
+    ../paths/module.nix
     inputs.sops-nix.nixosModules.sops
   ];
 

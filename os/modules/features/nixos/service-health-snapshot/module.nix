@@ -16,7 +16,7 @@
     '')
     cfg.extraStatusCommands;
 in {
-  imports = [../nixpi-paths/module.nix];
+  imports = [../paths/module.nix];
 
   options.services.nixpi-health-snapshot = {
     enable = lib.mkEnableOption "NixPI host health snapshot timer";

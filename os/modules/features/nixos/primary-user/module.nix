@@ -9,7 +9,7 @@
   userHome = config.nixpi.human.homeDirectory;
   hasPasswordSecret = builtins.hasAttr cfg.password.sopsSecretName config.sops.secrets;
 in {
-  imports = [../nixpi-paths/module.nix];
+  imports = [../paths/module.nix];
 
   options.nixpi.primaryUser = {
     enable = lib.mkEnableOption "the primary NixPI normal user" // {default = true;};

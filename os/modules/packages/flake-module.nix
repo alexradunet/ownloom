@@ -1,10 +1,10 @@
 {inputs, ...}: let
   nixpiOverlay = final: _prev: {
     pi = final.callPackage ../../pkgs/pi {};
-    nixpi-wiki = final.callPackage ../../pkgs/nixpi-wiki {};
-    nixpi-context = final.callPackage ../../pkgs/nixpi-context {};
-    nixpi-gateway = final.callPackage ../../pkgs/nixpi-gateway {};
-    nixpi-planner = final.callPackage ../../pkgs/nixpi-planner {};
+    nixpi-wiki = final.callPackage ../../pkgs/wiki {};
+    nixpi-context = final.callPackage ../../pkgs/context {};
+    nixpi-gateway = final.callPackage ../../pkgs/gateway {};
+    nixpi-planner = final.callPackage ../../pkgs/planner {};
   };
 in {
   perSystem = {
@@ -40,7 +40,7 @@ in {
 
       shellHook = ''
         # Auto-install node_modules for any TS package that hasn't been set up yet.
-        for pkg in os/pkgs/nixpi-gateway os/pkgs/nixpi-wiki os/pkgs/nixpi-planner; do
+        for pkg in os/pkgs/gateway os/pkgs/wiki os/pkgs/planner; do
           if [ -f "$pkg/package.json" ] && [ ! -d "$pkg/node_modules" ]; then
             echo "nixpi: running npm install in $pkg..."
             (cd "$pkg" && npm install --silent)

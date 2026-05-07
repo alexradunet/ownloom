@@ -4,11 +4,11 @@
   ...
 }: {
   imports = [
-    ../nixpi-paths/module.nix
+    ../paths/module.nix
     ../pi-agent/module.nix
-    ../service-nixpi-proactive/module.nix
+    ../service-proactive/module.nix
     ../secrets-synthetic/module.nix
-    ../service-nixpi-health-snapshot/module.nix
+    ../service-health-snapshot/module.nix
     ./packages.nix
     ./system.nix
   ];

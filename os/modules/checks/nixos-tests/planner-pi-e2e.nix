@@ -55,8 +55,8 @@ in
 
     nodes.vm = {...}: {
       imports = [
-        ../../features/nixos/nixpi-paths/module.nix
-        ../../features/nixos/service-nixpi-planner/module.nix
+        ../../features/nixos/paths/module.nix
+        ../../features/nixos/service-planner/module.nix
       ];
 
       networking.hostName = "planner-pi-e2e-test";

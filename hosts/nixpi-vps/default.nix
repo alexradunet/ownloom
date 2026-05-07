@@ -70,10 +70,10 @@ in {
     ./minecraft.private.nix
     ../alex.nix
     inputs.self.nixosModules.server
-    inputs.self.nixosModules.service-nixpi-gateway
+    inputs.self.nixosModules.service-gateway
     inputs.self.nixosModules.service-code-server
-    inputs.self.nixosModules.service-nixpi-planner
-    inputs.self.nixosModules.service-nixpi-webdav
+    inputs.self.nixosModules.service-planner
+    inputs.self.nixosModules.service-webdav
     inputs.self.nixosModules.service-ollama
   ];
 

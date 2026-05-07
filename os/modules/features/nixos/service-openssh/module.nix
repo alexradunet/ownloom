@@ -5,7 +5,7 @@
 }: let
   cfg = config.nixpi.openssh;
 in {
-  imports = [../nixpi-paths/module.nix];
+  imports = [../paths/module.nix];
 
   options.nixpi.openssh = {
     extraTrustedIps = lib.mkOption {

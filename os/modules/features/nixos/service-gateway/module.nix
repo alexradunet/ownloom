@@ -80,7 +80,7 @@
       };
   };
 in {
-  imports = [../nixpi-paths/module.nix];
+  imports = [../paths/module.nix];
 
   options.services.nixpi-gateway = {
     enable = lib.mkEnableOption "NixPI generic transport gateway";

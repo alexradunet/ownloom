@@ -7,7 +7,7 @@
   cfg = config.services.nixpi-code-server;
   humanHome = config.nixpi.human.homeDirectory;
 in {
-  imports = [../nixpi-paths/module.nix];
+  imports = [../paths/module.nix];
 
   options.services.nixpi-code-server = {
     enable = lib.mkEnableOption "code-server web IDE for NixPI";

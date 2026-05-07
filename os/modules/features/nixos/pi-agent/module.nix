@@ -10,7 +10,7 @@
   userGroup = config.users.users.${userName}.group or "users";
 
   extensionSources = {
-    nixpi = "${config.nixpi.root}/os/pkgs/nixpi-pi-adapter/extensions/nixpi/nixpi";
+    nixpi = "${config.nixpi.root}/os/pkgs/pi-adapter/extension";
   };
 
   desiredSettings =
@@ -36,7 +36,7 @@
     '')
     cfg.extensions;
 in {
-  imports = [../nixpi-paths/module.nix];
+  imports = [../paths/module.nix];
 
   options.nixpi.pi = {
     enable = lib.mkEnableOption "declarative PI resource activation for the primary user" // {default = true;};

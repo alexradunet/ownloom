@@ -17,6 +17,11 @@
     procs
     python3
     ripgrep
+    # Language servers (visible to pi agent and any LSP-capable editor)
+    nixd # Nix LSP, nix-community supported
+    bash-language-server
+    typescript-language-server
+    typescript # tsserver, used by typescript-language-server
     ripgrep-all
     tree
     unzip

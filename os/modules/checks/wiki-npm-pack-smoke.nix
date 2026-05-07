@@ -10,7 +10,7 @@ buildNpmPackage {
   version = "0.1.0";
 
   src = lib.cleanSourceWith {
-    src = ../../pkgs/nixpi-wiki;
+    src = ../../pkgs/wiki;
     filter = path: _type: let
       base = baseNameOf path;
       parent = baseNameOf (dirOf path);

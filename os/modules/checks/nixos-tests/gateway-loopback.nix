@@ -32,15 +32,15 @@ in
     name = "gateway-loopback";
 
     nodes.vm = {...}: {
-      # Gateway module imports nixpi-paths itself; no explicit import needed.
+      # Gateway module imports paths itself; no explicit import needed.
       imports = [
-        ../../features/nixos/service-nixpi-gateway/module.nix
+        ../../features/nixos/service-gateway/module.nix
       ];
 
       networking.hostName = "gateway-test";
       system.stateVersion = "26.05";
 
-      # Gateway runs as the nixpi human user (default "human" from nixpi-paths).
+      # Gateway runs as the nixpi human user (default "human" from paths).
       users.users.human = {
         isSystemUser = true;
         group = "users";
