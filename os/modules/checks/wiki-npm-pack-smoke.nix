@@ -23,7 +23,7 @@ buildNpmPackage {
       !(lib.elem base forbidden || lib.elem parent forbidden || lib.hasSuffix ".sqlite" base);
   };
 
-  npmDepsHash = "sha256-oIl8AsDmocgG6CEQeif/9c51xhgKoFFx6L4R3OsBZWc=";
+  npmDepsHash = "sha256-Qc7KY8/wMoC0k+WRFbGV9aNBaWAG5bRGR5n1/hIRbLA=";
 
   nativeBuildInputs = [gnutar jq ripgrep];
   makeCacheWritable = true;
