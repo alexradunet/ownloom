@@ -1,6 +1,6 @@
 {pkgs, ...}: let
   # Fake LLM server: speaks OpenAI chat-completions (streaming + non-streaming).
-  # Turn 1 → nixpi_planner add_task tool call.
+  # Turn 1 → ownloom_planner add_task tool call.
   # Turn 2 → short confirmation text.
   fakeLlmScript = pkgs.python3.pkgs.buildPythonApplication {
     pname = "fake-llm";
@@ -14,7 +14,7 @@
   };
 
   # Extension source tree: copy os/pkgs/ without node_modules so that the
-  # extension's relative import of ../../../../nixpi-wiki/src/api.ts resolves.
+  # extension's relative import of ../../../../ownloom-wiki/src/api.ts resolves.
   nixpiPkgs =
     builtins.filterSource
     (path: type: type != "directory" || builtins.baseNameOf path != "node_modules")
@@ -62,7 +62,7 @@ in
       networking.hostName = "planner-pi-e2e-test";
       system.stateVersion = "26.05";
 
-      services.nixpi-planner = {
+      services.ownloom-planner = {
         enable = true;
         enableServer = false;
       };
@@ -82,7 +82,7 @@ in
 
       environment.systemPackages = [
         pkgs.pi
-        pkgs.nixpi-planner
+        pkgs.ownloom-planner
         pkgs.curl
       ];
     };
@@ -106,27 +106,27 @@ in
       env = " ".join([
           "HOME=/root",
           "PI_CODING_AGENT_DIR=/root/.pi/agent",
-          "NIXPI_WIKI_ROOT=/tmp/wiki",
-          "NIXPI_WIKI_WORKSPACE=test",
-          "NIXPI_WIKI_DEFAULT_DOMAIN=technical",
-          "NIXPI_PLANNER_CALDAV_URL=http://127.0.0.1:5232/",
-          "NIXPI_PLANNER_USER=human",
-          "NIXPI_PLANNER_COLLECTION=planner",
-          "NIXPI_PLANNER_BACKEND=caldav-radicale",
+          "OWNLOOM_WIKI_ROOT=/tmp/wiki",
+          "OWNLOOM_WIKI_WORKSPACE=test",
+          "OWNLOOM_WIKI_DEFAULT_DOMAIN=technical",
+          "OWNLOOM_PLANNER_CALDAV_URL=http://127.0.0.1:5232/",
+          "OWNLOOM_PLANNER_USER=human",
+          "OWNLOOM_PLANNER_COLLECTION=planner",
+          "OWNLOOM_PLANNER_BACKEND=caldav-radicale",
           "NODE_PATH=${pkgs.pi}/lib/node_modules/@mariozechner/pi-coding-agent/node_modules:${pkgs.pi}/lib/node_modules",
       ])
 
       # Initialise the CalDAV collection before pi runs (the extension lists
       # upcoming items during session_start).
       vm.succeed(
-          "NIXPI_PLANNER_CALDAV_URL=http://127.0.0.1:5232/ "
-          "NIXPI_PLANNER_USER=human "
-          "NIXPI_PLANNER_COLLECTION=planner "
-          "nixpi-planner init"
+          "OWNLOOM_PLANNER_CALDAV_URL=http://127.0.0.1:5232/ "
+          "OWNLOOM_PLANNER_USER=human "
+          "OWNLOOM_PLANNER_COLLECTION=planner "
+          "ownloom-planner init"
       )
 
       # Run pi: ask it to add a planner task. The fake LLM returns a
-      # nixpi_planner tool call; pi executes it against real Radicale.
+      # ownloom_planner tool call; pi executes it against real Radicale.
       out = vm.succeed(
           f"{env} pi"
           " --extension ${nixpiExt}"
@@ -144,12 +144,12 @@ in
 
       # The ICS file must be in Radicale's storage.
       vm.succeed(
-          "find /var/lib/nixpi-planner/radicale/collections -name '*.ics' | grep ."
+          "find /var/lib/ownloom-planner/radicale/collections -name '*.ics' | grep ."
       )
 
       # Verify the task title is in the ICS.
       vm.succeed(
-          "grep -r 'E2E test task' /var/lib/nixpi-planner/radicale/collections/"
+          "grep -r 'E2E test task' /var/lib/ownloom-planner/radicale/collections/"
       )
     '';
   }

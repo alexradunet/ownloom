@@ -6,7 +6,7 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --format)
       if [ "$#" -lt 2 ]; then
-        echo "nixpi-context: --format requires markdown or json" >&2
+        echo "ownloom-context: --format requires markdown or json" >&2
         exit 2
       fi
       format="$2"
@@ -18,26 +18,28 @@ while [ "$#" -gt 0 ]; do
       ;;
     --help|-h)
       cat <<'EOF'
-Usage: nixpi-context [--format markdown|json] [--health]
+Usage: ownloom-context [--format markdown|json] [--health]
 
-Print the current NixPI agent context for prompt injection.
+Print the current Ownloom agent context for prompt injection.
+
+Compatibility: nixpi-context remains available as a temporary wrapper.
 --health includes a composite health snapshot (OS gen, containers, disk, load).
 EOF
       exit 0
       ;;
     *)
-      echo "nixpi-context: unknown argument: $1" >&2
+      echo "ownloom-context: unknown argument: $1" >&2
       exit 2
       ;;
   esac
 done
 
 if [ "$format" != "markdown" ] && [ "$format" != "json" ]; then
-  echo "nixpi-context: unsupported format: $format" >&2
+  echo "ownloom-context: unsupported format: $format" >&2
   exit 2
 fi
 
-current_host="${NIXPI_WIKI_HOST:-}"
+current_host="${OWNLOOM_WIKI_HOST:-${NIXPI_WIKI_HOST:-}}"
 if [ -z "$current_host" ] && [ -r /etc/hostname ]; then
   current_host="$(tr -d '\n' < /etc/hostname)"
 fi
@@ -45,14 +47,17 @@ if [ -z "$current_host" ]; then
   current_host="${HOSTNAME:-nixos}"
 fi
 
-nixpi_root="${NIXPI_ROOT:-${HOME:-/tmp}/NixPI}"
-flake_dir="${NIXPI_FLAKE_DIR:-$nixpi_root}"
-wiki_root="${NIXPI_WIKI_ROOT:-${HOME:-/tmp}/wiki}"
+ownloom_root="${OWNLOOM_ROOT:-${NIXPI_ROOT:-${HOME:-/tmp}/Ownloom}}"
+if [ ! -d "$ownloom_root" ] && [ -d "${HOME:-/tmp}/NixPI" ]; then
+  ownloom_root="${HOME:-/tmp}/NixPI"
+fi
+flake_dir="${OWNLOOM_FLAKE_DIR:-${NIXPI_FLAKE_DIR:-$ownloom_root}}"
+wiki_root="${OWNLOOM_WIKI_ROOT:-${NIXPI_WIKI_ROOT:-${HOME:-/tmp}/wiki}}"
 today="$(date +%F)"
 
 fleet_hosts=""
-if [ -d "$nixpi_root/hosts" ]; then
-  for host_dir in "$nixpi_root"/hosts/*; do
+if [ -d "$ownloom_root/hosts" ]; then
+  for host_dir in "$ownloom_root"/hosts/*; do
     if [ -d "$host_dir" ] && [ -f "$host_dir/default.nix" ]; then
       name="$(basename "$host_dir")"
       if [ -z "$fleet_hosts" ]; then
@@ -72,20 +77,21 @@ case ", $fleet_hosts," in
   *", $current_host,"*) fleet_membership="yes" ;;
 esac
 
-planner_policy='[NIXPI PLANNER INFRASTRUCTURE]
-The canonical live task/reminder/calendar system is the standards-based NixPI planner backend: CalDAV/iCalendar VTODO/VEVENT/VALARM served by Radicale on nixpi-vps. Current safe endpoint is loopback-only at http://127.0.0.1:5232/. Direct phone CalDAV access is intentionally deferred; canonical access should be through WhatsApp, Pi, and the upcoming small NixPI web view/API. Do not create new wiki Markdown task/reminder pages as the source of truth for live operational items unless the user explicitly asks for a wiki/archive note. Use the wiki for summaries, reviews, decisions, and project context. Use nixpi-planner for live task/reminder/event operations.'
+planner_policy='[OWNLOOM PLANNER INFRASTRUCTURE]
+The canonical live task/reminder/calendar system is the standards-based Ownloom planner backend: CalDAV/iCalendar VTODO/VEVENT/VALARM served by Radicale on nixpi-vps. Current safe endpoint is loopback-only at http://127.0.0.1:5232/. Direct phone CalDAV access is intentionally deferred; canonical access should be through WhatsApp, Pi, and the upcoming small Ownloom web view/API. Do not create new wiki Markdown task/reminder pages as the source of truth for live operational items unless the user explicitly asks for a wiki/archive note. Use the wiki for summaries, reviews, decisions, and project context. Use ownloom-planner for live task/reminder/event operations.'
 
-cli_policy='[NIXPI CLI TOOLS]
-Prefer NixPI CLIs over harness-specific tools so the workflow stays agent-agnostic.
-- nixpi-context --format markdown|json [--health]: print live agent context with optional health snapshot.
-- nixpi-config (use skill nixpi-config): inspect, validate, and apply this host config. Run validate before apply. Confirm with Alex before apply.
+cli_policy='[OWNLOOM CLI TOOLS]
+Prefer Ownloom CLIs over harness-specific tools so the workflow stays agent-agnostic.
+- ownloom-context --format markdown|json [--health]: print live agent context with optional health snapshot.
+- ownloom-config (use skill ownloom-config): inspect, validate, and apply this host config. Run validate before apply. Confirm with Alex before apply.
 - Use standard git commit/push for publishing changes.
-- nixpi-audit (use skill nixpi-audit): current-state baseline/config audit.
-- nixpi-wiki ...: structured wiki operations.
-- nixpi-planner ...: live CalDAV/iCalendar tasks, reminders, and events.'
+- ownloom-audit (use skill ownloom-audit): current-state baseline/config audit.
+- ownloom-wiki ...: structured wiki operations.
+- ownloom-planner ...: live CalDAV/iCalendar tasks, reminders, and events.
+- Transitional nixpi-* command aliases may exist during the rebrand; prefer ownloom-* for new work.'
 
 planner_digest=""
-if planner_json="$(nixpi-planner list upcoming --json 2>/dev/null)"; then
+if planner_json="$(ownloom-planner list upcoming --json 2>/dev/null)"; then
   planner_lines="$(printf '%s' "$planner_json" | jq -r --arg host "$current_host" --arg today "$today" '
     if type == "array" and length > 0 then
       (["[PLANNER DIGEST — \($host) — \($today)]"] +
@@ -99,11 +105,11 @@ if planner_json="$(nixpi-planner list upcoming --json 2>/dev/null)"; then
   fi
 fi
 
-wiki_context="$(nixpi-wiki context --format markdown 2>/dev/null || true)"
+wiki_context="$(ownloom-wiki context --format markdown 2>/dev/null || true)"
 
 memory_path="$wiki_root/memory/MEMORY.md"
 user_path="$wiki_root/memory/USER.md"
-agent_dir="${NIXPI_AGENT_DIR:-${PI_CODING_AGENT_DIR:-${HOME:-/tmp}/.pi/agent}}"
+agent_dir="${OWNLOOM_AGENT_DIR:-${NIXPI_AGENT_DIR:-${PI_CODING_AGENT_DIR:-${HOME:-/tmp}/.pi/agent}}}"
 context_path="$agent_dir/context.json"
 memory_block=""
 if [ -s "$memory_path" ]; then
@@ -134,11 +140,11 @@ if [ -s "$context_path" ]; then
   ' "$context_path" 2>/dev/null || true)"
 fi
 
-fleet_block="[NIXPI FLEET HOST MODE]
+fleet_block="[OWNLOOM FLEET HOST MODE]
 Current host: $current_host
 Known fleet hosts: $fleet_hosts
 Current host is declared in fleet: $fleet_membership
-Every Pi agent and subagent must preserve this host identity when diagnosing, editing, rebuilding, or discussing NixPI state. Do not assume another fleet host unless the user explicitly names it.
+Every Pi agent and subagent must preserve this host identity when diagnosing, editing, rebuilding, or discussing Ownloom state. Do not assume another fleet host unless the user explicitly names it.
 
 [OS CONTEXT]
 Current host: $current_host
@@ -182,12 +188,12 @@ if [ "$include_health" -eq 1 ]; then
     printf '## OS\n(nixos-rebuild unavailable)\n\n' >> "$sections_file"
   fi
 
-  if containers_json="$(podman ps --format json --filter name=nixpi- 2>/dev/null)"; then
+  if containers_json="$(podman ps --format json --filter name=ownloom- 2>/dev/null)"; then
     containers_text="$(printf '%s' "$containers_json" | jq -r '
       if type == "array" and length > 0 then
         .[] | "- " + (((.Names // []) | join(", ")) // "unknown") + ": " + (.Status // .State // "unknown")
       else
-        "No nixpi-* containers running."
+        "No ownloom-* containers running."
       end
     ' 2>/dev/null || printf '%s' '(parse error)')"
     printf '## Containers\n%s\n\n' "$containers_text" >> "$sections_file"

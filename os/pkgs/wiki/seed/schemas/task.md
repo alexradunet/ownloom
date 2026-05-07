@@ -21,7 +21,7 @@ Wiki task pages are context/archive notes only. The live task record belongs in 
 
 ## Do not store live planner state here
 
-Do not use wiki frontmatter for `priority`, `due`, `schedule`, `depends_on`, `blocked_by`, or `completed`. Use CalDAV/iCalendar `VTODO` via `nixpi-planner`.
+Do not use wiki frontmatter for `priority`, `due`, `schedule`, `depends_on`, `blocked_by`, or `completed`. Use CalDAV/iCalendar `VTODO` via `ownloom-planner`.
 
 ## Template structure
 

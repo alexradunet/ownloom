@@ -4,40 +4,40 @@
   pkgs,
   ...
 }: let
-  cfg = config.nixpi.primaryUser;
-  userName = config.nixpi.human.name;
-  userHome = config.nixpi.human.homeDirectory;
+  cfg = config.ownloom.primaryUser;
+  userName = config.ownloom.human.name;
+  userHome = config.ownloom.human.homeDirectory;
   hasPasswordSecret = builtins.hasAttr cfg.password.sopsSecretName config.sops.secrets;
 in {
   imports = [../paths/module.nix];
 
-  options.nixpi.primaryUser = {
-    enable = lib.mkEnableOption "the primary NixPI normal user" // {default = true;};
+  options.ownloom.primaryUser = {
+    enable = lib.mkEnableOption "the primary Ownloom normal user" // {default = true;};
 
     description = lib.mkOption {
       type = lib.types.str;
-      default = config.nixpi.owner.displayName;
-      defaultText = lib.literalExpression "config.nixpi.owner.displayName";
-      description = "GECOS description for the primary NixPI user.";
+      default = config.ownloom.owner.displayName;
+      defaultText = lib.literalExpression "config.ownloom.owner.displayName";
+      description = "GECOS description for the primary Ownloom user.";
     };
 
     extraGroups = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = ["wheel" "git"];
-      description = "Supplementary groups for the primary NixPI user.";
+      description = "Supplementary groups for the primary Ownloom user.";
     };
 
     authorizedKeys = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = config.nixpi.owner.sshKeys;
-      defaultText = lib.literalExpression "config.nixpi.owner.sshKeys";
-      description = "SSH public keys authorized for the primary NixPI user.";
+      default = config.ownloom.owner.sshKeys;
+      defaultText = lib.literalExpression "config.ownloom.owner.sshKeys";
+      description = "SSH public keys authorized for the primary Ownloom user.";
     };
 
     shell = lib.mkOption {
       type = lib.types.package;
       default = pkgs.bashInteractive;
-      description = "Login shell package for the primary NixPI user.";
+      description = "Login shell package for the primary Ownloom user.";
     };
 
     password = {
@@ -45,10 +45,10 @@ in {
         type = lib.types.enum ["locked" "hashed" "sops"];
         default = "locked";
         description = ''
-          Password provisioning mode for the primary NixPI user.
+          Password provisioning mode for the primary Ownloom user.
 
           - locked: disable password login by setting a locked password hash.
-          - hashed: use nixpi.primaryUser.password.hashedPassword directly.
+          - hashed: use ownloom.primaryUser.password.hashedPassword directly.
           - sops: read the hash from a sops-nix secret.
         '';
       };
@@ -56,13 +56,13 @@ in {
       hashedPassword = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
         default = null;
-        description = "Native NixOS password hash used when nixpi.primaryUser.password.mode = \"hashed\".";
+        description = "Native NixOS password hash used when ownloom.primaryUser.password.mode = \"hashed\".";
       };
 
       sopsSecretName = lib.mkOption {
         type = lib.types.str;
         default = "${userName}_hashed_password";
-        defaultText = lib.literalExpression ''"''${config.nixpi.human.name}_hashed_password"'';
+        defaultText = lib.literalExpression ''"''${config.ownloom.human.name}_hashed_password"'';
         description = "sops-nix secret name containing the user's hashed password when password.mode = \"sops\".";
       };
     };
@@ -72,7 +72,7 @@ in {
         type = lib.types.enum ["passwordless" "allowlist" "password"];
         default = "passwordless";
         description = ''
-          Sudo policy for the primary NixPI user.
+          Sudo policy for the primary Ownloom user.
 
           - passwordless: allow all sudo commands with NOPASSWD.
           - allowlist: allow only sudo.allowlistCommands with NOPASSWD.
@@ -102,11 +102,11 @@ in {
           || cfg.authorizedKeys != []
           || config.services.openssh.settings.PasswordAuthentication or false
           || config.services.openssh.settings.KbdInteractiveAuthentication or false;
-        message = "OpenSSH is enabled for the primary NixPI user, but no SSH keys are configured and password authentication is disabled. Set nixpi.owner.sshKeys or disable OpenSSH for generic builds.";
+        message = "OpenSSH is enabled for the primary Ownloom user, but no SSH keys are configured and password authentication is disabled. Set ownloom.owner.sshKeys or disable OpenSSH for generic builds.";
       }
       {
         assertion = cfg.password.mode != "hashed" || cfg.password.hashedPassword != null;
-        message = "nixpi.primaryUser.password.hashedPassword must be set when password.mode = \"hashed\".";
+        message = "ownloom.primaryUser.password.hashedPassword must be set when password.mode = \"hashed\".";
       }
       {
         assertion = cfg.password.mode != "sops" || hasPasswordSecret;

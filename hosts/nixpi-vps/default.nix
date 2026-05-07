@@ -66,7 +66,7 @@ in {
     #   git update-index --skip-worktree hosts/nixpi-vps/*.private.nix
     ./networking.private.nix
     ./secrets.private.nix
-    ./nixpi-gateway.private.nix
+    ./ownloom-gateway.private.nix
     ./minecraft.private.nix
     ../alex.nix
     inputs.self.nixosModules.server
@@ -84,7 +84,7 @@ in {
   networking.hostName = "nixpi-vps";
   system.stateVersion = "26.05";
 
-  nixpi.secrets.synthetic.sopsFile = ./secrets.yaml;
+  ownloom.secrets.synthetic.sopsFile = ./secrets.yaml;
 
   # Allow generic dynamically linked Linux binaries such as the VSCodium
   # remote server downloaded by Open Remote - SSH to run on NixOS.
@@ -160,11 +160,11 @@ in {
     };
   };
 
-  # Health snapshot — writes wiki memory status to /var/lib/nixpi-wiki-health/
-  services.nixpi-health-snapshot = {
+  # Health snapshot — writes wiki memory status to /var/lib/ownloom-wiki-health/
+  services.ownloom-health-snapshot = {
     enable = true;
-    serviceName = "nixpi-wiki-health-snapshot";
-    stateDirectory = "nixpi-wiki-health";
+    serviceName = "ownloom-wiki-health-snapshot";
+    stateDirectory = "ownloom-wiki-health";
     outFile = "technical.status";
     schedule = "*-*-* 04:15:00";
   };
@@ -173,7 +173,7 @@ in {
   # Plugins: drop .jar files into /var/lib/minecraft/plugins/ (restart required)
   # WHITELIST MODE: add players in the whitelist block below, then rebuild
   services = {
-    nixpi-code-server = {
+    ownloom-code-server = {
       enable = true;
       # hashedPassword is provided by hosts/nixpi-vps/secrets.private.nix
       # (gitignored). See secrets.private.nix.example for the format.
@@ -207,7 +207,7 @@ in {
         difficulty = 2; # normal
         gamemode = 0; # survival
         max-players = 20;
-        motd = "NixPI Minecraft — stay humble";
+        motd = "Ownloom Minecraft — stay humble";
         white-list = true;
         allow-cheats = false;
         spawn-protection = 16;
@@ -229,7 +229,7 @@ in {
       };
     };
 
-    nixpi-gateway = {
+    ownloom-gateway = {
       enable = true;
       settings = {
         audioTranscription.enabled = true;
@@ -243,27 +243,27 @@ in {
         };
         transports = {
           websocket.enable = true;
-          # WhatsApp transport is provided by hosts/nixpi-vps/nixpi-gateway.private.nix
+          # WhatsApp transport is provided by hosts/nixpi-vps/ownloom-gateway.private.nix
           # (gitignored) — owner phone numbers stay out of the public repo.
-          # See nixpi-gateway.private.nix.example for the format.
+          # See ownloom-gateway.private.nix.example for the format.
         };
       };
     };
 
-    nixpi-planner = {
+    ownloom-planner = {
       enable = true;
       # Standards-first planner foundation: CalDAV/iCalendar VTODO.
       # Loopback-only until a TLS/authenticated public access path is chosen.
     };
 
-    nixpi-webdav = {
+    ownloom-webdav = {
       enable = true;
       sopsFile = ./secrets.yaml;
       # Loopback-only — access via: ssh -L 4918:127.0.0.1:4918 nixpi-vps
       # then point Joplin WebDAV to http://localhost:4918
     };
 
-    nixpi-ollama = {
+    ownloom-ollama = {
       enable = true;
       # VPS has 62 GB RAM — load all three tiers.
       # gemma3:4b  — chat, summarization, multilingual (128K ctx)
@@ -273,7 +273,7 @@ in {
       # CPU-only on a dedicated VPS; acceptable for fallback/background use.
     };
 
-    nixpi-proactive-timers = {
+    ownloom-proactive-timers = {
       enable = true;
 
       tasks = {
@@ -282,47 +282,47 @@ in {
           schedule = "*-*-* 08:00:00";
           model = "ollama/gemma3:4b";
           fallbackModel = "synthetic/hf:moonshotai/Kimi-K2.6";
-          systemPrompt = "You are NixPI, Alex's personal AI assistant. Be concise and proactive.";
+          systemPrompt = "You are Ownloom, Alex's personal AI assistant. Be concise and proactive.";
           userPrompts = [
             "Good morning Alex! Today is $(date +%Y-%m-%d). Host: ${config.networking.hostName}."
             ""
             "Generate a brief morning digest:"
-            "1. nixpi_planner action=list view=overdue — list any overdue items first"
-            "2. nixpi_planner action=list view=today — today's tasks and reminders"
-            "3. nixpi_planner action=list view=upcoming — next 7 days"
+            "1. ownloom_planner action=list view=overdue — list any overdue items first"
+            "2. ownloom_planner action=list view=today — today's tasks and reminders"
+            "3. ownloom_planner action=list view=upcoming — next 7 days"
             "4. wiki_search query=project type=project — summarize 1-2 active projects with recent activity"
             "5. Check meta/about-alex/current-context.md and note if anything needs updating"
-            "6. Run nixpi-context --health from the shell and flag any anomalies (disk, load, services)"
+            "6. Run ownloom-context --health from the shell and flag any anomalies (disk, load, services)"
             ""
             "Format: ⚠️ Overdue | 📋 Today | 📅 Upcoming | 🚀 Projects | 🔧 System"
-            "Keep each section to 2-3 bullets. End with: — NixPI"
+            "Keep each section to 2-3 bullets. End with: — Ownloom"
             "Finally: call wiki_daily action=append to log delivery."
           ];
-          enabledTools = "nixpi_planner,wiki_search,wiki_daily";
+          enabledTools = "ownloom_planner,wiki_search,wiki_daily";
         };
 
         weeklyReview = {
           enable = true;
           schedule = "Sun *-*-* 18:00:00";
-          systemPrompt = "You are NixPI, Alex's personal AI assistant. Help Alex reflect on the past week.";
+          systemPrompt = "You are Ownloom, Alex's personal AI assistant. Help Alex reflect on the past week.";
           userPrompts = [
             "Weekly review prompt for Alex — $(date +%Y-%m-%d)."
             ""
             "1. wiki_search query=decision type=decision — list decisions made this week"
             "2. wiki_daily action=get — review the last few daily notes for patterns"
-            "3. nixpi_planner action=list view=overdue — flag anything slipping"
+            "3. ownloom_planner action=list view=overdue — flag anything slipping"
             "4. Summarize: What got done? What's blocked? What needs a decision?"
             ""
             "Keep it conversational and actionable. Surface the 1-2 most important things for next week."
-            "End with: — NixPI"
+            "End with: — Ownloom"
           ];
-          enabledTools = "nixpi_planner,wiki_search,wiki_daily";
+          enabledTools = "ownloom_planner,wiki_search,wiki_daily";
         };
 
         monthlyDecayPass = {
           enable = true;
           schedule = "*-*-01 03:00:00";
-          systemPrompt = "You are NixPI, running a scheduled maintenance pass. Be terse and factual.";
+          systemPrompt = "You are Ownloom, running a scheduled maintenance pass. Be terse and factual.";
           userPrompts = [
             "Monthly wiki decay pass — $(date +%Y-%m-%d)."
             ""

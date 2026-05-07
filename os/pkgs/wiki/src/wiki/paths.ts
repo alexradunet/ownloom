@@ -26,7 +26,7 @@ export function normalizeDomain(domain: string | undefined): string | undefined 
 	return normalized || undefined;
 }
 
-function normalizeWorkspace(value: string | undefined, fallback = "nixpi"): string {
+function normalizeWorkspace(value: string | undefined, fallback = "ownloom"): string {
 	return normalizeDomain(value) ?? fallback;
 }
 
@@ -39,7 +39,7 @@ function firstEnv(...names: string[]): string | undefined {
 }
 
 export function getWikiRoot(): string {
-	return firstEnv("NIXPI_WIKI_ROOT", "NIXPI_WIKI_DIR") ?? path.join(os.homedir(), "wiki");
+	return firstEnv("OWNLOOM_WIKI_ROOT", "OWNLOOM_WIKI_DIR", "NIXPI_WIKI_ROOT", "NIXPI_WIKI_DIR") ?? path.join(os.homedir(), "wiki");
 }
 
 export function getWikiRoots(): Record<string, string> {
@@ -53,8 +53,8 @@ export function getWikiRootForDomain(_domain: string | undefined): string {
 export function getWorkspaceProfile(): WikiWorkspaceProfile {
 	const root = getWikiRoot();
 	return {
-		name: normalizeWorkspace(firstEnv("NIXPI_WIKI_WORKSPACE")),
-		defaultDomain: normalizeDomain(firstEnv("NIXPI_WIKI_DEFAULT_DOMAIN")) ?? "technical",
+		name: normalizeWorkspace(firstEnv("OWNLOOM_WIKI_WORKSPACE", "NIXPI_WIKI_WORKSPACE")),
+		defaultDomain: normalizeDomain(firstEnv("OWNLOOM_WIKI_DEFAULT_DOMAIN", "NIXPI_WIKI_DEFAULT_DOMAIN")) ?? "technical",
 		domains: {
 			technical: { root },
 			personal: { root },
@@ -71,7 +71,7 @@ function normalizeHost(host: string): string {
 }
 
 export function getCurrentHost(): string {
-	return normalizeHost(firstEnv("NIXPI_WIKI_HOST") ?? os.hostname());
+	return normalizeHost(firstEnv("OWNLOOM_WIKI_HOST", "NIXPI_WIKI_HOST") ?? os.hostname());
 }
 
 export function normalizeHosts(hosts: string[] | undefined): string[] {

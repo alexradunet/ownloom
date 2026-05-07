@@ -18,9 +18,9 @@ export class PlannerClient {
   readonly collection: string;
 
   constructor(options: PlannerClientOptions = {}) {
-    this.baseUrl = ensureSlash(options.baseUrl ?? process.env.NIXPI_PLANNER_CALDAV_URL ?? "http://127.0.0.1:5232/");
-    this.user = options.user ?? process.env.NIXPI_PLANNER_USER ?? "alex";
-    this.collection = options.collection ?? process.env.NIXPI_PLANNER_COLLECTION ?? "planner";
+    this.baseUrl = ensureSlash(options.baseUrl ?? process.env.OWNLOOM_PLANNER_CALDAV_URL ?? process.env.NIXPI_PLANNER_CALDAV_URL ?? "http://127.0.0.1:5232/");
+    this.user = options.user ?? process.env.OWNLOOM_PLANNER_USER ?? process.env.NIXPI_PLANNER_USER ?? "alex";
+    this.collection = options.collection ?? process.env.OWNLOOM_PLANNER_COLLECTION ?? process.env.NIXPI_PLANNER_COLLECTION ?? "planner";
   }
 
   get userUrl(): string {
@@ -39,7 +39,7 @@ export class PlannerClient {
       body: `<?xml version="1.0" encoding="utf-8" ?>
 <C:mkcalendar xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
   <D:set><D:prop>
-    <D:displayname>NixPI Planner</D:displayname>
+    <D:displayname>Ownloom Planner</D:displayname>
     <C:supported-calendar-component-set><C:comp name="VTODO"/><C:comp name="VEVENT"/></C:supported-calendar-component-set>
   </D:prop></D:set>
 </C:mkcalendar>`,

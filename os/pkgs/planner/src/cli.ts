@@ -13,31 +13,31 @@ const REPEAT_MAP: Record<string, string> = {
 type ParsedArgs = { positional: string[]; flags: Map<string, string | true> };
 
 function usage(): string {
-  return `nixpi-planner — tiny local planner adapter over CalDAV/iCalendar
+  return `ownloom-planner — tiny local planner adapter over CalDAV/iCalendar
 
 Usage:
-  nixpi-planner init
-  nixpi-planner add-task <title> [--due <date>] [--description <text>] [--priority <1-9>] [--category <name>]
-                                  [--rrule <RRULE>] [--repeat daily|weekly|monthly|yearly|weekdays]
-  nixpi-planner add-reminder <title> --at <date> [--description <text>] [--category <name>]
-                                      [--rrule <RRULE>] [--repeat ...]
-  nixpi-planner add-event <title> --start <date> [--end <date>] [--description <text>] [--category <name>]
-                                   [--rrule <RRULE>] [--repeat ...]
-  nixpi-planner edit <uid-prefix> [--title <text>] [--description <text>] [--priority <1-9|0>]
-                                   [--category <name>] [--add-category <name>] [--remove-category <name>]
-                                   [--clear-categories] [--json]
-  nixpi-planner delete <uid-prefix>   (alias: rm)
-  nixpi-planner snooze <reminder-uid-prefix> --to <date> [--json]
-  nixpi-planner reschedule <uid-prefix> [--due <date>] [--start <date>] [--end <date>] [--json]
-  nixpi-planner list [all|today|upcoming|overdue] [--json]
-  nixpi-planner done <uid-prefix> [--json]
+  ownloom-planner init
+  ownloom-planner add-task <title> [--due <date>] [--description <text>] [--priority <1-9>] [--category <name>]
+                                    [--rrule <RRULE>] [--repeat daily|weekly|monthly|yearly|weekdays]
+  ownloom-planner add-reminder <title> --at <date> [--description <text>] [--category <name>]
+                                        [--rrule <RRULE>] [--repeat ...]
+  ownloom-planner add-event <title> --start <date> [--end <date>] [--description <text>] [--category <name>]
+                                     [--rrule <RRULE>] [--repeat ...]
+  ownloom-planner edit <uid-prefix> [--title <text>] [--description <text>] [--priority <1-9|0>]
+                                     [--category <name>] [--add-category <name>] [--remove-category <name>]
+                                     [--clear-categories] [--json]
+  ownloom-planner delete <uid-prefix>   (alias: rm)
+  ownloom-planner snooze <reminder-uid-prefix> --to <date> [--json]
+  ownloom-planner reschedule <uid-prefix> [--due <date>] [--start <date>] [--end <date>] [--json]
+  ownloom-planner list [all|today|upcoming|overdue] [--json]
+  ownloom-planner done <uid-prefix> [--json]
 
-  nixpi-planner server
+  ownloom-planner server
 
 Environment:
-  NIXPI_PLANNER_CALDAV_URL  default http://127.0.0.1:5232/
-  NIXPI_PLANNER_USER        default alex
-  NIXPI_PLANNER_COLLECTION  default planner`;
+  OWNLOOM_PLANNER_CALDAV_URL  default http://127.0.0.1:5232/ (falls back to NIXPI_PLANNER_CALDAV_URL)
+  OWNLOOM_PLANNER_USER        default alex (falls back to NIXPI_PLANNER_USER)
+  OWNLOOM_PLANNER_COLLECTION  default planner (falls back to NIXPI_PLANNER_COLLECTION)`;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {

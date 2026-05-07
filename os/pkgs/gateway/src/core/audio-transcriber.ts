@@ -31,7 +31,7 @@ export class WhisperCliAudioTranscriber implements AudioTranscriber {
       throw new Error(`Audio message is too long (${attachment.seconds}s > ${maxSeconds}s).`);
     }
 
-    const workDir = await mkdtemp(join(tmpdir(), "nixpi-stt-"));
+    const workDir = await mkdtemp(join(tmpdir(), "ownloom-stt-"));
     const wavPath = join(workDir, "audio.wav");
 
     try {

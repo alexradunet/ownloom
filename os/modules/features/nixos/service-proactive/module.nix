@@ -4,12 +4,12 @@
   pkgs,
   ...
 }: let
-  cfg = config.services.nixpi-proactive-timers;
-  userName = config.nixpi.human.name;
-  userHome = config.nixpi.human.homeDirectory;
+  cfg = config.services.ownloom-proactive-timers;
+  userName = config.ownloom.human.name;
+  userHome = config.ownloom.human.homeDirectory;
   userGroup = config.users.users.${userName}.group or "users";
 
-  mkSvcName = name: "nixpi-proactive-task-${name}";
+  mkSvcName = name: "ownloom-proactive-task-${name}";
 
   mkTaskScript = name: task: let
     baseParts =
@@ -40,7 +40,7 @@
 
       ${lib.optionalString hasFallback ''
         if ! ${lib.escapeShellArgs fullArgs}; then
-          echo "nixpi-proactive [${name}]: primary model failed, retrying with fallback" >&2
+          echo "ownloom-proactive [${name}]: primary model failed, retrying with fallback" >&2
           exec ${lib.escapeShellArgs fallbackArgs}
         fi
       ''}
@@ -48,20 +48,20 @@
     '';
 
   mkTaskService = name: task: {
-    description = "NixPI proactive task: ${name}";
+    description = "Ownloom proactive task: ${name}";
     serviceConfig = {
       Type = "oneshot";
       User = userName;
       Group = userGroup;
-      WorkingDirectory = config.nixpi.root;
+      WorkingDirectory = config.ownloom.root;
       ExecStart = mkTaskScript name task;
       LoadCredential = ["synthetic_api_key:${cfg.syntheticApiKeyFile}"];
       NoNewPrivileges = true;
       ProtectSystem = "strict";
       ProtectHome = "read-only";
       ReadWritePaths = [
-        config.nixpi.root
-        config.nixpi.wiki.root
+        config.ownloom.root
+        config.ownloom.wiki.root
         "${userHome}/.pi"
       ];
       PrivateTmp = true;
@@ -72,13 +72,17 @@
         XDG_CONFIG_HOME = "${userHome}/.config";
         XDG_CACHE_HOME = "${userHome}/.cache";
         PI_CODING_AGENT_DIR = "${userHome}/.pi/agent";
-        NIXPI_WIKI_ROOT = config.nixpi.wiki.root;
-        NIXPI_WIKI_WORKSPACE = config.nixpi.wiki.workspace;
-        NIXPI_WIKI_DEFAULT_DOMAIN = config.nixpi.wiki.defaultDomain;
+        OWNLOOM_WIKI_ROOT = config.ownloom.wiki.root;
+        OWNLOOM_WIKI_WORKSPACE = config.ownloom.wiki.workspace;
+        OWNLOOM_WIKI_DEFAULT_DOMAIN = config.ownloom.wiki.defaultDomain;
+        OWNLOOM_WIKI_HOST = config.networking.hostName;
+        NIXPI_WIKI_ROOT = config.ownloom.wiki.root;
+        NIXPI_WIKI_WORKSPACE = config.ownloom.wiki.workspace;
+        NIXPI_WIKI_DEFAULT_DOMAIN = config.ownloom.wiki.defaultDomain;
         NIXPI_WIKI_HOST = config.networking.hostName;
         PI_SYNTHETIC_API_KEY_FILE = "%d/synthetic_api_key";
       }
-      // config.nixpi.plannerEnvVars;
+      // config.ownloom.plannerEnvVars;
     path = [
       pkgs.pi
       pkgs.coreutils
@@ -87,9 +91,9 @@
       pkgs.ripgrep
       pkgs.fd
       pkgs.findutils
-      pkgs.nixpi-context
-      pkgs.nixpi-wiki
-      pkgs.nixpi-planner
+      pkgs.ownloom-context
+      pkgs.ownloom-wiki
+      pkgs.ownloom-planner
     ];
   };
 
@@ -200,8 +204,12 @@
     };
   };
 in {
-  options.services.nixpi-proactive-timers = {
-    enable = lib.mkEnableOption "NixPI proactive timer tasks";
+  imports = [
+    (lib.mkRenamedOptionModule ["services" "nixpi-proactive-timers"] ["services" "ownloom-proactive-timers"])
+  ];
+
+  options.services.ownloom-proactive-timers = {
+    enable = lib.mkEnableOption "Ownloom proactive timer tasks";
 
     syntheticApiKeyFile = lib.mkOption {
       type = lib.types.str;
@@ -224,7 +232,7 @@ in {
     assertions =
       lib.mapAttrsToList (name: task: {
         assertion = task.userPrompts != [];
-        message = "services.nixpi-proactive-timers.tasks.${name}.userPrompts must not be empty.";
+        message = "services.ownloom-proactive-timers.tasks.${name}.userPrompts must not be empty.";
       })
       cfg.tasks;
 

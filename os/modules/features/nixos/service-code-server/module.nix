@@ -4,19 +4,22 @@
   pkgs,
   ...
 }: let
-  cfg = config.services.nixpi-code-server;
-  humanHome = config.nixpi.human.homeDirectory;
+  cfg = config.services.ownloom-code-server;
+  humanHome = config.ownloom.human.homeDirectory;
 in {
-  imports = [../paths/module.nix];
+  imports = [
+    ../paths/module.nix
+    (lib.mkRenamedOptionModule ["services" "nixpi-code-server"] ["services" "ownloom-code-server"])
+  ];
 
-  options.services.nixpi-code-server = {
-    enable = lib.mkEnableOption "code-server web IDE for NixPI";
+  options.services.ownloom-code-server = {
+    enable = lib.mkEnableOption "code-server web IDE for Ownloom";
 
     user = lib.mkOption {
       type = lib.types.str;
-      default = config.nixpi.human.name;
-      defaultText = lib.literalExpression "config.nixpi.human.name";
-      description = "User account that runs code-server. Defaults to the primary NixPI human.";
+      default = config.ownloom.human.name;
+      defaultText = lib.literalExpression "config.ownloom.human.name";
+      description = "User account that runs code-server. Defaults to the primary Ownloom human.";
     };
 
     group = lib.mkOption {
@@ -68,7 +71,7 @@ in {
     assertions = [
       {
         assertion = cfg.host == "127.0.0.1" || cfg.host == "::1";
-        message = "services.nixpi-code-server.host must stay loopback-only (access via SSH tunnel).";
+        message = "services.ownloom-code-server.host must stay loopback-only (access via SSH tunnel).";
       }
     ];
 
@@ -76,7 +79,7 @@ in {
       enable = true;
       inherit (cfg) user port hashedPassword group host;
 
-      # Run as the primary NixPI user so code-server can access home directory files.
+      # Run as the primary Ownloom user so code-server can access home directory files.
       extraGroups = [];
 
       auth = lib.mkIf (cfg.hashedPassword != "") "password";
@@ -123,7 +126,7 @@ in {
 
     # Ensure the data directories exist with correct ownership.
     systemd.services.code-server.serviceConfig = {
-      WorkingDirectory = config.nixpi.root;
+      WorkingDirectory = config.ownloom.root;
     };
   };
 }

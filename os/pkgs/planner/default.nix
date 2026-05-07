@@ -6,12 +6,12 @@
   radicale,
 }:
 buildNpmPackage {
-  pname = "nixpi-planner";
+  pname = "ownloom-planner";
   version = "0.1.0";
 
   src = ./.;
 
-  npmDepsHash = "sha256-+sTP1dDppWDS1MosH6wi1Pd1bo9Qlf52b1aJfmfa21w=";
+  npmDepsHash = "sha256-CQuVMMJglaocWG9dtnWamyjxzIChx3DggVKNGKTc+2E=";
 
   nativeBuildInputs = [makeWrapper radicale];
 
@@ -33,21 +33,23 @@ buildNpmPackage {
 
     npm prune --omit=dev --ignore-scripts --no-audit --no-fund
 
-    mkdir -p $out/share/nixpi-planner $out/bin
-    cp -r dist node_modules package.json $out/share/nixpi-planner/
+    mkdir -p $out/share/ownloom-planner $out/bin
+    cp -r dist node_modules package.json $out/share/ownloom-planner/
 
-    makeWrapper ${nodejs}/bin/node $out/bin/nixpi-planner \
-      --add-flags "$out/share/nixpi-planner/dist/cli.js"
+    makeWrapper ${nodejs}/bin/node $out/bin/ownloom-planner \
+      --add-flags "$out/share/ownloom-planner/dist/cli.js"
+    ln -s ownloom-planner $out/bin/nixpi-planner
 
-    makeWrapper ${nodejs}/bin/node $out/bin/nixpi-planner-server \
-      --add-flags "$out/share/nixpi-planner/dist/server.js"
+    makeWrapper ${nodejs}/bin/node $out/bin/ownloom-planner-server \
+      --add-flags "$out/share/ownloom-planner/dist/server.js"
+    ln -s ownloom-planner-server $out/bin/nixpi-planner-server
 
     runHook postInstall
   '';
 
   meta = {
-    description = "Tiny NixPI planner adapter for local CalDAV/iCalendar tasks, reminders, and events";
+    description = "Tiny Ownloom planner adapter for local CalDAV/iCalendar tasks, reminders, and events";
     license = lib.licenses.mit;
-    mainProgram = "nixpi-planner";
+    mainProgram = "ownloom-planner";
   };
 }

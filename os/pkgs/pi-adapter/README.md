@@ -1,18 +1,22 @@
-# NixPI PI Adapter
+# Ownloom PI Adapter
 
-Thin PI harness adapter for NixPI.
+Thin PI harness adapter for Ownloom.
 
-PI remains the only shipped NixPI agent today, but this package should stay small and adapter-specific. Shared behavior belongs in `nixpi-*` CLIs and Markdown/context files, not here.
+PI remains the only shipped Ownloom agent today, but this package should stay small and adapter-specific. Shared behavior belongs in `ownloom-*` CLIs and Markdown/context files, not here.
 
 ## Contents
 
-- `extension/index.ts` — PI entrypoint, session hooks, `/nixpi` command, and the thin `nixpi_planner` registered tool wrapper.
-- `extension/wiki/` — PI-specific wiki registered-tool UX and session hooks, delegating to the shared `nixpi-wiki` API.
+- `extension/index.ts` — PI entrypoint, session hooks, `/ownloom` command, and the thin planner registered tool wrapper.
+- `extension/wiki/` — PI-specific wiki registered-tool UX and session hooks, delegating to the shared `ownloom-wiki` API.
+
+## Compatibility
+
+The registered planner tool currently keeps the `nixpi_planner` name as a temporary compatibility alias for existing prompts/harness config. It shells out to `ownloom-planner`.
 
 ## Design rules
 
 - Keep PI code as adapter glue only.
-- Prefer shared CLIs: `nixpi-context`, `nixpi-planner`, and `nixpi-wiki`. Removed operational CLIs have been replaced by skills in `os/skills/`.
+- Prefer shared CLIs: `ownloom-context`, `ownloom-planner`, and `ownloom-wiki`. Removed operational CLIs have been replaced by skills in `os/skills/`.
 - Critical safety/allowlist logic belongs in config (sudoers, systemd units), not in wrapper CLIs or PI hooks.
 - Registered PI tools are UX affordances and should be thin wrappers over shared interfaces.
 - Do not add new PI-only operational behavior unless a CLI would be awkward or impossible.

@@ -87,7 +87,7 @@ export class ReminderDeliveryWorker {
 
   private async scanCalDAVReminders(): Promise<ReminderItem[]> {
     try {
-      const { stdout } = await execFileAsync("nixpi-planner", ["list", "all", "--json"], {
+      const { stdout } = await execFileAsync("ownloom-planner", ["list", "all", "--json"], {
         timeout: 15_000,
         maxBuffer: 1024 * 1024,
       });

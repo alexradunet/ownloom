@@ -35,7 +35,7 @@ A meeting note records what was discussed, what was decided, and what needs to h
 
 ## Do not store live calendar state here
 
-Do not use wiki frontmatter for `start`, `end`, `location`, `attendees`, or `completed`. Use CalDAV/iCalendar `VEVENT` via `nixpi-planner`.
+Do not use wiki frontmatter for `start`, `end`, `location`, `attendees`, or `completed`. Use CalDAV/iCalendar `VEVENT` via `ownloom-planner`.
 
 ## Recommended body sections
 

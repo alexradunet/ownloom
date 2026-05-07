@@ -5,5 +5,5 @@
     ../service-openssh/module.nix
   ];
 
-  nixpi.role = lib.mkOverride 900 "server";
+  ownloom.role = lib.mkOverride 900 "server";
 }

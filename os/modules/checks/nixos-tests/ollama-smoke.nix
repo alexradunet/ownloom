@@ -11,7 +11,7 @@ pkgs.testers.runNixOSTest {
     system.stateVersion = "26.05";
 
     # No models — only testing service health, not inference.
-    services.nixpi-ollama = {
+    services.ownloom-ollama = {
       enable = true;
       models = [];
     };
@@ -29,7 +29,7 @@ pkgs.testers.runNixOSTest {
     vm.succeed("curl -sf http://127.0.0.1:11434/v1/models | grep -q '\"object\"'")
 
     # Session variable must be declared in /etc/set-environment.
-    vm.succeed("grep -q NIXPI_LLM_BASE_URL /etc/set-environment")
-    vm.succeed("grep -q NIXPI_LLM_PROVIDER /etc/set-environment")
+    vm.succeed("grep -q OWNLOOM_LLM_BASE_URL /etc/set-environment")
+    vm.succeed("grep -q OWNLOOM_LLM_PROVIDER /etc/set-environment")
   '';
 }

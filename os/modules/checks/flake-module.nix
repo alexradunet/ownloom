@@ -40,19 +40,19 @@
         '';
 
       nixpi-purity-check = pkgs.callPackage ./source/purity.nix {};
-      nixpi-wiki-stale-identities = pkgs.callPackage ./source/wiki-stale-identities.nix {};
-      nixpi-wiki-adapter-api-boundary = pkgs.callPackage ./source/wiki-adapter-api-boundary.nix {};
+      ownloom-wiki-stale-identities = pkgs.callPackage ./source/wiki-stale-identities.nix {};
+      ownloom-wiki-adapter-api-boundary = pkgs.callPackage ./source/wiki-adapter-api-boundary.nix {};
 
-      nixpi-wiki-npm-pack-smoke = pkgs.callPackage ./wiki-npm-pack-smoke.nix {};
+      ownloom-wiki-npm-pack-smoke = pkgs.callPackage ./wiki-npm-pack-smoke.nix {};
       nixpi-pi-extension-startup-smoke = pkgs.callPackage ./smoke/pi-extension-startup.nix {};
-      nixpi-wiki-cli-smoke = pkgs.callPackage ./smoke/wiki-cli.nix {};
+      ownloom-wiki-cli-smoke = pkgs.callPackage ./smoke/wiki-cli.nix {};
 
       # Build package derivations in flake checks so their package-local test suites run.
-      nixpi-wiki-package = pkgs.nixpi-wiki;
-      nixpi-gateway-package = pkgs.nixpi-gateway;
-      nixpi-planner-package = pkgs.nixpi-planner;
+      ownloom-wiki-package = pkgs.ownloom-wiki;
+      ownloom-gateway-package = pkgs.ownloom-gateway;
+      ownloom-planner-package = pkgs.ownloom-planner;
 
-      nixpi-gateway-module-eval = import ./eval/gateway-module.nix {inherit inputs lib pkgs system;};
+      ownloom-gateway-module-eval = import ./eval/gateway-module.nix {inherit inputs lib pkgs system;};
       nixpi-openssh-native-abuse-eval = import ./eval/openssh-native-abuse.nix {inherit inputs lib pkgs system;};
       nixpi-vps-security-eval = import ./eval/vps-security.nix {inherit inputs lib pkgs;};
       nixpi-host-configurations-eval = import ./eval/host-configurations.nix {inherit inputs lib pkgs;};

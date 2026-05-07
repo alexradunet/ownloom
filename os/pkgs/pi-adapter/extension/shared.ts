@@ -13,7 +13,7 @@ export function atomicWriteText(filePath: string, content: string) {
 }
 
 // `host: <name> (fleet|external)` — used for the session_start status line.
-// Kept inline (no separate fleet helpers) since `nixpi-context` is the canonical
+// Kept inline (no separate fleet helpers) since `ownloom-context` is the canonical
 // fleet/host source and gets injected into every system prompt.
 export function formatFleetHostStatus() {
   const host = currentHost();
@@ -21,7 +21,7 @@ export function formatFleetHostStatus() {
 }
 
 function currentHost(): string {
-  const env = process.env.NIXPI_WIKI_HOST?.trim() || process.env.HOSTNAME?.trim();
+  const env = process.env.OWNLOOM_WIKI_HOST?.trim() || process.env.NIXPI_WIKI_HOST?.trim() || process.env.HOSTNAME?.trim();
   if (env) return env;
   try {
     const h = readFileSync("/etc/hostname", "utf-8").trim();
@@ -31,7 +31,8 @@ function currentHost(): string {
 }
 
 function isFleetHost(host: string): boolean {
-  const root = process.env.NIXPI_ROOT ?? join(process.env.HOME || "/tmp", "NixPI");
+  let root = process.env.OWNLOOM_ROOT ?? process.env.NIXPI_ROOT ?? join(process.env.HOME || "/tmp", "Ownloom");
+  if (!existsSync(root) && existsSync(join(process.env.HOME || "/tmp", "NixPI"))) root = join(process.env.HOME || "/tmp", "NixPI");
   try {
     return readdirSync(join(root, "hosts"), { withFileTypes: true })
       .some((e) => e.isDirectory() && e.name === host && existsSync(join(root, "hosts", host, "default.nix")));

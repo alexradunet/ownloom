@@ -55,7 +55,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function record(value: unknown, label: string): Record<string, unknown> {
-  if (!isRecord(value)) throw new Error(`Invalid nixpi-gateway config: ${label} must be an object.`);
+  if (!isRecord(value)) throw new Error(`Invalid ownloom-gateway config: ${label} must be an object.`);
   return value;
 }
 
@@ -65,19 +65,19 @@ function optionalRecord(value: unknown, label: string): Record<string, unknown> 
 
 function expectString(value: unknown, label: string): void {
   if (typeof value !== "string" || value.trim() === "") {
-    throw new Error(`Invalid nixpi-gateway config: ${label} must be a non-empty string.`);
+    throw new Error(`Invalid ownloom-gateway config: ${label} must be a non-empty string.`);
   }
 }
 
 function expectOptionalString(value: unknown, label: string): void {
   if (value !== undefined && value !== null && typeof value !== "string") {
-    throw new Error(`Invalid nixpi-gateway config: ${label} must be a string.`);
+    throw new Error(`Invalid ownloom-gateway config: ${label} must be a string.`);
   }
 }
 
 function expectNumber(value: unknown, label: string): void {
   if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new Error(`Invalid nixpi-gateway config: ${label} must be a finite number.`);
+    throw new Error(`Invalid ownloom-gateway config: ${label} must be a finite number.`);
   }
 }
 
@@ -86,18 +86,18 @@ function expectOptionalNumber(value: unknown, label: string): void {
 }
 
 function expectBoolean(value: unknown, label: string): void {
-  if (typeof value !== "boolean") throw new Error(`Invalid nixpi-gateway config: ${label} must be a boolean.`);
+  if (typeof value !== "boolean") throw new Error(`Invalid ownloom-gateway config: ${label} must be a boolean.`);
 }
 
 function expectOptionalBoolean(value: unknown, label: string): void {
   if (value !== undefined && value !== null && typeof value !== "boolean") {
-    throw new Error(`Invalid nixpi-gateway config: ${label} must be a boolean.`);
+    throw new Error(`Invalid ownloom-gateway config: ${label} must be a boolean.`);
   }
 }
 
 function expectStringArray(value: unknown, label: string): void {
   if (!Array.isArray(value) || !value.every((entry) => typeof entry === "string")) {
-    throw new Error(`Invalid nixpi-gateway config: ${label} must be a string array.`);
+    throw new Error(`Invalid ownloom-gateway config: ${label} must be a string array.`);
   }
 }
 
@@ -150,15 +150,15 @@ export function validateGatewayConfig(input: unknown): GatewayConfig {
   expectString(gateway.sessionDir, "gateway.sessionDir");
   expectNumber(gateway.maxReplyChars, "gateway.maxReplyChars");
   expectNumber(gateway.maxReplyChunks, "gateway.maxReplyChunks");
-  if (Object.hasOwn(pi, "bin")) throw new Error("Invalid nixpi-gateway config: pi.bin was removed; Pi prompts use the SDK directly.");
-  if (Object.hasOwn(pi, "extraArgs")) throw new Error("Invalid nixpi-gateway config: pi.extraArgs was removed; Pi SDK tools come from the shared Pi tool registry.");
+  if (Object.hasOwn(pi, "bin")) throw new Error("Invalid ownloom-gateway config: pi.bin was removed; Pi prompts use the SDK directly.");
+  if (Object.hasOwn(pi, "extraArgs")) throw new Error("Invalid ownloom-gateway config: pi.extraArgs was removed; Pi SDK tools come from the shared Pi tool registry.");
   expectString(pi.cwd, "pi.cwd");
   expectOptionalString(pi.agentDir, "pi.agentDir");
   expectOptionalNumber(pi.timeoutMs, "pi.timeoutMs");
   validateWebSocket(transports.websocket);
   validateWhatsApp(transports.whatsapp);
   validateAudio(root.audioTranscription);
-  if (Object.hasOwn(transports, "signal")) throw new Error("Invalid nixpi-gateway config: Signal transport was removed.");
+  if (Object.hasOwn(transports, "signal")) throw new Error("Invalid ownloom-gateway config: Signal transport was removed.");
 
   return root as GatewayConfig;
 }

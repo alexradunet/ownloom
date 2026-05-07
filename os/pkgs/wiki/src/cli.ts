@@ -7,7 +7,7 @@ import { getWikiRoot, getWorkspaceProfile, normalizeDomain } from "./wiki/paths.
 import { absolutePath, initWikiRoot, renderInitText } from "./lib/seed-init.ts";
 
 function usage(exitCode = 0): never {
-  const text = `nixpi-wiki — portable plain-Markdown LLM wiki CLI\n\nUsage:\n  nixpi-wiki list [--json]\n  nixpi-wiki describe <tool> [--json]\n  nixpi-wiki call <tool> [json-params | @file | -] [--json] [--yes]\n  nixpi-wiki mutate <tool> [json-params | @file | -] [--json]\n  nixpi-wiki init [--root <path>] [--workspace <name>] [--domain <domain>] [--json]\n  nixpi-wiki context [--format markdown|json]\n  nixpi-wiki doctor [--domain <domain>] [--json]\n\nExamples:\n  nixpi-wiki list\n  nixpi-wiki call wiki_status '{"domain":"work"}'\n  echo '{"query":"memory","domain":"work"}' | nixpi-wiki call wiki_search - --json\n  nixpi-wiki mutate wiki_ingest '{"content":"note","channel":"journal"}'\n  nixpi-wiki init --root ~/NixPI/work-wiki --workspace work --domain work\n  nixpi-wiki context --format markdown\n  nixpi-wiki doctor\n`;
+  const text = `ownloom-wiki — portable plain-Markdown LLM wiki CLI\n\nUsage:\n  ownloom-wiki list [--json]\n  ownloom-wiki describe <tool> [--json]\n  ownloom-wiki call <tool> [json-params | @file | -] [--json] [--yes]\n  ownloom-wiki mutate <tool> [json-params | @file | -] [--json]\n  ownloom-wiki init [--root <path>] [--workspace <name>] [--domain <domain>] [--json]\n  ownloom-wiki context [--format markdown|json]\n  ownloom-wiki doctor [--domain <domain>] [--json]\n\nExamples:\n  ownloom-wiki list\n  ownloom-wiki call wiki_status '{"domain":"work"}'\n  echo '{"query":"memory","domain":"work"}' | ownloom-wiki call wiki_search - --json\n  ownloom-wiki mutate wiki_ingest '{"content":"note","channel":"journal"}'\n  ownloom-wiki init --root ~/Ownloom/work-wiki --workspace work --domain work\n  ownloom-wiki context --format markdown\n  ownloom-wiki doctor\n`;
   console.error(text);
   process.exit(exitCode);
 }
@@ -15,25 +15,25 @@ function usage(exitCode = 0): never {
 
 function subcommandUsage(command: string, exitCode = 0): never {
   const snippets: Record<string, string> = {
-    list: `Usage: nixpi-wiki list [--json]
+    list: `Usage: ownloom-wiki list [--json]
 
 Show the available wiki tools. Human output is grouped by risk; --json returns the stable manifest array.`,
-    describe: `Usage: nixpi-wiki describe <tool> [--json]
+    describe: `Usage: ownloom-wiki describe <tool> [--json]
 
 Show one tool manifest entry, including risk, mutation flags, and parameter metadata.`,
-    call: `Usage: nixpi-wiki call <tool> [json-params | @file | -] [--json] [--yes]
+    call: `Usage: ownloom-wiki call <tool> [json-params | @file | -] [--json] [--yes]
 
-Run a read-only or explicitly approved tool. Wiki mutations are refused unless --yes or NIXPI_WIKI_ALLOW_MUTATION=1 is provided. Prefer 'nixpi-wiki mutate <tool> ...' for intentional wiki writes.`,
-    mutate: `Usage: nixpi-wiki mutate <tool> [json-params | @file | -] [--json]
+Run a read-only or explicitly approved tool. Wiki mutations are refused unless --yes or OWNLOOM_WIKI_ALLOW_MUTATION=1 is provided. Prefer 'ownloom-wiki mutate <tool> ...' for intentional wiki writes.`,
+    mutate: `Usage: ownloom-wiki mutate <tool> [json-params | @file | -] [--json]
 
 Run a tool with wiki/cache mutation policy enabled. Use for intentional writes such as wiki_ingest, wiki_ensure_object, wiki_daily append, wiki_rebuild, or wiki_session_capture.`,
-    init: `Usage: nixpi-wiki init [--root <path>] [--workspace <name>] [--domain <domain>] [--json]
+    init: `Usage: ownloom-wiki init [--root <path>] [--workspace <name>] [--domain <domain>] [--json]
 
 Create an idempotent plain-Markdown wiki root from the bundled generic seed, create canonical folders, rebuild generated metadata, and print environment setup hints.`,
-    context: `Usage: nixpi-wiki context [--format markdown|json] [--json]
+    context: `Usage: ownloom-wiki context [--format markdown|json] [--json]
 
 Print the current host/wiki context for reuse by any LLM harness.`,
-    doctor: `Usage: nixpi-wiki doctor [--domain <domain>] [--json]
+    doctor: `Usage: ownloom-wiki doctor [--domain <domain>] [--json]
 
 Run a small local health check: wiki status, frontmatter lint, Node runtime, optional Git cleanliness, and optional body-search availability. JSON output includes remediation hints only for failing checks.`,
   };
@@ -69,8 +69,8 @@ interface DoctorCheck {
 
 function runInit(args: string[]): void {
   const root = absolutePath(flagValue(args, "--root") ?? getWikiRoot());
-  const workspace = flagValue(args, "--workspace") ?? process.env.NIXPI_WIKI_WORKSPACE ?? "nixpi";
-  const domain = flagValue(args, "--domain") ?? process.env.NIXPI_WIKI_DEFAULT_DOMAIN ?? "technical";
+  const workspace = flagValue(args, "--workspace") ?? process.env.OWNLOOM_WIKI_WORKSPACE ?? process.env.NIXPI_WIKI_WORKSPACE ?? "ownloom";
+  const domain = flagValue(args, "--domain") ?? process.env.OWNLOOM_WIKI_DEFAULT_DOMAIN ?? process.env.NIXPI_WIKI_DEFAULT_DOMAIN ?? "technical";
   const stats = initWikiRoot({ root, workspace, domain });
 
   if (hasFlag(args, "--json")) console.log(JSON.stringify({ ok: true, ...stats }, null, 2));
@@ -80,9 +80,9 @@ function runInit(args: string[]): void {
 async function runDoctor(args: string[], json: boolean): Promise<void> {
   const checks: DoctorCheck[] = [];
   const domain = normalizeDomain(flagValue(args, "--domain")) ?? getWorkspaceProfile().defaultDomain;
-  const repo = process.env.NIXPI_WIKI_REPO_ROOT ?? process.cwd();
+  const repo = process.env.OWNLOOM_WIKI_REPO_ROOT ?? process.env.NIXPI_WIKI_REPO_ROOT ?? process.cwd();
   checks.push({ name: "runtime", ok: true, detail: `node ${process.version}` });
-  checks.push({ name: "repo-root", ok: existsSync(repo), detail: repo, remediation: "Run from an existing workspace directory or set NIXPI_WIKI_REPO_ROOT." });
+  checks.push({ name: "repo-root", ok: existsSync(repo), detail: repo, remediation: "Run from an existing workspace directory or set OWNLOOM_WIKI_REPO_ROOT." });
 
   const git = commandOk("git", ["-C", repo, "status", "--short"]);
   if (git.ok) {
@@ -92,14 +92,14 @@ async function runDoctor(args: string[], json: boolean): Promise<void> {
   }
 
   const wikiStatus = await callWikiTool("wiki_status", { domain });
-  checks.push({ name: "wiki-status", ok: !wikiStatus.isError, detail: wikiStatus.content[0]?.text.split("\n")[0] ?? "no output", remediation: `Run nixpi-wiki mutate wiki_rebuild '{"domain":"${domain}"}' and inspect NIXPI_WIKI_ROOT.` });
+  checks.push({ name: "wiki-status", ok: !wikiStatus.isError, detail: wikiStatus.content[0]?.text.split("\n")[0] ?? "no output", remediation: `Run ownloom-wiki mutate wiki_rebuild '{"domain":"${domain}"}' and inspect OWNLOOM_WIKI_ROOT.` });
   const frontmatter = await callWikiTool("wiki_lint", { mode: "frontmatter", domain });
-  checks.push({ name: "wiki-frontmatter", ok: !frontmatter.isError && /Lint: 0 issues/.test(frontmatter.content[0]?.text ?? ""), detail: frontmatter.content[0]?.text ?? "no output", remediation: `Run nixpi-wiki call wiki_lint '{"mode":"frontmatter","domain":"${domain}"}' --json and fix listed pages.` });
+  checks.push({ name: "wiki-frontmatter", ok: !frontmatter.isError && /Lint: 0 issues/.test(frontmatter.content[0]?.text ?? ""), detail: frontmatter.content[0]?.text ?? "no output", remediation: `Run ownloom-wiki call wiki_lint '{"mode":"frontmatter","domain":"${domain}"}' --json and fix listed pages.` });
 
-  const bodySearchBin = process.env.NIXPI_WIKI_BODY_SEARCH_BIN;
+  const bodySearchBin = process.env.OWNLOOM_WIKI_BODY_SEARCH_BIN ?? process.env.NIXPI_WIKI_BODY_SEARCH_BIN;
   if (bodySearchBin) {
     const bodySearch = commandOk(bodySearchBin, ["--version"]);
-    checks.push({ name: "body-search", ok: bodySearch.ok, detail: bodySearch.ok ? bodySearch.output.split("\n")[0] || bodySearchBin : bodySearch.output, remediation: `Install or correct NIXPI_WIKI_BODY_SEARCH_BIN (${bodySearchBin}).` });
+    checks.push({ name: "body-search", ok: bodySearch.ok, detail: bodySearch.ok ? bodySearch.output.split("\n")[0] || bodySearchBin : bodySearch.output, remediation: `Install or correct OWNLOOM_WIKI_BODY_SEARCH_BIN (${bodySearchBin}).` });
   } else {
     checks.push({ name: "body-search", ok: true, detail: "not configured; curation lint will fall back to local heuristics" });
   }
@@ -109,7 +109,7 @@ async function runDoctor(args: string[], json: boolean): Promise<void> {
     const jsonChecks = checks.map((check) => check.ok ? { name: check.name, ok: check.ok, detail: check.detail } : check);
     console.log(JSON.stringify({ ok, checks: jsonChecks }, null, 2));
   } else {
-    console.log(`NixPI wiki doctor: ${ok ? "ok" : "review"}`);
+    console.log(`Ownloom wiki doctor: ${ok ? "ok" : "review"}`);
     for (const check of checks) {
       console.log(`- ${check.ok ? "ok" : "review"} ${check.name}: ${check.detail}`);
       if (!check.ok && check.remediation) console.log(`  remediation: ${check.remediation}`);
@@ -191,15 +191,15 @@ async function main(): Promise<void> {
     const paramsArg = args.find((arg, index) => index >= 2 && !arg.startsWith("--"));
     const params = parseJsonParams(paramsArg);
     const wikiWrite = Boolean(entry.mutatesWiki);
-    const envAllowsMutation = process.env.NIXPI_WIKI_ALLOW_MUTATION === "1";
-    const envAllowsCacheMutation = process.env.NIXPI_WIKI_ALLOW_CACHE_MUTATION === "1" || envAllowsMutation;
+    const envAllowsMutation = process.env.OWNLOOM_WIKI_ALLOW_MUTATION === "1" || process.env.NIXPI_WIKI_ALLOW_MUTATION === "1";
+    const envAllowsCacheMutation = process.env.OWNLOOM_WIKI_ALLOW_CACHE_MUTATION === "1" || process.env.NIXPI_WIKI_ALLOW_CACHE_MUTATION === "1" || envAllowsMutation;
     const allowMutation = command === "mutate" || hasFlag(args, "--yes") || envAllowsMutation;
     const allowCacheMutation = command === "mutate" || hasFlag(args, "--yes") || envAllowsCacheMutation;
     if ((wikiWrite || entry.requiresConfirmation || entry.risk === "system-write" || entry.risk === "high-impact") && !allowMutation) {
-      throw new Error(`Refusing ${entry.risk} tool ${name} without mutation approval. Safe next step: use 'nixpi-wiki mutate ${name} ...' for intentional writes, or add --yes/NIXPI_WIKI_ALLOW_MUTATION=1 in a reviewed automation path.`);
+      throw new Error(`Refusing ${entry.risk} tool ${name} without mutation approval. Safe next step: use 'ownloom-wiki mutate ${name} ...' for intentional writes, or add --yes/OWNLOOM_WIKI_ALLOW_MUTATION=1 in a reviewed automation path.`);
     }
     if (entry.mutatesCache && !allowCacheMutation) {
-      throw new Error(`Refusing cache-write tool ${name} without cache mutation approval. Safe next step: use 'nixpi-wiki mutate ${name} ...' or NIXPI_WIKI_ALLOW_CACHE_MUTATION=1.`);
+      throw new Error(`Refusing cache-write tool ${name} without cache mutation approval. Safe next step: use 'ownloom-wiki mutate ${name} ...' or OWNLOOM_WIKI_ALLOW_CACHE_MUTATION=1.`);
     }
     const result = await callWikiTool(name, params, {
       policy: {

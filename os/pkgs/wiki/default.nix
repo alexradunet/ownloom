@@ -5,7 +5,7 @@
   makeWrapper,
 }:
 buildNpmPackage {
-  pname = "nixpi-wiki";
+  pname = "ownloom-wiki";
   version = "0.3.0";
 
   src = lib.cleanSourceWith {
@@ -22,7 +22,7 @@ buildNpmPackage {
       !(lib.elem base forbidden || lib.elem parent forbidden || lib.hasSuffix ".sqlite" base);
   };
 
-  npmDepsHash = "sha256-LZo38OVcez1PHVYBSyhXcUHEsyx3Valzbax5d52Hv4k=";
+  npmDepsHash = "sha256-oIl8AsDmocgG6CEQeif/9c51xhgKoFFx6L4R3OsBZWc=";
 
   nativeBuildInputs = [makeWrapper];
   makeCacheWritable = true;
@@ -46,11 +46,12 @@ buildNpmPackage {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/share/nixpi-wiki $out/bin
-    cp -r dist package.json README.md seed $out/share/nixpi-wiki/
+    mkdir -p $out/share/ownloom-wiki $out/bin
+    cp -r dist package.json README.md seed $out/share/ownloom-wiki/
 
-    makeWrapper ${nodejs}/bin/node $out/bin/nixpi-wiki \
-      --add-flags "$out/share/nixpi-wiki/dist/cli.cjs"
+    makeWrapper ${nodejs}/bin/node $out/bin/ownloom-wiki \
+      --add-flags "$out/share/ownloom-wiki/dist/cli.cjs"
+    ln -s ownloom-wiki $out/bin/nixpi-wiki
 
     runHook postInstall
   '';
@@ -58,6 +59,6 @@ buildNpmPackage {
   meta = {
     description = "Portable plain-Markdown LLM wiki CLI and core tools";
     license = lib.licenses.mit;
-    mainProgram = "nixpi-wiki";
+    mainProgram = "ownloom-wiki";
   };
 }

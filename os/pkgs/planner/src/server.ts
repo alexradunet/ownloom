@@ -2,8 +2,8 @@ import * as http from "node:http";
 import { URL } from "node:url";
 import { PlannerClient } from "./caldav.js";
 
-const PORT = Number(process.env.NIXPI_PLANNER_PORT ?? "8082");
-const LISTEN = process.env.NIXPI_PLANNER_LISTEN ?? "127.0.0.1";
+const PORT = Number(process.env.OWNLOOM_PLANNER_PORT ?? process.env.NIXPI_PLANNER_PORT ?? "8082");
+const LISTEN = process.env.OWNLOOM_PLANNER_LISTEN ?? process.env.NIXPI_PLANNER_LISTEN ?? "127.0.0.1";
 
 const client = new PlannerClient();
 
@@ -12,7 +12,7 @@ function htmlPage(itemsHtml: string): string {
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NixPI Planner</title>
+<title>Ownloom Planner</title>
 <style>
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#111;color:#eee;margin:0}
 h1{margin:0;padding:12px 16px;background:#1a1a2e;border-bottom:1px solid #333;font-size:1.1rem}.sub{color:#aaa;font-size:.8rem;padding:8px 16px}
@@ -27,7 +27,7 @@ a{color:#0bf;text-decoration:none}
 a:hover{text-decoration:underline}
 </style>
 </head><body>
-  <h1>NixPI Planner</h1>
+  <h1>Ownloom Planner</h1>
   <div class="sub">${new Date().toLocaleString("en-RO", { timeZone: "Europe/Bucharest" })}</div>
   <table><thead><tr><th class="kind">Kind</th><th class="date">When</th><th>Title</th><th>Categories</th></tr></thead><tbody>
   ${itemsHtml}
@@ -100,7 +100,7 @@ export function startServer(): http.Server {
     }
   });
   server.listen(PORT, LISTEN, () => {
-    console.error(`NixPI planner web view at http://${LISTEN}:${PORT}/`);
+    console.error(`Ownloom planner web view at http://${LISTEN}:${PORT}/`);
   });
   return server;
 }

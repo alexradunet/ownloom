@@ -134,7 +134,7 @@ export async function callWikiTool(name: string, params: Record<string, any> = {
 
   const mutatesWiki = Boolean(manifest.mutatesWiki);
   const mutatesCache = Boolean(manifest.mutatesCache);
-  if (mutatesWiki && !options.policy?.allowMutation) return policyError(`Refusing wiki-write tool ${name} without mutation approval. Safe next step: use 'nixpi-wiki mutate ${name} ...' for intentional writes, or add --yes/NIXPI_WIKI_ALLOW_MUTATION=1 in a reviewed automation path.`);
+  if (mutatesWiki && !options.policy?.allowMutation) return policyError(`Refusing wiki-write tool ${name} without mutation approval. Safe next step: use 'ownloom-wiki mutate ${name} ...' for intentional writes, or add --yes/OWNLOOM_WIKI_ALLOW_MUTATION=1 in a reviewed automation path.`);
   if (mutatesCache && !options.policy?.allowCacheMutation) return policyError(`${name} is a cache-write tool and requires allowCacheMutation policy.`);
 
   const invoke = () => callWikiToolUnlocked(name, params, options);
@@ -192,7 +192,7 @@ async function callWikiToolUnlocked(name: string, params: Record<string, any>, o
       }
       // append — write files and rebuild (no manifest mutation guard since risk=read, but still writes)
       if (params.action === "append" && !options.policy?.allowMutation) {
-        return policyError(`wiki_daily append is a write operation. Use 'nixpi-wiki mutate wiki_daily ...' or add --yes.`);
+        return policyError(`wiki_daily append is a write operation. Use 'ownloom-wiki mutate wiki_daily ...' or add --yes.`);
       }
       return maybeRebuild(wikiRoot, toToolResult(handleDailyAppend(wikiRoot, params.bullets ?? [], {
         section: params.section,

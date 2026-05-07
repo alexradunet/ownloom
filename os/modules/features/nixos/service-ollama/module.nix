@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: let
-  cfg = config.services.nixpi-ollama;
+  cfg = config.services.ownloom-ollama;
 
   # Map the acceleration name to the correct nixpkgs ollama variant.
   # "null" means CPU (the default ollama package).
@@ -19,8 +19,12 @@
     then pkgs.ollama-vulkan
     else pkgs.ollama;
 in {
-  options.services.nixpi-ollama = {
-    enable = lib.mkEnableOption "NixPI local-LLM backend via ollama";
+  imports = [
+    (lib.mkRenamedOptionModule ["services" "nixpi-ollama"] ["services" "ownloom-ollama"])
+  ];
+
+  options.services.ownloom-ollama = {
+    enable = lib.mkEnableOption "Ownloom local-LLM backend via ollama";
 
     models = lib.mkOption {
       type = lib.types.listOf lib.types.str;
@@ -56,8 +60,8 @@ in {
 
     # Expose the loopback endpoint to shell sessions and downstream services.
     environment.sessionVariables = {
-      NIXPI_LLM_BASE_URL = "http://127.0.0.1:11434/v1";
-      NIXPI_LLM_PROVIDER = "ollama";
+      OWNLOOM_LLM_BASE_URL = "http://127.0.0.1:11434/v1";
+      OWNLOOM_LLM_PROVIDER = "ollama";
     };
   };
 }

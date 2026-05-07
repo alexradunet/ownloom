@@ -3,11 +3,11 @@
   lib,
   ...
 }: let
-  cfg = config.nixpi.openssh;
+  cfg = config.ownloom.openssh;
 in {
   imports = [../paths/module.nix];
 
-  options.nixpi.openssh = {
+  options.ownloom.openssh = {
     extraTrustedIps = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [];

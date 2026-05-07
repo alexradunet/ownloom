@@ -1,32 +1,32 @@
-# NixPI Wiki
+# Ownloom Wiki
 
 Portable plain-Markdown LLM wiki CLI and core tools.
 
-NixPI Wiki is a memory substrate only. It stores, searches, lints, ingests, captures session summaries, and rebuilds wiki knowledge. It does not own identity, voice, client-session policy, or deployment-specific tools.
+Ownloom Wiki is a memory substrate only. It stores, searches, lints, ingests, captures session summaries, and rebuilds wiki knowledge. It does not own identity, voice, client-session policy, or deployment-specific tools.
 
 ## CLI
 
 ```bash
-nixpi-wiki list
-nixpi-wiki init --root ~/NixPI/work-wiki --workspace work --domain work
-nixpi-wiki context --format markdown
-nixpi-wiki call wiki_status '{"domain":"work"}'
-nixpi-wiki call wiki_search '{"query":"memory","domain":"work"}'
-nixpi-wiki mutate wiki_ingest '{"content":"note","channel":"journal"}'
-nixpi-wiki mutate wiki_session_capture '{"summary":"Worked on NixPI wiki docs."}'
+ownloom-wiki list
+ownloom-wiki init --root ~/Ownloom/work-wiki --workspace work --domain work
+ownloom-wiki context --format markdown
+ownloom-wiki call wiki_status '{"domain":"work"}'
+ownloom-wiki call wiki_search '{"query":"memory","domain":"work"}'
+ownloom-wiki mutate wiki_ingest '{"content":"note","channel":"journal"}'
+ownloom-wiki mutate wiki_session_capture '{"summary":"Worked on Ownloom wiki docs."}'
 ```
 
 ## Environment
 
 ```text
-NIXPI_WIKI_ROOT=/path/to/wiki
-NIXPI_WIKI_WORKSPACE=work
-NIXPI_WIKI_DEFAULT_DOMAIN=work
-NIXPI_WIKI_HOST=workstation
-NIXPI_WIKI_BODY_SEARCH_BIN=rga
+OWNLOOM_WIKI_ROOT=/path/to/wiki
+OWNLOOM_WIKI_WORKSPACE=work
+OWNLOOM_WIKI_DEFAULT_DOMAIN=work
+OWNLOOM_WIKI_HOST=workstation
+OWNLOOM_WIKI_BODY_SEARCH_BIN=rga
 ```
 
-If `NIXPI_WIKI_ROOT` is not set, NixPI Wiki uses:
+If `OWNLOOM_WIKI_ROOT` is not set, Ownloom Wiki uses:
 
 ```text
 ~/wiki
@@ -37,28 +37,28 @@ If `NIXPI_WIKI_ROOT` is not set, NixPI Wiki uses:
 From a local checkout or packed tarball:
 
 ```bash
-cd os/pkgs/nixpi-wiki
+cd os/pkgs/ownloom-wiki
 npm run build
 npm pack
-npm install -g ./nixpi-wiki-0.1.0.tgz
-nixpi-wiki init --root ~/work-wiki --workspace work --domain work
+npm install -g ./ownloom-wiki-0.1.0.tgz
+ownloom-wiki init --root ~/work-wiki --workspace work --domain work
 ```
 
 Local project usage:
 
 ```bash
-npm install nixpi-wiki
-npx nixpi-wiki init --root ./wiki --workspace work --domain work
+npm install ownloom-wiki
+npx ownloom-wiki init --root ./wiki --workspace work --domain work
 ```
 
 ## Initialize a wiki
 
 ```bash
-nixpi-wiki init --root ~/NixPI/work-wiki --workspace work --domain work
-export NIXPI_WIKI_ROOT="$HOME/NixPI/work-wiki"
-export NIXPI_WIKI_WORKSPACE="work"
-export NIXPI_WIKI_DEFAULT_DOMAIN="work"
-nixpi-wiki doctor --json
+ownloom-wiki init --root ~/Ownloom/work-wiki --workspace work --domain work
+export OWNLOOM_WIKI_ROOT="$HOME/Ownloom/work-wiki"
+export OWNLOOM_WIKI_WORKSPACE="work"
+export OWNLOOM_WIKI_DEFAULT_DOMAIN="work"
+ownloom-wiki doctor --json
 ```
 
 `init` is idempotent. It copies only missing seed files, creates canonical folders, and rebuilds generated metadata.
@@ -79,4 +79,4 @@ wiki_decay_pass
 wiki_session_capture
 ```
 
-Deployment-specific audits, system operations, identity/voice layers, and client adapters belong in packages that depend on NixPI Wiki.
+Deployment-specific audits, system operations, identity/voice layers, and client adapters belong in packages that depend on Ownloom Wiki.

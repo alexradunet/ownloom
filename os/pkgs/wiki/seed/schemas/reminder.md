@@ -35,7 +35,7 @@ A reminder context note records durable background for a reminder. The live remi
 
 ## Do not store live reminder state here
 
-Do not use wiki frontmatter for `remind_at`, `snooze_until`, `for`, or `completed`. Use CalDAV/iCalendar `VALARM` via `nixpi-planner`.
+Do not use wiki frontmatter for `remind_at`, `snooze_until`, `for`, or `completed`. Use CalDAV/iCalendar `VALARM` via `ownloom-planner`.
 
 ## Recommended body sections
 

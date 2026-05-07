@@ -35,7 +35,7 @@ An event context note records durable purpose, notes, decisions, and links aroun
 
 ## Do not store live calendar state here
 
-Do not use wiki frontmatter for `start`, `end`, `location`, `attendees`, or `completed`. Use CalDAV/iCalendar `VEVENT` via `nixpi-planner`.
+Do not use wiki frontmatter for `start`, `end`, `location`, `attendees`, or `completed`. Use CalDAV/iCalendar `VEVENT` via `ownloom-planner`.
 
 ## Recommended body sections
 

@@ -4,13 +4,15 @@
   pkgs,
   ...
 }: let
-  cfg = config.nixpi.pi;
-  userName = config.nixpi.human.name;
-  userHome = config.nixpi.human.homeDirectory;
+  cfg = config.ownloom.pi;
+  userName = config.ownloom.human.name;
+  userHome = config.ownloom.human.homeDirectory;
   userGroup = config.users.users.${userName}.group or "users";
 
-  extensionSources = {
-    nixpi = "${config.nixpi.root}/os/pkgs/pi-adapter/extension";
+  extensionSources = rec {
+    ownloom = "${config.ownloom.root}/os/pkgs/pi-adapter/extension";
+    # Transitional alias for old host configs during the rebrand.
+    nixpi = ownloom;
   };
 
   desiredSettings =
@@ -25,12 +27,12 @@
       inherit (cfg) enableSkillCommands;
     };
 
-  desiredSettingsFile = pkgs.writeText "nixpi-pi-settings.json" (builtins.toJSON desiredSettings);
+  desiredSettingsFile = pkgs.writeText "ownloom-pi-settings.json" (builtins.toJSON desiredSettings);
   extensionSourceChecks =
     lib.concatMapStringsSep "\n" (name: ''
       if [ ! -d ${lib.escapeShellArg extensionSources.${name}} ]; then
-        echo "nixpi-pi-settings: missing PI extension source ${name}: ${extensionSources.${name}}" >&2
-        echo "nixpi-pi-settings: sync the NixPI checkout before activating this host, or remove the extension from nixpi.pi.extensions." >&2
+        echo "ownloom-pi-settings: missing PI extension source ${name}: ${extensionSources.${name}}" >&2
+        echo "ownloom-pi-settings: sync the Ownloom checkout before activating this host, or remove the extension from ownloom.pi.extensions." >&2
         exit 1
       fi
     '')
@@ -38,16 +40,16 @@
 in {
   imports = [../paths/module.nix];
 
-  options.nixpi.pi = {
+  options.ownloom.pi = {
     enable = lib.mkEnableOption "declarative PI resource activation for the primary user" // {default = true;};
 
     extensions = lib.mkOption {
       type = lib.types.listOf (lib.types.enum (builtins.attrNames extensionSources));
       default = [];
-      example = ["nixpi"];
+      example = ["ownloom"];
       description = ''
         Declaratively enabled PI extensions. Names map to local extension source
-        directories under the NixPI checkout and are merged into
+        directories under the Ownloom checkout and are merged into
         ~/.pi/agent/settings.json during activation.
       '';
     };
@@ -95,7 +97,7 @@ in {
       fi
     '';
 
-    system.activationScripts.nixpi-pi-settings = lib.stringAfter ["users"] ''
+    system.activationScripts.ownloom-pi-settings = lib.stringAfter ["users"] ''
       install -d -m 0755 -o ${userName} -g ${userGroup} ${lib.escapeShellArg "${userHome}/.pi/agent"}
 
       ${extensionSourceChecks}

@@ -20,7 +20,7 @@ export type PlannerItem = {
 };
 
 export function createUid(): string {
-  return `nixpi-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `ownloom-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 export function escapeText(value: string): string {
@@ -107,7 +107,7 @@ export function todoIcs(args: {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//NixPI//Planner//EN",
+    "PRODID:-//Ownloom//Planner//EN",
     "BEGIN:VTODO",
     `UID:${escapeText(args.uid)}`,
     `DTSTAMP:${stamp()}`,
@@ -149,7 +149,7 @@ export function eventIcs(args: {
   return serialize([
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//NixPI//Planner//EN",
+    "PRODID:-//Ownloom//Planner//EN",
     "BEGIN:VEVENT",
     `UID:${escapeText(args.uid)}`,
     `DTSTAMP:${stamp()}`,

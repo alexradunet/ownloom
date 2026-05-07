@@ -57,7 +57,7 @@ export function findSeedDir(): string {
     }
   }
 
-  throw new Error(`Could not locate bundled NixPI wiki seed. Checked: ${candidates.join(", ")}`);
+  throw new Error(`Could not locate bundled Ownloom wiki seed. Checked: ${candidates.join(", ")}`);
 }
 
 function ensureDirectory(dir: string): boolean {
@@ -141,7 +141,7 @@ export function initWikiRoot(options: InitWikiOptions): InitWikiStats {
     if (ensureDirectory(dir)) stats.createdDirs += 1;
   }
   writeFileIfMissing(path.join(root, ".gitignore"), [
-    "# NixPI Wiki generated metadata",
+    "# Ownloom Wiki generated metadata",
     "meta/registry.json",
     "meta/backlinks.json",
     "meta/index.md",
@@ -157,7 +157,7 @@ export function initWikiRoot(options: InitWikiOptions): InitWikiStats {
 
 export function renderInitText(stats: InitWikiStats): string {
   return [
-    `Initialized NixPI wiki root: ${stats.root}`,
+    `Initialized Ownloom wiki root: ${stats.root}`,
     `Seed: ${stats.seedDir}`,
     `Workspace hint: ${stats.workspace}`,
     `Default domain hint: ${stats.domain}`,
@@ -165,12 +165,12 @@ export function renderInitText(stats: InitWikiStats): string {
     `Pages indexed: ${stats.pages}`,
     "",
     "Next shell setup:",
-    `  export NIXPI_WIKI_ROOT=${JSON.stringify(stats.root)}`,
-    `  export NIXPI_WIKI_WORKSPACE=${JSON.stringify(stats.workspace)}`,
-    `  export NIXPI_WIKI_DEFAULT_DOMAIN=${JSON.stringify(stats.domain)}`,
+    `  export OWNLOOM_WIKI_ROOT=${JSON.stringify(stats.root)}`,
+    `  export OWNLOOM_WIKI_WORKSPACE=${JSON.stringify(stats.workspace)}`,
+    `  export OWNLOOM_WIKI_DEFAULT_DOMAIN=${JSON.stringify(stats.domain)}`,
     "",
     "Next checks:",
-    "  nixpi-wiki context --format markdown",
-    "  nixpi-wiki doctor --json",
+    "  ownloom-wiki context --format markdown",
+    "  ownloom-wiki doctor --json",
   ].join("\n");
 }

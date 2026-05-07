@@ -28,7 +28,7 @@
     # NH_FLAKE is picked up automatically by `nh os switch`, `nh os boot`, etc.
     nh = {
       enable = true;
-      flake = config.nixpi.config;
+      flake = config.ownloom.config;
 
       # Weekly automatic garbage collection — keeps the store tidy without
       # manual intervention.

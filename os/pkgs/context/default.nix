@@ -1,36 +1,46 @@
 {
   lib,
   writeShellApplication,
+  symlinkJoin,
   coreutils,
   findutils,
   gnugrep,
   jq,
   nixos-rebuild,
-  nixpi-planner,
-  nixpi-wiki,
+  ownloom-planner,
+  ownloom-wiki,
   podman,
   procps,
-}:
-writeShellApplication {
-  name = "nixpi-context";
+}: let
+  app = writeShellApplication {
+    name = "ownloom-context";
 
-  runtimeInputs = [
-    coreutils
-    findutils
-    gnugrep
-    jq
-    nixos-rebuild
-    nixpi-planner
-    nixpi-wiki
-    podman
-    procps
-  ];
+    runtimeInputs = [
+      coreutils
+      findutils
+      gnugrep
+      jq
+      nixos-rebuild
+      ownloom-planner
+      ownloom-wiki
+      podman
+      procps
+    ];
 
-  text = builtins.readFile ./nixpi-context.sh;
+    text = builtins.readFile ./nixpi-context.sh;
 
-  meta = {
-    description = "Print the current NixPI agent context for prompt injection";
-    license = lib.licenses.mit;
-    mainProgram = "nixpi-context";
+    meta = {
+      description = "Print the current Ownloom agent context for prompt injection";
+      license = lib.licenses.mit;
+      mainProgram = "ownloom-context";
+    };
   };
-}
+in
+  symlinkJoin {
+    name = "ownloom-context";
+    paths = [app];
+    postBuild = ''
+      ln -s ownloom-context $out/bin/nixpi-context
+    '';
+    inherit (app) meta;
+  }

@@ -1,5 +1,7 @@
 _: {
-  nixpi = {
+  ownloom = {
+    root = "/home/alex/NixPI";
+
     human = {
       name = "alex";
       homeDirectory = "/home/alex";
@@ -18,7 +20,7 @@ _: {
 
     pi = {
       extensions = [
-        "nixpi"
+        "ownloom"
       ];
 
       packages = [

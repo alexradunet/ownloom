@@ -12,13 +12,13 @@ pkgs.testers.runNixOSTest {
     networking.hostName = "nixpi-boot-smoke";
     system.stateVersion = "26.05";
 
-    services.nixpi-planner = {
+    services.ownloom-planner = {
       enable = true;
       enableServer = false;
     };
 
     # No models: only test service health, not inference.
-    services.nixpi-ollama = {
+    services.ownloom-ollama = {
       enable = true;
       models = [];
     };
@@ -40,8 +40,8 @@ pkgs.testers.runNixOSTest {
     # Ollama OpenAI-compat endpoint responds.
     vm.succeed("curl -sf http://127.0.0.1:11434/v1/models | grep -q 'object'")
 
-    # Both NIXPI_PLANNER_* and NIXPI_LLM_* session vars are declared.
-    vm.succeed("grep -q NIXPI_PLANNER_CALDAV_URL /etc/set-environment")
-    vm.succeed("grep -q NIXPI_LLM_BASE_URL /etc/set-environment")
+    # Both OWNLOOM_PLANNER_* and OWNLOOM_LLM_* session vars are declared.
+    vm.succeed("grep -q OWNLOOM_PLANNER_CALDAV_URL /etc/set-environment")
+    vm.succeed("grep -q OWNLOOM_LLM_BASE_URL /etc/set-environment")
   '';
 }

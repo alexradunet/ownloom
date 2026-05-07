@@ -1,4 +1,4 @@
-// Stable source-level TypeScript API for in-repo adapters that embed NixPI Wiki.
+// Stable source-level TypeScript API for in-repo adapters that embed Ownloom Wiki.
 // Keep deployment-specific and client-specific policy outside this module.
 
 export {

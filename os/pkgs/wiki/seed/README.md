@@ -1,4 +1,4 @@
-# Generic NixPI Wiki Seed
+# Generic Ownloom Wiki Seed
 
 This seed contains the harness-neutral plain-Markdown wiki schema, rules, object model, templates, and object schemas.
 
@@ -21,5 +21,5 @@ wiki-root/
 After copying the seed into a new root, run:
 
 ```bash
-NIXPI_WIKI_ROOT=/path/to/wiki nixpi-wiki mutate wiki_rebuild '{"domain":"work"}'
+OWNLOOM_WIKI_ROOT=/path/to/wiki ownloom-wiki mutate wiki_rebuild '{"domain":"work"}'
 ```

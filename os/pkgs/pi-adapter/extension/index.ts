@@ -16,22 +16,24 @@ async function runText(command: string, args: string[], timeout = 10_000): Promi
   return stdout.trim();
 }
 
-async function buildNixpiContext(): Promise<string> {
+async function buildOwnloomContext(): Promise<string> {
   try {
-    const text = await runText("nixpi-context", ["--format", "markdown"], 15_000);
+    const text = await runText("ownloom-context", ["--format", "markdown"], 15_000);
     return text ? `\n\n${text}` : "";
   } catch (error: any) {
     const message = error?.stderr?.toString()?.trim() || error?.message || String(error);
-    return `\n\n[NIXPI CONTEXT ERROR]\nFailed to run nixpi-context: ${message}`;
+    return `\n\n[OWNLOOM CONTEXT ERROR]\nFailed to run ownloom-context: ${message}`;
   }
 }
 
 function registerPlannerTool(pi: ExtensionAPI) {
-  pi.registerTool({
-    name: "nixpi_planner",
-    label: "NixPI Planner",
+  for (const toolName of ["ownloom_planner", "nixpi_planner"] as const) pi.registerTool({
+    name: toolName,
+    label: toolName === "ownloom_planner" ? "Ownloom Planner" : "NixPI Planner (compat)",
     description: "Manage canonical live tasks, reminders, and calendar events through the local CalDAV/iCalendar planner backend.",
-    promptSnippet: "Use nixpi_planner for live task, reminder, and calendar operations instead of creating wiki Markdown task/reminder pages.",
+    promptSnippet: toolName === "ownloom_planner"
+      ? "Use ownloom_planner for live task, reminder, and calendar operations instead of creating wiki Markdown task/reminder pages."
+      : "Compatibility alias: prefer ownloom_planner for new prompts; use this only for old NixPI prompts.",
     promptGuidelines: [
       "Use for live operational tasks/reminders/events.",
       "Do not use wiki task/reminder pages as the live source of truth unless the user explicitly asks for an archive/context note.",
@@ -59,7 +61,7 @@ function registerPlannerTool(pi: ExtensionAPI) {
     async execute(_toolCallId, params) {
       const args = plannerArgs(params);
       try {
-        const { stdout } = await execFileAsync("nixpi-planner", args, { timeout: 30_000, maxBuffer: 1024 * 1024 });
+        const { stdout } = await execFileAsync("ownloom-planner", args, { timeout: 30_000, maxBuffer: 1024 * 1024 });
         const text = stdout.trim() || "OK";
         let details: unknown = { ok: true, action: params.action };
         try {
@@ -140,12 +142,12 @@ export default function nixpiExtension(pi: ExtensionAPI) {
   registerWikiExtension(pi);
   registerPlannerTool(pi);
 
-  pi.registerCommand("nixpi", {
-    description: "NixPI context check: /nixpi context",
+  pi.registerCommand("ownloom", {
+    description: "Ownloom context check: /ownloom context",
     handler: async (_args, ctx) => {
       try {
-        const text = await runText("nixpi-context", ["--format", "markdown"], 15_000);
-        if (ctx.hasUI) ctx.ui.notify(text || "nixpi-context produced no output.", "info");
+        const text = await runText("ownloom-context", ["--format", "markdown"], 15_000);
+        if (ctx.hasUI) ctx.ui.notify(text || "ownloom-context produced no output.", "info");
       } catch (error: any) {
         const message = error?.stderr?.toString()?.trim() || error?.message || String(error);
         if (ctx.hasUI) ctx.ui.notify(message, "error");
@@ -156,17 +158,17 @@ export default function nixpiExtension(pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     if (ctx.hasUI) {
       ctx.ui.setStatus("fleet", formatFleetHostStatus());
-      ctx.ui.setStatus("nixpi", "NixPI runtime: active");
+      ctx.ui.setStatus("ownloom", "Ownloom runtime: active");
     }
   });
 
   pi.on("before_agent_start", async (event) => {
-    let note = await buildNixpiContext();
+    let note = await buildOwnloomContext();
 
     const updateStatus = readUpdateStatus();
     if (updateStatus?.available && !updateStatus.notified) {
       await writeUpdateStatus({ ...updateStatus, notified: true });
-      note += `\n\n[UPDATE AVAILABLE] The NixPI repo is ${updateStatus.behindBy} commit(s) behind origin/${updateStatus.branch ?? "main"}. Inform the user and offer to pull and apply.`;
+      note += `\n\n[UPDATE AVAILABLE] The Ownloom repo is ${updateStatus.behindBy} commit(s) behind origin/${updateStatus.branch ?? "main"}. Inform the user and offer to pull and apply.`;
     }
 
     return { systemPrompt: event.systemPrompt + note };

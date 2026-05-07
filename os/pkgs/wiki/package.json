@@ -1,5 +1,5 @@
 {
-  "name": "@nixpi/wiki",
+  "name": "@ownloom/wiki",
   "version": "0.3.0",
   "description": "Portable plain-Markdown LLM wiki CLI and core tools.",
   "license": "MIT",
@@ -11,6 +11,7 @@
     "./cli": "./dist/cli.cjs"
   },
   "bin": {
+    "ownloom-wiki": "dist/cli.cjs",
     "nixpi-wiki": "dist/cli.cjs"
   },
   "files": [

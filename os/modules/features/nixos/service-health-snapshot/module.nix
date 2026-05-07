@@ -4,9 +4,9 @@
   pkgs,
   ...
 }: let
-  cfg = config.services.nixpi-health-snapshot;
-  humanName = config.nixpi.human.name;
-  humanHome = config.nixpi.human.homeDirectory;
+  cfg = config.services.ownloom-health-snapshot;
+  humanName = config.ownloom.human.name;
+  humanHome = config.ownloom.human.homeDirectory;
   stateDir = "/var/lib/${cfg.stateDirectory}";
   outPath = "${stateDir}/${cfg.outFile}";
   extraCmds =
@@ -16,14 +16,17 @@
     '')
     cfg.extraStatusCommands;
 in {
-  imports = [../paths/module.nix];
+  imports = [
+    ../paths/module.nix
+    (lib.mkRenamedOptionModule ["services" "nixpi-health-snapshot"] ["services" "ownloom-health-snapshot"])
+  ];
 
-  options.services.nixpi-health-snapshot = {
-    enable = lib.mkEnableOption "NixPI host health snapshot timer";
+  options.services.ownloom-health-snapshot = {
+    enable = lib.mkEnableOption "Ownloom host health snapshot timer";
 
     serviceName = lib.mkOption {
       type = lib.types.str;
-      default = "nixpi-health-snapshot";
+      default = "ownloom-health-snapshot";
       description = "systemd service and timer unit name.";
     };
 
@@ -63,31 +66,31 @@ in {
 
   config = lib.mkIf cfg.enable {
     systemd.services.${cfg.serviceName} = {
-      description = "Write a read-only NixPI host health snapshot";
+      description = "Write a read-only Ownloom host health snapshot";
       serviceConfig = {
         Type = "oneshot";
         User = humanName;
         Group = "users";
-        WorkingDirectory = config.nixpi.root;
+        WorkingDirectory = config.ownloom.root;
         StateDirectory = cfg.stateDirectory;
       };
       path =
         [
           pkgs.coreutils
           pkgs.git
-          pkgs.nixpi-wiki
+          pkgs.ownloom-wiki
         ]
         ++ cfg.extraPackages;
       script = ''
         set -euo pipefail
         export HOME=${humanHome}
-        export NIXPI_WIKI_ROOT=${config.nixpi.wiki.root}
-        export NIXPI_WIKI_HOST=${config.networking.hostName}
+        export OWNLOOM_WIKI_ROOT=${config.ownloom.wiki.root}
+        export OWNLOOM_WIKI_HOST=${config.networking.hostName}
         export NO_COLOR=1
         out=${outPath}
         tmp="$out.tmp"
         {
-          echo "# NixPI host health snapshot"
+          echo "# Ownloom host health snapshot"
           echo "timestamp=$(date -Is)"
           echo "host=${config.networking.hostName}"
           echo
@@ -95,7 +98,7 @@ in {
           git status --short || true
           echo
           echo "## wiki status"
-          nixpi-wiki call wiki_status '{"domain":"technical"}' || true
+          ownloom-wiki call wiki_status '{"domain":"technical"}' || true
           ${extraCmds}
         } > "$tmp"
         mv "$tmp" "$out"

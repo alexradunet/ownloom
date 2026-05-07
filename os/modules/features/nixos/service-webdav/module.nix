@@ -4,11 +4,15 @@
   pkgs,
   ...
 }: let
-  cfg = config.services.nixpi-webdav;
-  userName = config.nixpi.human.name;
+  cfg = config.services.ownloom-webdav;
+  userName = config.ownloom.human.name;
 in {
-  options.services.nixpi-webdav = {
-    enable = lib.mkEnableOption "loopback WebDAV server for the NixPI wiki (access via SSH tunnel)";
+  imports = [
+    (lib.mkRenamedOptionModule ["services" "nixpi-webdav"] ["services" "ownloom-webdav"])
+  ];
+
+  options.services.ownloom-webdav = {
+    enable = lib.mkEnableOption "loopback WebDAV server for the Ownloom wiki (access via SSH tunnel)";
 
     address = lib.mkOption {
       type = lib.types.str;
@@ -24,9 +28,9 @@ in {
 
     wikiRoot = lib.mkOption {
       type = lib.types.str;
-      default = config.nixpi.wiki.root;
-      defaultText = lib.literalExpression "config.nixpi.wiki.root";
-      description = "Absolute path to the directory served over WebDAV. Defaults to the NixPI wiki root.";
+      default = config.ownloom.wiki.root;
+      defaultText = lib.literalExpression "config.ownloom.wiki.root";
+      description = "Absolute path to the directory served over WebDAV. Defaults to the Ownloom wiki root.";
     };
 
     htpasswdSecret = lib.mkOption {
@@ -59,7 +63,7 @@ in {
       user = userName;
       additionalModules = [pkgs.nginxModules.dav];
 
-      virtualHosts."nixpi-webdav" = {
+      virtualHosts."ownloom-webdav" = {
         listen = [
           {
             addr = cfg.address;
@@ -83,7 +87,7 @@ in {
             dav_access user:rw group:r all:r;
 
             # Basic auth — credentials file is decrypted by sops at runtime.
-            auth_basic "NixPI Wiki";
+            auth_basic "Ownloom Wiki";
             auth_basic_user_file /run/secrets/${cfg.htpasswdSecret};
 
             # Let WebDAV clients discover directory contents.

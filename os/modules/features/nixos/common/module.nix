@@ -16,5 +16,5 @@
   nixpkgs.overlays = [inputs.self.overlays.default];
   nixpkgs.config.allowUnfree = true;
 
-  nixpi.role = lib.mkDefault "common";
+  ownloom.role = lib.mkDefault "common";
 }

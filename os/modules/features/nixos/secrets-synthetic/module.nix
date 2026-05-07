@@ -4,14 +4,14 @@
   lib,
   ...
 }: let
-  cfg = config.nixpi.secrets.synthetic;
+  cfg = config.ownloom.secrets.synthetic;
 in {
   imports = [
     ../paths/module.nix
     inputs.sops-nix.nixosModules.sops
   ];
 
-  options.nixpi.secrets.synthetic = {
+  options.ownloom.secrets.synthetic = {
     sopsFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
@@ -25,14 +25,14 @@ in {
         drop the secret in a pure build.
 
         Example:
-          nixpi.secrets.synthetic.sopsFile = ./secrets.yaml;
+          ownloom.secrets.synthetic.sopsFile = ./secrets.yaml;
       '';
     };
 
     owner = lib.mkOption {
       type = lib.types.str;
-      default = config.nixpi.human.name;
-      defaultText = lib.literalExpression "config.nixpi.human.name";
+      default = config.ownloom.human.name;
+      defaultText = lib.literalExpression "config.ownloom.human.name";
       description = "User that owns the decrypted Synthetic API key secret file.";
     };
 

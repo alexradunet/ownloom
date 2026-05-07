@@ -5,8 +5,8 @@
 }: let
   vps = inputs.self.nixosConfigurations.nixpi-vps;
   ssh = vps.config.services.openssh;
-  gateway = vps.config.services.nixpi-gateway;
-  wikiHealth = vps.config.systemd.services.nixpi-wiki-health-snapshot;
+  gateway = vps.config.services.ownloom-gateway;
+  wikiHealth = vps.config.systemd.services.ownloom-wiki-health-snapshot;
   wikiHealthScript = wikiHealth.script or "";
 in
   assert lib.asserts.assertMsg (ssh.enable && ssh.openFirewall) "nixpi-vps must expose OpenSSH intentionally";
@@ -19,14 +19,14 @@ in
   assert lib.asserts.assertMsg gateway.settings.audioTranscription.enabled "nixpi-vps gateway must keep audio transcription enabled";
   assert lib.asserts.assertMsg (!(gateway.settings.transports.whatsapp.enable or false) || gateway.settings.transports.whatsapp.directMessagesOnly) "nixpi-vps WhatsApp transport must stay direct-message-only when enabled";
   assert lib.asserts.assertMsg (!(gateway.settings.transports.whatsapp.enable or false) || gateway.settings.transports.whatsapp.ownerNumbers != []) "nixpi-vps WhatsApp owner allowlist must not be empty when enabled";
-  assert lib.asserts.assertMsg (builtins.hasAttr "nixpi-wiki-health-snapshot" vps.config.systemd.timers) "nixpi-vps must declare the read-only wiki health snapshot timer";
-  assert lib.asserts.assertMsg (wikiHealth.serviceConfig.User == vps.config.nixpi.human.name) "wiki health snapshot must run as the primary user";
-  assert lib.asserts.assertMsg (wikiHealth.serviceConfig.WorkingDirectory == vps.config.nixpi.root) "wiki health snapshot must run from the NixPI repo root";
-  assert lib.asserts.assertMsg (wikiHealth.serviceConfig.StateDirectory == "nixpi-wiki-health") "wiki health snapshot must write state outside the Git repo";
+  assert lib.asserts.assertMsg (builtins.hasAttr "ownloom-wiki-health-snapshot" vps.config.systemd.timers) "nixpi-vps must declare the read-only wiki health snapshot timer";
+  assert lib.asserts.assertMsg (wikiHealth.serviceConfig.User == vps.config.ownloom.human.name) "wiki health snapshot must run as the primary user";
+  assert lib.asserts.assertMsg (wikiHealth.serviceConfig.WorkingDirectory == vps.config.ownloom.root) "wiki health snapshot must run from the Ownloom repo root";
+  assert lib.asserts.assertMsg (wikiHealth.serviceConfig.StateDirectory == "ownloom-wiki-health") "wiki health snapshot must write state outside the Git repo";
   assert lib.asserts.assertMsg (lib.hasInfix "export HOME=" wikiHealthScript) "wiki health snapshot must set HOME";
-  assert lib.asserts.assertMsg (lib.hasInfix "nixpi-wiki call wiki_status" wikiHealthScript) "wiki health snapshot must use nixpi-wiki";
-  assert lib.asserts.assertMsg (lib.hasInfix "/var/lib/nixpi-wiki-health/technical.status" wikiHealthScript) "wiki health snapshot must write outside the repository";
-  assert lib.asserts.assertMsg (vps.config.systemd.timers.nixpi-wiki-health-snapshot.timerConfig.OnCalendar == "*-*-* 04:15:00") "wiki health snapshot must run daily";
+  assert lib.asserts.assertMsg (lib.hasInfix "ownloom-wiki call wiki_status" wikiHealthScript) "wiki health snapshot must use ownloom-wiki";
+  assert lib.asserts.assertMsg (lib.hasInfix "/var/lib/ownloom-wiki-health/technical.status" wikiHealthScript) "wiki health snapshot must write outside the repository";
+  assert lib.asserts.assertMsg (vps.config.systemd.timers.ownloom-wiki-health-snapshot.timerConfig.OnCalendar == "*-*-* 04:15:00") "wiki health snapshot must run daily";
   assert lib.asserts.assertMsg (builtins.hasAttr "synthetic_api_key" vps.config.sops.secrets) "nixpi-vps must declare the Synthetic API key secret when secrets.yaml exists";
     pkgs.runCommand "nixpi-vps-security-eval" {} ''
       touch $out

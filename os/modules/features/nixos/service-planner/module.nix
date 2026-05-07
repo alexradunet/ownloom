@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: let
-  cfg = config.services.nixpi-planner;
+  cfg = config.services.ownloom-planner;
   bindHost =
     if lib.hasInfix ":" cfg.host && !(lib.hasPrefix "[" cfg.host)
     then "[${cfg.host}]"
@@ -28,14 +28,18 @@
       };
   };
 in {
-  options.services.nixpi-planner = {
-    enable = lib.mkEnableOption "standards-based NixPI planner backend using CalDAV/iCalendar";
+  imports = [
+    (lib.mkRenamedOptionModule ["services" "nixpi-planner"] ["services" "ownloom-planner"])
+  ];
+
+  options.services.ownloom-planner = {
+    enable = lib.mkEnableOption "standards-based Ownloom planner backend using CalDAV/iCalendar";
 
     host = lib.mkOption {
       type = lib.types.str;
       default = "127.0.0.1";
       description = ''
-        Address Radicale binds for the NixPI planner CalDAV endpoint.
+        Address Radicale binds for the Ownloom planner CalDAV endpoint.
         Keep loopback-only unless it is protected by TLS and password auth.
       '';
     };
@@ -43,7 +47,7 @@ in {
     port = lib.mkOption {
       type = lib.types.port;
       default = 5232;
-      description = "TCP port for the NixPI planner CalDAV endpoint.";
+      description = "TCP port for the Ownloom planner CalDAV endpoint.";
     };
 
     openFirewall = lib.mkOption {
@@ -54,7 +58,7 @@ in {
 
     storageDir = lib.mkOption {
       type = lib.types.str;
-      default = "/var/lib/nixpi-planner/radicale/collections";
+      default = "/var/lib/ownloom-planner/radicale/collections";
       description = "Filesystem storage directory for Radicale collections.";
     };
 
@@ -69,39 +73,39 @@ in {
 
     user = lib.mkOption {
       type = lib.types.str;
-      default = config.nixpi.human.name;
-      defaultText = lib.literalExpression "config.nixpi.human.name";
-      description = "Planner CalDAV principal used by the local NixPI adapter.";
+      default = config.ownloom.human.name;
+      defaultText = lib.literalExpression "config.ownloom.human.name";
+      description = "Planner CalDAV principal used by the local Ownloom adapter.";
     };
 
     collection = lib.mkOption {
       type = lib.types.str;
       default = "planner";
-      description = "Planner CalDAV collection name used by the local NixPI adapter.";
+      description = "Planner CalDAV collection name used by the local Ownloom adapter.";
     };
 
     enableServer = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Run nixpi-planner-server as a systemd service for the local web view/API.";
+      description = "Run ownloom-planner-server as a systemd service for the local web view/API.";
     };
 
     serverPort = lib.mkOption {
       type = lib.types.port;
       default = 8082;
-      description = "TCP port for the nixpi-planner-server web view/API.";
+      description = "TCP port for the ownloom-planner-server web view/API.";
     };
 
     serverListen = lib.mkOption {
       type = lib.types.str;
       default = "127.0.0.1";
-      description = "Address nixpi-planner-server binds to. Keep loopback-only unless protected.";
+      description = "Address ownloom-planner-server binds to. Keep loopback-only unless protected.";
     };
 
     extraSettings = lib.mkOption {
       type = lib.types.attrs;
       default = {};
-      description = "Extra Radicale settings merged over the safe NixPI defaults.";
+      description = "Extra Radicale settings merged over the safe Ownloom defaults.";
     };
   };
 
@@ -109,34 +113,40 @@ in {
     assertions = [
       {
         assertion = lib.hasPrefix "/var/lib/" cfg.storageDir;
-        message = "services.nixpi-planner.storageDir must live under /var/lib.";
+        message = "services.ownloom-planner.storageDir must live under /var/lib.";
       }
       {
         assertion = isLoopback || usesPasswordAuth;
-        message = "services.nixpi-planner.htpasswdFile is required when binding outside loopback.";
+        message = "services.ownloom-planner.htpasswdFile is required when binding outside loopback.";
       }
       {
         assertion = (!cfg.openFirewall) || usesPasswordAuth;
-        message = "services.nixpi-planner.htpasswdFile is required when opening the firewall.";
+        message = "services.ownloom-planner.htpasswdFile is required when opening the firewall.";
       }
     ];
 
     environment.systemPackages = [
-      pkgs.nixpi-planner
+      pkgs.ownloom-planner
       pkgs.radicale
     ];
 
     # Three vars shared by the interactive shell, gateway injection, and the
     # planner server service. Declare once, merge per consumer.
-    nixpi.plannerEnvVars = {
+    ownloom.plannerEnvVars = {
+      OWNLOOM_PLANNER_CALDAV_URL = caldavUrl;
+      OWNLOOM_PLANNER_USER = cfg.user;
+      OWNLOOM_PLANNER_COLLECTION = cfg.collection;
       NIXPI_PLANNER_CALDAV_URL = caldavUrl;
       NIXPI_PLANNER_USER = cfg.user;
       NIXPI_PLANNER_COLLECTION = cfg.collection;
     };
 
     environment.sessionVariables =
-      config.nixpi.plannerEnvVars
+      config.ownloom.plannerEnvVars
       // {
+        OWNLOOM_PLANNER_BACKEND = "caldav-radicale";
+        OWNLOOM_PLANNER_COLLECTION_URL = "${caldavUrl}${cfg.user}/${cfg.collection}/";
+        OWNLOOM_PLANNER_COLLECTIONS_DIR = cfg.storageDir;
         NIXPI_PLANNER_BACKEND = "caldav-radicale";
         NIXPI_PLANNER_COLLECTION_URL = "${caldavUrl}${cfg.user}/${cfg.collection}/";
         NIXPI_PLANNER_COLLECTIONS_DIR = cfg.storageDir;
@@ -145,8 +155,8 @@ in {
     networking.firewall.allowedTCPPorts = lib.optional cfg.openFirewall cfg.port;
 
     systemd.tmpfiles.rules = [
-      "d /var/lib/nixpi-planner 0750 radicale radicale - -"
-      "d /var/lib/nixpi-planner/radicale 0750 radicale radicale - -"
+      "d /var/lib/ownloom-planner 0750 radicale radicale - -"
+      "d /var/lib/ownloom-planner/radicale 0750 radicale radicale - -"
       "d ${cfg.storageDir} 0750 radicale radicale - -"
     ];
 
@@ -172,16 +182,18 @@ in {
       };
     };
 
-    systemd.services.nixpi-planner-server = lib.mkIf cfg.enableServer {
-      description = "NixPI planner web view/API server";
+    systemd.services.ownloom-planner-server = lib.mkIf cfg.enableServer {
+      description = "Ownloom planner web view/API server";
       wantedBy = ["multi-user.target"];
       after = ["network.target" "radicale.service"];
       serviceConfig = {
         Type = "simple";
         Restart = "on-failure";
-        ExecStart = "${pkgs.nixpi-planner}/bin/nixpi-planner server";
-        Environment = lib.mapAttrsToList (k: v: "${k}=${v}") (config.nixpi.plannerEnvVars
+        ExecStart = "${pkgs.ownloom-planner}/bin/ownloom-planner server";
+        Environment = lib.mapAttrsToList (k: v: "${k}=${v}") (config.ownloom.plannerEnvVars
           // {
+            OWNLOOM_PLANNER_PORT = toString cfg.serverPort;
+            OWNLOOM_PLANNER_LISTEN = cfg.serverListen;
             NIXPI_PLANNER_PORT = toString cfg.serverPort;
             NIXPI_PLANNER_LISTEN = cfg.serverListen;
           });

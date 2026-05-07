@@ -10,8 +10,8 @@
     fzf
     git
     jq
-    nixpi-context
-    nixpi-wiki
+    ownloom-context
+    ownloom-wiki
     nodejs
     pi
     procs

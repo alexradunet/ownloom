@@ -5,7 +5,7 @@
   utils,
   ...
 }: let
-  cfg = config.services.nixpi-gateway;
+  cfg = config.services.ownloom-gateway;
   inherit (cfg) settings;
   inherit (settings.transports) whatsapp;
   yamlFormat = pkgs.formats.yaml {};
@@ -15,8 +15,8 @@
   whatsappAdminNumbers = lib.unique (whatsapp.ownerNumbers ++ whatsapp.adminNumbers);
   whatsappAllowedModels = map normalizeSyntheticModel whatsapp.allowedModels;
   stateDirectory = lib.removePrefix "/var/lib/" cfg.stateDir;
-  humanHome = config.nixpi.human.homeDirectory;
-  permissionTightenScript = pkgs.writeShellScript "nixpi-gateway-tighten-permissions" ''
+  humanHome = config.ownloom.human.homeDirectory;
+  permissionTightenScript = pkgs.writeShellScript "ownloom-gateway-tighten-permissions" ''
     set -eu
     for path in ${lib.escapeShellArgs [cfg.stateDir "${humanHome}/.pi/agent" "${humanHome}/.pi/agent-memory"]}; do
       if [ -e "$path" ]; then
@@ -52,29 +52,32 @@
         };
     };
 
-  gatewayConfig = yamlFormat.generate "nixpi-gateway.yml" {
+  gatewayConfig = yamlFormat.generate "ownloom-gateway.yml" {
     inherit (settings) gateway audioTranscription pi;
     transports = enabledTransports;
   };
 in {
-  imports = [../paths/module.nix];
+  imports = [
+    ../paths/module.nix
+    (lib.mkRenamedOptionModule ["services" "nixpi-gateway"] ["services" "ownloom-gateway"])
+  ];
 
-  options.services.nixpi-gateway = {
-    enable = lib.mkEnableOption "NixPI generic transport gateway";
+  options.services.ownloom-gateway = {
+    enable = lib.mkEnableOption "Ownloom generic transport gateway";
 
-    package = lib.mkPackageOption pkgs "nixpi-gateway" {};
+    package = lib.mkPackageOption pkgs "ownloom-gateway" {};
 
     stateDir = lib.mkOption {
       type = lib.types.str;
-      default = "/var/lib/nixpi-gateway";
+      default = "/var/lib/ownloom-gateway";
       description = "Directory for gateway database, sessions, and runtime state.";
     };
 
     user = lib.mkOption {
       type = lib.types.str;
-      default = config.nixpi.human.name;
-      defaultText = lib.literalExpression "config.nixpi.human.name";
-      description = "User account that runs the gateway. Defaults to the primary NixPI human/operator user.";
+      default = config.ownloom.human.name;
+      defaultText = lib.literalExpression "config.ownloom.human.name";
+      description = "User account that runs the gateway. Defaults to the primary Ownloom human/operator user.";
     };
 
     group = lib.mkOption {
@@ -171,15 +174,15 @@ in {
       pi = {
         cwd = lib.mkOption {
           type = lib.types.str;
-          default = config.nixpi.root;
-          defaultText = lib.literalExpression "config.nixpi.root";
-          description = "Working directory for pi sessions. Defaults to the NixPI root.";
+          default = config.ownloom.root;
+          defaultText = lib.literalExpression "config.ownloom.root";
+          description = "Working directory for pi sessions. Defaults to the Ownloom root.";
         };
 
         agentDir = lib.mkOption {
           type = lib.types.str;
           default = "${humanHome}/.pi/agent";
-          defaultText = lib.literalExpression ''"${config.nixpi.human.homeDirectory}/.pi/agent"'';
+          defaultText = lib.literalExpression ''"${config.ownloom.human.homeDirectory}/.pi/agent"'';
           description = "Pi SDK agent directory used for settings, credentials, sessions, and extension discovery.";
         };
 
@@ -193,8 +196,8 @@ in {
       wiki = {
         dir = lib.mkOption {
           type = lib.types.str;
-          default = config.nixpi.wiki.root;
-          defaultText = lib.literalExpression "config.nixpi.wiki.root";
+          default = config.ownloom.wiki.root;
+          defaultText = lib.literalExpression "config.ownloom.wiki.root";
           description = "Single wiki root exposed to Pi gateway sessions.";
         };
       };
@@ -218,7 +221,7 @@ in {
           staticDir = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = "Optional path to a built web UI to serve over HTTP. When unset the gateway serves the bundled-in NixPI cockpit. This option is only needed for a custom dev build or external UI.";
+            description = "Optional path to a built web UI to serve over HTTP. When unset the gateway serves the bundled-in Ownloom cockpit. This option is only needed for a custom dev build or external UI.";
           };
 
           authToken = lib.mkOption {
@@ -229,7 +232,7 @@ in {
         };
 
         whatsapp = {
-          enable = lib.mkEnableOption "WhatsApp transport for nixpi-gateway";
+          enable = lib.mkEnableOption "WhatsApp transport for ownloom-gateway";
 
           ownerNumbers = lib.mkOption {
             type = lib.types.listOf lib.types.str;
@@ -285,7 +288,7 @@ in {
             ];
             description = ''
               Synthetic model ids exposed to WhatsApp Pi sessions. The selected
-              `services.nixpi-gateway.settings.transports.whatsapp.model` must be in this list.
+              `services.ownloom-gateway.settings.transports.whatsapp.model` must be in this list.
             '';
           };
         };
@@ -325,52 +328,52 @@ in {
     assertions = [
       {
         assertion = cfg.enable -> cfg.user != "";
-        message = "services.nixpi-gateway.user must be set when the gateway is enabled.";
+        message = "services.ownloom-gateway.user must be set when the gateway is enabled.";
       }
       {
         assertion = cfg.enable -> cfg.group != "";
-        message = "services.nixpi-gateway.group must be set when the gateway is enabled.";
+        message = "services.ownloom-gateway.group must be set when the gateway is enabled.";
       }
       {
         assertion = cfg.enable -> settings.pi.cwd != "";
-        message = "services.nixpi-gateway.settings.pi.cwd must be set when the gateway is enabled.";
+        message = "services.ownloom-gateway.settings.pi.cwd must be set when the gateway is enabled.";
       }
       {
         assertion = lib.hasPrefix "/var/lib/" cfg.stateDir;
-        message = "services.nixpi-gateway.stateDir must be under /var/lib when the gateway is enabled.";
+        message = "services.ownloom-gateway.stateDir must be under /var/lib when the gateway is enabled.";
       }
       {
         assertion =
           settings.transports.websocket.enable
           -> (settings.transports.websocket.host == "127.0.0.1" || settings.transports.websocket.host == "::1");
-        message = "services.nixpi-gateway.settings.transports.websocket.host must stay loopback-only.";
+        message = "services.ownloom-gateway.settings.transports.websocket.host must stay loopback-only.";
       }
       {
         assertion = whatsapp.enable -> whatsappTrustedNumbers != [];
-        message = "services.nixpi-gateway.settings.transports.whatsapp.ownerNumbers or trustedNumbers must not be empty when whatsapp transport is enabled.";
+        message = "services.ownloom-gateway.settings.transports.whatsapp.ownerNumbers or trustedNumbers must not be empty when whatsapp transport is enabled.";
       }
       {
         assertion =
           whatsapp.enable
           -> lib.all (number: builtins.match "^\\+[0-9]+$" number != null) whatsappTrustedNumbers;
-        message = "services.nixpi-gateway.settings.transports.whatsapp numbers must use E.164 format, e.g. +15550001111.";
+        message = "services.ownloom-gateway.settings.transports.whatsapp numbers must use E.164 format, e.g. +15550001111.";
       }
       {
         assertion =
           whatsapp.enable
           -> lib.all (number: builtins.elem number whatsappTrustedNumbers) whatsappAdminNumbers;
-        message = "services.nixpi-gateway.settings.transports.whatsapp.adminNumbers must be included in ownerNumbers or trustedNumbers.";
+        message = "services.ownloom-gateway.settings.transports.whatsapp.adminNumbers must be included in ownerNumbers or trustedNumbers.";
       }
       {
         assertion =
           whatsapp.enable
           -> builtins.elem (normalizeSyntheticModel whatsapp.model) whatsappAllowedModels;
-        message = "services.nixpi-gateway.settings.transports.whatsapp.model must be included in services.nixpi-gateway.settings.transports.whatsapp.allowedModels.";
+        message = "services.ownloom-gateway.settings.transports.whatsapp.model must be included in services.ownloom-gateway.settings.transports.whatsapp.allowedModels.";
       }
     ];
 
-    systemd.services.nixpi-gateway = {
-      description = "NixPI generic transport gateway";
+    systemd.services.ownloom-gateway = {
+      description = "Ownloom generic transport gateway";
       after = ["network.target"];
       wantedBy = ["multi-user.target"];
       path = [
@@ -385,7 +388,7 @@ in {
         pkgs.nodejs
         pkgs.nixos-rebuild
         pkgs.podman
-        pkgs.nixpi-context
+        pkgs.ownloom-context
       ];
       environment =
         {
@@ -393,20 +396,25 @@ in {
           XDG_CONFIG_HOME = "${cfg.stateDir}/xdg/config";
           XDG_CACHE_HOME = "${cfg.stateDir}/xdg/cache";
           PI_CODING_AGENT_DIR = settings.pi.agentDir;
+          OWNLOOM_WIKI_ROOT = settings.wiki.dir;
+          OWNLOOM_WIKI_WORKSPACE = config.ownloom.wiki.workspace;
+          OWNLOOM_WIKI_DEFAULT_DOMAIN = config.ownloom.wiki.defaultDomain;
+          OWNLOOM_WIKI_HOST = config.networking.hostName;
           NIXPI_WIKI_ROOT = settings.wiki.dir;
-          NIXPI_WIKI_WORKSPACE = config.nixpi.wiki.workspace;
-          NIXPI_WIKI_DEFAULT_DOMAIN = config.nixpi.wiki.defaultDomain;
+          NIXPI_WIKI_WORKSPACE = config.ownloom.wiki.workspace;
+          NIXPI_WIKI_DEFAULT_DOMAIN = config.ownloom.wiki.defaultDomain;
           NIXPI_WIKI_HOST = config.networking.hostName;
           PI_SYNTHETIC_API_KEY_FILE = "%d/synthetic_api_key";
         }
-        // config.nixpi.plannerEnvVars
+        // config.ownloom.plannerEnvVars
         // lib.optionalAttrs settings.localProvider.enable {
+          OWNLOOM_LOCAL_PROVIDER_MODEL = settings.localProvider.fallbackModel;
           NIXPI_LOCAL_PROVIDER_MODEL = settings.localProvider.fallbackModel;
         };
 
       serviceConfig = let
         writeModelsJsonScript = let
-          modelsJson = pkgs.writeText "nixpi-gateway-models.json" (
+          modelsJson = pkgs.writeText "ownloom-gateway-models.json" (
             builtins.toJSON {
               providers.ollama = {
                 inherit (settings.localProvider) baseUrl apiKey;
@@ -420,11 +428,11 @@ in {
             }
           );
         in
-          pkgs.writeShellScript "nixpi-gateway-write-models-json" ''
+          pkgs.writeShellScript "ownloom-gateway-write-models-json" ''
             set -eu
             mkdir -p ${lib.escapeShellArg settings.pi.agentDir}
             cp ${modelsJson} ${lib.escapeShellArg settings.pi.agentDir}/models.json
-            echo "nixpi-gateway: wrote models.json (fallback: ${settings.localProvider.fallbackModel})" >&2
+            echo "ownloom-gateway: wrote models.json (fallback: ${settings.localProvider.fallbackModel})" >&2
           '';
       in {
         Type = "simple";
@@ -432,12 +440,12 @@ in {
         Group = cfg.group;
         WorkingDirectory = settings.pi.cwd;
         ExecStartPre = [permissionTightenScript] ++ lib.optionals settings.localProvider.enable [writeModelsJsonScript];
-        ExecStart = utils.escapeSystemdExecArgs ["${cfg.package}/bin/nixpi-gateway" gatewayConfig];
+        ExecStart = utils.escapeSystemdExecArgs ["${cfg.package}/bin/ownloom-gateway" gatewayConfig];
         Restart = "on-failure";
         RestartSec = "10s";
         StandardOutput = "journal";
         StandardError = "journal";
-        SyslogIdentifier = "nixpi-gateway";
+        SyslogIdentifier = "ownloom-gateway";
         LoadCredential = ["synthetic_api_key:${cfg.syntheticApiKeyFile}"];
         StateDirectory =
           [
@@ -451,7 +459,7 @@ in {
         StateDirectoryMode = "0700";
         CacheDirectory = stateDirectory;
         CacheDirectoryMode = "0700";
-        RuntimeDirectory = "nixpi-gateway";
+        RuntimeDirectory = "ownloom-gateway";
         RuntimeDirectoryMode = "0700";
         UMask = "0077";
 

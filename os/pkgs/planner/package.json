@@ -1,10 +1,11 @@
 {
-  "name": "nixpi-planner",
+  "name": "ownloom-planner",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "bin": {
-    "nixpi-planner": "dist/cli.js"
+    "nixpi-planner": "dist/cli.js",
+    "ownloom-planner": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

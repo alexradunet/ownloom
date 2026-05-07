@@ -16,7 +16,7 @@ const WHATSAPP_SYSTEM_PROMPT_ADDENDUM = [
   "This prompt came from a trusted WhatsApp chat.",
   "Treat WhatsApp as a full-featured transport into Pi, equivalent to the TUI — all tools and extensions are available.",
   "Keep replies concise and mobile-friendly; avoid large code blocks or tables unless explicitly asked.",
-  "Use domain=personal for personal life/wiki work; use domain=technical for NixPI/system work.",
+  "Use domain=personal for personal life/wiki work; use domain=technical for Ownloom/system work.",
   "Before executing privileged, destructive, or irreversible actions (rebuild, apply, reboot, push, delete), ask the user to confirm explicitly in the chat.",
 ].join(" ");
 
@@ -43,7 +43,7 @@ async function main(): Promise<void> {
     }
   }
 
-  const configPath = process.argv[2] ?? "./nixpi-gateway.yml";
+  const configPath = process.argv[2] ?? "./ownloom-gateway.yml";
   const config = loadConfig(configPath);
 
   const store = new Store(config.gateway.statePath);
@@ -69,7 +69,7 @@ async function main(): Promise<void> {
   }
 
   if (transports.length === 0) {
-    throw new Error("No transports enabled in nixpi-gateway config. Enable at least one transport.");
+    throw new Error("No transports enabled in ownloom-gateway config. Enable at least one transport.");
   }
 
   const agent: AgentClient = new PiClient({
@@ -90,7 +90,7 @@ async function main(): Promise<void> {
     config.gateway.maxReplyChunks,
     channelConfigs,
     audioTranscriber,
-    process.env.NIXPI_LOCAL_PROVIDER_MODEL || undefined,
+    process.env.OWNLOOM_LOCAL_PROVIDER_MODEL || process.env.NIXPI_LOCAL_PROVIDER_MODEL || undefined,
   );
 
   const delivery = new DeliveryService(transports);
@@ -112,7 +112,7 @@ async function main(): Promise<void> {
     console.log("WhatsApp reminder delivery worker started");
   }
 
-  console.log(`NixPI gateway started with agent=${agent.name} transports: ${transports.map((t) => t.name).join(", ")}`);
+  console.log(`Ownloom gateway started with agent=${agent.name} transports: ${transports.map((t) => t.name).join(", ")}`);
 
   await Promise.all(
     transports.map((transport) =>
@@ -149,6 +149,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error("nixpi-gateway fatal:", err);
+  console.error("ownloom-gateway fatal:", err);
   process.exit(1);
 });

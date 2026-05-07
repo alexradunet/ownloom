@@ -56,14 +56,14 @@ in
         "d /home/human/.pi/agent 0700 human users -"
       ];
 
-      services.nixpi-gateway = {
+      services.ownloom-gateway = {
         enable = true;
         user = "human";
         group = "users";
         settings = {
-          # /var/lib/nixpi-gateway is created by StateDirectory before ExecStartPre
+          # /var/lib/ownloom-gateway is created by StateDirectory before ExecStartPre
           # runs, so WorkingDirectory is guaranteed to exist.
-          pi.cwd = "/var/lib/nixpi-gateway";
+          pi.cwd = "/var/lib/ownloom-gateway";
           # /tmp is always present; the wiki dir only needs to be a valid path.
           wiki.dir = "/tmp";
           # Disable audio transcription to avoid pulling whisper-cpp, ffmpeg,
@@ -84,7 +84,7 @@ in
 
       # Strip heavy packages that are only needed for operational message
       # handling (nixos-rebuild, podman), not for startup + WebSocket binding.
-      systemd.services.nixpi-gateway.path = lib.mkForce [
+      systemd.services.ownloom-gateway.path = lib.mkForce [
         pkgs.pi
         pkgs.coreutils
         pkgs.findutils
@@ -92,7 +92,7 @@ in
         pkgs.git
         pkgs.openssh
         pkgs.nodejs
-        pkgs.nixpi-planner
+        pkgs.ownloom-planner
       ];
 
       environment.systemPackages = [pkgs.curl pkgs.python3];
@@ -100,7 +100,7 @@ in
 
     testScript = ''
       vm.start()
-      vm.wait_for_unit("nixpi-gateway.service")
+      vm.wait_for_unit("ownloom-gateway.service")
       vm.wait_for_open_port(8081)
 
       # HTTP server on the same port should respond (200 bundled UI or 404

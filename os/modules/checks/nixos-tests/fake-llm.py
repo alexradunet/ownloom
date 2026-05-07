@@ -3,7 +3,7 @@
 Fake OpenAI-compatible LLM server for NixOS integration tests.
 
 Speaks the same API as ollama/llama-server on 127.0.0.1:11434.
-- Turn 1 (no tool results yet): returns a nixpi_planner add_task tool call.
+- Turn 1 (no tool results yet): returns a ownloom_planner add_task tool call.
 - Turn 2 (tool result present): returns a short confirmation text.
 
 Handles both streaming (SSE) and non-streaming requests so pi works
@@ -82,7 +82,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                 "id": "call_e2e_1",
                                                 "type": "function",
                                                 "function": {
-                                                    "name": "nixpi_planner",
+                                                    "name": "ownloom_planner",
                                                     "arguments": TOOL_ARGS,
                                                 },
                                             }
@@ -169,7 +169,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                         "id": "call_e2e_1",
                                         "type": "function",
                                         "function": {
-                                            "name": "nixpi_planner",
+                                            "name": "ownloom_planner",
                                             "arguments": TOOL_ARGS,
                                         },
                                     }

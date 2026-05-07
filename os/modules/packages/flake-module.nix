@@ -1,10 +1,23 @@
 {inputs, ...}: let
-  nixpiOverlay = final: _prev: {
+  ownloomOverlay = final: _prev: let
+    wiki = final.callPackage ../../pkgs/wiki {};
+    context = final.callPackage ../../pkgs/context {};
+    gateway = final.callPackage ../../pkgs/gateway {};
+    planner = final.callPackage ../../pkgs/planner {};
+  in {
     pi = final.callPackage ../../pkgs/pi {};
-    nixpi-wiki = final.callPackage ../../pkgs/wiki {};
-    nixpi-context = final.callPackage ../../pkgs/context {};
-    nixpi-gateway = final.callPackage ../../pkgs/gateway {};
-    nixpi-planner = final.callPackage ../../pkgs/planner {};
+
+    ownloom-wiki = wiki;
+    ownloom-context = context;
+    ownloom-gateway = gateway;
+    ownloom-planner = planner;
+
+    # Transitional aliases. Keep these until all host config, skills, and
+    # agent context have moved to Ownloom names.
+    nixpi-wiki = wiki;
+    nixpi-context = context;
+    nixpi-gateway = gateway;
+    nixpi-planner = planner;
   };
 in {
   perSystem = {
@@ -14,7 +27,7 @@ in {
   }: {
     _module.args.pkgs = import inputs.nixpkgs {
       inherit system;
-      overlays = [nixpiOverlay];
+      overlays = [ownloomOverlay];
     };
 
     formatter = pkgs.writeShellApplication {
@@ -42,7 +55,7 @@ in {
         # Auto-install node_modules for any TS package that hasn't been set up yet.
         for pkg in os/pkgs/gateway os/pkgs/wiki os/pkgs/planner; do
           if [ -f "$pkg/package.json" ] && [ ! -d "$pkg/node_modules" ]; then
-            echo "nixpi: running npm install in $pkg..."
+            echo "ownloom: running npm install in $pkg..."
             (cd "$pkg" && npm install --silent)
           fi
         done
@@ -51,6 +64,7 @@ in {
 
     packages = {
       inherit (pkgs) pi;
+      inherit (pkgs) ownloom-wiki ownloom-context ownloom-gateway ownloom-planner;
       inherit (pkgs) nixpi-wiki nixpi-context nixpi-gateway nixpi-planner;
       default = pkgs.pi;
     };
@@ -63,17 +77,20 @@ in {
       };
 
       piApp = mkApp pkgs.pi;
-      nixpiWikiApp = mkApp pkgs.nixpi-wiki;
-      nixpiContextApp = mkApp pkgs.nixpi-context;
-      nixpiPlannerApp = mkApp pkgs.nixpi-planner;
+      ownloomWikiApp = mkApp pkgs.ownloom-wiki;
+      ownloomContextApp = mkApp pkgs.ownloom-context;
+      ownloomPlannerApp = mkApp pkgs.ownloom-planner;
     in {
       pi = piApp;
-      nixpi-wiki = nixpiWikiApp;
-      nixpi-context = nixpiContextApp;
-      nixpi-planner = nixpiPlannerApp;
+      ownloom-wiki = ownloomWikiApp;
+      ownloom-context = ownloomContextApp;
+      ownloom-planner = ownloomPlannerApp;
+      nixpi-wiki = ownloomWikiApp;
+      nixpi-context = ownloomContextApp;
+      nixpi-planner = ownloomPlannerApp;
       default = piApp;
     };
   };
 
-  flake.overlays.default = nixpiOverlay;
+  flake.overlays.default = ownloomOverlay;
 }
