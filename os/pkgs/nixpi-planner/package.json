@@ -1,0 +1,21 @@
+{
+  "name": "nixpi-planner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "nixpi-planner": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/tests/*.test.js",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "rrule": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3"
+  }
+}

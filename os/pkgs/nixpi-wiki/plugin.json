@@ -1,0 +1,12 @@
+{
+  "name": "nixpi-wiki",
+  "description": "NixPI Wiki — plain-Markdown LLM memory layer. Search, capture, lint, and manage a structured knowledge base using the nixpi-wiki CLI.",
+  "version": "0.2.1",
+  "author": {
+    "name": "alexradunet",
+    "url": "https://github.com/alexradunet"
+  },
+  "license": "MIT",
+  "keywords": ["wiki", "knowledge", "memory", "notes", "journal"],
+  "skills": "skill/"
+}

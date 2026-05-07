@@ -1,0 +1,47 @@
+{
+  "name": "@nixpi/wiki",
+  "version": "0.3.0",
+  "description": "Portable plain-Markdown LLM wiki CLI and core tools.",
+  "license": "MIT",
+  "private": false,
+  "type": "module",
+  "main": "dist/api.cjs",
+  "exports": {
+    ".": "./dist/api.cjs",
+    "./cli": "./dist/cli.cjs"
+  },
+  "bin": {
+    "nixpi-wiki": "dist/cli.cjs"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "seed/",
+    "skill/",
+    "plugin.json"
+  ],
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && npm run typecheck && esbuild src/cli.ts --bundle --platform=node --format=cjs --target=node22 --outfile=dist/cli.cjs && esbuild src/api.ts --bundle --platform=node --format=cjs --target=node22 --outfile=dist/api.cjs",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit"
+  },
+  "pi": {
+    "skills": [
+      "skill/"
+    ]
+  },
+  "devDependencies": {
+    "@mariozechner/pi-ai": "^0.67.68",
+    "@mariozechner/pi-coding-agent": "^0.67.68",
+    "@sinclair/typebox": "^0.34.49",
+    "@types/node": "^22.15.0",
+    "@types/proper-lockfile": "^4.1.4",
+    "esbuild": "^0.28.0",
+    "fast-glob": "^3.3.3",
+    "proper-lockfile": "^4.1.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4",
+    "yaml": "^2.8.3"
+  }
+}

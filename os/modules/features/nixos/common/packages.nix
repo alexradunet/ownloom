@@ -1,0 +1,34 @@
+{pkgs, ...}: {
+  environment.systemPackages = with pkgs; [
+    bash-completion
+    bubblewrap
+    curl
+    dua
+    eza
+    fastfetch
+    fd
+    fzf
+    git
+    jq
+    nixpi-audit
+    nixpi-config
+    nixpi-context
+    nixpi-evolution
+    nixpi-health
+    nixpi-reboot
+    nixpi-status
+    nixpi-svc
+    nixpi-wiki
+    nodejs
+    pi
+    procs
+    python3
+    ripgrep
+    ripgrep-all
+    tree
+    unzip
+    vivid
+    wget
+    zoxide
+  ];
+}
