@@ -16,6 +16,7 @@ _: {
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPrEmvcVkdFAvLqEjbsXBOhpjFXtsUDjnQaPecRBrqpz"
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPb6MPMpCqj8MRWe+qCVnZNA5a004Vdk+q2v3/xoL+x+"
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGA8BNch1xK3NZ2ARQmIHLqM2/rydIYVO4bekW2ux7+f alex@nixos"
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE9Vinh6a3DaimqMCstIKn4klGX2UwVZI7FyJLE9yqtb u0_a478@localhost"
       ];
     };
 
