@@ -113,7 +113,7 @@ in
           "OWNLOOM_PLANNER_USER=human",
           "OWNLOOM_PLANNER_COLLECTION=planner",
           "OWNLOOM_PLANNER_BACKEND=caldav-radicale",
-          "NODE_PATH=${pkgs.pi}/lib/node_modules/@mariozechner/pi-coding-agent/node_modules:${pkgs.pi}/lib/node_modules",
+          "NODE_PATH=${pkgs.pi}/lib/node_modules/@earendil-works/pi-coding-agent/node_modules:${pkgs.pi}/lib/node_modules",
       ])
 
       # Initialise the CalDAV collection before pi runs (the extension lists

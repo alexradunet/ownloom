@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { StringEnum } from "@mariozechner/pi-ai";
-import { type ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { StringEnum } from "@earendil-works/pi-ai";
+import { type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { formatFleetHostStatus } from "./shared.ts";
 import { readUpdateStatus, writeUpdateStatus } from "./state.ts";

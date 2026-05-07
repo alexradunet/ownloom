@@ -13,7 +13,7 @@ runCommand "ownloom-pi-extension-startup-smoke" {
   export OWNLOOM_WIKI_ROOT="$TMPDIR/wiki"
   export OWNLOOM_WIKI_WORKSPACE=smoke
   export OWNLOOM_WIKI_DEFAULT_DOMAIN=technical
-  export NODE_PATH=${pi}/lib/node_modules/@mariozechner/pi-coding-agent/node_modules:${pi}/lib/node_modules
+  export NODE_PATH=${pi}/lib/node_modules/@earendil-works/pi-coding-agent/node_modules:${pi}/lib/node_modules
   mkdir -p "$HOME" "$PI_CODING_AGENT_DIR" "$OWNLOOM_WIKI_ROOT"
 
   set +e

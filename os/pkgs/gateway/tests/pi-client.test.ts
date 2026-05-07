@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { PiClient, type PiSdkSession, type PiSdkSessionFactory, type SdkImageContent } from "../src/core/pi-client.js";
-import type { AgentSessionEventListener } from "@mariozechner/pi-coding-agent";
+import type { AgentSessionEventListener } from "@earendil-works/pi-coding-agent";
 
 function fakeSession(options: {
   sessionFile?: string;

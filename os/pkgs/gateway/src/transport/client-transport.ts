@@ -10,10 +10,11 @@ import {
   type ConnectOkPayload,
   EVENTS,
   type AgentAcceptedPayload,
+  type AttachmentRef,
 } from "../protocol/types.js";
 import { MethodRegistry, registerV1Methods, type ConnectedClient, type MethodContext, type MethodResult } from "../protocol/methods.js";
 import type { ClientTransportConfig } from "../config.js";
-import type { InboundMessage } from "../core/types.js";
+import type { InboundAttachment, InboundMessage } from "../core/types.js";
 import type { GatewayTransport } from "../transports/types.js";
 import type { Store } from "../core/store.js";
 import type { CommandRegistry } from "../core/commands.js";
@@ -107,7 +108,7 @@ export class ClientTransport implements GatewayTransport {
   private async serveHttp(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = req.url ?? "/";
     if (url.startsWith("/api/v1/")) {
-      this.serveRestApi(req, res);
+      await this.serveRestApi(req, res);
       return;
     }
 
@@ -115,13 +116,7 @@ export class ClientTransport implements GatewayTransport {
     res.end(JSON.stringify({ error: "Not found" }));
   }
 
-  private serveRestApi(req: IncomingMessage, res: ServerResponse): void {
-    if (req.method !== "GET") {
-      res.writeHead(405, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Method not allowed" }));
-      return;
-    }
-
+  private async serveRestApi(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const authHeader = req.headers["authorization"];
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
     if (this.config.authToken && token !== this.config.authToken) {
@@ -132,6 +127,17 @@ export class ClientTransport implements GatewayTransport {
 
     const parsedUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     const path = parsedUrl.pathname;
+
+    if (req.method === "POST" && path === "/api/v1/attachments") {
+      await this.handleAttachmentUpload(req, res);
+      return;
+    }
+
+    if (req.method !== "GET") {
+      res.writeHead(405, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Method not allowed" }));
+      return;
+    }
 
     let result: unknown;
     if (path === "/api/v1/health") {
@@ -161,6 +167,42 @@ export class ClientTransport implements GatewayTransport {
 
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(result));
+  }
+
+  private async handleAttachmentUpload(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const kind = req.headers["x-ownloom-attachment-kind"];
+    if (kind !== "image" && kind !== "audio") {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "x-ownloom-attachment-kind must be image or audio" }));
+      return;
+    }
+
+    const mimeType = req.headers["content-type"]?.split(";")[0]?.trim() || "application/octet-stream";
+    const fileNameHeader = req.headers["x-ownloom-filename"];
+    const fileName = Array.isArray(fileNameHeader) ? fileNameHeader[0] : fileNameHeader;
+    let data: Buffer;
+    try {
+      data = await readRequestBody(req, 25 * 1024 * 1024);
+    } catch (err) {
+      res.writeHead(413, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }));
+      return;
+    }
+    if (data.length === 0) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "attachment body must not be empty" }));
+      return;
+    }
+
+    const attachment = this.store.saveAttachment({ kind, mimeType, fileName, data });
+    res.writeHead(201, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      id: attachment.id,
+      kind: attachment.kind,
+      mimeType: attachment.mimeType,
+      fileName: attachment.fileName,
+      sizeBytes: attachment.sizeBytes,
+    }));
   }
 
   // ── WebSocket protocol/v1 ────────────────────────────────────────────────
@@ -345,8 +387,16 @@ export class ClientTransport implements GatewayTransport {
       return { ok: false, error: { message: "message is required", code: "INVALID_REQUEST" } };
     }
 
+    const attachmentRefs = Array.isArray(ctx.params["attachments"])
+      ? (ctx.params["attachments"] as AttachmentRef[])
+      : [];
+    const attachments = this.resolveAttachmentRefs(attachmentRefs);
+
     const runId = randomUUID();
-    const chatId = `agent-${runId}`;
+    const sessionKey = typeof ctx.params["sessionKey"] === "string" && ctx.params["sessionKey"].trim()
+      ? ctx.params["sessionKey"].trim()
+      : ctx.client.connId;
+    const chatId = `client:${sessionKey}`;
     const senderId = ctx.client.identity ? `client:${ctx.client.identity.id}` : `client:${ctx.client.connId}`;
 
     const inbound: InboundMessage = {
@@ -363,6 +413,7 @@ export class ClientTransport implements GatewayTransport {
         directMessagesOnly: false,
         selfSenderIds: [],
       },
+      ...(attachments.length > 0 ? { attachments } : {}),
     };
 
     const onChunk = (chunk: string): void => {
@@ -386,8 +437,51 @@ export class ClientTransport implements GatewayTransport {
     }
   }
 
+  private resolveAttachmentRefs(refs: AttachmentRef[]): InboundAttachment[] {
+    const attachments: InboundAttachment[] = [];
+    for (const ref of refs) {
+      const stored = this.store.getAttachment(ref.id);
+      if (!stored) throw new Error(`Unknown attachment id: ${ref.id}`);
+      attachments.push({
+        kind: stored.kind,
+        path: stored.path,
+        mimeType: stored.mimeType,
+        ...(stored.fileName ? { fileName: stored.fileName } : {}),
+      });
+    }
+    return attachments;
+  }
+
   private resolveTokenIdentity(token?: string): Identity | null {
     if (!token || !this.identityResolver) return null;
     return this.identityResolver.resolve("token", token);
   }
+}
+
+function readRequestBody(req: IncomingMessage, maxBytes: number): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let total = 0;
+    let done = false;
+
+    req.on("data", (chunk: Buffer) => {
+      if (done) return;
+      total += chunk.length;
+      if (total > maxBytes) {
+        done = true;
+        chunks.length = 0;
+        req.resume();
+        reject(new Error(`request body exceeds ${maxBytes} bytes`));
+        return;
+      }
+      chunks.push(chunk);
+    });
+
+    req.on("end", () => {
+      if (!done) resolve(Buffer.concat(chunks));
+    });
+    req.on("error", (err) => {
+      if (!done) reject(err);
+    });
+  });
 }

@@ -1,6 +1,6 @@
 # Updating `pi`
 
-This package builds the published npm tarball for `@mariozechner/pi-coding-agent` and pins:
+This package builds the published npm tarball for `@earendil-works/pi-coding-agent` and pins:
 
 - `version` in `hashes.json`
 - `sourceHash` in `hashes.json`
@@ -13,7 +13,7 @@ From the repo root:
 
 ```bash
 version="0.72.1"
-url="https://registry.npmjs.org/@mariozechner/pi-coding-agent/-/pi-coding-agent-${version}.tgz"
+url="https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-${version}.tgz"
 tmpdir="$(mktemp -d)"
 
 curl -L "$url" -o "$tmpdir/pi.tgz"

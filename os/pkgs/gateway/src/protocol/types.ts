@@ -101,9 +101,17 @@ export const EVENTS = {
 
 // ── Agent method params & result ────────────────────────────────────────────
 
+export type AttachmentRef = {
+  id: string;
+  kind: "image" | "audio";
+  mimeType: string;
+  fileName?: string;
+};
+
 export type AgentParams = {
   message: string;
   sessionKey?: string;
+  attachments?: AttachmentRef[];
   /** If true, deliver the reply through the transport (e.g. WhatsApp). */
   deliver?: boolean;
 };

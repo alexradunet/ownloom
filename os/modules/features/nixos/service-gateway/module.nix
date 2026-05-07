@@ -391,6 +391,8 @@ in {
           OWNLOOM_WIKI_DEFAULT_DOMAIN = config.ownloom.wiki.defaultDomain;
           OWNLOOM_WIKI_HOST = config.networking.hostName;
           PI_SYNTHETIC_API_KEY_FILE = "%d/synthetic_api_key";
+          PI_SKIP_VERSION_CHECK = "1";
+          PI_TELEMETRY = "0";
         }
         // config.ownloom.plannerEnvVars
         // lib.optionalAttrs settings.localProvider.enable {

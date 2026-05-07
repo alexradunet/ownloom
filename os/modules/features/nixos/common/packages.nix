@@ -1,4 +1,5 @@
-{pkgs, ...}: {
+{ pkgs, ... }:
+{
   environment.systemPackages = with pkgs; [
     bash-completion
     bubblewrap
@@ -17,6 +18,7 @@
     procs
     python3
     ripgrep
+    screen
     # Language servers (visible to pi agent and any LSP-capable editor)
     nixd # Nix LSP, nix-community supported
     bash-language-server

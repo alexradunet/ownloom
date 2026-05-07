@@ -29,9 +29,14 @@
       "skill/"
     ]
   },
+  "overrides": {
+    "@earendil-works/pi-agent-core": "0.74.0",
+    "@earendil-works/pi-ai": "0.74.0",
+    "@earendil-works/pi-tui": "0.74.0"
+  },
   "devDependencies": {
-    "@mariozechner/pi-ai": "^0.67.68",
-    "@mariozechner/pi-coding-agent": "^0.67.68",
+    "@earendil-works/pi-ai": "0.74.0",
+    "@earendil-works/pi-coding-agent": "0.74.0",
     "@sinclair/typebox": "^0.34.49",
     "@types/node": "^22.15.0",
     "@types/proper-lockfile": "^4.1.4",

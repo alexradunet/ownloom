@@ -4,7 +4,7 @@ import {
   renameSync,
   writeFileSync,
 } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import type { ChatSession } from "./types.js";
 
 function utcNow(): string {
@@ -18,7 +18,7 @@ function atomicWriteJson(filePath: string, data: unknown): void {
 }
 
 function emptyState(): StateSchema {
-  return { processedMessages: {}, chatSessions: {}, sentReminders: {}, queuedDeliveries: {} };
+  return { processedMessages: {}, chatSessions: {}, sentReminders: {}, queuedDeliveries: {}, attachments: {} };
 }
 
 function normalizeState(input: Partial<StateSchema>): StateSchema {
@@ -27,6 +27,7 @@ function normalizeState(input: Partial<StateSchema>): StateSchema {
     chatSessions: input.chatSessions ?? {},
     sentReminders: input.sentReminders ?? {},
     queuedDeliveries: input.queuedDeliveries ?? {},
+    attachments: input.attachments ?? {},
   };
 }
 
@@ -68,11 +69,22 @@ export type QueuedDelivery = {
   deliveredAt?: string;
 };
 
+export type StoredAttachment = {
+  id: string;
+  kind: "image" | "audio";
+  path: string;
+  mimeType: string;
+  fileName?: string;
+  sizeBytes: number;
+  createdAt: string;
+};
+
 type StateSchema = {
   processedMessages: Record<string, ProcessedMessageEntry>;
   chatSessions: Record<string, ChatSession & { updatedAt: string; createdAt: string }>;
   sentReminders: Record<ReminderKey, { reminderKey: string; channel: string; recipientId: string; sentAt: string }>;
   queuedDeliveries: Record<string, QueuedDelivery>;
+  attachments: Record<string, StoredAttachment>;
 };
 
 function makeReminderKey(reminderKey: string, channel: string, recipientId: string): string {
@@ -83,12 +95,27 @@ function makeDeliveryId(): string {
   return `delivery-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function makeAttachmentId(): string {
+  return `attachment-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function safeFileName(value: string): string {
+  return value
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120) || "attachment.bin";
+}
+
 export class Store {
   private readonly statePath: string;
 
   constructor(statePath: string) {
     mkdirSync(dirname(statePath), { recursive: true });
     this.statePath = statePath;
+  }
+
+  getDataDir(): string {
+    return dirname(this.statePath);
   }
 
   hasProcessedMessage(messageId: string): boolean {
@@ -216,5 +243,37 @@ export class Store {
     delivery.lastAttemptAt = utcNow();
     delivery.lastError = error;
     writeState(this.statePath, state);
+  }
+
+  saveAttachment(input: {
+    kind: "image" | "audio";
+    mimeType: string;
+    fileName?: string;
+    data: Buffer;
+  }): StoredAttachment {
+    const state = readState(this.statePath);
+    const id = makeAttachmentId();
+    const dir = join(this.getDataDir(), "attachments");
+    mkdirSync(dir, { recursive: true });
+    const fileName = safeFileName(input.fileName ?? `${id}.bin`);
+    const filePath = join(dir, `${id}-${fileName}`);
+    writeFileSync(filePath, input.data);
+    const attachment: StoredAttachment = {
+      id,
+      kind: input.kind,
+      path: filePath,
+      mimeType: input.mimeType,
+      ...(input.fileName ? { fileName: input.fileName } : {}),
+      sizeBytes: input.data.length,
+      createdAt: utcNow(),
+    };
+    state.attachments[id] = attachment;
+    writeState(this.statePath, state);
+    return attachment;
+  }
+
+  getAttachment(id: string): StoredAttachment | null {
+    const state = readState(this.statePath);
+    return state.attachments[id] ?? null;
   }
 }

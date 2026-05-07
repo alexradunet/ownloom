@@ -11,7 +11,7 @@ buildNpmPackage {
 
   src = ./.;
 
-  npmDepsHash = "sha256-wBcJGYDVDb/JE8uukjvxQsjmUKd/F4XtRgCil2jMWLY=";
+  npmDepsHash = "sha256-0bcTXRMHnBGTlgK7AOutotx6J+wyRHGwNaDONOc3odI=";
 
   nativeBuildInputs = [makeWrapper ownloom-wiki];
 
