@@ -105,13 +105,12 @@ async function main(): Promise<void> {
   registerPersonalCommands(commands);
   console.log(`commands: registered ${commands.listNames().length} commands: ${commands.listNames().join(", ")}`);
 
-  // Client transport: versioned protocol v1 + legacy web UI compat + REST API.
-  // Replaces the old WebSocketTransport. SetRouter must be called after
-  // the Router is constructed (below).
+  // Client transport: protocol/v1 over WebSocket + REST API.
+  // SetRouter must be called after the Router is constructed (below).
   let clientTransport: ClientTransport | undefined;
-  if (config.transports.websocket?.enabled) {
+  if (config.transports.client?.enabled) {
     clientTransport = new ClientTransport(
-      config.transports.websocket,
+      config.transports.client,
       store,
       commands,
       identityResolver,
@@ -120,7 +119,7 @@ async function main(): Promise<void> {
     );
     transports.push(clientTransport);
     channelConfigs.client = {
-      // No model override for web/chat apps; let the user choose in Pi settings.
+      // No model override for protocol clients; let the user choose in Pi settings.
     };
   }
 
@@ -156,7 +155,7 @@ async function main(): Promise<void> {
   // clientTransport as a transport, clientTransport needs router for agent calls).
   clientTransport?.setRouter(router);
 
-  const delivery = new DeliveryService(transports);
+  const delivery = new DeliveryService(transports, store);
 
   await agent.healthCheck();
   console.log(`${agent.name} agent health check OK`);
@@ -168,6 +167,13 @@ async function main(): Promise<void> {
     await transport.healthCheck();
     console.log(`${transport.name} transport health check OK`);
   }
+
+  // Retry failed/offline outbound deliveries periodically.
+  setInterval(() => {
+    void delivery.drainQueuedDeliveries().catch((err) => {
+      console.error("Queued delivery drain failed:", err);
+    });
+  }, 60_000);
 
   if (config.transports.whatsapp?.enabled) {
     const recipientIds = config.transports.whatsapp.trustedNumbers.map((n) => `whatsapp:${n}`);

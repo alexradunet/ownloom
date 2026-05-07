@@ -18,6 +18,11 @@ const minimalConfig = {
     timeoutMs: 300000,
   },
   transports: {
+    client: {
+      enabled: true,
+      host: "127.0.0.1",
+      port: 8081,
+    },
     whatsapp: {
       enabled: true,
       trustedNumbers: ["whatsapp:+15550001111"],
@@ -35,6 +40,7 @@ test("validateGatewayConfig accepts the generated declarative config shape", () 
 
   assert.equal(config.gateway.statePath, "/var/lib/ownloom-gateway/gateway-state.json");
   assert.equal(config.pi.agentDir, "/home/alex/.pi/agent");
+  assert.equal(config.transports.client?.port, 8081);
   assert.equal(config.transports.whatsapp?.trustedNumbers[0], "whatsapp:+15550001111");
 });
 
@@ -53,6 +59,13 @@ test("validateGatewayConfig fails early for invalid config types", () => {
   assert.throws(
     () => validateGatewayConfig({ ...minimalConfig, gateway: { ...minimalConfig.gateway, maxReplyChars: "1400" } }),
     /gateway\.maxReplyChars must be a finite number/,
+  );
+});
+
+test("validateGatewayConfig rejects removed websocket transport", () => {
+  assert.throws(
+    () => validateGatewayConfig({ ...minimalConfig, transports: { whatsapp: minimalConfig.transports.whatsapp, websocket: { enabled: true, host: "127.0.0.1", port: 8081 } } }),
+    /transports\.websocket was removed/,
   );
 });
 
@@ -79,6 +92,10 @@ test("loadConfig parses YAML and validates it", () => {
         "  cwd: /home/alex/ownloom",
         "  agentDir: /home/alex/.pi/agent",
         "transports:",
+        "  client:",
+        "    enabled: true",
+        "    host: 127.0.0.1",
+        "    port: 8081",
         "  whatsapp:",
         "    enabled: true",
         "    trustedNumbers: ['+15550001111']",

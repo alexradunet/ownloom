@@ -120,9 +120,7 @@ export function registerV1Methods(
 
   // sessions.list
   registry.register(METHODS.SESSIONS_LIST, () => {
-    // Store doesn't have a list-all method yet; return empty for now.
-    // Phase 2 will add proper session listing.
-    return { ok: true, payload: { sessions: [] } };
+    return { ok: true, payload: { sessions: deps.store.listChatSessions() } };
   });
 
   // sessions.get

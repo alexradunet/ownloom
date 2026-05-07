@@ -6,8 +6,7 @@ export type Scope = "read" | "write" | "admin";
 
 export type IdentitySource =
   | "whatsapp"   // matched by phone number
-  | "websocket"  // matched by bearer token
-  | "token";     // matched by API bearer token (future HTTP/REST)
+  | "token";     // matched by API bearer token (HTTP/WS protocol clients)
 
 export type Identity = {
   /** Stable human-readable id, e.g. "alex" or "alex/web". */

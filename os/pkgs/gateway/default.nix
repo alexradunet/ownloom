@@ -37,7 +37,7 @@ buildNpmPackage {
     npm prune --omit=dev --ignore-scripts --no-audit --no-fund
 
     mkdir -p $out/share/ownloom-gateway $out/bin
-    cp -r dist ui node_modules package.json $out/share/ownloom-gateway/
+    cp -r dist node_modules package.json $out/share/ownloom-gateway/
 
     makeWrapper ${nodejs}/bin/node $out/bin/ownloom-gateway \
       --add-flags "$out/share/ownloom-gateway/dist/main.js"

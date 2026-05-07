@@ -38,17 +38,14 @@
         inherit (whatsapp) directMessagesOnly sessionDataPath model allowedModels;
       };
     }
-    // lib.optionalAttrs settings.transports.websocket.enable {
-      websocket =
+    // lib.optionalAttrs settings.transports.client.enable {
+      client =
         {
           enabled = true;
-          inherit (settings.transports.websocket) host port;
+          inherit (settings.transports.client) host port;
         }
-        // lib.optionalAttrs (settings.transports.websocket.staticDir != null) {
-          inherit (settings.transports.websocket) staticDir;
-        }
-        // lib.optionalAttrs (settings.transports.websocket.authToken != null) {
-          inherit (settings.transports.websocket) authToken;
+        // lib.optionalAttrs (settings.transports.client.authToken != null) {
+          inherit (settings.transports.client) authToken;
         };
     };
 
@@ -202,8 +199,8 @@ in {
       };
 
       transports = {
-        websocket = {
-          enable = lib.mkEnableOption "WebSocket transport — exposes a streaming chat WebSocket and optionally serves a static web UI";
+        client = {
+          enable = lib.mkEnableOption "protocol/v1 client transport";
 
           host = lib.mkOption {
             type = lib.types.str;
@@ -214,19 +211,13 @@ in {
           port = lib.mkOption {
             type = lib.types.port;
             default = 8081;
-            description = "Port for the WebSocket transport.";
-          };
-
-          staticDir = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
-            default = null;
-            description = "Optional path to a built web UI to serve over HTTP. When unset the gateway serves the bundled-in ownloom cockpit. This option is only needed for a custom dev build or external UI.";
+            description = "Port for the protocol/v1 client transport and REST API.";
           };
 
           authToken = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = "Pre-shared token clients must send as their first WebSocket message. Null disables auth (safe when the only access path is a trusted SSH port-forward).";
+            description = "Pre-shared token protocol clients must send in the connect frame. Null disables auth (safe only behind a trusted loopback-only access path).";
           };
         };
 
@@ -343,9 +334,9 @@ in {
       }
       {
         assertion =
-          settings.transports.websocket.enable
-          -> (settings.transports.websocket.host == "127.0.0.1" || settings.transports.websocket.host == "::1");
-        message = "services.ownloom-gateway.settings.transports.websocket.host must stay loopback-only.";
+          settings.transports.client.enable
+          -> (settings.transports.client.host == "127.0.0.1" || settings.transports.client.host == "::1");
+        message = "services.ownloom-gateway.settings.transports.client.host must stay loopback-only.";
       }
       {
         assertion = whatsapp.enable -> whatsappTrustedNumbers != [];

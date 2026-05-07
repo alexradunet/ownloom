@@ -1,10 +1,10 @@
 """
-Send a WebSocket message to the gateway and collect the full reply.
+Send a protocol/v1 agent request to the gateway and collect the streamed reply.
 Exits 0 if the reply contains expected content; exits 1 otherwise.
 
 Usage: python3 ws-roundtrip-check.py <host> <port> <message> <expected_substr>
 """
-import sys, socket, struct, base64, os, json
+import sys, socket, struct, base64, os, json, uuid
 
 
 def ws_connect(host: str, port: int):
@@ -25,7 +25,7 @@ def ws_connect(host: str, port: int):
     resp = b""
     while b"\r\n\r\n" not in resp:
         resp += s.recv(4096)
-    assert b"101" in resp, f"WebSocket upgrade failed: {resp!r}"
+    assert b"101" in resp, f"websocket upgrade failed: {resp!r}"
     return s
 
 
@@ -34,9 +34,13 @@ def ws_send_text(s, msg: str) -> None:
     n = len(payload)
     mask = os.urandom(4)
     masked = bytes(payload[i] ^ mask[i % 4] for i in range(n))
-    # FIN=1, opcode=1(text), MASK=1, length (7-bit for n<126)
-    assert n < 126, "message too long for this simple client"
-    s.sendall(bytes([0x81, 0x80 | n]) + mask + masked)
+    if n < 126:
+        header = bytes([0x81, 0x80 | n])
+    elif n < 65536:
+        header = bytes([0x81, 0x80 | 126]) + struct.pack(">H", n)
+    else:
+        header = bytes([0x81, 0x80 | 127]) + struct.pack(">Q", n)
+    s.sendall(header + mask + masked)
 
 
 def ws_recv_text(s) -> str | None:
@@ -56,13 +60,22 @@ def ws_recv_text(s) -> str | None:
     mask_len = header[1]
     payload_len = mask_len & 0x7F
     if payload_len == 126:
-        ext = recv_exact(2)
-        payload_len = struct.unpack(">H", ext)[0]
+        payload_len = struct.unpack(">H", recv_exact(2))[0]
     elif payload_len == 127:
-        ext = recv_exact(8)
-        payload_len = struct.unpack(">Q", ext)[0]
+        payload_len = struct.unpack(">Q", recv_exact(8))[0]
     payload = recv_exact(payload_len)
     return payload.decode("utf-8")
+
+
+def send_json(s, obj: dict) -> None:
+    ws_send_text(s, json.dumps(obj))
+
+
+def recv_json(s) -> dict:
+    raw = ws_recv_text(s)
+    if raw is None:
+        raise EOFError("connection closed")
+    return json.loads(raw)
 
 
 def main():
@@ -72,36 +85,53 @@ def main():
     expected = sys.argv[4] if len(sys.argv) > 4 else "help"
 
     s = ws_connect(host, port)
-    ws_send_text(s, json.dumps({"type": "message", "text": message}))
-
-    parts: list[str] = []
     s.settimeout(30)
     try:
+        send_json(s, {
+            "type": "connect",
+            "protocol": 1,
+            "role": "operator",
+            "scopes": ["read", "write", "admin"],
+            "auth": {},
+            "client": {"id": "nixos-test", "platform": "python"},
+        })
+        hello = recv_json(s)
+        if hello.get("type") != "res" or not hello.get("ok"):
+            print(f"connect failed: {hello}", file=sys.stderr)
+            sys.exit(1)
+
+        req_id = str(uuid.uuid4())
+        send_json(s, {"type": "req", "id": req_id, "method": "agent", "params": {"message": message}})
+
+        parts: list[str] = []
+        accepted = False
         while True:
-            raw = ws_recv_text(s)
-            if raw is None:
+            msg = recv_json(s)
+            if msg.get("type") == "event" and msg.get("event") == "agent":
+                payload = msg.get("payload", {})
+                if payload.get("stream") in ("chunk", "result"):
+                    parts.append(payload.get("text", ""))
+            elif msg.get("type") == "res" and msg.get("id") == req_id:
+                if not msg.get("ok"):
+                    print(f"agent request failed: {msg}", file=sys.stderr)
+                    sys.exit(1)
+                accepted = True
                 break
-            msg = json.loads(raw)
-            t = msg.get("type")
-            if t in ("reply", "chunk"):
-                parts.append(msg.get("text", ""))
-            elif t == "done":
-                break
-            elif t == "error":
-                print(f"gateway returned error: {msg}", file=sys.stderr)
-                sys.exit(1)
+
+        full = "".join(parts)
+        print(f"gateway reply: {full[:200]!r}")
+        if not accepted:
+            print("ERROR: no accepted response", file=sys.stderr)
+            sys.exit(1)
+        if expected.lower() not in full.lower():
+            print(f"ERROR: expected {expected!r} in reply", file=sys.stderr)
+            sys.exit(1)
+        print("protocol/v1 round-trip: OK")
     except TimeoutError:
         print("timeout waiting for gateway response", file=sys.stderr)
         sys.exit(1)
     finally:
         s.close()
-
-    full = "".join(parts)
-    print(f"gateway reply: {full[:200]!r}")
-    if expected.lower() not in full.lower():
-        print(f"ERROR: expected {expected!r} in reply", file=sys.stderr)
-        sys.exit(1)
-    print("WebSocket round-trip: OK")
 
 
 main()

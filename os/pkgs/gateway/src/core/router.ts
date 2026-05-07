@@ -6,7 +6,7 @@ import { chunkText, normalizeReply } from "./formatter.js";
 import { KeyedSerialQueue } from "./queue.js";
 import type { AudioTranscriber } from "./audio-transcriber.js";
 import type { ConversationHooks } from "./hooks.js";
-import type { CommandRegistry, CommandContext } from "./commands.js";
+import { CommandRegistry } from "./commands.js";
 import type { IdentityResolver, Identity } from "./identity.js";
 import { isAdmin } from "./identity.js";
 
@@ -35,7 +35,7 @@ export class Router {
     private readonly audioTranscriber?: AudioTranscriber,
     private readonly fallbackModel?: string,
     private readonly hooks: ConversationHooks = {},
-    private readonly commands?: CommandRegistry,
+    private readonly commands: CommandRegistry = new CommandRegistry(),
     private readonly identityResolver?: IdentityResolver,
   ) {}
 
@@ -53,12 +53,9 @@ export class Router {
 
       if (msg.access.selfSenderIds.includes(msg.senderId)) return { replies: [], markProcessed: false };
 
-      // Access control: identity-based (preferred) or fallback to legacy access policy.
-      if (identity) {
-        // Identity-based: must have at least "read" scope.
-        // (Future: finer-grained checks per command go here.)
-      } else {
-        // Legacy path: per-transport allowlist.
+      // Access control: resolved identities are accepted; otherwise use the
+      // transport-provided access policy (WhatsApp allowlists, etc.).
+      if (!identity) {
         if (!msg.access.allowedSenderIds.includes(msg.senderId)) return { replies: [], markProcessed: false };
         if (msg.access.directMessagesOnly && msg.isGroup) return { replies: [], markProcessed: false };
       }
@@ -79,32 +76,20 @@ export class Router {
       const text = this.buildEffectiveText(msg.text.trim(), transcribedAudio?.text ?? null).trim();
       if (!text && imageAttachments.length === 0) return { replies: [], markProcessed: true };
 
-      // Try command registry first (if configured).
       const commandText = this.normalizeCommandText(text);
-      if (this.commands) {
-        const resolved = this.commands.resolve(commandText.startsWith("/") ? commandText : `/${commandText}`);
-        if (resolved) {
-          const { def, args } = resolved;
-          if (def.adminOnly && identity && !isAdmin(identity)) {
-            return {
-              replies: chunkText("That command is admin-only.", this.maxReplyChars, this.maxReplyChunks),
-              markProcessed: true,
-            };
-          }
-          const cmdResult = def.handler({ msg, identity, args });
-          if (cmdResult !== null) {
-            return {
-              replies: chunkText(normalizeReply(cmdResult), this.maxReplyChars, this.maxReplyChunks),
-              markProcessed: true,
-            };
-          }
-        }
-      } else {
-        // Fallback: legacy built-in command handling (preserves behavior if no registry).
-        const builtin = this.handleBuiltin(msg, commandText);
-        if (builtin !== null) {
+      const resolved = this.commands.resolve(commandText.startsWith("/") ? commandText : `/${commandText}`);
+      if (resolved) {
+        const { def, args } = resolved;
+        if (def.adminOnly && identity && !isAdmin(identity)) {
           return {
-            replies: chunkText(normalizeReply(builtin), this.maxReplyChars, this.maxReplyChunks),
+            replies: chunkText("That command is admin-only.", this.maxReplyChars, this.maxReplyChunks),
+            markProcessed: true,
+          };
+        }
+        const cmdResult = def.handler({ msg, identity, args });
+        if (cmdResult !== null) {
+          return {
+            replies: chunkText(normalizeReply(cmdResult), this.maxReplyChars, this.maxReplyChunks),
             markProcessed: true,
           };
         }
@@ -247,61 +232,6 @@ export class Router {
     return trimmed.slice(1).trimStart();
   }
 
-  /** Legacy built-in command handling — used when no CommandRegistry is provided. */
-  private handleBuiltin(msg: InboundMessage, text: string): string | null {
-    const lowered = text.toLowerCase();
-    const isAdminSender = msg.access.adminSenderIds.includes(msg.senderId);
-
-    if (lowered === "help") {
-      return [
-        `You can chat with Pi here through ${msg.channel}.`,
-        "",
-        "Commands: use plain text or slash form, e.g. help or /help.",
-        "  /help              — show this message",
-        "  /reset             — start a fresh conversation",
-        "  /status            — show session info (admin)",
-        "  /wiki <query>      — search the wiki",
-        "  /wiki show <title> — preview a wiki page",
-        "",
-        "Everything else is passed straight to Pi SDK with the normal tool and extension registry.",
-      ].join("\n");
-    }
-
-    if (lowered === "reset") {
-      this.store.resetChatSession(msg.chatId);
-      this.hooks.onSessionReset?.(msg.chatId);
-      const hint = this.channelConfigs[msg.channel]?.resetHint;
-      const base = `Started a fresh conversation for this ${msg.channel} chat.`;
-      return hint ? `${base} ${hint}` : base;
-    }
-
-    if (lowered === "status") {
-      if (!isAdminSender) return "That command is admin-only.";
-      const existing = this.store.getChatSession(msg.chatId);
-      return [
-        `channel: ${msg.channel}`,
-        `sender:  ${msg.senderId}`,
-        `admin:   yes`,
-        `chat_id: ${msg.chatId}`,
-        `session: ${existing?.sessionPath ?? "none"}`,
-      ].join("\n");
-    }
-
-    if (lowered === "wiki") {
-      return "Usage: wiki <query>  |  wiki show <title>";
-    }
-
-    if (lowered.startsWith("wiki ")) {
-      // Lazy import to keep wiki concerns out of the hot path.
-      const { wikiSearch, wikiShowPage } = require("../personal/wiki.js") as typeof import("../personal/wiki.js");
-      const rest = text.slice(5).trim();
-      if (!rest) return "Usage: wiki <query>  |  wiki show <title>";
-      if (rest.toLowerCase().startsWith("show ")) return wikiShowPage(rest.slice(5).trim());
-      return wikiSearch(rest);
-    }
-
-    return null;
-  }
 
   private async cleanupInboundAttachments(msg: InboundMessage): Promise<void> {
     for (const attachment of msg.attachments ?? []) {

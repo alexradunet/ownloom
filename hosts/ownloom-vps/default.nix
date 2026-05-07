@@ -242,7 +242,7 @@ in {
           fallbackModel = "ollama/qwen2.5:3b";
         };
         transports = {
-          websocket.enable = true;
+          client.enable = true;
           # WhatsApp transport is provided by hosts/ownloom-vps/ownloom-gateway.private.nix
           # (gitignored) — owner phone numbers stay out of the public repo.
           # See ownloom-gateway.private.nix.example for the format.

@@ -22,12 +22,10 @@ export type AudioTranscriptionConfig = {
   maxSeconds?: number;
 };
 
-export type WebSocketTransportConfig = {
+export type ClientTransportConfig = {
   enabled: boolean;
   host: string;
   port: number;
-  /** Path to built web UI static files. Omit to skip static file serving. */
-  staticDir?: string;
   authToken?: string;
 };
 
@@ -46,7 +44,7 @@ export type GatewayConfig = {
   };
   transports: {
     whatsapp?: WhatsAppTransportConfig;
-    websocket?: WebSocketTransportConfig;
+    client?: ClientTransportConfig;
   };
 };
 
@@ -118,14 +116,13 @@ function validateAudio(value: unknown): void {
   expectOptionalNumber(audio.maxSeconds, "audioTranscription.maxSeconds");
 }
 
-function validateWebSocket(value: unknown): void {
-  const ws = optionalRecord(value, "transports.websocket");
-  if (!ws) return;
-  expectBoolean(ws.enabled, "transports.websocket.enabled");
-  expectString(ws.host, "transports.websocket.host");
-  expectNumber(ws.port, "transports.websocket.port");
-  expectOptionalString(ws.staticDir, "transports.websocket.staticDir");
-  expectOptionalString(ws.authToken, "transports.websocket.authToken");
+function validateClient(value: unknown): void {
+  const client = optionalRecord(value, "transports.client");
+  if (!client) return;
+  expectBoolean(client.enabled, "transports.client.enabled");
+  expectString(client.host, "transports.client.host");
+  expectNumber(client.port, "transports.client.port");
+  expectOptionalString(client.authToken, "transports.client.authToken");
 }
 
 function validateWhatsApp(value: unknown): void {
@@ -155,7 +152,8 @@ export function validateGatewayConfig(input: unknown): GatewayConfig {
   expectString(pi.cwd, "pi.cwd");
   expectOptionalString(pi.agentDir, "pi.agentDir");
   expectOptionalNumber(pi.timeoutMs, "pi.timeoutMs");
-  validateWebSocket(transports.websocket);
+  if (Object.hasOwn(transports, "websocket")) throw new Error("Invalid ownloom-gateway config: transports.websocket was removed; use transports.client.");
+  validateClient(transports.client);
   validateWhatsApp(transports.whatsapp);
   validateAudio(root.audioTranscription);
   if (Object.hasOwn(transports, "signal")) throw new Error("Invalid ownloom-gateway config: Signal transport was removed.");

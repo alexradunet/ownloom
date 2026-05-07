@@ -12,6 +12,7 @@ import type { GatewayTransport } from "../src/transports/types.js";
 class FakeTransport implements GatewayTransport {
   readonly name = "whatsapp";
   readonly sent: Array<{ recipientId: string; text: string }> = [];
+  failSends = false;
 
   async healthCheck(): Promise<void> {}
 
@@ -22,6 +23,7 @@ class FakeTransport implements GatewayTransport {
   async sendText(_message: InboundMessage, _text: string): Promise<void> {}
 
   async sendTextToRecipient(recipientId: string, text: string): Promise<void> {
+    if (this.failSends) throw new Error("offline");
     this.sent.push({ recipientId, text });
   }
 }
@@ -74,6 +76,29 @@ test("ReminderDeliveryWorker delivers a rescheduled reminder with the same UID",
     await worker.tick();
 
     assert.equal(transport.sent.length, 2);
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("DeliveryService queues failed sends and drains them later", async () => {
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-delivery-"));
+  try {
+    const store = new Store(path.join(tmpDir, "gateway-state.json"));
+    const transport = new FakeTransport();
+    const delivery = new DeliveryService([transport], store);
+
+    transport.failSends = true;
+    const result = await delivery.sendTextToRecipient("whatsapp:+15550001111", "hello");
+    assert.equal(result.queued, true);
+    assert.equal(store.listQueuedDeliveries().length, 1);
+    assert.deepEqual(transport.sent, []);
+
+    transport.failSends = false;
+    const drained = await delivery.drainQueuedDeliveries();
+    assert.deepEqual(drained, { attempted: 1, delivered: 1, failed: 0 });
+    assert.deepEqual(transport.sent, [{ recipientId: "whatsapp:+15550001111", text: "hello" }]);
+    assert.equal(store.listQueuedDeliveries().length, 0);
   } finally {
     rmSync(tmpDir, { recursive: true, force: true });
   }

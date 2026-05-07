@@ -20,7 +20,7 @@
     resp = s.recv(4096).decode(errors="replace")
     assert "101" in resp, f"Expected 101 Switching Protocols, got: {resp!r}"
     s.close()
-    print("WebSocket upgrade: OK")
+    print("client protocol upgrade: OK")
   '';
 
   # Full round-trip: send a /help message and assert the builtin reply arrives.
@@ -74,7 +74,7 @@ in
             ffmpegCommand = "false";
             modelPath = "/dev/null";
           };
-          transports.websocket = {
+          transports.client = {
             enable = true;
             host = "127.0.0.1";
             port = 8081;
@@ -83,7 +83,7 @@ in
       };
 
       # Strip heavy packages that are only needed for operational message
-      # handling (nixos-rebuild, podman), not for startup + WebSocket binding.
+      # handling (nixos-rebuild, podman), not for startup + client protocol binding.
       systemd.services.ownloom-gateway.path = lib.mkForce [
         pkgs.pi
         pkgs.coreutils
@@ -103,18 +103,17 @@ in
       vm.wait_for_unit("ownloom-gateway.service")
       vm.wait_for_open_port(8081)
 
-      # HTTP server on the same port should respond (200 bundled UI or 404
-      # fallback — either confirms the process is alive and serving).
+      # HTTP server on the same port should respond via REST. Root is not served.
       code = vm.succeed(
-          "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8081/"
+          "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8081/api/v1/health"
       ).strip()
-      assert code in ("200", "404"), f"Unexpected HTTP status: {code!r}"
+      assert code == "200", f"Unexpected HTTP status: {code!r}"
 
-      # WebSocket upgrade must be accepted (101 Switching Protocols).
+      # client protocol upgrade must be accepted (101 Switching Protocols).
       vm.succeed("python3 ${wsCheckScript}")
 
       # Full message round-trip: /help is a builtin that the Router handles
-      # without calling Pi SDK. Confirms end-to-end WebSocket message routing.
+      # without calling Pi SDK. Confirms end-to-end client protocol message routing.
       vm.succeed(
           "python3 ${wsRoundtripScript} 127.0.0.1 8081 '/help' '/reset'"
       )

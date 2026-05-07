@@ -147,6 +147,35 @@ test("v1 sessions.get requires chatId", async () => {
   }
 });
 
+test("v1 sessions.list returns stored sessions newest-first", async () => {
+  const { store, cleanup } = makeStore();
+  try {
+    const commands = new CommandRegistry();
+    const registry = new MethodRegistry();
+    registerV1Methods(registry, {
+      store,
+      commands,
+      agentName: "pi",
+      transportNames: [],
+      startedAtMs: Date.now(),
+      handleAgent: async () => ({ ok: true, payload: { runId: "r1", status: "accepted" } }),
+    });
+
+    store.upsertChatSession("old-chat", "sender", "/tmp/old");
+    await new Promise((resolve) => setTimeout(resolve, 2));
+    store.upsertChatSession("new-chat", "sender", "/tmp/new");
+
+    const result = await registry.dispatch(makeCtx({ _method: METHODS.SESSIONS_LIST }));
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      const p = result.payload as any;
+      assert.deepEqual(p.sessions.map((s: any) => s.chatId), ["new-chat", "old-chat"]);
+    }
+  } finally {
+    cleanup();
+  }
+});
+
 test("v1 sessions.reset resets a chat session", async () => {
   const { store, cleanup } = makeStore();
   try {

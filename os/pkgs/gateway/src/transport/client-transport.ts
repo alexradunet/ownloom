@@ -1,7 +1,4 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { readFile } from "node:fs/promises";
-import { join, dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { WebSocketServer, WebSocket } from "ws";
 import {
@@ -9,16 +6,13 @@ import {
   type ConnectFrame,
   type ResponseFrame,
   type EventFrame,
-  type ConnectOkPayload,
   type ClientFrame,
-  METHODS,
+  type ConnectOkPayload,
   EVENTS,
-  type Scope,
-  type Role,
   type AgentAcceptedPayload,
 } from "../protocol/types.js";
 import { MethodRegistry, registerV1Methods, type ConnectedClient, type MethodContext, type MethodResult } from "../protocol/methods.js";
-import type { WebSocketTransportConfig } from "../config.js";
+import type { ClientTransportConfig } from "../config.js";
 import type { InboundMessage } from "../core/types.js";
 import type { GatewayTransport } from "../transports/types.js";
 import type { Store } from "../core/store.js";
@@ -26,45 +20,29 @@ import type { CommandRegistry } from "../core/commands.js";
 import type { IdentityResolver, Identity } from "../core/identity.js";
 import type { Router } from "../core/router.js";
 
-// Bundled web UI shipped alongside this file: dist/ui/
-const BUNDLED_UI_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "ui");
-
-// ── Legacy wire protocol (for existing web UI) ───────────────────────────────
-// The existing index.html sends { type: "message", text } and receives
-// { type: "chunk"|"reply"|"done"|"error", text }. We detect these frames
-// and translate them into protocol/v1 calls for backward compatibility.
-
-type LegacyClientMessage =
-  | { type: "auth"; token: string }
-  | { type: "message"; text: string };
-
-type LegacyServerMessage =
-  | { type: "auth_ok" }
-  | { type: "auth_fail" }
-  | { type: "chunk"; text: string }
-  | { type: "reply"; text: string }
-  | { type: "done" }
-  | { type: "error"; text: string };
-
 // ── ClientTransport ──────────────────────────────────────────────────────────
+// First-party client transport. Speaks protocol/v1 only:
+//   connect -> res hello-ok
+//   req     -> res
+//   event   <- server-pushed events
+// No legacy web-chat protocol and no bundled static UI.
 
 export class ClientTransport implements GatewayTransport {
   readonly name = "client";
 
-  private readonly connections = new Map<string, WebSocket>();
+  private readonly connections = new Map<string, { ws: WebSocket; client: ConnectedClient }>();
   private readonly methodRegistry = new MethodRegistry();
   private router!: Router;
   private startedAtMs = Date.now();
 
   constructor(
-    private readonly config: WebSocketTransportConfig,
+    private readonly config: ClientTransportConfig,
     private readonly store: Store,
     private readonly commands: CommandRegistry,
     private readonly identityResolver?: IdentityResolver,
     private readonly agentName = "pi",
     private readonly transportNames: string[] = [],
   ) {
-    // Register v1 methods (agent method handler is bound later via setRouter).
     registerV1Methods(this.methodRegistry, {
       store,
       commands,
@@ -85,16 +63,14 @@ export class ClientTransport implements GatewayTransport {
     // Server starts inside startReceiving; nothing to check before that.
   }
 
-  startReceiving(
-    onMessage: (msg: InboundMessage, onChunk?: (chunk: string) => void) => Promise<void>,
-  ): Promise<never> {
+  startReceiving(_onMessage: (msg: InboundMessage, onChunk?: (chunk: string) => void) => Promise<void>): Promise<never> {
     return new Promise<never>((_, reject) => {
       const server = createServer((req, res) => {
         void this.serveHttp(req, res);
       });
       const wss = new WebSocketServer({ server });
 
-      wss.on("connection", (ws) => this.handleConnection(ws, onMessage));
+      wss.on("connection", (ws) => this.handleConnection(ws));
       wss.on("error", (err) => {
         console.error("client transport: server error:", err);
         reject(err);
@@ -107,76 +83,37 @@ export class ClientTransport implements GatewayTransport {
   }
 
   async sendText(message: InboundMessage, text: string): Promise<void> {
-    const ws = this.connections.get(message.chatId);
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "reply", text } satisfies LegacyServerMessage));
-    }
+    await this.sendTextToRecipient(`client:${message.chatId}`, text);
   }
 
   async sendTextToRecipient(recipientId: string, text: string): Promise<void> {
     const key = recipientId.startsWith("client:") ? recipientId.slice("client:".length) : recipientId;
-    const ws = this.connections.get(key);
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "reply", text } satisfies LegacyServerMessage));
-      return;
+    const connection = this.connections.get(key);
+    if (!connection || connection.ws.readyState !== WebSocket.OPEN) {
+      throw new Error(`client: no active connection for recipient ${recipientId}`);
     }
-    console.warn(`client: no active connection for recipient ${recipientId}`);
+
+    connection.client.seq += 1;
+    connection.ws.send(JSON.stringify({
+      type: "event",
+      event: "message",
+      payload: { text },
+      seq: connection.client.seq,
+    } satisfies EventFrame));
   }
 
-  // ── HTTP: static file serving + REST API ─────────────────────────────────
+  // ── HTTP REST API ────────────────────────────────────────────────────────
 
   private async serveHttp(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = req.url ?? "/";
-
-    // REST API routes
     if (url.startsWith("/api/v1/")) {
-      return this.serveRestApi(req, res);
-    }
-
-    // Static file serving
-    const uiDir = resolve(this.config.staticDir ?? BUNDLED_UI_DIR);
-    let filePath: string;
-    try {
-      filePath = decodeURIComponent(url.split("?")[0] ?? "/");
-    } catch {
-      res.writeHead(400);
-      res.end("Bad request");
-      return;
-    }
-    if (filePath === "/" || filePath === "") filePath = "/index.html";
-
-    if (filePath.includes("..") || filePath.includes("\0")) {
-      res.writeHead(400);
-      res.end("Bad request");
+      this.serveRestApi(req, res);
       return;
     }
 
-    const fullPath = resolve(join(uiDir, filePath));
-    if (!fullPath.startsWith(uiDir + "/") && fullPath !== uiDir) {
-      res.writeHead(403);
-      res.end("Forbidden");
-      return;
-    }
-
-    try {
-      const data = await readFile(fullPath);
-      res.writeHead(200, { "Content-Type": guessMime(filePath) });
-      res.end(data);
-    } catch {
-      // SPA fallback
-      try {
-        const fallbackPath = resolve(join(uiDir, "index.html"));
-        const data = await readFile(fallbackPath);
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        res.end(data);
-      } catch {
-        res.writeHead(404);
-        res.end("Not found");
-      }
-    }
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Not found" }));
   }
-
-  // ── REST API ────────────────────────────────────────────────────────────
 
   private serveRestApi(req: IncomingMessage, res: ServerResponse): void {
     if (req.method !== "GET") {
@@ -185,54 +122,40 @@ export class ClientTransport implements GatewayTransport {
       return;
     }
 
-    // Auth: Bearer token
     const authHeader = req.headers["authorization"];
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
-
-    // If gateway auth is configured, validate token
     if (this.config.authToken && token !== this.config.authToken) {
-      // Allow local requests without token when no auth mode
-      const isLocal = req.socket.remoteAddress === "127.0.0.1" || req.socket.remoteAddress === "::1";
-      if (!isLocal || !token) {
-        res.writeHead(401, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Unauthorized" }));
-        return;
-      }
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
     }
 
-    const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
-    const path = url.pathname;
+    const parsedUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+    const path = parsedUrl.pathname;
 
     let result: unknown;
-    try {
-      if (path === "/api/v1/health") {
-        result = {
-          ok: true,
-          agent: this.agentName,
-          transports: this.transportNames,
-          uptimeMs: Date.now() - this.startedAtMs,
-        };
-      } else if (path === "/api/v1/status") {
-        result = {
-          ok: true,
-          agent: this.agentName,
-          transports: this.transportNames,
-          connections: this.connections.size,
-          commands: this.commands.listNames(),
-        };
-      } else if (path === "/api/v1/commands") {
-        result = { commands: this.commands.listNames() };
-      } else if (path === "/api/v1/sessions") {
-        // Store doesn't support listing all sessions yet; return empty.
-        result = { sessions: [] };
-      } else {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Not found" }));
-        return;
-      }
-    } catch (err) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Internal server error" }));
+    if (path === "/api/v1/health") {
+      result = {
+        ok: true,
+        agent: this.agentName,
+        transports: this.transportNames,
+        uptimeMs: Date.now() - this.startedAtMs,
+      };
+    } else if (path === "/api/v1/status") {
+      result = {
+        ok: true,
+        agent: this.agentName,
+        transports: this.transportNames,
+        connections: this.connections.size,
+        commands: this.commands.listNames(),
+      };
+    } else if (path === "/api/v1/commands") {
+      result = { commands: this.commands.listNames() };
+    } else if (path === "/api/v1/sessions") {
+      result = { sessions: this.store.listChatSessions() };
+    } else {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Not found" }));
       return;
     }
 
@@ -240,214 +163,174 @@ export class ClientTransport implements GatewayTransport {
     res.end(JSON.stringify(result));
   }
 
-  // ── WebSocket: per-connection handling ───────────────────────────────────
+  // ── WebSocket protocol/v1 ────────────────────────────────────────────────
 
-  private handleConnection(
-    ws: WebSocket,
-    onMessage: (msg: InboundMessage, onChunk?: (chunk: string) => void) => Promise<void>,
-  ): void {
+  private handleConnection(ws: WebSocket): void {
     const connId = `client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    let client: ConnectedClient | null = null;
+    let chatId: string | null = null;
 
-    const sendJson = (data: ResponseFrame | EventFrame | LegacyServerMessage): void => {
-      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data));
+    const sendJson = (frame: ResponseFrame | EventFrame): void => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(frame));
     };
 
     const close = (reason: string): void => {
       console.log(`client: closing ${connId} — ${reason}`);
-      this.connections.delete(connId);
+      if (chatId) this.connections.delete(chatId);
       if (ws.readyState === WebSocket.OPEN) ws.close();
     };
 
     ws.on("close", () => {
-      this.connections.delete(connId);
+      if (chatId) this.connections.delete(chatId);
       console.log(`client: client ${connId} disconnected`);
     });
 
     ws.on("error", (err) => close(`ws error: ${err.message}`));
 
-    // ── Auth phase ──────────────────────────────────────────────────────────
-    // The existing web UI sends { type: "auth", token } first when authToken
-    // is configured. New protocol/v1 clients send { type: "connect", ... }.
-    // We detect which one and switch modes.
-
-    const { authToken } = this.config;
-
-    // State: how this connection speaks
-    let protocolMode: "legacy" | "v1" | null = null;
-    let identity: Identity | null = null;
-    let chatId: string | null = null;
-    let v1Client: ConnectedClient | null = null;
-    let messageChain = Promise.resolve();
-
-    // For legacy mode: serialize messages within a connection.
-    const handleLegacyMessage = (text: string) => {
-      if (!chatId) chatId = `ws-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const senderId = `client:${chatId}`;
-
-      const inbound: InboundMessage = {
-        channel: "client",
-        chatId,
-        senderId,
-        messageId: `cmsg-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        timestamp: new Date().toISOString(),
-        text,
-        isGroup: false,
-        access: {
-          allowedSenderIds: [senderId],
-          adminSenderIds: [senderId],
-          directMessagesOnly: false,
-          selfSenderIds: [],
-        },
-      };
-
-      const onChunk = (chunk: string): void => sendJson({ type: "chunk", text: chunk });
-
-      messageChain = messageChain
-        .catch(() => undefined)
-        .then(async () => {
-          try {
-            await onMessage(inbound, onChunk);
-            sendJson({ type: "done" });
-          } catch (err) {
-            const errText = err instanceof Error ? err.message : String(err);
-            console.error(`client: message handler failed for ${connId}:`, err);
-            sendJson({ type: "error", text: errText });
-          }
-        });
-    };
-
-    const handleV1Frame = (frame: ClientFrame) => {
-      if (frame.type === "connect") {
-        // Process connect frame
-        const connectFrame = frame as ConnectFrame;
-        const resolvedIdentity = this.resolveTokenIdentity(connectFrame.auth.token);
-
-        chatId = `v1-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        this.connections.set(chatId, ws);
-
-        v1Client = {
-          connId,
-          identity: resolvedIdentity,
-          role: connectFrame.role ?? "operator",
-          scopes: connectFrame.scopes ?? (resolvedIdentity ? resolvedIdentity.scopes : ["read"]),
-          seq: 0,
-          send: (f) => sendJson(f),
-        };
-
-        const helloOk: ConnectOkPayload = {
-          type: "hello-ok",
-          protocol: PROTOCOL_VERSION,
-          server: { version: "1.0.0", connId },
-          features: {
-            methods: this.methodRegistry.listMethods(),
-            events: this.methodRegistry.listEvents(),
-          },
-          auth: {
-            role: v1Client.role,
-            scopes: v1Client.scopes,
-          },
-          policy: {
-            maxPayload: 25 * 1024 * 1024,
-            tickIntervalMs: 15_000,
-          },
-        };
-
-        sendJson({ type: "res", id: "connect", ok: true, payload: helloOk });
-        return;
-      }
-
-      if (frame.type === "req") {
-        if (!v1Client) {
-          sendJson({ type: "res", id: frame.id, ok: false, error: { message: "Not connected. Send connect frame first.", code: "NOT_CONNECTED" } });
-          return;
-        }
-
-        const ctx: MethodContext = {
-          client: v1Client,
-          params: { ...frame.params, _method: frame.method },
-          emit: (event, payload) => {
-            v1Client!.seq++;
-            sendJson({ type: "event", event, payload, seq: v1Client!.seq });
-          },
-        };
-
-        void (async () => {
-          try {
-            const result = await this.methodRegistry.dispatch(ctx);
-            sendJson({
-              type: "res",
-              id: frame.id,
-              ok: result.ok,
-              ...(result.ok ? { payload: (result as any).payload } : { error: (result as any).error }),
-            } as ResponseFrame);
-          } catch (err) {
-            sendJson({
-              type: "res",
-              id: frame.id,
-              ok: false,
-              error: { message: err instanceof Error ? err.message : String(err) },
-            } as ResponseFrame);
-          }
-        })();
-        return;
-      }
-    };
-
-    // ── First-frame detection ───────────────────────────────────────────────
-    // Wait for the first frame to determine protocol mode (legacy auth, v1
-    // connect, or legacy message). After the first frame, all subsequent
-    // frames follow the detected mode.
-
     ws.on("message", (rawData) => {
-      let parsed: Record<string, unknown>;
+      let frame: ClientFrame;
       try {
-        parsed = JSON.parse(rawData.toString()) as Record<string, unknown>;
+        frame = JSON.parse(rawData.toString()) as ClientFrame;
       } catch {
-        console.warn("client: invalid JSON from client, ignoring");
+        close("invalid JSON");
         return;
       }
 
-      // First frame — detect protocol
-      if (protocolMode === null) {
-        if (parsed["type"] === "connect") {
-          protocolMode = "v1";
-          handleV1Frame(parsed as unknown as ClientFrame);
+      if (!client) {
+        if (frame.type !== "connect") {
+          sendJson({
+            type: "res",
+            id: "connect",
+            ok: false,
+            error: { message: "First frame must be connect", code: "CONNECT_REQUIRED" },
+          });
+          close("non-connect first frame");
           return;
         }
-
-        // Legacy: auth or message
-        if (authToken && parsed["type"] === "auth") {
-          if (parsed["token"] === authToken) {
-            protocolMode = "legacy";
-            chatId = `ws-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-            this.connections.set(chatId, ws);
-            sendJson({ type: "auth_ok" });
-            identity = this.resolveTokenIdentity(undefined); // legacy mode has no token-to-identity yet
-          } else {
-            sendJson({ type: "auth_fail" });
-            close("auth failed");
-          }
-          return;
-        }
-
-        // No auth required → legacy message mode
-        protocolMode = "legacy";
-        chatId = `ws-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        this.connections.set(chatId, ws);
-        // Fall through to handle as legacy message
-      }
-
-      // Subsequent frames
-      if (protocolMode === "v1") {
-        handleV1Frame(parsed as unknown as ClientFrame);
+        this.handleConnect(ws, connId, frame, sendJson, close, (newChatId, newClient) => {
+          chatId = newChatId;
+          client = newClient;
+        });
         return;
       }
 
-      // Legacy mode
-      if (parsed["type"] === "message" && typeof parsed["text"] === "string") {
-        handleLegacyMessage(parsed["text"] as string);
+      if (frame.type === "connect") {
+        sendJson({
+          type: "res",
+          id: "connect",
+          ok: false,
+          error: { message: "Already connected", code: "ALREADY_CONNECTED" },
+        });
+        return;
       }
+
+      this.handleRequest(frame, client, sendJson);
     });
+  }
+
+  private handleConnect(
+    ws: WebSocket,
+    connId: string,
+    frame: ConnectFrame,
+    sendJson: (frame: ResponseFrame | EventFrame) => void,
+    close: (reason: string) => void,
+    onConnected: (chatId: string, client: ConnectedClient) => void,
+  ): void {
+    if (frame.protocol !== PROTOCOL_VERSION) {
+      sendJson({
+        type: "res",
+        id: "connect",
+        ok: false,
+        error: { message: `Unsupported protocol: ${frame.protocol}`, code: "UNSUPPORTED_PROTOCOL" },
+      });
+      close("unsupported protocol");
+      return;
+    }
+
+    if (this.config.authToken && frame.auth.token !== this.config.authToken) {
+      sendJson({
+        type: "res",
+        id: "connect",
+        ok: false,
+        error: { message: "Unauthorized", code: "UNAUTHORIZED" },
+      });
+      close("auth failed");
+      return;
+    }
+
+    const identity = this.resolveTokenIdentity(frame.auth.token);
+    const chatId = `v1-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const client: ConnectedClient = {
+      connId,
+      identity,
+      role: frame.role ?? "operator",
+      scopes: identity?.scopes ?? frame.scopes ?? ["read", "write", "admin"],
+      seq: 0,
+      send: (f) => sendJson(f),
+    };
+
+    this.connections.set(chatId, { ws, client });
+    onConnected(chatId, client);
+
+    const helloOk: ConnectOkPayload = {
+      type: "hello-ok",
+      protocol: PROTOCOL_VERSION,
+      server: { version: "1.0.0", connId },
+      features: {
+        methods: this.methodRegistry.listMethods(),
+        events: this.methodRegistry.listEvents(),
+      },
+      auth: {
+        role: client.role,
+        scopes: client.scopes,
+      },
+      policy: {
+        maxPayload: 25 * 1024 * 1024,
+        tickIntervalMs: 15_000,
+      },
+    };
+
+    sendJson({ type: "res", id: "connect", ok: true, payload: helloOk });
+  }
+
+  private handleRequest(frame: ClientFrame, client: ConnectedClient, sendJson: (frame: ResponseFrame | EventFrame) => void): void {
+    if (frame.type !== "req") {
+      sendJson({
+        type: "res",
+        id: "unknown",
+        ok: false,
+        error: { message: `Unsupported frame type: ${frame.type}`, code: "INVALID_FRAME" },
+      });
+      return;
+    }
+
+    const ctx: MethodContext = {
+      client,
+      params: { ...frame.params, _method: frame.method },
+      emit: (event, payload) => {
+        client.seq += 1;
+        sendJson({ type: "event", event, payload, seq: client.seq });
+      },
+    };
+
+    void (async () => {
+      try {
+        const result = await this.methodRegistry.dispatch(ctx);
+        sendJson({
+          type: "res",
+          id: frame.id,
+          ok: result.ok,
+          ...(result.ok ? { payload: result.payload } : { error: result.error }),
+        } as ResponseFrame);
+      } catch (err) {
+        sendJson({
+          type: "res",
+          id: frame.id,
+          ok: false,
+          error: { message: err instanceof Error ? err.message : String(err) },
+        });
+      }
+    })();
   }
 
   // ── Agent method handler ────────────────────────────────────────────────
@@ -488,12 +371,9 @@ export class ClientTransport implements GatewayTransport {
 
     try {
       const result = await this.router.handleMessage(inbound, onChunk);
-
-      // Send result text as event
       for (const reply of result.replies) {
         ctx.emit(EVENTS.AGENT, { runId, stream: "result", text: reply });
       }
-
       return {
         ok: true,
         payload: { runId, status: "accepted" } as AgentAcceptedPayload,
@@ -506,25 +386,8 @@ export class ClientTransport implements GatewayTransport {
     }
   }
 
-  // ── Identity helpers ────────────────────────────────────────────────────
-
   private resolveTokenIdentity(token?: string): Identity | null {
     if (!token || !this.identityResolver) return null;
-    // Try "token:<value>" as a key
     return this.identityResolver.resolve("token", token);
   }
-}
-
-// ── MIME helpers ───────────────────────────────────────────────────────────────
-
-function guessMime(path: string): string {
-  if (path.endsWith(".html")) return "text/html; charset=utf-8";
-  if (path.endsWith(".js") || path.endsWith(".mjs")) return "application/javascript";
-  if (path.endsWith(".css")) return "text/css";
-  if (path.endsWith(".svg")) return "image/svg+xml";
-  if (path.endsWith(".png")) return "image/png";
-  if (path.endsWith(".ico")) return "image/x-icon";
-  if (path.endsWith(".woff2")) return "font/woff2";
-  if (path.endsWith(".json")) return "application/json";
-  return "application/octet-stream";
 }

@@ -38,7 +38,7 @@
             pi.cwd = "/srv/ownloom";
             wiki.dir = "/srv/wiki";
             transports = {
-              websocket = {
+              client = {
                 enable = true;
                 host = "127.0.0.1";
                 port = 8081;

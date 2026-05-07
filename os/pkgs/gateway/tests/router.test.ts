@@ -12,7 +12,7 @@ import type { InboundMessage } from "../src/core/types.js";
 
 function makeMsg(overrides: Partial<InboundMessage> = {}): InboundMessage {
   return {
-    channel: "websocket",
+    channel: "client",
     chatId: "test-chat",
     senderId: "test-sender",
     messageId: `msg-${Date.now()}-${Math.random()}`,
