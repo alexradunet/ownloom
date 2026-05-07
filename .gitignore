@@ -15,8 +15,8 @@ node_modules
 coverage
 dist-test
 dist
-os/pkgs/nixpi-wiki/extension
-os/pkgs/nixpi-wiki/core
+os/pkgs/wiki/extension
+os/pkgs/wiki/core
 
 # Wiki lives outside the repo at ~/wiki — gitignore the whole dir as a
 # safety net in case someone accidentally clones it here.

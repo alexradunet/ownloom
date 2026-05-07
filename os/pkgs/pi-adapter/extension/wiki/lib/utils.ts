@@ -1,4 +1,4 @@
-export { EmptyToolParams, errorResult, textToolResult, toToolResult, truncate } from "../../../../../../nixpi-wiki/src/api.ts";
+export { EmptyToolParams, errorResult, textToolResult, toToolResult, truncate } from "../../../../../wiki/src/api.ts";
 
 export type RegisteredExtensionTool = {
 	name: string;

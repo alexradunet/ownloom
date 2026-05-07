@@ -19,7 +19,7 @@
     builtins.filterSource
     (path: type: type != "directory" || builtins.baseNameOf path != "node_modules")
     ../../../pkgs;
-  nixpiExt = "${nixpiPkgs}/nixpi-pi-adapter/extensions/nixpi/nixpi";
+  nixpiExt = "${nixpiPkgs}/pi-adapter/extension";
 
   # models.json teaching pi to use our fake provider on 127.0.0.1:11434.
   modelsJson = pkgs.writeText "models.json" (builtins.toJSON {

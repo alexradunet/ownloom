@@ -19,7 +19,7 @@ import {
 	rebuildAllMeta,
 	toolManifest,
 	todayStamp,
-} from "../../../../../nixpi-wiki/src/api.ts";
+} from "../../../../wiki/src/api.ts";
 import { type RegisteredExtensionTool, registerTools } from "./lib/utils.ts";
 import { readMemoryPaths, readMemoryStats } from "./prompt-context.ts";
 import { buildCompactionContext, loadContext, type SavedContext, saveContext } from "./runtime-policy.ts";
