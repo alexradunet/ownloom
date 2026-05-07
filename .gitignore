@@ -18,9 +18,13 @@ dist
 os/pkgs/wiki/extension
 os/pkgs/wiki/core
 
-# Wiki lives outside the repo at ~/wiki — gitignore the whole dir as a
-# safety net in case someone accidentally clones it here.
+# Wiki lives outside the repo at ~/wiki — gitignore root wiki dirs as a
+# safety net in case someone accidentally clones one here. Keep the tracked
+# os/pkgs/wiki package able to add new source files.
 wiki/
+!os/pkgs/wiki/
+!os/pkgs/wiki/src/
+!os/pkgs/wiki/src/lib/
 
 # Host-local private overlays are TRACKED with placeholder values, not
 # gitignored. After cloning, fill them in with real values and run

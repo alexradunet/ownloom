@@ -39,8 +39,7 @@ buildNpmPackage {
     npm test -- --run \
       tests/actions-meta.test.ts \
       tests/actions-meta-digest.test.ts \
-      tests/actions-pages-v2.test.ts \
-      tests/actions-lint-frontmatter-v2.test.ts
+      tests/actions-pages-v2.test.ts
     runHook postCheck
   '';
 

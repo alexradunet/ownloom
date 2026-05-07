@@ -29,55 +29,32 @@
     hash = "sha256-YO1bw90U7qhWST0zQ0m0BXgt3K8AKNS130CINF+6Lv4=";
   };
 
-  gatewayConfig = yamlFormat.generate "nixpi-gateway.yml" {
-    gateway = {
-      inherit (settings.gateway) statePath;
-      inherit (settings.gateway) sessionDir;
-      inherit (settings.gateway) maxReplyChars;
-      inherit (settings.gateway) maxReplyChunks;
+  enabledTransports =
+    lib.optionalAttrs whatsapp.enable {
+      whatsapp = {
+        enabled = true;
+        trustedNumbers = whatsappTrustedNumbers;
+        adminNumbers = whatsappAdminNumbers;
+        inherit (whatsapp) directMessagesOnly sessionDataPath model allowedModels;
+      };
+    }
+    // lib.optionalAttrs settings.transports.websocket.enable {
+      websocket =
+        {
+          enabled = true;
+          inherit (settings.transports.websocket) host port;
+        }
+        // lib.optionalAttrs (settings.transports.websocket.staticDir != null) {
+          inherit (settings.transports.websocket) staticDir;
+        }
+        // lib.optionalAttrs (settings.transports.websocket.authToken != null) {
+          inherit (settings.transports.websocket) authToken;
+        };
     };
 
-    audioTranscription = {
-      inherit (settings.audioTranscription) enabled;
-      inherit (settings.audioTranscription) command;
-      inherit (settings.audioTranscription) ffmpegCommand;
-      inherit (settings.audioTranscription) modelPath;
-      inherit (settings.audioTranscription) language;
-      inherit (settings.audioTranscription) threads;
-      inherit (settings.audioTranscription) timeoutMs;
-      inherit (settings.audioTranscription) maxSeconds;
-    };
-    pi = {
-      inherit (settings.pi) cwd;
-      inherit (settings.pi) agentDir;
-      inherit (settings.pi) timeoutMs;
-    };
-    transports =
-      lib.optionalAttrs whatsapp.enable {
-        whatsapp = {
-          enabled = true;
-          trustedNumbers = whatsappTrustedNumbers;
-          adminNumbers = whatsappAdminNumbers;
-          inherit (whatsapp) directMessagesOnly;
-          inherit (whatsapp) sessionDataPath;
-          inherit (whatsapp) model;
-          inherit (whatsapp) allowedModels;
-        };
-      }
-      // lib.optionalAttrs settings.transports.websocket.enable {
-        websocket =
-          {
-            enabled = true;
-            inherit (settings.transports.websocket) host;
-            inherit (settings.transports.websocket) port;
-          }
-          // lib.optionalAttrs (settings.transports.websocket.staticDir != null) {
-            inherit (settings.transports.websocket) staticDir;
-          }
-          // lib.optionalAttrs (settings.transports.websocket.authToken != null) {
-            inherit (settings.transports.websocket) authToken;
-          };
-      };
+  gatewayConfig = yamlFormat.generate "nixpi-gateway.yml" {
+    inherit (settings) gateway audioTranscription pi;
+    transports = enabledTransports;
   };
 in {
   imports = [../paths/module.nix];

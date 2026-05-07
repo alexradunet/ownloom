@@ -48,9 +48,7 @@ buildNpmPackage {
     tar -tzf "$tarball" | grep '^package/seed/WIKI_SCHEMA.md$'
     tar -tzf "$tarball" | grep '^package/seed/templates/markdown/page.md$'
     tar -tzf "$tarball" | grep '^package/skill/wiki/SKILL.md$'
-    tar -tzf "$tarball" | grep '^package/plugin.json$'
     ! tar -tzf "$tarball" | grep '^package/dist/cli.js$'
-    ! tar -tzf "$tarball" | grep '^package/seed/Copilot.md$'
 
     install_dir="$TMPDIR/install"
     mkdir -p "$install_dir"

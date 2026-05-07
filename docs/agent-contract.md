@@ -1,6 +1,6 @@
 # NixPI Agent Contract
 
-This document defines what an AI agent adapter must provide to participate in NixPI. PI is the only implemented adapter today; future adapters such as Claude Code, Codex, Copilot, or another harness should satisfy the same contract without changing the shared NixPI core.
+This document defines what an AI agent adapter must provide to participate in NixPI. PI is the only implemented adapter today; future adapters should satisfy the same contract without changing the shared NixPI core.
 
 ## Goals
 

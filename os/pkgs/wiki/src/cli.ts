@@ -1,18 +1,13 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
-import os from "node:os";
-import path from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import { buildWikiContext, callWikiTool } from "./tools/dispatcher.ts";
 import { getToolManifestEntry, toolManifest } from "./tools/manifest.ts";
-import { rebuildAllMeta } from "./wiki/actions-meta.ts";
 import { getWikiRoot, getWorkspaceProfile, normalizeDomain } from "./wiki/paths.ts";
-import { runSetupCopilot } from "./setup-copilot.ts";
+import { absolutePath, initWikiRoot, renderInitText } from "./lib/seed-init.ts";
 
 function usage(exitCode = 0): never {
-  const text = `nixpi-wiki — portable plain-Markdown LLM wiki CLI\n\nUsage:\n  nixpi-wiki list [--json]\n  nixpi-wiki describe <tool> [--json]\n  nixpi-wiki call <tool> [json-params | @file | -] [--json] [--yes]\n  nixpi-wiki mutate <tool> [json-params | @file | -] [--json]\n  nixpi-wiki init [--root <path>] [--workspace <name>] [--domain <domain>] [--json]\n  nixpi-wiki context [--format markdown|json]\n  nixpi-wiki setup-copilot [--root <path>] [--workspace <name>] [--domain <domain>]
-  nixpi-wiki doctor [--domain <domain>] [--json]\n\nExamples:\n  nixpi-wiki list\n  nixpi-wiki call wiki_status '{"domain":"work"}'\n  echo '{"query":"memory","domain":"work"}' | nixpi-wiki call wiki_search - --json\n  nixpi-wiki mutate wiki_ingest '{"content":"note","channel":"journal"}'\n  nixpi-wiki init --root ~/NixPI/work-wiki --workspace work --domain work
-  nixpi-wiki setup-copilot\n  nixpi-wiki context --format markdown\n  nixpi-wiki doctor\n`;
+  const text = `nixpi-wiki — portable plain-Markdown LLM wiki CLI\n\nUsage:\n  nixpi-wiki list [--json]\n  nixpi-wiki describe <tool> [--json]\n  nixpi-wiki call <tool> [json-params | @file | -] [--json] [--yes]\n  nixpi-wiki mutate <tool> [json-params | @file | -] [--json]\n  nixpi-wiki init [--root <path>] [--workspace <name>] [--domain <domain>] [--json]\n  nixpi-wiki context [--format markdown|json]\n  nixpi-wiki doctor [--domain <domain>] [--json]\n\nExamples:\n  nixpi-wiki list\n  nixpi-wiki call wiki_status '{"domain":"work"}'\n  echo '{"query":"memory","domain":"work"}' | nixpi-wiki call wiki_search - --json\n  nixpi-wiki mutate wiki_ingest '{"content":"note","channel":"journal"}'\n  nixpi-wiki init --root ~/NixPI/work-wiki --workspace work --domain work\n  nixpi-wiki context --format markdown\n  nixpi-wiki doctor\n`;
   console.error(text);
   process.exit(exitCode);
 }
@@ -41,9 +36,6 @@ Print the current host/wiki context for reuse by any LLM harness.`,
     doctor: `Usage: nixpi-wiki doctor [--domain <domain>] [--json]
 
 Run a small local health check: wiki status, frontmatter lint, Node runtime, optional Git cleanliness, and optional body-search availability. JSON output includes remediation hints only for failing checks.`,
-    "setup-copilot": `Usage: nixpi-wiki setup-copilot [--root <path>] [--workspace <name>] [--domain <domain>]
-
-Initializes a NixPI Wiki root, sets persistent environment variables, and prints harness integration commands (Copilot plugin install, Pi skill auto-load, Agent Skills copy path).`,
   };
   console.error(snippets[command] ?? "Unknown subcommand.");
   process.exit(exitCode);
@@ -75,162 +67,11 @@ interface DoctorCheck {
   remediation?: string;
 }
 
-interface InitStats {
-  root: string;
-  workspace: string;
-  domain: string;
-  seedDir: string;
-  copiedFiles: number;
-  skippedFiles: number;
-  createdDirs: number;
-  pages: number;
-}
-
-function expandHome(value: string): string {
-  if (value === "~") return os.homedir();
-  if (value.startsWith(`~${path.sep}`) || value.startsWith("~/")) return path.join(os.homedir(), value.slice(2));
-  return value;
-}
-
-function absolutePath(value: string): string {
-  return path.resolve(expandHome(value));
-}
-
-function packageRootCandidate(): string | undefined {
-  const scriptPath = process.argv[1];
-  if (!scriptPath) return undefined;
-  try {
-    const realScriptPath = realpathSync(scriptPath);
-    const scriptDir = path.dirname(realScriptPath);
-    const basename = path.basename(scriptDir);
-    if (basename === "dist" || basename === "src") return path.dirname(scriptDir);
-    return scriptDir;
-  } catch {
-    return undefined;
-  }
-}
-
-function findSeedDir(): string {
-  const packageRoot = packageRootCandidate();
-  const candidates = [
-    packageRoot ? path.join(packageRoot, "seed") : undefined,
-    path.resolve(process.cwd(), "seed"),
-  ].filter((entry): entry is string => Boolean(entry));
-
-  for (const candidate of candidates) {
-    if (existsSync(path.join(candidate, "WIKI_SCHEMA.md")) && existsSync(path.join(candidate, "templates", "markdown"))) {
-      return candidate;
-    }
-  }
-
-  throw new Error(`Could not locate bundled NixPI wiki seed. Checked: ${candidates.join(", ")}`);
-}
-
-function ensureDirectory(dir: string): boolean {
-  if (existsSync(dir)) {
-    if (!statSync(dir).isDirectory()) throw new Error(`Path exists but is not a directory: ${dir}`);
-    return false;
-  }
-  mkdirSync(dir, { recursive: true });
-  return true;
-}
-
-function copySeedMissing(srcDir: string, destDir: string, stats: InitStats): void {
-  for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
-    const src = path.join(srcDir, entry.name);
-    const dest = path.join(destDir, entry.name);
-    if (entry.isDirectory()) {
-      if (ensureDirectory(dest)) stats.createdDirs += 1;
-      copySeedMissing(src, dest, stats);
-      continue;
-    }
-    if (!entry.isFile()) continue;
-    if (existsSync(dest)) {
-      stats.skippedFiles += 1;
-      continue;
-    }
-    ensureDirectory(path.dirname(dest));
-    copyFileSync(src, dest);
-    stats.copiedFiles += 1;
-  }
-}
-
-function writeFileIfMissing(filePath: string, content: string, stats: InitStats): void {
-  if (existsSync(filePath)) {
-    stats.skippedFiles += 1;
-    return;
-  }
-  ensureDirectory(path.dirname(filePath));
-  writeFileSync(filePath, content, "utf8");
-  stats.copiedFiles += 1;
-}
-
-function canonicalWikiDirs(root: string): string[] {
-  return [
-    "pages/home",
-    "pages/planner/tasks",
-    "pages/planner/calendar",
-    "pages/planner/reminders",
-    "pages/planner/reviews",
-    "pages/projects",
-    "pages/areas",
-    "pages/resources/knowledge",
-    "pages/resources/people",
-    "pages/resources/technical",
-    "pages/sources",
-    "pages/journal/daily",
-    "pages/journal/weekly",
-    "pages/journal/monthly",
-    "pages/archives",
-    "meta",
-    "raw",
-  ].map((relativePath) => path.join(root, relativePath));
-}
-
-function renderInitText(stats: InitStats): string {
-  return [
-    `Initialized NixPI wiki root: ${stats.root}`,
-    `Seed: ${stats.seedDir}`,
-    `Workspace hint: ${stats.workspace}`,
-    `Default domain hint: ${stats.domain}`,
-    `Files copied: ${stats.copiedFiles}; existing files kept: ${stats.skippedFiles}; directories created: ${stats.createdDirs}`,
-    `Pages indexed: ${stats.pages}`,
-    "",
-    "Next shell setup:",
-    `  export NIXPI_WIKI_ROOT=${JSON.stringify(stats.root)}`,
-    `  export NIXPI_WIKI_WORKSPACE=${JSON.stringify(stats.workspace)}`,
-    `  export NIXPI_WIKI_DEFAULT_DOMAIN=${JSON.stringify(stats.domain)}`,
-    "",
-    "Next checks:",
-    "  nixpi-wiki context --format markdown",
-    "  nixpi-wiki doctor --json",
-  ].join("\n");
-}
-
 function runInit(args: string[]): void {
   const root = absolutePath(flagValue(args, "--root") ?? getWikiRoot());
   const workspace = flagValue(args, "--workspace") ?? process.env.NIXPI_WIKI_WORKSPACE ?? "nixpi";
   const domain = flagValue(args, "--domain") ?? process.env.NIXPI_WIKI_DEFAULT_DOMAIN ?? "technical";
-  const seedDir = findSeedDir();
-
-  const stats: InitStats = { root, workspace, domain, seedDir, copiedFiles: 0, skippedFiles: 0, createdDirs: 0, pages: 0 };
-  if (ensureDirectory(root)) stats.createdDirs += 1;
-  copySeedMissing(seedDir, root, stats);
-  for (const dir of canonicalWikiDirs(root)) {
-    if (ensureDirectory(dir)) stats.createdDirs += 1;
-  }
-  writeFileIfMissing(path.join(root, ".gitignore"), [
-    "# NixPI Wiki generated metadata",
-    "meta/registry.json",
-    "meta/backlinks.json",
-    "meta/index.md",
-    "meta/log.md",
-    "meta/fts.db",
-    "",
-  ].join("\n"), stats);
-
-  const artifacts = rebuildAllMeta(root);
-  stats.pages = artifacts.registry.pages.length;
+  const stats = initWikiRoot({ root, workspace, domain });
 
   if (hasFlag(args, "--json")) console.log(JSON.stringify({ ok: true, ...stats }, null, 2));
   else console.log(renderInitText(stats));
@@ -319,7 +160,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (["describe", "call", "mutate", "init", "context", "doctor", "setup-copilot"].includes(command) && (hasFlag(args, "--help") || hasFlag(args, "-h"))) {
+  if (["describe", "call", "mutate", "init", "context", "doctor"].includes(command) && (hasFlag(args, "--help") || hasFlag(args, "-h"))) {
     subcommandUsage(command, 0);
   }
 
@@ -393,15 +234,6 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (command === "setup-copilot") {
-    await runSetupCopilot({
-      root: flagValue(args, "--root"),
-      workspace: flagValue(args, "--workspace"),
-      domain: flagValue(args, "--domain"),
-      host: flagValue(args, "--host"),
-    });
-    return;
-  }
 
   usage(1);
 }

@@ -2,7 +2,7 @@
 
 This seed contains the harness-neutral plain-Markdown wiki schema, rules, object model, templates, and object schemas.
 
-Use this when bootstrapping a standalone workspace such as a work Copilot CLI wiki. It intentionally excludes deployment-specific host pages, client prompt-layer pages, local sources, and personal planner data.
+Use this when bootstrapping a standalone wiki workspace. It intentionally excludes deployment-specific host pages, client prompt-layer pages, local sources, and personal planner data.
 
 Recommended bootstrap shape:
 
