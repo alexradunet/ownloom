@@ -22,6 +22,7 @@ const minimalConfig = {
       enabled: true,
       host: "127.0.0.1",
       port: 8081,
+      clients: [{ id: "web-main", displayName: "Web", token: "secret-token", scopes: ["read", "write"] }],
     },
     whatsapp: {
       enabled: true,
@@ -41,7 +42,24 @@ test("validateGatewayConfig accepts the generated declarative config shape", () 
   assert.equal(config.gateway.statePath, "/var/lib/ownloom-gateway/gateway-state.json");
   assert.equal(config.pi.agentDir, "/home/alex/.pi/agent");
   assert.equal(config.transports.client?.port, 8081);
+  assert.equal(config.transports.client?.clients?.[0]?.id, "web-main");
   assert.equal(config.transports.whatsapp?.trustedNumbers[0], "whatsapp:+15550001111");
+});
+
+test("validateGatewayConfig rejects invalid client scopes", () => {
+  assert.throws(
+    () => validateGatewayConfig({
+      ...minimalConfig,
+      transports: {
+        ...minimalConfig.transports,
+        client: {
+          ...minimalConfig.transports.client,
+          clients: [{ id: "web", displayName: "Web", token: "secret", scopes: ["root"] }],
+        },
+      },
+    }),
+    /invalid scope root/,
+  );
 });
 
 test("validateGatewayConfig rejects removed Pi CLI fields", () => {
@@ -96,6 +114,11 @@ test("loadConfig parses YAML and validates it", () => {
         "    enabled: true",
         "    host: 127.0.0.1",
         "    port: 8081",
+        "    clients:",
+        "      - id: web-main",
+        "        displayName: Web Main",
+        "        token: secret-token",
+        "        scopes: ['read', 'write']",
         "  whatsapp:",
         "    enabled: true",
         "    trustedNumbers: ['+15550001111']",

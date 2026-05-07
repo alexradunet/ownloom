@@ -46,6 +46,9 @@
         }
         // lib.optionalAttrs (settings.transports.client.authToken != null) {
           inherit (settings.transports.client) authToken;
+        }
+        // lib.optionalAttrs (settings.transports.client.clients != []) {
+          inherit (settings.transports.client) clients;
         };
     };
 
@@ -217,7 +220,33 @@ in {
           authToken = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = "Pre-shared token protocol clients must send in the connect frame. Null disables auth (safe only behind a trusted loopback-only access path).";
+            description = "Global pre-shared token protocol clients may send in the connect frame. Prefer clients for named/scoped access.";
+          };
+
+          clients = lib.mkOption {
+            type = lib.types.listOf (lib.types.submodule {
+              options = {
+                id = lib.mkOption {
+                  type = lib.types.str;
+                  description = "Stable client identity id, e.g. web-main or phone-flutter.";
+                };
+                displayName = lib.mkOption {
+                  type = lib.types.str;
+                  description = "Human-readable client name for status/logging.";
+                };
+                token = lib.mkOption {
+                  type = lib.types.str;
+                  description = "Bearer/connect token for this client. Put real values in host-local private config.";
+                };
+                scopes = lib.mkOption {
+                  type = lib.types.listOf (lib.types.enum ["read" "write" "admin"]);
+                  default = ["read" "write"];
+                  description = "Protocol scopes granted to this client.";
+                };
+              };
+            });
+            default = [];
+            description = "Named protocol/v1 client identities. When non-empty, clients must authenticate with one of these tokens or authToken.";
           };
         };
 

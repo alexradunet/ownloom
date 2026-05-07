@@ -30,9 +30,9 @@ const WHATSAPP_RESET_HINT =
   "For anything that should survive future resets, ask naturally — for example: remember that …";
 
 // ── Identity configuration ──────────────────────────────────────────────────
-// Build identity entries from WhatsApp trusted/admin numbers.
-// Each trusted number gets an identity with admin scope (single-user gateway).
-// Future: load from a dedicated identity config section.
+// Build identity entries from configured transport credentials.
+// WhatsApp remains single-user/admin for now; protocol clients can be named
+// explicitly with per-client tokens and scopes.
 
 function buildIdentityEntries(config: ReturnType<typeof loadConfig>): IdentityEntry[] {
   const entries: IdentityEntry[] = [];
@@ -48,6 +48,17 @@ function buildIdentityEntries(config: ReturnType<typeof loadConfig>): IdentityEn
       });
     }
   }
+
+  const clients = config.transports.client?.clients ?? [];
+  for (const client of clients) {
+    entries.push({
+      id: client.id,
+      displayName: client.displayName,
+      scopes: client.scopes,
+      keys: [`token:${client.token}`],
+    });
+  }
+
   return entries;
 }
 

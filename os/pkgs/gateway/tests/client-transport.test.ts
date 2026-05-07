@@ -8,7 +8,7 @@ import { Store } from "../src/core/store.js";
 import { ClientTransport } from "../src/transport/client-transport.js";
 import type { InboundMessage } from "../src/core/types.js";
 import type { MethodContext } from "../src/protocol/methods.js";
-import type { Scope } from "../src/core/identity.js";
+import { SimpleIdentityResolver, type Scope } from "../src/core/identity.js";
 
 async function waitFor(predicate: () => boolean): Promise<void> {
   for (let i = 0; i < 20; i += 1) {
@@ -153,6 +153,65 @@ test("ClientTransport consumes attachment refs after successful agent run", asyn
     assert.equal(seen?.attachments?.[0]?.path, attachment.path);
     assert.equal(store.getAttachment(attachment.id), null);
     assert.equal(existsSync(attachment.path), false);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("ClientTransport rejects unknown tokens when named clients are configured", () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0, clients: [{ id: "web", displayName: "Web", token: "good", scopes: ["read", "write"] }] },
+      new Store(path.join(tmp, "state.json")),
+      new CommandRegistry(),
+      new SimpleIdentityResolver([{ id: "web", displayName: "Web", scopes: ["read", "write"], keys: ["token:good"] }]),
+    );
+
+    const responses: any[] = [];
+    let closed = false;
+    (transport as any).handleConnect(
+      { } as any,
+      "conn-1",
+      { type: "connect", protocol: 1, role: "operator", scopes: ["read"], auth: { token: "bad" } },
+      (frame: any) => responses.push(frame),
+      () => { closed = true; },
+      () => assert.fail("should not connect"),
+    );
+
+    assert.equal(closed, true);
+    assert.equal(responses[0].ok, false);
+    assert.equal(responses[0].error.code, "UNAUTHORIZED");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("ClientTransport accepts named client tokens and uses identity scopes", () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0, clients: [{ id: "web", displayName: "Web", token: "good", scopes: ["read"] }] },
+      new Store(path.join(tmp, "state.json")),
+      new CommandRegistry(),
+      new SimpleIdentityResolver([{ id: "web", displayName: "Web", scopes: ["read"], keys: ["token:good"] }]),
+    );
+
+    let connectedClient: any;
+    const responses: any[] = [];
+    (transport as any).handleConnect(
+      { } as any,
+      "conn-1",
+      { type: "connect", protocol: 1, role: "operator", scopes: ["read", "write", "admin"], auth: { token: "good" }, client: { id: "web-main" } },
+      (frame: any) => responses.push(frame),
+      () => assert.fail("should not close"),
+      (_chatId: string, client: any) => { connectedClient = client; },
+    );
+
+    assert.equal(responses[0].ok, true);
+    assert.equal(connectedClient.identity.id, "web");
+    assert.deepEqual(connectedClient.scopes, ["read"]);
+    assert.equal(connectedClient.clientId, "web-main");
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

@@ -290,7 +290,10 @@ export class ClientTransport implements GatewayTransport {
       return;
     }
 
-    if (this.config.authToken && frame.auth.token !== this.config.authToken) {
+    const identity = this.resolveTokenIdentity(frame.auth.token);
+    const hasClientIdentities = (this.config.clients?.length ?? 0) > 0;
+    const tokenMatchesGlobalAuth = !!this.config.authToken && frame.auth.token === this.config.authToken;
+    if ((this.config.authToken || hasClientIdentities) && !tokenMatchesGlobalAuth && !identity) {
       sendJson({
         type: "res",
         id: "connect",
@@ -301,7 +304,6 @@ export class ClientTransport implements GatewayTransport {
       return;
     }
 
-    const identity = this.resolveTokenIdentity(frame.auth.token);
     const chatId = `v1-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const client: ConnectedClient = {
       connId,

@@ -22,11 +22,19 @@ export type AudioTranscriptionConfig = {
   maxSeconds?: number;
 };
 
+export type ClientIdentityConfig = {
+  id: string;
+  displayName: string;
+  token: string;
+  scopes: Array<"read" | "write" | "admin">;
+};
+
 export type ClientTransportConfig = {
   enabled: boolean;
   host: string;
   port: number;
   authToken?: string;
+  clients?: ClientIdentityConfig[];
 };
 
 export type GatewayConfig = {
@@ -123,6 +131,21 @@ function validateClient(value: unknown): void {
   expectString(client.host, "transports.client.host");
   expectNumber(client.port, "transports.client.port");
   expectOptionalString(client.authToken, "transports.client.authToken");
+  if (client.clients === undefined || client.clients === null) return;
+  if (!Array.isArray(client.clients)) throw new Error("Invalid ownloom-gateway config: transports.client.clients must be an array.");
+  for (const [index, entry] of client.clients.entries()) {
+    const label = `transports.client.clients[${index}]`;
+    const identity = record(entry, label);
+    expectString(identity.id, `${label}.id`);
+    expectString(identity.displayName, `${label}.displayName`);
+    expectString(identity.token, `${label}.token`);
+    expectStringArray(identity.scopes, `${label}.scopes`);
+    for (const scope of identity.scopes as string[]) {
+      if (scope !== "read" && scope !== "write" && scope !== "admin") {
+        throw new Error(`Invalid ownloom-gateway config: ${label}.scopes contains invalid scope ${scope}.`);
+      }
+    }
+  }
 }
 
 function validateWhatsApp(value: unknown): void {

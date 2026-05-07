@@ -24,10 +24,27 @@ ws://127.0.0.1:<transports.client.port>/
 http://127.0.0.1:<transports.client.port>/api/v1/...
 ```
 
-If `transports.client.authToken` is configured:
+Authentication options:
 
-- WebSocket `connect.auth.token` must match it.
-- REST calls must include `Authorization: Bearer <token>`.
+- `transports.client.authToken` is a global pre-shared token.
+- `transports.client.clients` defines named client identities with individual tokens and scopes.
+- If either is configured, WebSocket `connect.auth.token` must match the global token or a named client token.
+- REST calls must include `Authorization: Bearer <token>` when the global token is configured. Named client REST auth is not implemented yet.
+
+Example named client config:
+
+```yaml
+transports:
+  client:
+    enabled: true
+    host: 127.0.0.1
+    port: 8081
+    clients:
+      - id: web-main
+        displayName: Web Main
+        token: change-me-in-private-config
+        scopes: [read, write]
+```
 
 ### Connect
 
