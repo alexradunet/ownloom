@@ -39,7 +39,7 @@ export class PlannerClient {
       body: `<?xml version="1.0" encoding="utf-8" ?>
 <C:mkcalendar xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
   <D:set><D:prop>
-    <D:displayname>Ownloom Planner</D:displayname>
+    <D:displayname>ownloom Planner</D:displayname>
     <C:supported-calendar-component-set><C:comp name="VTODO"/><C:comp name="VEVENT"/></C:supported-calendar-component-set>
   </D:prop></D:set>
 </C:mkcalendar>`,

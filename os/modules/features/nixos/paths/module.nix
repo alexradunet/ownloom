@@ -36,7 +36,7 @@ in {
       type = lib.types.enum ["common" "server" "workstation" "laptop"];
       default = "common";
       description = ''
-        High-level Ownloom role for this host. Role modules set this for
+        High-level ownloom role for this host. Role modules set this for
         diagnostics, assertions, documentation, and generated context.
       '';
     };
@@ -46,7 +46,7 @@ in {
         type = lib.types.str;
         default = "human";
         description = ''
-          Primary human/operator username for Ownloom services and user-scoped paths.
+          Primary human/operator username for ownloom services and user-scoped paths.
           Hosts may override this to a real local account name such as "alex".
         '';
         example = "alex";
@@ -57,7 +57,7 @@ in {
         default = "/home/${cfg.human.name}";
         defaultText = lib.literalExpression ''"/home/${config.ownloom.human.name}"'';
         description = ''
-          Home directory of the primary human/operator Ownloom user.
+          Home directory of the primary human/operator ownloom user.
           Defaults to /home/<ownloom.human.name>.
         '';
         example = "/home/alex";
@@ -88,13 +88,13 @@ in {
 
     root = lib.mkOption {
       type = lib.types.str;
-      default = "${cfg.human.homeDirectory}/Ownloom";
+      default = "${cfg.human.homeDirectory}/ownloom";
       description = ''
-        Absolute path to the Ownloom root directory.
+        Absolute path to the ownloom root directory.
         All other ownloom.* paths derive from this by default.
-        Change this to relocate the entire Ownloom workspace.
+        Change this to relocate the entire ownloom workspace.
       '';
-      example = "/home/your-user/Ownloom";
+      example = "/home/your-user/ownloom";
     };
 
     repos = lib.mkOption {
@@ -110,7 +110,7 @@ in {
         }
       '';
       description = ''
-        Attribute set of absolute paths to Ownloom source trees.
+        Attribute set of absolute paths to ownloom source trees.
         Defaults derive from the root monorepo checkout.
       '';
     };

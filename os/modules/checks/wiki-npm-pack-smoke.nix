@@ -85,7 +85,7 @@ buildNpmPackage {
   '';
 
   meta = {
-    description = "Ownloom Wiki npm pack/install smoke test";
+    description = "ownloom Wiki npm pack/install smoke test";
     license = lib.licenses.mit;
   };
 }

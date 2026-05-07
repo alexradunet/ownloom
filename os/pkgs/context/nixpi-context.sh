@@ -20,7 +20,7 @@ while [ "$#" -gt 0 ]; do
       cat <<'EOF'
 Usage: ownloom-context [--format markdown|json] [--health]
 
-Print the current Ownloom agent context for prompt injection.
+Print the current ownloom agent context for prompt injection.
 
 Compatibility: nixpi-context remains available as a temporary wrapper.
 --health includes a composite health snapshot (OS gen, containers, disk, load).
@@ -47,7 +47,7 @@ if [ -z "$current_host" ]; then
   current_host="${HOSTNAME:-nixos}"
 fi
 
-ownloom_root="${OWNLOOM_ROOT:-${NIXPI_ROOT:-${HOME:-/tmp}/Ownloom}}"
+ownloom_root="${OWNLOOM_ROOT:-${NIXPI_ROOT:-${HOME:-/tmp}/ownloom}}"
 if [ ! -d "$ownloom_root" ] && [ -d "${HOME:-/tmp}/NixPI" ]; then
   ownloom_root="${HOME:-/tmp}/NixPI"
 fi
@@ -78,10 +78,10 @@ case ", $fleet_hosts," in
 esac
 
 planner_policy='[OWNLOOM PLANNER INFRASTRUCTURE]
-The canonical live task/reminder/calendar system is the standards-based Ownloom planner backend: CalDAV/iCalendar VTODO/VEVENT/VALARM served by Radicale on nixpi-vps. Current safe endpoint is loopback-only at http://127.0.0.1:5232/. Direct phone CalDAV access is intentionally deferred; canonical access should be through WhatsApp, Pi, and the upcoming small Ownloom web view/API. Do not create new wiki Markdown task/reminder pages as the source of truth for live operational items unless the user explicitly asks for a wiki/archive note. Use the wiki for summaries, reviews, decisions, and project context. Use ownloom-planner for live task/reminder/event operations.'
+The canonical live task/reminder/calendar system is the standards-based ownloom planner backend: CalDAV/iCalendar VTODO/VEVENT/VALARM served by Radicale on nixpi-vps. Current safe endpoint is loopback-only at http://127.0.0.1:5232/. Direct phone CalDAV access is intentionally deferred; canonical access should be through WhatsApp, Pi, and the upcoming small ownloom web view/API. Do not create new wiki Markdown task/reminder pages as the source of truth for live operational items unless the user explicitly asks for a wiki/archive note. Use the wiki for summaries, reviews, decisions, and project context. Use ownloom-planner for live task/reminder/event operations.'
 
 cli_policy='[OWNLOOM CLI TOOLS]
-Prefer Ownloom CLIs over harness-specific tools so the workflow stays agent-agnostic.
+Prefer ownloom CLIs over harness-specific tools so the workflow stays agent-agnostic.
 - ownloom-context --format markdown|json [--health]: print live agent context with optional health snapshot.
 - ownloom-config (use skill ownloom-config): inspect, validate, and apply this host config. Run validate before apply. Confirm with Alex before apply.
 - Use standard git commit/push for publishing changes.
@@ -144,7 +144,7 @@ fleet_block="[OWNLOOM FLEET HOST MODE]
 Current host: $current_host
 Known fleet hosts: $fleet_hosts
 Current host is declared in fleet: $fleet_membership
-Every Pi agent and subagent must preserve this host identity when diagnosing, editing, rebuilding, or discussing Ownloom state. Do not assume another fleet host unless the user explicitly names it.
+Every Pi agent and subagent must preserve this host identity when diagnosing, editing, rebuilding, or discussing ownloom state. Do not assume another fleet host unless the user explicitly names it.
 
 [OS CONTEXT]
 Current host: $current_host

@@ -107,7 +107,7 @@ export function todoIcs(args: {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Ownloom//Planner//EN",
+    "PRODID:-//ownloom//Planner//EN",
     "BEGIN:VTODO",
     `UID:${escapeText(args.uid)}`,
     `DTSTAMP:${stamp()}`,
@@ -149,7 +149,7 @@ export function eventIcs(args: {
   return serialize([
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Ownloom//Planner//EN",
+    "PRODID:-//ownloom//Planner//EN",
     "BEGIN:VEVENT",
     `UID:${escapeText(args.uid)}`,
     `DTSTAMP:${stamp()}`,

@@ -1,19 +1,19 @@
-# Ownloom Wiki
+# ownloom Wiki
 
 Portable plain-Markdown LLM wiki CLI and core tools.
 
-Ownloom Wiki is a memory substrate only. It stores, searches, lints, ingests, captures session summaries, and rebuilds wiki knowledge. It does not own identity, voice, client-session policy, or deployment-specific tools.
+ownloom Wiki is a memory substrate only. It stores, searches, lints, ingests, captures session summaries, and rebuilds wiki knowledge. It does not own identity, voice, client-session policy, or deployment-specific tools.
 
 ## CLI
 
 ```bash
 ownloom-wiki list
-ownloom-wiki init --root ~/Ownloom/work-wiki --workspace work --domain work
+ownloom-wiki init --root ~/ownloom/work-wiki --workspace work --domain work
 ownloom-wiki context --format markdown
 ownloom-wiki call wiki_status '{"domain":"work"}'
 ownloom-wiki call wiki_search '{"query":"memory","domain":"work"}'
 ownloom-wiki mutate wiki_ingest '{"content":"note","channel":"journal"}'
-ownloom-wiki mutate wiki_session_capture '{"summary":"Worked on Ownloom wiki docs."}'
+ownloom-wiki mutate wiki_session_capture '{"summary":"Worked on ownloom wiki docs."}'
 ```
 
 ## Environment
@@ -26,7 +26,7 @@ OWNLOOM_WIKI_HOST=workstation
 OWNLOOM_WIKI_BODY_SEARCH_BIN=rga
 ```
 
-If `OWNLOOM_WIKI_ROOT` is not set, Ownloom Wiki uses:
+If `OWNLOOM_WIKI_ROOT` is not set, ownloom Wiki uses:
 
 ```text
 ~/wiki
@@ -54,8 +54,8 @@ npx ownloom-wiki init --root ./wiki --workspace work --domain work
 ## Initialize a wiki
 
 ```bash
-ownloom-wiki init --root ~/Ownloom/work-wiki --workspace work --domain work
-export OWNLOOM_WIKI_ROOT="$HOME/Ownloom/work-wiki"
+ownloom-wiki init --root ~/ownloom/work-wiki --workspace work --domain work
+export OWNLOOM_WIKI_ROOT="$HOME/ownloom/work-wiki"
 export OWNLOOM_WIKI_WORKSPACE="work"
 export OWNLOOM_WIKI_DEFAULT_DOMAIN="work"
 ownloom-wiki doctor --json
@@ -79,4 +79,4 @@ wiki_decay_pass
 wiki_session_capture
 ```
 
-Deployment-specific audits, system operations, identity/voice layers, and client adapters belong in packages that depend on Ownloom Wiki.
+Deployment-specific audits, system operations, identity/voice layers, and client adapters belong in packages that depend on ownloom Wiki.

@@ -22,7 +22,7 @@ in {
   ];
 
   options.services.ownloom-health-snapshot = {
-    enable = lib.mkEnableOption "Ownloom host health snapshot timer";
+    enable = lib.mkEnableOption "ownloom host health snapshot timer";
 
     serviceName = lib.mkOption {
       type = lib.types.str;
@@ -66,7 +66,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     systemd.services.${cfg.serviceName} = {
-      description = "Write a read-only Ownloom host health snapshot";
+      description = "Write a read-only ownloom host health snapshot";
       serviceConfig = {
         Type = "oneshot";
         User = humanName;
@@ -90,7 +90,7 @@ in {
         out=${outPath}
         tmp="$out.tmp"
         {
-          echo "# Ownloom host health snapshot"
+          echo "# ownloom host health snapshot"
           echo "timestamp=$(date -Is)"
           echo "host=${config.networking.hostName}"
           echo

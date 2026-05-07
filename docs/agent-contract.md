@@ -1,10 +1,10 @@
-# Ownloom Agent Contract
+# ownloom Agent Contract
 
-This document defines what an AI agent adapter must provide to participate in Ownloom. PI is the only implemented adapter today; future adapters should satisfy the same contract without changing the shared Ownloom core.
+This document defines what an AI agent adapter must provide to participate in ownloom. PI is the only implemented adapter today; future adapters should satisfy the same contract without changing the shared ownloom core.
 
 ## Goals
 
-- Keep Ownloom capabilities independent of any one agent harness.
+- Keep ownloom capabilities independent of any one agent harness.
 - Put operational behavior in CLIs, not in agent-specific SDK code.
 - Make a future agent adapter a small NixOS module plus prompt/hook files.
 - Preserve PI as the default and only shipped agent for now.
@@ -12,9 +12,9 @@ This document defines what an AI agent adapter must provide to participate in Ow
 
 ## Shared core surface
 
-The shared Ownloom surface is CLI-first. An agent must be able to call these commands from its normal shell/tool environment:
+The shared ownloom surface is CLI-first. An agent must be able to call these commands from its normal shell/tool environment:
 
-- `ownloom-context --format markdown|json [--health]` — print live Ownloom context for prompt injection.
+- `ownloom-context --format markdown|json [--health]` — print live ownloom context for prompt injection.
 - `ownloom-wiki` — search, inspect, ingest, lint, and update the Markdown wiki.
 - `ownloom-planner` — manage live tasks, reminders, and calendar items through CalDAV/iCalendar.
 - Standard Nix/Git/systemd tools — `git`, `nix flake check`, `nixos-rebuild`, and `systemctl` for repository, validation, deployment, and service work.
@@ -23,10 +23,10 @@ Operational workflows that used to be wrapper CLIs now live as skills under `os/
 
 ## Context requirements
 
-At session start, every agent should receive equivalent Ownloom context:
+At session start, every agent should receive equivalent ownloom context:
 
 - Current host identity and known fleet hosts.
-- Canonical Ownloom flake path.
+- Canonical ownloom flake path.
 - CLI tool contract and safety guidance.
 - Wiki operating rules and tool usage guidance.
 - Technical wiki digest.
@@ -79,7 +79,7 @@ The shared CLIs must enforce critical allowlists so weaker future agents still i
 
 ## Adapter checklist
 
-A new agent adapter is viable when it can do the following without changing shared Ownloom CLIs:
+A new agent adapter is viable when it can do the following without changing shared ownloom CLIs:
 
 1. Install or reference the agent through a NixOS module.
 2. Inject `ownloom-context --format markdown` or equivalent JSON-rendered context at session start.
@@ -96,7 +96,7 @@ A new agent adapter is viable when it can do the following without changing shar
 
 A capable adapter should map these concepts to the host harness:
 
-| Ownloom concept | PI today | Future adapter examples |
+| ownloom concept | PI today | Future adapter examples |
 |---|---|---|
 | Session context | `before_agent_start` runs `ownloom-context` | Session-start hook, generated instruction file, system-prompt file |
 | Tool/write guard | `tool_call` hook for wiki protected paths | Pre-tool hook, sandbox/permission profile, CLI enforcement |

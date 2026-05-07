@@ -32,7 +32,7 @@
     lib.concatMapStringsSep "\n" (name: ''
       if [ ! -d ${lib.escapeShellArg extensionSources.${name}} ]; then
         echo "ownloom-pi-settings: missing PI extension source ${name}: ${extensionSources.${name}}" >&2
-        echo "ownloom-pi-settings: sync the Ownloom checkout before activating this host, or remove the extension from ownloom.pi.extensions." >&2
+        echo "ownloom-pi-settings: sync the ownloom checkout before activating this host, or remove the extension from ownloom.pi.extensions." >&2
         exit 1
       fi
     '')
@@ -49,7 +49,7 @@ in {
       example = ["ownloom"];
       description = ''
         Declaratively enabled PI extensions. Names map to local extension source
-        directories under the Ownloom checkout and are merged into
+        directories under the ownloom checkout and are merged into
         ~/.pi/agent/settings.json during activation.
       '';
     };

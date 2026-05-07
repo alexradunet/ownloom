@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <title>Ownloom</title>
+  <title>ownloom</title>
   <style>
     :root {
       --text: #111111;
@@ -191,7 +191,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
   </div>
-  <span class="toolbar-title" id="toolbar-title">Ownloom</span>
+  <span class="toolbar-title" id="toolbar-title">ownloom</span>
   <div class="toolbar-right">
     <button id="btn-theme" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
       <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -203,10 +203,10 @@
 
 <div class="chat" id="chat">
   <div class="messages" id="messages">
-    <div class="empty">Start a conversation with Ownloom</div>
+    <div class="empty">Start a conversation with ownloom</div>
   </div>
   <div class="input-bar">
-    <textarea id="input" placeholder="Message Ownloom…" rows="1"></textarea>
+    <textarea id="input" placeholder="Message ownloom…" rows="1"></textarea>
     <button id="action-btn" class="action-btn send" aria-label="Send">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9"/></svg>
     </button>
@@ -348,7 +348,7 @@ function genTitle(msgs) {
 function renderMessages() {
   const display = [...messages];
   if (streaming && buf) display.push({ role: "assistant", content: buf, partial: true });
-  if (display.length === 0) { msgsEl.innerHTML = `<div class="empty">Start a conversation with Ownloom</div>`; return; }
+  if (display.length === 0) { msgsEl.innerHTML = `<div class="empty">Start a conversation with ownloom</div>`; return; }
   msgsEl.innerHTML = display.map(m => `<div class="msg msg-${m.role}${m.partial ? " msg-partial" : ""}">${esc(m.content)}</div>`).join("");
   msgsEl.scrollTop = msgsEl.scrollHeight;
 }
@@ -393,7 +393,7 @@ overlay.addEventListener("click", closeDrawer);
 document.getElementById("btn-new").addEventListener("click", () => {
   sessionId = null; messages = []; streaming = false; buf = "";
   const url = new URL(location.href); url.search = ""; history.replaceState({},"",url);
-  renderMessages(); titleEl.textContent = "Ownloom";
+  renderMessages(); titleEl.textContent = "ownloom";
 });
 
 async function refreshSessionList() {
@@ -416,7 +416,7 @@ async function refreshSessionList() {
       const s = await SessionStore.get(id); if (!s) return;
       sessionId = id; messages = s.messages.map(m => ({...m, partial: false}));
       const u = new URL(location.href); u.searchParams.set("session", id); history.replaceState({},"",u);
-      renderMessages(); titleEl.textContent = s.title || "Ownloom"; closeDrawer();
+      renderMessages(); titleEl.textContent = s.title || "ownloom"; closeDrawer();
     });
   });
   drawerBody.querySelectorAll(".del-btn").forEach(btn => {
@@ -432,7 +432,7 @@ import("./main.js").catch(()=>{});  // no-op, prevents module boundary warning
   const s = await SessionStore.get(id);
   if (!s) { document.getElementById("btn-new").click(); return; }
   sessionId = id; messages = s.messages.map(m => ({...m, partial: false}));
-  renderMessages(); titleEl.textContent = s.title || "Ownloom";
+  renderMessages(); titleEl.textContent = s.title || "ownloom";
 })();
 
 /* ── Prevent module boundary error (we're in <script type="module">) ─────── */

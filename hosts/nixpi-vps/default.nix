@@ -207,7 +207,7 @@ in {
         difficulty = 2; # normal
         gamemode = 0; # survival
         max-players = 20;
-        motd = "Ownloom Minecraft — stay humble";
+        motd = "ownloom Minecraft — stay humble";
         white-list = true;
         allow-cheats = false;
         spawn-protection = 16;
@@ -282,7 +282,7 @@ in {
           schedule = "*-*-* 08:00:00";
           model = "ollama/gemma3:4b";
           fallbackModel = "synthetic/hf:moonshotai/Kimi-K2.6";
-          systemPrompt = "You are Ownloom, Alex's personal AI assistant. Be concise and proactive.";
+          systemPrompt = "You are ownloom, Alex's personal AI assistant. Be concise and proactive.";
           userPrompts = [
             "Good morning Alex! Today is $(date +%Y-%m-%d). Host: ${config.networking.hostName}."
             ""
@@ -295,7 +295,7 @@ in {
             "6. Run ownloom-context --health from the shell and flag any anomalies (disk, load, services)"
             ""
             "Format: ⚠️ Overdue | 📋 Today | 📅 Upcoming | 🚀 Projects | 🔧 System"
-            "Keep each section to 2-3 bullets. End with: — Ownloom"
+            "Keep each section to 2-3 bullets. End with: — ownloom"
             "Finally: call wiki_daily action=append to log delivery."
           ];
           enabledTools = "ownloom_planner,wiki_search,wiki_daily";
@@ -304,7 +304,7 @@ in {
         weeklyReview = {
           enable = true;
           schedule = "Sun *-*-* 18:00:00";
-          systemPrompt = "You are Ownloom, Alex's personal AI assistant. Help Alex reflect on the past week.";
+          systemPrompt = "You are ownloom, Alex's personal AI assistant. Help Alex reflect on the past week.";
           userPrompts = [
             "Weekly review prompt for Alex — $(date +%Y-%m-%d)."
             ""
@@ -314,7 +314,7 @@ in {
             "4. Summarize: What got done? What's blocked? What needs a decision?"
             ""
             "Keep it conversational and actionable. Surface the 1-2 most important things for next week."
-            "End with: — Ownloom"
+            "End with: — ownloom"
           ];
           enabledTools = "ownloom_planner,wiki_search,wiki_daily";
         };
@@ -322,7 +322,7 @@ in {
         monthlyDecayPass = {
           enable = true;
           schedule = "*-*-01 03:00:00";
-          systemPrompt = "You are Ownloom, running a scheduled maintenance pass. Be terse and factual.";
+          systemPrompt = "You are ownloom, running a scheduled maintenance pass. Be terse and factual.";
           userPrompts = [
             "Monthly wiki decay pass — $(date +%Y-%m-%d)."
             ""

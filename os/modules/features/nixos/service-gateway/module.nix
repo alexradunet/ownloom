@@ -63,7 +63,7 @@ in {
   ];
 
   options.services.ownloom-gateway = {
-    enable = lib.mkEnableOption "Ownloom generic transport gateway";
+    enable = lib.mkEnableOption "ownloom generic transport gateway";
 
     package = lib.mkPackageOption pkgs "ownloom-gateway" {};
 
@@ -77,7 +77,7 @@ in {
       type = lib.types.str;
       default = config.ownloom.human.name;
       defaultText = lib.literalExpression "config.ownloom.human.name";
-      description = "User account that runs the gateway. Defaults to the primary Ownloom human/operator user.";
+      description = "User account that runs the gateway. Defaults to the primary ownloom human/operator user.";
     };
 
     group = lib.mkOption {
@@ -176,7 +176,7 @@ in {
           type = lib.types.str;
           default = config.ownloom.root;
           defaultText = lib.literalExpression "config.ownloom.root";
-          description = "Working directory for pi sessions. Defaults to the Ownloom root.";
+          description = "Working directory for pi sessions. Defaults to the ownloom root.";
         };
 
         agentDir = lib.mkOption {
@@ -221,7 +221,7 @@ in {
           staticDir = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = "Optional path to a built web UI to serve over HTTP. When unset the gateway serves the bundled-in Ownloom cockpit. This option is only needed for a custom dev build or external UI.";
+            description = "Optional path to a built web UI to serve over HTTP. When unset the gateway serves the bundled-in ownloom cockpit. This option is only needed for a custom dev build or external UI.";
           };
 
           authToken = lib.mkOption {
@@ -373,7 +373,7 @@ in {
     ];
 
     systemd.services.ownloom-gateway = {
-      description = "Ownloom generic transport gateway";
+      description = "ownloom generic transport gateway";
       after = ["network.target"];
       wantedBy = ["multi-user.target"];
       path = [

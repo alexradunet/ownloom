@@ -1,12 +1,12 @@
-# Ownloom rebrand plan
+# ownloom rebrand plan
 
-This repository is being rebranded from **NixPI** to **Ownloom**.
+This repository is being rebranded from **NixPI** to **ownloom**.
 
 Current branch: `rebrand-ownloom`.
 
 ## Scope decisions
 
-- Project/user-facing brand changes from `NixPI` to `Ownloom`.
+- Project/user-facing brand changes from `NixPI` to `ownloom`.
 - Program/package/service/env names change from `nixpi-*` / `NIXPI_*` to `ownloom-*` / `OWNLOOM_*`.
 - Keep the live host identity `nixpi-vps` during the first migration. Rename to `ownloom-vps` only in a later dedicated host migration.
 - Keep temporary compatibility wrappers/aliases for old `nixpi-*` CLI names until the rebrand is fully deployed and agent context is updated.
@@ -16,7 +16,7 @@ Current branch: `rebrand-ownloom`.
 
 | Old | New |
 | --- | --- |
-| `NixPI` | `Ownloom` |
+| `NixPI` | `ownloom` |
 | `nixpi` | `ownloom` |
 | `NIXPI` | `OWNLOOM` |
 | `nixpi-wiki` | `ownloom-wiki` |
@@ -83,7 +83,7 @@ nix flake check --accept-flake-config
 
 ## Phase 2 — flake/package attribute migration
 
-Add Ownloom package/app names while keeping old aliases.
+Add ownloom package/app names while keeping old aliases.
 
 Target end state:
 
@@ -162,7 +162,7 @@ nix flake check --accept-flake-config
 
 ## Phase 5 — NixOS option/module migration
 
-Move from NixPI option namespaces to Ownloom namespaces while preserving deprecation aliases where feasible.
+Move from NixPI option namespaces to ownloom namespaces while preserving deprecation aliases where feasible.
 
 Target examples:
 
@@ -219,13 +219,15 @@ Rename skill directories and content.
 
 Target examples:
 
-- `os/skills/nixpi-config` → `os/skills/ownloom-config`
-- `os/skills/nixpi-audit` → `os/skills/ownloom-audit`
-- `os/skills/nixpi-svc` → `os/skills/ownloom-svc`
+- [x] `os/skills/nixpi-config` → `os/skills/ownloom-config`
+- [x] `os/skills/nixpi-audit` → `os/skills/ownloom-audit`
+- [x] `os/skills/nixpi-svc` → `os/skills/ownloom-svc`
+- [x] `os/skills/nixpi-reboot` → `os/skills/ownloom-reboot`
+- [x] `os/skills/nixpi-evolution` → `os/skills/ownloom-evolution`
 
 Compatibility decision:
 
-- If Pi skill discovery depends directly on directory names, keep old skill directories briefly as stub migration docs or aliases if supported.
+- If Pi skill discovery depends directly on directory names, keep old skill directories briefly as stub migration docs or aliases if supported. Current migration renames the directories and does not keep stubs.
 
 Validation:
 
@@ -236,14 +238,14 @@ Validation:
 
 After code and deployed services work:
 
-- [ ] Optionally rename checkout path `/home/alex/NixPI` → `/home/alex/Ownloom` or `/home/alex/ownloom`.
-- [ ] Update agent memory and wiki pages from NixPI to Ownloom.
-- [ ] Update future prompt/context output to say Ownloom.
+- [ ] Optionally rename checkout path `/home/alex/NixPI` → `/home/alex/ownloom` or `/home/alex/ownloom`.
+- [ ] Update agent memory and wiki pages from NixPI to ownloom.
+- [ ] Update future prompt/context output to say ownloom.
 - [ ] Keep historical notes as-is unless they affect current operations.
 
 ## Phase 9 — optional host rename, separate migration
 
-Deferred. Rename `nixpi-vps` only after Ownloom packages/services/options are stable.
+Deferred. Rename `nixpi-vps` only after ownloom packages/services/options are stable.
 
 Potential target:
 
@@ -284,13 +286,13 @@ Then ask Alex for explicit confirmation before switching the system.
 
 ## Suggested commit sequence
 
-1. `docs: add Ownloom rebrand plan`
-2. `docs: rebrand user-facing NixPI text to Ownloom`
+1. `docs: add ownloom rebrand plan`
+2. `docs: rebrand user-facing NixPI text to ownloom`
 3. `nix: add ownloom package and app aliases`
 4. `cli: expose ownloom command names with nixpi compatibility wrappers`
-5. `gateway: migrate branding and env names to Ownloom`
-6. `planner: migrate branding and env names to Ownloom`
-7. `nixos: add Ownloom service and option names`
-8. `skills: rename NixPI skills to Ownloom`
-9. `docs: update operational workflow for Ownloom`
+5. `gateway: migrate branding and env names to ownloom`
+6. `planner: migrate branding and env names to ownloom`
+7. `nixos: add ownloom service and option names`
+8. `skills: rename NixPI skills to ownloom`
+9. `docs: update operational workflow for ownloom`
 10. Optional later: `hosts: rename nixpi-vps to ownloom-vps`

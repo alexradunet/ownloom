@@ -9,7 +9,7 @@ runCommand "ownloom-wiki-stale-identities" {
   cd ${../../../..}
 
   # Keep the packaged wiki core free of stale private/fleet identities
-  # without forbidding intentional Ownloom branding or test fixtures.
+  # without forbidding intentional ownloom branding or test fixtures.
   ! rg -ni --glob '!**/tests/**' --glob '!**/*.md' \
     '/home/alex|vps-nixos|evo-nixos|nixpi-mini-pc|syncthing|personal-second-brain|pi_llm|nixpi-tool|assistant-profile' \
     os/pkgs/wiki

@@ -1,8 +1,8 @@
-# Ownloom PI Adapter
+# ownloom PI Adapter
 
-Thin PI harness adapter for Ownloom.
+Thin PI harness adapter for ownloom.
 
-PI remains the only shipped Ownloom agent today, but this package should stay small and adapter-specific. Shared behavior belongs in `ownloom-*` CLIs and Markdown/context files, not here.
+PI remains the only shipped ownloom agent today, but this package should stay small and adapter-specific. Shared behavior belongs in `ownloom-*` CLIs and Markdown/context files, not here.
 
 ## Contents
 

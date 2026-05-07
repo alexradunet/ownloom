@@ -13,7 +13,7 @@
     ownloom-planner = planner;
 
     # Transitional aliases. Keep these until all host config, skills, and
-    # agent context have moved to Ownloom names.
+    # agent context have moved to ownloom names.
     nixpi-wiki = wiki;
     nixpi-context = context;
     nixpi-gateway = gateway;

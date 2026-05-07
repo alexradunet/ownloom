@@ -12,32 +12,32 @@ in {
   imports = [../paths/module.nix];
 
   options.ownloom.primaryUser = {
-    enable = lib.mkEnableOption "the primary Ownloom normal user" // {default = true;};
+    enable = lib.mkEnableOption "the primary ownloom normal user" // {default = true;};
 
     description = lib.mkOption {
       type = lib.types.str;
       default = config.ownloom.owner.displayName;
       defaultText = lib.literalExpression "config.ownloom.owner.displayName";
-      description = "GECOS description for the primary Ownloom user.";
+      description = "GECOS description for the primary ownloom user.";
     };
 
     extraGroups = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = ["wheel" "git"];
-      description = "Supplementary groups for the primary Ownloom user.";
+      description = "Supplementary groups for the primary ownloom user.";
     };
 
     authorizedKeys = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = config.ownloom.owner.sshKeys;
       defaultText = lib.literalExpression "config.ownloom.owner.sshKeys";
-      description = "SSH public keys authorized for the primary Ownloom user.";
+      description = "SSH public keys authorized for the primary ownloom user.";
     };
 
     shell = lib.mkOption {
       type = lib.types.package;
       default = pkgs.bashInteractive;
-      description = "Login shell package for the primary Ownloom user.";
+      description = "Login shell package for the primary ownloom user.";
     };
 
     password = {
@@ -45,7 +45,7 @@ in {
         type = lib.types.enum ["locked" "hashed" "sops"];
         default = "locked";
         description = ''
-          Password provisioning mode for the primary Ownloom user.
+          Password provisioning mode for the primary ownloom user.
 
           - locked: disable password login by setting a locked password hash.
           - hashed: use ownloom.primaryUser.password.hashedPassword directly.
@@ -72,7 +72,7 @@ in {
         type = lib.types.enum ["passwordless" "allowlist" "password"];
         default = "passwordless";
         description = ''
-          Sudo policy for the primary Ownloom user.
+          Sudo policy for the primary ownloom user.
 
           - passwordless: allow all sudo commands with NOPASSWD.
           - allowlist: allow only sudo.allowlistCommands with NOPASSWD.
@@ -102,7 +102,7 @@ in {
           || cfg.authorizedKeys != []
           || config.services.openssh.settings.PasswordAuthentication or false
           || config.services.openssh.settings.KbdInteractiveAuthentication or false;
-        message = "OpenSSH is enabled for the primary Ownloom user, but no SSH keys are configured and password authentication is disabled. Set ownloom.owner.sshKeys or disable OpenSSH for generic builds.";
+        message = "OpenSSH is enabled for the primary ownloom user, but no SSH keys are configured and password authentication is disabled. Set ownloom.owner.sshKeys or disable OpenSSH for generic builds.";
       }
       {
         assertion = cfg.password.mode != "hashed" || cfg.password.hashedPassword != null;

@@ -48,7 +48,7 @@
     '';
 
   mkTaskService = name: task: {
-    description = "Ownloom proactive task: ${name}";
+    description = "ownloom proactive task: ${name}";
     serviceConfig = {
       Type = "oneshot";
       User = userName;
@@ -209,7 +209,7 @@ in {
   ];
 
   options.services.ownloom-proactive-timers = {
-    enable = lib.mkEnableOption "Ownloom proactive timer tasks";
+    enable = lib.mkEnableOption "ownloom proactive timer tasks";
 
     syntheticApiKeyFile = lib.mkOption {
       type = lib.types.str;

@@ -16,7 +16,7 @@ const WHATSAPP_SYSTEM_PROMPT_ADDENDUM = [
   "This prompt came from a trusted WhatsApp chat.",
   "Treat WhatsApp as a full-featured transport into Pi, equivalent to the TUI — all tools and extensions are available.",
   "Keep replies concise and mobile-friendly; avoid large code blocks or tables unless explicitly asked.",
-  "Use domain=personal for personal life/wiki work; use domain=technical for Ownloom/system work.",
+  "Use domain=personal for personal life/wiki work; use domain=technical for ownloom/system work.",
   "Before executing privileged, destructive, or irreversible actions (rebuild, apply, reboot, push, delete), ask the user to confirm explicitly in the chat.",
 ].join(" ");
 
@@ -112,7 +112,7 @@ async function main(): Promise<void> {
     console.log("WhatsApp reminder delivery worker started");
   }
 
-  console.log(`Ownloom gateway started with agent=${agent.name} transports: ${transports.map((t) => t.name).join(", ")}`);
+  console.log(`ownloom gateway started with agent=${agent.name} transports: ${transports.map((t) => t.name).join(", ")}`);
 
   await Promise.all(
     transports.map((transport) =>

@@ -1,6 +1,6 @@
-# Ownloom
+# ownloom
 
-Ownloom is a personal NixOS monorepo for one VPS-centered host. It bundles the host configuration, reusable OS modules, local agent runtime packages (`pi`, `ownloom-planner`, `ownloom-gateway`, `ownloom-wiki`, …), and agent skills into a single flake.
+ownloom is a personal NixOS monorepo for one VPS-centered host. It bundles the host configuration, reusable OS modules, local agent runtime packages (`pi`, `ownloom-planner`, `ownloom-gateway`, `ownloom-wiki`, …), and agent skills into a single flake.
 
 The wiki/notes content is intentionally **not** part of this repository — it lives at `~/wiki` on the host and is never published.
 
@@ -28,7 +28,7 @@ nix flake check --accept-flake-config
 sudo nixos-rebuild switch --flake .#nixpi-vps --accept-flake-config
 ```
 
-Agents should follow the Ownloom config skill workflow for the full status → diff → validate → confirm → apply workflow. During the transition, existing `nixpi-*` command and skill names may still exist as compatibility aliases; prefer `ownloom-*` for new work.
+Agents should follow the ownloom config skill workflow for the full status → diff → validate → confirm → apply workflow. During the transition, existing `nixpi-*` command and skill names may still exist as compatibility aliases; prefer `ownloom-*` for new work.
 
 For a manual remote deploy from a workstation, set the target host explicitly:
 
@@ -49,7 +49,7 @@ Stable host secrets live in encrypted `sops-nix` files under `hosts/nixpi-vps/se
 
 - `hosts/nixpi-vps/networking.private.nix` — VPS WAN address + gateway (TEST-NET-3 placeholder)
 - `hosts/nixpi-vps/secrets.private.nix` — code-server argon2 hash (placeholder)
-- `hosts/nixpi-vps/nixpi-gateway.private.nix` — WhatsApp transport owner numbers (disabled by default; file rename deferred)
+- `hosts/nixpi-vps/ownloom-gateway.private.nix` — WhatsApp transport owner numbers (disabled by default; file rename deferred)
 
 After cloning, edit each file with real values, then mark them as locally-modified-only so git won't include the changes in commits or pulls:
 
@@ -57,14 +57,14 @@ After cloning, edit each file with real values, then mark them as locally-modifi
 git update-index --skip-worktree \
   hosts/nixpi-vps/networking.private.nix \
   hosts/nixpi-vps/secrets.private.nix \
-  hosts/nixpi-vps/nixpi-gateway.private.nix
+  hosts/nixpi-vps/ownloom-gateway.private.nix
 ```
 
 A first install can boot without `hosts/nixpi-vps/secrets.yaml`; SSH keys are enough. After first boot, copy `.sops.example.yaml` to `.sops.yaml`, create a real encrypted `secrets.yaml`, force-add it past the ignore rule, and rebuild.
 
 ## Rebrand status
 
-Ownloom is the new project brand. The live host remains `nixpi-vps` for now, and old `nixpi-*` CLI names are retained temporarily as compatibility wrappers.
+ownloom is the new project brand. The live host remains `nixpi-vps` for now, and old `nixpi-*` CLI names are retained temporarily as compatibility wrappers.
 
 ## License
 

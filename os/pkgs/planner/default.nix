@@ -48,7 +48,7 @@ buildNpmPackage {
   '';
 
   meta = {
-    description = "Tiny Ownloom planner adapter for local CalDAV/iCalendar tasks, reminders, and events";
+    description = "Tiny ownloom planner adapter for local CalDAV/iCalendar tasks, reminders, and events";
     license = lib.licenses.mit;
     mainProgram = "ownloom-planner";
   };

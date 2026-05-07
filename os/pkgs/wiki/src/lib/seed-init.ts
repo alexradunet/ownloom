@@ -57,7 +57,7 @@ export function findSeedDir(): string {
     }
   }
 
-  throw new Error(`Could not locate bundled Ownloom wiki seed. Checked: ${candidates.join(", ")}`);
+  throw new Error(`Could not locate bundled ownloom wiki seed. Checked: ${candidates.join(", ")}`);
 }
 
 function ensureDirectory(dir: string): boolean {
@@ -141,7 +141,7 @@ export function initWikiRoot(options: InitWikiOptions): InitWikiStats {
     if (ensureDirectory(dir)) stats.createdDirs += 1;
   }
   writeFileIfMissing(path.join(root, ".gitignore"), [
-    "# Ownloom Wiki generated metadata",
+    "# ownloom Wiki generated metadata",
     "meta/registry.json",
     "meta/backlinks.json",
     "meta/index.md",
@@ -157,7 +157,7 @@ export function initWikiRoot(options: InitWikiOptions): InitWikiStats {
 
 export function renderInitText(stats: InitWikiStats): string {
   return [
-    `Initialized Ownloom wiki root: ${stats.root}`,
+    `Initialized ownloom wiki root: ${stats.root}`,
     `Seed: ${stats.seedDir}`,
     `Workspace hint: ${stats.workspace}`,
     `Default domain hint: ${stats.domain}`,

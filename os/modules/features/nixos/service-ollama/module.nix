@@ -24,7 +24,7 @@ in {
   ];
 
   options.services.ownloom-ollama = {
-    enable = lib.mkEnableOption "Ownloom local-LLM backend via ollama";
+    enable = lib.mkEnableOption "ownloom local-LLM backend via ollama";
 
     models = lib.mkOption {
       type = lib.types.listOf lib.types.str;

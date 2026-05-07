@@ -16,7 +16,7 @@ async function runText(command: string, args: string[], timeout = 10_000): Promi
   return stdout.trim();
 }
 
-async function buildOwnloomContext(): Promise<string> {
+async function buildownloomContext(): Promise<string> {
   try {
     const text = await runText("ownloom-context", ["--format", "markdown"], 15_000);
     return text ? `\n\n${text}` : "";
@@ -29,7 +29,7 @@ async function buildOwnloomContext(): Promise<string> {
 function registerPlannerTool(pi: ExtensionAPI) {
   for (const toolName of ["ownloom_planner", "nixpi_planner"] as const) pi.registerTool({
     name: toolName,
-    label: toolName === "ownloom_planner" ? "Ownloom Planner" : "NixPI Planner (compat)",
+    label: toolName === "ownloom_planner" ? "ownloom Planner" : "NixPI Planner (compat)",
     description: "Manage canonical live tasks, reminders, and calendar events through the local CalDAV/iCalendar planner backend.",
     promptSnippet: toolName === "ownloom_planner"
       ? "Use ownloom_planner for live task, reminder, and calendar operations instead of creating wiki Markdown task/reminder pages."
@@ -143,7 +143,7 @@ export default function nixpiExtension(pi: ExtensionAPI) {
   registerPlannerTool(pi);
 
   pi.registerCommand("ownloom", {
-    description: "Ownloom context check: /ownloom context",
+    description: "ownloom context check: /ownloom context",
     handler: async (_args, ctx) => {
       try {
         const text = await runText("ownloom-context", ["--format", "markdown"], 15_000);
@@ -158,17 +158,17 @@ export default function nixpiExtension(pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     if (ctx.hasUI) {
       ctx.ui.setStatus("fleet", formatFleetHostStatus());
-      ctx.ui.setStatus("ownloom", "Ownloom runtime: active");
+      ctx.ui.setStatus("ownloom", "ownloom runtime: active");
     }
   });
 
   pi.on("before_agent_start", async (event) => {
-    let note = await buildOwnloomContext();
+    let note = await buildownloomContext();
 
     const updateStatus = readUpdateStatus();
     if (updateStatus?.available && !updateStatus.notified) {
       await writeUpdateStatus({ ...updateStatus, notified: true });
-      note += `\n\n[UPDATE AVAILABLE] The Ownloom repo is ${updateStatus.behindBy} commit(s) behind origin/${updateStatus.branch ?? "main"}. Inform the user and offer to pull and apply.`;
+      note += `\n\n[UPDATE AVAILABLE] The ownloom repo is ${updateStatus.behindBy} commit(s) behind origin/${updateStatus.branch ?? "main"}. Inform the user and offer to pull and apply.`;
     }
 
     return { systemPrompt: event.systemPrompt + note };

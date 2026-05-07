@@ -7,7 +7,7 @@ import { getWikiRoot, getWorkspaceProfile, normalizeDomain } from "./wiki/paths.
 import { absolutePath, initWikiRoot, renderInitText } from "./lib/seed-init.ts";
 
 function usage(exitCode = 0): never {
-  const text = `ownloom-wiki — portable plain-Markdown LLM wiki CLI\n\nUsage:\n  ownloom-wiki list [--json]\n  ownloom-wiki describe <tool> [--json]\n  ownloom-wiki call <tool> [json-params | @file | -] [--json] [--yes]\n  ownloom-wiki mutate <tool> [json-params | @file | -] [--json]\n  ownloom-wiki init [--root <path>] [--workspace <name>] [--domain <domain>] [--json]\n  ownloom-wiki context [--format markdown|json]\n  ownloom-wiki doctor [--domain <domain>] [--json]\n\nExamples:\n  ownloom-wiki list\n  ownloom-wiki call wiki_status '{"domain":"work"}'\n  echo '{"query":"memory","domain":"work"}' | ownloom-wiki call wiki_search - --json\n  ownloom-wiki mutate wiki_ingest '{"content":"note","channel":"journal"}'\n  ownloom-wiki init --root ~/Ownloom/work-wiki --workspace work --domain work\n  ownloom-wiki context --format markdown\n  ownloom-wiki doctor\n`;
+  const text = `ownloom-wiki — portable plain-Markdown LLM wiki CLI\n\nUsage:\n  ownloom-wiki list [--json]\n  ownloom-wiki describe <tool> [--json]\n  ownloom-wiki call <tool> [json-params | @file | -] [--json] [--yes]\n  ownloom-wiki mutate <tool> [json-params | @file | -] [--json]\n  ownloom-wiki init [--root <path>] [--workspace <name>] [--domain <domain>] [--json]\n  ownloom-wiki context [--format markdown|json]\n  ownloom-wiki doctor [--domain <domain>] [--json]\n\nExamples:\n  ownloom-wiki list\n  ownloom-wiki call wiki_status '{"domain":"work"}'\n  echo '{"query":"memory","domain":"work"}' | ownloom-wiki call wiki_search - --json\n  ownloom-wiki mutate wiki_ingest '{"content":"note","channel":"journal"}'\n  ownloom-wiki init --root ~/ownloom/work-wiki --workspace work --domain work\n  ownloom-wiki context --format markdown\n  ownloom-wiki doctor\n`;
   console.error(text);
   process.exit(exitCode);
 }
@@ -109,7 +109,7 @@ async function runDoctor(args: string[], json: boolean): Promise<void> {
     const jsonChecks = checks.map((check) => check.ok ? { name: check.name, ok: check.ok, detail: check.detail } : check);
     console.log(JSON.stringify({ ok, checks: jsonChecks }, null, 2));
   } else {
-    console.log(`Ownloom wiki doctor: ${ok ? "ok" : "review"}`);
+    console.log(`ownloom wiki doctor: ${ok ? "ok" : "review"}`);
     for (const check of checks) {
       console.log(`- ${check.ok ? "ok" : "review"} ${check.name}: ${check.detail}`);
       if (!check.ok && check.remediation) console.log(`  remediation: ${check.remediation}`);

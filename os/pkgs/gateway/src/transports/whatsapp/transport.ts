@@ -137,7 +137,7 @@ export class WhatsAppTransport implements GatewayTransport {
       markOnlineOnConnect: false,
       syncFullHistory: false,
       generateHighQualityLinkPreview: false,
-      browser: ["Ownloom", "Chrome", "1.0.0"],
+      browser: ["ownloom", "Chrome", "1.0.0"],
     });
     this.socket = socket;
 

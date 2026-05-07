@@ -12,7 +12,7 @@ in {
   ];
 
   options.services.ownloom-webdav = {
-    enable = lib.mkEnableOption "loopback WebDAV server for the Ownloom wiki (access via SSH tunnel)";
+    enable = lib.mkEnableOption "loopback WebDAV server for the ownloom wiki (access via SSH tunnel)";
 
     address = lib.mkOption {
       type = lib.types.str;
@@ -30,7 +30,7 @@ in {
       type = lib.types.str;
       default = config.ownloom.wiki.root;
       defaultText = lib.literalExpression "config.ownloom.wiki.root";
-      description = "Absolute path to the directory served over WebDAV. Defaults to the Ownloom wiki root.";
+      description = "Absolute path to the directory served over WebDAV. Defaults to the ownloom wiki root.";
     };
 
     htpasswdSecret = lib.mkOption {
@@ -87,7 +87,7 @@ in {
             dav_access user:rw group:r all:r;
 
             # Basic auth — credentials file is decrypted by sops at runtime.
-            auth_basic "Ownloom Wiki";
+            auth_basic "ownloom Wiki";
             auth_basic_user_file /run/secrets/${cfg.htpasswdSecret};
 
             # Let WebDAV clients discover directory contents.

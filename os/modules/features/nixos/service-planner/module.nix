@@ -33,13 +33,13 @@ in {
   ];
 
   options.services.ownloom-planner = {
-    enable = lib.mkEnableOption "standards-based Ownloom planner backend using CalDAV/iCalendar";
+    enable = lib.mkEnableOption "standards-based ownloom planner backend using CalDAV/iCalendar";
 
     host = lib.mkOption {
       type = lib.types.str;
       default = "127.0.0.1";
       description = ''
-        Address Radicale binds for the Ownloom planner CalDAV endpoint.
+        Address Radicale binds for the ownloom planner CalDAV endpoint.
         Keep loopback-only unless it is protected by TLS and password auth.
       '';
     };
@@ -47,7 +47,7 @@ in {
     port = lib.mkOption {
       type = lib.types.port;
       default = 5232;
-      description = "TCP port for the Ownloom planner CalDAV endpoint.";
+      description = "TCP port for the ownloom planner CalDAV endpoint.";
     };
 
     openFirewall = lib.mkOption {
@@ -75,13 +75,13 @@ in {
       type = lib.types.str;
       default = config.ownloom.human.name;
       defaultText = lib.literalExpression "config.ownloom.human.name";
-      description = "Planner CalDAV principal used by the local Ownloom adapter.";
+      description = "Planner CalDAV principal used by the local ownloom adapter.";
     };
 
     collection = lib.mkOption {
       type = lib.types.str;
       default = "planner";
-      description = "Planner CalDAV collection name used by the local Ownloom adapter.";
+      description = "Planner CalDAV collection name used by the local ownloom adapter.";
     };
 
     enableServer = lib.mkOption {
@@ -105,7 +105,7 @@ in {
     extraSettings = lib.mkOption {
       type = lib.types.attrs;
       default = {};
-      description = "Extra Radicale settings merged over the safe Ownloom defaults.";
+      description = "Extra Radicale settings merged over the safe ownloom defaults.";
     };
   };
 
@@ -183,7 +183,7 @@ in {
     };
 
     systemd.services.ownloom-planner-server = lib.mkIf cfg.enableServer {
-      description = "Ownloom planner web view/API server";
+      description = "ownloom planner web view/API server";
       wantedBy = ["multi-user.target"];
       after = ["network.target" "radicale.service"];
       serviceConfig = {

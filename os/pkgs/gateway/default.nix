@@ -47,7 +47,7 @@ buildNpmPackage {
   '';
 
   meta = {
-    description = "Ownloom generic transport gateway — routes WhatsApp and local API messages to a configurable agent backend";
+    description = "ownloom generic transport gateway — routes WhatsApp and local API messages to a configurable agent backend";
     license = lib.licenses.mit;
     mainProgram = "ownloom-gateway";
   };

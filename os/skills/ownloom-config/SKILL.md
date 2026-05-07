@@ -1,20 +1,20 @@
 ---
-name: nixpi-config
-description: "Inspect, validate, or apply the NixPI host configuration through standard Nix tooling. Use when the user asks about repo state, wants to validate the flake, or requests a rebuild. Keywords: flake, nixos, rebuild, apply, validate, config, switch, diff."
+name: ownloom-config
+description: "Inspect, validate, or apply the ownloom host configuration through standard Nix tooling. Use when the user asks about repo state, wants to validate the flake, or requests a rebuild. Keywords: flake, nixos, rebuild, apply, validate, config, switch, diff."
 allowed-tools: shell
 ---
 
-# NixPI Config Management
+# ownloom Config Management
 
-This skill replaces the removed `nixpi-config` CLI. Manage the NixPI host configuration lifecycle with standard tools.
+This skill replaces the removed `ownloom-config` CLI. Manage the ownloom host configuration lifecycle with standard tools.
 
 ## Prerequisites
 
 Always know the host and flake dir first:
 ```bash
 # Host name from environment or /etc/hostname
-HOST="${NIXPI_WIKI_HOST:-$(cat /etc/hostname)}"
-FLAKE_DIR="${NIXPI_FLAKE_DIR:-${NIXPI_ROOT:-${HOME}/NixPI}}"
+HOST="${OWNLOOM_WIKI_HOST:-$(cat /etc/hostname)}"
+FLAKE_DIR="${OWNLOOM_FLAKE_DIR:-${OWNLOOM_ROOT:-${NIXPI_ROOT:-${HOME}/NixPI}}}"
 ```
 
 ## Commands
@@ -59,13 +59,13 @@ sudo nixos-rebuild switch --flake ".#$HOST" --accept-flake-config 2>&1
 4. **apply** — run `nixos-rebuild switch`. Capture stdout/stderr.
 5. After a successful apply, optionally reboot if it includes kernel/daemon changes:
    ```bash
-   nixpi-context --health | head -20
+   ownloom-context --health | head -20
    # Ask user before rebooting
    ```
 
 ## Publishing changes
 
-`nixpi-config` shipped a separate publication command. This is gone. Use standard Git:
+`ownloom-config` shipped a separate publication command. This is gone. Use standard Git:
 ```bash
 git add -A
 git commit -m "<message>"

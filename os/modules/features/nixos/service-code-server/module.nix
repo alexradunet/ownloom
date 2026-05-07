@@ -13,13 +13,13 @@ in {
   ];
 
   options.services.ownloom-code-server = {
-    enable = lib.mkEnableOption "code-server web IDE for Ownloom";
+    enable = lib.mkEnableOption "code-server web IDE for ownloom";
 
     user = lib.mkOption {
       type = lib.types.str;
       default = config.ownloom.human.name;
       defaultText = lib.literalExpression "config.ownloom.human.name";
-      description = "User account that runs code-server. Defaults to the primary Ownloom human.";
+      description = "User account that runs code-server. Defaults to the primary ownloom human.";
     };
 
     group = lib.mkOption {
@@ -79,7 +79,7 @@ in {
       enable = true;
       inherit (cfg) user port hashedPassword group host;
 
-      # Run as the primary Ownloom user so code-server can access home directory files.
+      # Run as the primary ownloom user so code-server can access home directory files.
       extraGroups = [];
 
       auth = lib.mkIf (cfg.hashedPassword != "") "password";

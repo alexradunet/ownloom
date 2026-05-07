@@ -1,5 +1,5 @@
 {
-  description = "Ownloom monorepo: NixOS hosts, OS modules, PI runtime, and wiki";
+  description = "ownloom monorepo: NixOS hosts, OS modules, PI runtime, and wiki";
 
   nixConfig = {
     extra-substituters = [

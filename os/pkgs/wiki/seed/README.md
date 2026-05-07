@@ -1,4 +1,4 @@
-# Generic Ownloom Wiki Seed
+# Generic ownloom Wiki Seed
 
 This seed contains the harness-neutral plain-Markdown wiki schema, rules, object model, templates, and object schemas.
 

@@ -21,7 +21,7 @@ in
   assert lib.asserts.assertMsg (!(gateway.settings.transports.whatsapp.enable or false) || gateway.settings.transports.whatsapp.ownerNumbers != []) "nixpi-vps WhatsApp owner allowlist must not be empty when enabled";
   assert lib.asserts.assertMsg (builtins.hasAttr "ownloom-wiki-health-snapshot" vps.config.systemd.timers) "nixpi-vps must declare the read-only wiki health snapshot timer";
   assert lib.asserts.assertMsg (wikiHealth.serviceConfig.User == vps.config.ownloom.human.name) "wiki health snapshot must run as the primary user";
-  assert lib.asserts.assertMsg (wikiHealth.serviceConfig.WorkingDirectory == vps.config.ownloom.root) "wiki health snapshot must run from the Ownloom repo root";
+  assert lib.asserts.assertMsg (wikiHealth.serviceConfig.WorkingDirectory == vps.config.ownloom.root) "wiki health snapshot must run from the ownloom repo root";
   assert lib.asserts.assertMsg (wikiHealth.serviceConfig.StateDirectory == "ownloom-wiki-health") "wiki health snapshot must write state outside the Git repo";
   assert lib.asserts.assertMsg (lib.hasInfix "export HOME=" wikiHealthScript) "wiki health snapshot must set HOME";
   assert lib.asserts.assertMsg (lib.hasInfix "ownloom-wiki call wiki_status" wikiHealthScript) "wiki health snapshot must use ownloom-wiki";

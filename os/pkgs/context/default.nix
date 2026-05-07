@@ -30,7 +30,7 @@
     text = builtins.readFile ./nixpi-context.sh;
 
     meta = {
-      description = "Print the current Ownloom agent context for prompt injection";
+      description = "Print the current ownloom agent context for prompt injection";
       license = lib.licenses.mit;
       mainProgram = "ownloom-context";
     };

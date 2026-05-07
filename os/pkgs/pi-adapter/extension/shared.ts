@@ -31,7 +31,7 @@ function currentHost(): string {
 }
 
 function isFleetHost(host: string): boolean {
-  let root = process.env.OWNLOOM_ROOT ?? process.env.NIXPI_ROOT ?? join(process.env.HOME || "/tmp", "Ownloom");
+  let root = process.env.OWNLOOM_ROOT ?? process.env.NIXPI_ROOT ?? join(process.env.HOME || "/tmp", "ownloom");
   if (!existsSync(root) && existsSync(join(process.env.HOME || "/tmp", "NixPI"))) root = join(process.env.HOME || "/tmp", "NixPI");
   try {
     return readdirSync(join(root, "hosts"), { withFileTypes: true })
