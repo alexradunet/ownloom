@@ -3,7 +3,7 @@ import test from "node:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { DeliveryService } from "../src/core/delivery.js";
+import { DeliveryService, nextDeliveryAttemptAt } from "../src/core/delivery.js";
 import { Store } from "../src/core/store.js";
 import { ReminderDeliveryWorker, type ReminderItem } from "../src/personal/reminder-delivery.js";
 import type { InboundMessage } from "../src/core/types.js";
@@ -102,6 +102,56 @@ test("DeliveryService queues failed sends and drains them later", async () => {
   } finally {
     rmSync(tmpDir, { recursive: true, force: true });
   }
+});
+
+test("DeliveryService backs off failed queued sends", async () => {
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-delivery-"));
+  try {
+    const store = new Store(path.join(tmpDir, "gateway-state.json"));
+    const transport = new FakeTransport();
+    const delivery = new DeliveryService([transport], store);
+
+    transport.failSends = true;
+    await delivery.sendTextToRecipient("whatsapp:+15550001111", "hello");
+    const drained = await delivery.drainQueuedDeliveries();
+    assert.deepEqual(drained, { attempted: 1, delivered: 0, failed: 1 });
+
+    const queued = store.listQueuedDeliveries(undefined, { includeDead: true })[0];
+    assert.equal(queued.attempts, 1);
+    assert.ok(queued.nextAttemptAt);
+    assert.equal(store.listQueuedDeliveries(undefined, { dueOnly: true }).length, 0);
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("Store marks queued sends dead after max attempts", async () => {
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-delivery-"));
+  try {
+    const store = new Store(path.join(tmpDir, "gateway-state.json"));
+    const queued = store.enqueueDelivery("whatsapp:+15550001111", "whatsapp", "hello", "offline");
+
+    for (let i = 0; i < 10; i += 1) {
+      store.recordQueuedDeliveryFailure(queued.id, "offline", {
+        maxAttempts: 10,
+        nextAttemptAt: "2000-01-01T00:00:00.000Z",
+      });
+    }
+
+    const dead = store.listQueuedDeliveries(undefined, { includeDead: true })[0];
+    assert.equal(dead.attempts, 10);
+    assert.ok(dead.deadAt);
+    assert.equal(store.listQueuedDeliveries().length, 0);
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("nextDeliveryAttemptAt uses simple backoff", () => {
+  const now = new Date("2026-01-01T00:00:00.000Z");
+  assert.equal(nextDeliveryAttemptAt(1, now), "2026-01-01T00:01:00.000Z");
+  assert.equal(nextDeliveryAttemptAt(2, now), "2026-01-01T00:05:00.000Z");
+  assert.equal(nextDeliveryAttemptAt(3, now), "2026-01-01T00:15:00.000Z");
 });
 
 test("ReminderDeliveryWorker skips future reminders", async () => {

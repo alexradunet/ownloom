@@ -68,8 +68,10 @@ export type QueuedDelivery = {
   createdAt: string;
   attempts: number;
   lastAttemptAt?: string;
+  nextAttemptAt?: string;
   lastError?: string;
   deliveredAt?: string;
+  deadAt?: string;
 };
 
 export type StoredAttachment = {
@@ -242,12 +244,15 @@ export class Store {
     return delivery;
   }
 
-  listQueuedDeliveries(transport?: string): QueuedDelivery[] {
+  listQueuedDeliveries(transport?: string, options: { includeDead?: boolean; dueOnly?: boolean } = {}): QueuedDelivery[] {
     const state = readState(this.statePath);
+    const now = utcNow();
     return Object.values(state.queuedDeliveries)
       .filter((delivery) => !delivery.deliveredAt)
+      .filter((delivery) => options.includeDead || !delivery.deadAt)
+      .filter((delivery) => !options.dueOnly || !delivery.nextAttemptAt || delivery.nextAttemptAt <= now)
       .filter((delivery) => !transport || delivery.transport === transport)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      .sort((a, b) => (a.nextAttemptAt ?? a.createdAt).localeCompare(b.nextAttemptAt ?? b.createdAt));
   }
 
   markQueuedDeliveryDelivered(id: string): void {
@@ -258,13 +263,20 @@ export class Store {
     writeState(this.statePath, state);
   }
 
-  recordQueuedDeliveryFailure(id: string, error: string): void {
+  recordQueuedDeliveryFailure(id: string, error: string, options: { maxAttempts: number; nextAttemptAt?: string }): void {
     const state = readState(this.statePath);
     const delivery = state.queuedDeliveries[id];
     if (!delivery) return;
+    const now = utcNow();
     delivery.attempts += 1;
-    delivery.lastAttemptAt = utcNow();
+    delivery.lastAttemptAt = now;
     delivery.lastError = error;
+    if (delivery.attempts >= options.maxAttempts) {
+      delivery.deadAt = now;
+      delete delivery.nextAttemptAt;
+    } else if (options.nextAttemptAt) {
+      delivery.nextAttemptAt = options.nextAttemptAt;
+    }
     writeState(this.statePath, state);
   }
 

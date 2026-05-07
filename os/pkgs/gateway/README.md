@@ -34,7 +34,7 @@ Authentication options:
 
 Scope rules:
 
-- `read`: `health`, `status`, `commands.list`, `sessions.list`, `sessions.get`
+- `read`: `health`, `status`, `commands.list`, `sessions.list`, `sessions.get`, `deliveries.list`
 - `write`: `agent`, `agent.wait`
 - `admin`: `sessions.reset`
 
@@ -246,6 +246,7 @@ GET /api/v1/health
 GET /api/v1/status
 GET /api/v1/commands
 GET /api/v1/sessions
+GET /api/v1/deliveries
 ```
 
 Attachment upload:

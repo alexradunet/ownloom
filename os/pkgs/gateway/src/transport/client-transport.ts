@@ -158,6 +158,8 @@ export class ClientTransport implements GatewayTransport {
       result = { commands: this.commands.listNames() };
     } else if (path === "/api/v1/sessions") {
       result = { sessions: this.store.listChatSessions() };
+    } else if (path === "/api/v1/deliveries") {
+      result = { deliveries: this.store.listQueuedDeliveries(undefined, { includeDead: true }) };
     } else {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Not found" }));
@@ -544,7 +546,7 @@ export class ClientTransport implements GatewayTransport {
 }
 
 function requiredScopeForMethod(method: string): "read" | "write" | "admin" | null {
-  if (method === "health" || method === "status" || method === "commands.list" || method === "sessions.list" || method === "sessions.get") {
+  if (method === "health" || method === "status" || method === "commands.list" || method === "sessions.list" || method === "sessions.get" || method === "deliveries.list") {
     return "read";
   }
   if (method === "agent" || method === "agent.wait") return "write";

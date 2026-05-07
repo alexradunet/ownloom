@@ -83,6 +83,9 @@ export const METHODS = {
   SESSIONS_GET: "sessions.get",
   SESSIONS_RESET: "sessions.reset",
 
+  // Deliveries
+  DELIVERIES_LIST: "deliveries.list",
+
   // System
   HEALTH: "health",
   STATUS: "status",

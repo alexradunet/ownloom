@@ -19,8 +19,18 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+export function nextDeliveryAttemptAt(attemptsAfterFailure: number, now = new Date()): string {
+  const delayMs = attemptsAfterFailure <= 1
+    ? 60_000
+    : attemptsAfterFailure === 2
+      ? 5 * 60_000
+      : 15 * 60_000;
+  return new Date(now.getTime() + delayMs).toISOString();
+}
+
 export class DeliveryService {
   private readonly transports: Map<string, GatewayTransport>;
+  private readonly maxAttempts = 10;
 
   constructor(transports: GatewayTransport[], private readonly store?: Store) {
     this.transports = new Map(transports.map((transport) => [transport.name, transport]));
@@ -65,12 +75,18 @@ export class DeliveryService {
     let delivered = 0;
     let failed = 0;
 
-    for (const queued of this.store.listQueuedDeliveries(transportName)) {
+    for (const queued of this.store.listQueuedDeliveries(transportName, { dueOnly: true })) {
       attempted += 1;
       const transport = this.transports.get(queued.transport);
       if (!transport) {
         failed += 1;
-        this.store.recordQueuedDeliveryFailure(queued.id, `No transport registered for ${queued.transport}`);
+        this.recordFailure(queued, `No transport registered for ${queued.transport}`);
+        continue;
+      }
+
+      if (queued.attempts >= this.maxAttempts) {
+        failed += 1;
+        this.recordFailure(queued, queued.lastError ?? "max attempts reached");
         continue;
       }
 
@@ -80,7 +96,7 @@ export class DeliveryService {
         delivered += 1;
       } catch (err) {
         failed += 1;
-        this.store.recordQueuedDeliveryFailure(queued.id, errorMessage(err));
+        this.recordFailure(queued, errorMessage(err));
       }
     }
 
@@ -88,5 +104,12 @@ export class DeliveryService {
       console.log(`delivery: drained queued deliveries attempted=${attempted} delivered=${delivered} failed=${failed}`);
     }
     return { attempted, delivered, failed };
+  }
+
+  private recordFailure(queued: QueuedDelivery, error: string): void {
+    this.store?.recordQueuedDeliveryFailure(queued.id, error, {
+      maxAttempts: this.maxAttempts,
+      nextAttemptAt: nextDeliveryAttemptAt(queued.attempts + 1),
+    });
   }
 }

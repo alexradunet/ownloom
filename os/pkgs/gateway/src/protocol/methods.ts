@@ -141,6 +141,11 @@ export function registerV1Methods(
     return { ok: true, payload: { chatId } };
   });
 
+  // deliveries.list
+  registry.register(METHODS.DELIVERIES_LIST, () => {
+    return { ok: true, payload: { deliveries: deps.store.listQueuedDeliveries(undefined, { includeDead: true }) } };
+  });
+
   // agent methods — delegate to the provided handler (which calls Router).
   // Today both methods wait for the local Pi run to complete and emit agent events;
   // keep both names so clients can opt into explicit wait semantics.
