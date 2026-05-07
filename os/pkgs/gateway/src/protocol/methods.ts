@@ -21,6 +21,8 @@ import type { IdentityResolver, Identity, Scope } from "../core/identity.js";
 
 export type ConnectedClient = {
   connId: string;
+  /** Stable client-supplied id from the connect frame, if provided. */
+  clientId?: string;
   identity: Identity | null;
   role: "operator" | "node";
   scopes: Scope[];

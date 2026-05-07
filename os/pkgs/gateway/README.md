@@ -100,7 +100,8 @@ Send a message to Pi:
   "method": "agent.wait",
   "params": {
     "message": "Summarize today's planner state",
-    "sessionKey": "web-main"
+    "sessionKey": "web-main",
+    "idempotencyKey": "web-main-msg-0001"
   }
 }
 ```
@@ -130,6 +131,32 @@ Final response:
 Today `agent` and `agent.wait` share the same implementation and both wait for
 the local Pi run to finish while emitting events. Keep using `agent.wait` when a
 client explicitly expects that behavior.
+
+### Duplicate request protection
+
+For requests that may cause side effects, clients should include an
+`idempotencyKey` in `params`. This is just duplicate-request protection for
+network retries.
+
+If the gateway has already completed a request with the same client identity,
+method, and key, it returns the stored response instead of running the method
+again. If the original request is still running, the duplicate receives:
+
+```json
+{
+  "type": "res",
+  "id": "retry-1",
+  "ok": false,
+  "error": { "message": "Request with this idempotencyKey is already running", "code": "REQUEST_PENDING" }
+}
+```
+
+Rules:
+
+- `idempotencyKey` is optional.
+- Max length is 200 characters.
+- Keys are scoped by resolved identity, or by `connect.client.id` when no identity exists, plus method.
+- Stored keys expire after 7 days.
 
 ### Attachments
 

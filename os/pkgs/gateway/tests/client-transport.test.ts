@@ -10,6 +10,14 @@ import type { InboundMessage } from "../src/core/types.js";
 import type { MethodContext } from "../src/protocol/methods.js";
 import type { Scope } from "../src/core/identity.js";
 
+async function waitFor(predicate: () => boolean): Promise<void> {
+  for (let i = 0; i < 20; i += 1) {
+    if (predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  assert.ok(predicate());
+}
+
 function makeCtx(params: Record<string, unknown>): MethodContext {
   return {
     client: {
@@ -49,6 +57,64 @@ test("ClientTransport agent uses protocol sessionKey as stable Pi chat session",
     assert.equal(seen.length, 1);
     assert.equal(seen[0]?.channel, "client");
     assert.equal(seen[0]?.chatId, "client:web-main");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("ClientTransport replays stored response for duplicate idempotencyKey", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const store = new Store(path.join(tmp, "state.json"));
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0 },
+      store,
+      new CommandRegistry(),
+    );
+
+    let calls = 0;
+    transport.setRouter({
+      handleMessage: async () => {
+        calls += 1;
+        return { replies: [`ok-${calls}`], markProcessed: true };
+      },
+    } as any);
+
+    const client = {
+      connId: "conn-1",
+      identity: null,
+      role: "operator" as const,
+      scopes: ["read", "write", "admin"] as Scope[],
+      seq: 0,
+      send: () => {},
+    };
+    const responses: any[] = [];
+    const sendJson = (frame: any) => responses.push(frame);
+
+    (transport as any).handleRequest({
+      type: "req",
+      id: "req-1",
+      method: "agent.wait",
+      params: { message: "hello", idempotencyKey: "same-request" },
+    }, client, sendJson);
+    await waitFor(() => responses.length === 2);
+
+    (transport as any).handleRequest({
+      type: "req",
+      id: "req-2",
+      method: "agent.wait",
+      params: { message: "hello again", idempotencyKey: "same-request" },
+    }, client, sendJson);
+    await waitFor(() => responses.length === 3);
+
+    assert.equal(calls, 1);
+    assert.equal(responses[1].type, "res");
+    assert.equal(responses[1].id, "req-1");
+    assert.equal(responses[1].ok, true);
+    assert.equal(responses[2].type, "res");
+    assert.equal(responses[2].id, "req-2");
+    assert.equal(responses[2].ok, true);
+    assert.deepEqual(responses[2].payload, responses[1].payload);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

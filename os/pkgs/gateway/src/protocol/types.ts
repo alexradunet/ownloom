@@ -111,6 +111,8 @@ export type AttachmentRef = {
 export type AgentParams = {
   message: string;
   sessionKey?: string;
+  /** Optional duplicate-request guard for client retries. */
+  idempotencyKey?: string;
   attachments?: AttachmentRef[];
   /** If true, deliver the reply through the transport (e.g. WhatsApp). */
   deliver?: boolean;

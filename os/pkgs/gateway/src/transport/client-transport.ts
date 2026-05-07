@@ -304,6 +304,7 @@ export class ClientTransport implements GatewayTransport {
     const chatId = `v1-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const client: ConnectedClient = {
       connId,
+      ...(typeof frame.client?.id === "string" && frame.client.id.trim() ? { clientId: frame.client.id.trim() } : {}),
       identity,
       role: frame.role ?? "operator",
       scopes: identity?.scopes ?? frame.scopes ?? ["read", "write", "admin"],
@@ -356,8 +357,46 @@ export class ClientTransport implements GatewayTransport {
     };
 
     void (async () => {
+      const idempotencyKey = typeof frame.params["idempotencyKey"] === "string"
+        ? frame.params["idempotencyKey"].trim()
+        : "";
+      const storeKey = idempotencyKey ? this.makeIdempotencyStoreKey(client, frame.method, idempotencyKey) : "";
+
+      if (idempotencyKey.length > 200) {
+        sendJson({
+          type: "res",
+          id: frame.id,
+          ok: false,
+          error: { message: "idempotencyKey must be at most 200 characters", code: "INVALID_REQUEST" },
+        });
+        return;
+      }
+
+      if (storeKey) {
+        const begin = this.store.beginIdempotentRequest(storeKey, 7 * 24 * 60 * 60 * 1000);
+        if (begin.status === "duplicate") {
+          sendJson({
+            type: "res",
+            id: frame.id,
+            ok: begin.result.ok,
+            ...(begin.result.ok ? { payload: begin.result.payload } : { error: begin.result.error }),
+          } as ResponseFrame);
+          return;
+        }
+        if (begin.status === "pending") {
+          sendJson({
+            type: "res",
+            id: frame.id,
+            ok: false,
+            error: { message: "Request with this idempotencyKey is already running", code: "REQUEST_PENDING" },
+          });
+          return;
+        }
+      }
+
       try {
         const result = await this.methodRegistry.dispatch(ctx);
+        if (storeKey) this.store.finishIdempotentRequest(storeKey, result);
         sendJson({
           type: "res",
           id: frame.id,
@@ -365,11 +404,16 @@ export class ClientTransport implements GatewayTransport {
           ...(result.ok ? { payload: result.payload } : { error: result.error }),
         } as ResponseFrame);
       } catch (err) {
+        const result: MethodResult = {
+          ok: false,
+          error: { message: err instanceof Error ? err.message : String(err) },
+        };
+        if (storeKey) this.store.finishIdempotentRequest(storeKey, result);
         sendJson({
           type: "res",
           id: frame.id,
           ok: false,
-          error: { message: err instanceof Error ? err.message : String(err) },
+          error: result.error,
         });
       }
     })();
@@ -455,6 +499,15 @@ export class ClientTransport implements GatewayTransport {
   private resolveTokenIdentity(token?: string): Identity | null {
     if (!token || !this.identityResolver) return null;
     return this.identityResolver.resolve("token", token);
+  }
+
+  private makeIdempotencyStoreKey(client: ConnectedClient, method: string, idempotencyKey: string): string {
+    const owner = client.identity
+      ? `identity:${client.identity.id}`
+      : client.clientId
+        ? `client:${client.clientId}`
+        : `conn:${client.connId}`;
+    return `${owner}:${method}:${idempotencyKey}`;
   }
 }
 

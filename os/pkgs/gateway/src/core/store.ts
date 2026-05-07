@@ -18,7 +18,7 @@ function atomicWriteJson(filePath: string, data: unknown): void {
 }
 
 function emptyState(): StateSchema {
-  return { processedMessages: {}, chatSessions: {}, sentReminders: {}, queuedDeliveries: {}, attachments: {} };
+  return { processedMessages: {}, chatSessions: {}, sentReminders: {}, queuedDeliveries: {}, attachments: {}, idempotency: {} };
 }
 
 function normalizeState(input: Partial<StateSchema>): StateSchema {
@@ -28,6 +28,7 @@ function normalizeState(input: Partial<StateSchema>): StateSchema {
     sentReminders: input.sentReminders ?? {},
     queuedDeliveries: input.queuedDeliveries ?? {},
     attachments: input.attachments ?? {},
+    idempotency: input.idempotency ?? {},
   };
 }
 
@@ -79,12 +80,27 @@ export type StoredAttachment = {
   createdAt: string;
 };
 
+export type IdempotencyResult = {
+  ok: boolean;
+  payload?: unknown;
+  error?: { message: string; code?: string };
+};
+
+export type IdempotencyEntry = {
+  key: string;
+  status: "pending" | "done";
+  createdAt: string;
+  updatedAt: string;
+  result?: IdempotencyResult;
+};
+
 type StateSchema = {
   processedMessages: Record<string, ProcessedMessageEntry>;
   chatSessions: Record<string, ChatSession & { updatedAt: string; createdAt: string }>;
   sentReminders: Record<ReminderKey, { reminderKey: string; channel: string; recipientId: string; sentAt: string }>;
   queuedDeliveries: Record<string, QueuedDelivery>;
   attachments: Record<string, StoredAttachment>;
+  idempotency: Record<string, IdempotencyEntry>;
 };
 
 function makeReminderKey(reminderKey: string, channel: string, recipientId: string): string {
@@ -104,6 +120,11 @@ function safeFileName(value: string): string {
     .replace(/[^a-zA-Z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 120) || "attachment.bin";
+}
+
+function isOlderThan(iso: string, maxAgeMs: number): boolean {
+  const time = Date.parse(iso);
+  return Number.isFinite(time) && Date.now() - time > maxAgeMs;
 }
 
 export class Store {
@@ -275,5 +296,49 @@ export class Store {
   getAttachment(id: string): StoredAttachment | null {
     const state = readState(this.statePath);
     return state.attachments[id] ?? null;
+  }
+
+  beginIdempotentRequest(key: string, maxAgeMs: number):
+    | { status: "started" }
+    | { status: "duplicate"; result: IdempotencyResult }
+    | { status: "pending" } {
+    const state = readState(this.statePath);
+    const now = utcNow();
+    for (const [entryKey, entry] of Object.entries(state.idempotency)) {
+      if (isOlderThan(entry.updatedAt, maxAgeMs)) delete state.idempotency[entryKey];
+    }
+
+    const existing = state.idempotency[key];
+    if (existing?.status === "done" && existing.result) {
+      writeState(this.statePath, state);
+      return { status: "duplicate", result: existing.result };
+    }
+    if (existing?.status === "pending") {
+      writeState(this.statePath, state);
+      return { status: "pending" };
+    }
+
+    state.idempotency[key] = {
+      key,
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    };
+    writeState(this.statePath, state);
+    return { status: "started" };
+  }
+
+  finishIdempotentRequest(key: string, result: IdempotencyResult): void {
+    const state = readState(this.statePath);
+    const now = utcNow();
+    const existing = state.idempotency[key];
+    state.idempotency[key] = {
+      key,
+      status: "done",
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+      result,
+    };
+    writeState(this.statePath, state);
   }
 }
