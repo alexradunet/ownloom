@@ -29,7 +29,8 @@ Authentication options:
 - `transports.client.authToken` is a global pre-shared token.
 - `transports.client.clients` defines named client identities with individual tokens and scopes.
 - If either is configured, WebSocket `connect.auth.token` must match the global token or a named client token.
-- REST calls must include `Authorization: Bearer <token>` when the global token is configured. Named client REST auth is not implemented yet.
+- REST calls must include `Authorization: Bearer <token>` matching the global token or a named client token.
+- Named client REST calls enforce scopes: `read` for status/list endpoints, `write` for attachment upload.
 
 Scope rules:
 

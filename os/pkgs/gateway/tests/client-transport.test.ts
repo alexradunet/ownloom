@@ -18,6 +18,21 @@ async function waitFor(predicate: () => boolean): Promise<void> {
   assert.ok(predicate());
 }
 
+function makeMockRes() {
+  return {
+    status: 0,
+    body: "",
+    headers: {} as Record<string, string>,
+    writeHead(status: number, headers: Record<string, string>) {
+      this.status = status;
+      this.headers = headers;
+    },
+    end(body: string) {
+      this.body = body;
+    },
+  };
+}
+
 function makeCtx(params: Record<string, unknown>): MethodContext {
   return {
     client: {
@@ -281,6 +296,48 @@ test("ClientTransport requires admin scope for sessions.reset", async () => {
     assert.equal(responses[0].ok, false);
     assert.equal(responses[0].error.code, "FORBIDDEN");
     assert.notEqual(store.getChatSession("client:web"), null);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("ClientTransport REST accepts named client token with read scope", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0, clients: [{ id: "status", displayName: "Status", token: "read-token", scopes: ["read"] }] },
+      new Store(path.join(tmp, "state.json")),
+      new CommandRegistry(),
+      new SimpleIdentityResolver([{ id: "status", displayName: "Status", scopes: ["read"], keys: ["token:read-token"] }]),
+    );
+    const req = { method: "GET", url: "/api/v1/status", headers: { authorization: "Bearer read-token", host: "localhost" } };
+    const res = makeMockRes();
+
+    await (transport as any).serveRestApi(req, res);
+
+    assert.equal(res.status, 200);
+    assert.equal(JSON.parse(res.body).ok, true);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("ClientTransport REST rejects named client without required write scope", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0, clients: [{ id: "status", displayName: "Status", token: "read-token", scopes: ["read"] }] },
+      new Store(path.join(tmp, "state.json")),
+      new CommandRegistry(),
+      new SimpleIdentityResolver([{ id: "status", displayName: "Status", scopes: ["read"], keys: ["token:read-token"] }]),
+    );
+    const req = { method: "POST", url: "/api/v1/attachments", headers: { authorization: "Bearer read-token", host: "localhost" } };
+    const res = makeMockRes();
+
+    await (transport as any).serveRestApi(req, res);
+
+    assert.equal(res.status, 403);
+    assert.equal(JSON.parse(res.body).error, "Forbidden");
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

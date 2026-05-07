@@ -117,16 +117,15 @@ export class ClientTransport implements GatewayTransport {
   }
 
   private async serveRestApi(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
-    if (this.config.authToken && token !== this.config.authToken) {
-      res.writeHead(401, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Unauthorized" }));
-      return;
-    }
-
     const parsedUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     const path = parsedUrl.pathname;
+    const requiredScope = req.method === "POST" && path === "/api/v1/attachments" ? "write" : "read";
+    const auth = this.authenticateRestRequest(req, requiredScope);
+    if (!auth.ok) {
+      res.writeHead(auth.status, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: auth.error }));
+      return;
+    }
 
     if (req.method === "POST" && path === "/api/v1/attachments") {
       await this.handleAttachmentUpload(req, res);
@@ -514,6 +513,24 @@ export class ClientTransport implements GatewayTransport {
   private resolveTokenIdentity(token?: string): Identity | null {
     if (!token || !this.identityResolver) return null;
     return this.identityResolver.resolve("token", token);
+  }
+
+  private authenticateRestRequest(req: IncomingMessage, requiredScope: "read" | "write" | "admin"):
+    | { ok: true }
+    | { ok: false; status: 401 | 403; error: string } {
+    const authHeader = req.headers["authorization"];
+    const header = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+    const token = header?.startsWith("Bearer ") ? header.slice(7).trim() : "";
+    const hasClientIdentities = (this.config.clients?.length ?? 0) > 0;
+    const authRequired = !!this.config.authToken || hasClientIdentities;
+    if (!authRequired) return { ok: true };
+
+    if (this.config.authToken && token === this.config.authToken) return { ok: true };
+
+    const identity = this.resolveTokenIdentity(token);
+    if (!identity) return { ok: false, status: 401, error: "Unauthorized" };
+    if (!identity.scopes.includes(requiredScope)) return { ok: false, status: 403, error: "Forbidden" };
+    return { ok: true };
   }
 
   private makeIdempotencyStoreKey(client: ConnectedClient, method: string, idempotencyKey: string): string {
