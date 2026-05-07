@@ -350,6 +350,17 @@ export class ClientTransport implements GatewayTransport {
       return;
     }
 
+    const requiredScope = requiredScopeForMethod(frame.method);
+    if (requiredScope && !client.scopes.includes(requiredScope)) {
+      sendJson({
+        type: "res",
+        id: frame.id,
+        ok: false,
+        error: { message: `Method ${frame.method} requires ${requiredScope} scope`, code: "FORBIDDEN" },
+      });
+      return;
+    }
+
     const ctx: MethodContext = {
       client,
       params: { ...frame.params, _method: frame.method },
@@ -513,6 +524,15 @@ export class ClientTransport implements GatewayTransport {
         : `conn:${client.connId}`;
     return `${owner}:${method}:${idempotencyKey}`;
   }
+}
+
+function requiredScopeForMethod(method: string): "read" | "write" | "admin" | null {
+  if (method === "health" || method === "status" || method === "commands.list" || method === "sessions.list" || method === "sessions.get") {
+    return "read";
+  }
+  if (method === "agent" || method === "agent.wait") return "write";
+  if (method === "sessions.reset") return "admin";
+  return null;
 }
 
 function readRequestBody(req: IncomingMessage, maxBytes: number): Promise<Buffer> {

@@ -217,6 +217,75 @@ test("ClientTransport accepts named client tokens and uses identity scopes", () 
   }
 });
 
+test("ClientTransport enforces method scopes", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0 },
+      new Store(path.join(tmp, "state.json")),
+      new CommandRegistry(),
+    );
+
+    const readOnlyClient = {
+      connId: "conn-1",
+      identity: null,
+      role: "operator" as const,
+      scopes: ["read"] as Scope[],
+      seq: 0,
+      send: () => {},
+    };
+    const responses: any[] = [];
+    (transport as any).handleRequest({
+      type: "req",
+      id: "req-1",
+      method: "agent.wait",
+      params: { message: "hello" },
+    }, readOnlyClient, (frame: any) => responses.push(frame));
+
+    assert.equal(responses.length, 1);
+    assert.equal(responses[0].ok, false);
+    assert.equal(responses[0].error.code, "FORBIDDEN");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("ClientTransport requires admin scope for sessions.reset", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const store = new Store(path.join(tmp, "state.json"));
+    store.upsertChatSession("client:web", "sender", "/tmp/session");
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0 },
+      store,
+      new CommandRegistry(),
+    );
+
+    const writeClient = {
+      connId: "conn-1",
+      identity: null,
+      role: "operator" as const,
+      scopes: ["read", "write"] as Scope[],
+      seq: 0,
+      send: () => {},
+    };
+    const responses: any[] = [];
+    (transport as any).handleRequest({
+      type: "req",
+      id: "req-1",
+      method: "sessions.reset",
+      params: { chatId: "client:web" },
+    }, writeClient, (frame: any) => responses.push(frame));
+
+    assert.equal(responses.length, 1);
+    assert.equal(responses[0].ok, false);
+    assert.equal(responses[0].error.code, "FORBIDDEN");
+    assert.notEqual(store.getChatSession("client:web"), null);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test("ClientTransport agent falls back to connection id when sessionKey is absent", async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {

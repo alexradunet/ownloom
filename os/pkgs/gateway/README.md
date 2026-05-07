@@ -31,6 +31,12 @@ Authentication options:
 - If either is configured, WebSocket `connect.auth.token` must match the global token or a named client token.
 - REST calls must include `Authorization: Bearer <token>` when the global token is configured. Named client REST auth is not implemented yet.
 
+Scope rules:
+
+- `read`: `health`, `status`, `commands.list`, `sessions.list`, `sessions.get`
+- `write`: `agent`, `agent.wait`
+- `admin`: `sessions.reset`
+
 Example named client config:
 
 ```yaml
