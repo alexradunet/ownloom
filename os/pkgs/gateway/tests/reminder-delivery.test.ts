@@ -27,14 +27,14 @@ class FakeTransport implements GatewayTransport {
 }
 
 test("ReminderDeliveryWorker sends due reminders once per recipient", async () => {
-  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-reminders-"));
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-reminders-"));
   try {
     const store = new Store(path.join(tmpDir, "gateway-state.json"));
     const transport = new FakeTransport();
     const delivery = new DeliveryService([transport]);
 
     const dueReminders: ReminderItem[] = [
-      { uid: "nixpi-test-call-mom", kind: "reminder", status: "open", title: "Call Mom", alarmAt: "2000-01-01T09:00:00Z", description: "call mom" },
+      { uid: "ownloom-test-call-mom", kind: "reminder", status: "open", title: "Call Mom", alarmAt: "2000-01-01T09:00:00Z", description: "call mom" },
     ];
 
     const worker = new ReminderDeliveryWorker(store, delivery, ["whatsapp:+15550001111"], {
@@ -56,7 +56,7 @@ test("ReminderDeliveryWorker sends due reminders once per recipient", async () =
 });
 
 test("ReminderDeliveryWorker delivers a rescheduled reminder with the same UID", async () => {
-  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-reminders-"));
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-reminders-"));
   try {
     const store = new Store(path.join(tmpDir, "gateway-state.json"));
     const transport = new FakeTransport();
@@ -65,7 +65,7 @@ test("ReminderDeliveryWorker delivers a rescheduled reminder with the same UID",
 
     const worker = new ReminderDeliveryWorker(store, delivery, ["whatsapp:+15550001111"], {
       scanReminders: async () => [
-        { uid: "nixpi-test-rescheduled", kind: "reminder", status: "open", title: "Stretch", alarmAt },
+        { uid: "ownloom-test-rescheduled", kind: "reminder", status: "open", title: "Stretch", alarmAt },
       ],
     });
 
@@ -80,14 +80,14 @@ test("ReminderDeliveryWorker delivers a rescheduled reminder with the same UID",
 });
 
 test("ReminderDeliveryWorker skips future reminders", async () => {
-  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-reminders-"));
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-reminders-"));
   try {
     const store = new Store(path.join(tmpDir, "gateway-state.json"));
     const transport = new FakeTransport();
     const delivery = new DeliveryService([transport]);
 
     const futureReminders: ReminderItem[] = [
-      { uid: "nixpi-test-future", kind: "reminder", status: "open", title: "Future event", alarmAt: "2999-12-31T09:00:00Z" },
+      { uid: "ownloom-test-future", kind: "reminder", status: "open", title: "Future event", alarmAt: "2999-12-31T09:00:00Z" },
     ];
 
     const worker = new ReminderDeliveryWorker(store, delivery, ["whatsapp:+15550001111"], {
@@ -102,14 +102,14 @@ test("ReminderDeliveryWorker skips future reminders", async () => {
 });
 
 test("ReminderDeliveryWorker skips completed reminders", async () => {
-  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-reminders-"));
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-reminders-"));
   try {
     const store = new Store(path.join(tmpDir, "gateway-state.json"));
     const transport = new FakeTransport();
     const delivery = new DeliveryService([transport]);
 
     const doneReminders: ReminderItem[] = [
-      { uid: "nixpi-test-done", kind: "reminder", status: "done", title: "Already done", alarmAt: "2000-01-01T09:00:00Z" },
+      { uid: "ownloom-test-done", kind: "reminder", status: "done", title: "Already done", alarmAt: "2000-01-01T09:00:00Z" },
     ];
 
     const worker = new ReminderDeliveryWorker(store, delivery, ["whatsapp:+15550001111"], {

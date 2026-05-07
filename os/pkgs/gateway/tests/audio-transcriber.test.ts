@@ -11,7 +11,7 @@ function writeExecutable(filePath: string, source: string): void {
 }
 
 test("WhisperCliAudioTranscriber converts audio and returns the whisper transcript", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-stt-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-stt-"));
   try {
     const ffmpeg = path.join(tmp, "fake-ffmpeg.cjs");
     const whisper = path.join(tmp, "fake-whisper.cjs");

@@ -34,7 +34,7 @@ describe("handleDecayPass", () => {
   let wikiRoot: string;
 
   beforeEach(() => {
-    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "nixpi-wiki-decay-"));
+    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "ownloom-wiki-decay-"));
     mkdirSync(path.join(wikiRoot, "meta"), { recursive: true });
   });
 

@@ -53,7 +53,7 @@ describe("handleIngest", () => {
   const today = todayStamp();
 
   beforeEach(() => {
-    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "nixpi-wiki-ingest-"));
+    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "ownloom-wiki-ingest-"));
   });
 
   afterEach(() => {

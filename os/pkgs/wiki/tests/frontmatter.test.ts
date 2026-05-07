@@ -116,7 +116,7 @@ body`);
 
 describe("helper utilities", () => {
   it("writes files atomically and creates directories on demand", () => {
-    tempDir = mkdtempSync(path.join(os.tmpdir(), "nixpi-wiki-frontmatter-"));
+    tempDir = mkdtempSync(path.join(os.tmpdir(), "ownloom-wiki-frontmatter-"));
     const nestedDir = path.join(tempDir, "nested", "dir");
     ensureDir(nestedDir);
     expect(existsSync(nestedDir)).toBe(true);

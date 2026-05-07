@@ -58,7 +58,7 @@ function makeAgent(
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test("Router: delivers primary reply when provider succeeds", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-router-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-router-"));
   try {
     const agent = makeAgent([async () => ({ text: "primary reply", sessionPath: "/tmp/s.jsonl" })]);
     const router = new Router(makeStore(tmp), agent, 1400, 4);
@@ -71,7 +71,7 @@ test("Router: delivers primary reply when provider succeeds", async () => {
 });
 
 test("Router: falls back to local model when primary fails and no chunks sent", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-router-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-router-"));
   try {
     const agent = makeAgent([
       async () => { throw new Error("upstream 503"); },
@@ -95,7 +95,7 @@ test("Router: falls back to local model when primary fails and no chunks sent", 
 });
 
 test("Router: does NOT fall back when chunks are already streaming", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-router-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-router-"));
   try {
     const agent = makeAgent([
       async () => { throw new Error("upstream 503"); },
@@ -111,7 +111,7 @@ test("Router: does NOT fall back when chunks are already streaming", async () =>
 });
 
 test("Router: returns generic error when both primary and fallback fail", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-router-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-router-"));
   try {
     const agent = makeAgent([
       async () => { throw new Error("primary failed"); },
@@ -127,7 +127,7 @@ test("Router: returns generic error when both primary and fallback fail", async 
 });
 
 test("Router: skips fallback when no fallback model configured", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-router-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-router-"));
   try {
     const agent = makeAgent([
       async () => { throw new Error("primary failed"); },
@@ -142,7 +142,7 @@ test("Router: skips fallback when no fallback model configured", async () => {
 });
 
 test("Router: /private prefix routes to fallback model, skips synthetic", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-router-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-router-"));
   try {
     let usedModel: string | undefined;
     const agent = makeAgent([
@@ -161,7 +161,7 @@ test("Router: /private prefix routes to fallback model, skips synthetic", async 
 });
 
 test("Router: /private returns error when no local model configured", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-router-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-router-"));
   try {
     const agent = makeAgent([]);
     const router = new Router(makeStore(tmp), agent, 1400, 4);
@@ -174,7 +174,7 @@ test("Router: /private returns error when no local model configured", async () =
 });
 
 test("Router: skips fallback when no fallback model configured", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-router-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-router-"));
   try {
     const agent = makeAgent([
       async () => { throw new Error("primary failed"); },

@@ -21,7 +21,7 @@ describe("actions-meta", () => {
   let wikiRoot: string;
 
   beforeEach(() => {
-    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "nixpi-wiki-meta-"));
+    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "ownloom-wiki-meta-"));
     mkdirSync(path.join(wikiRoot, "pages", "resources", "technical"), { recursive: true });
     mkdirSync(path.join(wikiRoot, "pages", "areas", "personal"), { recursive: true });
     mkdirSync(path.join(wikiRoot, "pages", "journal", "daily"), { recursive: true });
@@ -29,7 +29,7 @@ describe("actions-meta", () => {
 
   afterEach(() => {
     rmSync(wikiRoot, { recursive: true, force: true });
-    delete process.env.NIXPI_WIKI_HOST;
+    delete process.env.OWNLOOM_WIKI_HOST;
   });
 
   it("scanPages and buildRegistry preserve folder, domain, areas, and hosts", () => {
@@ -447,9 +447,9 @@ summary: Rebuilt page
   });
 
   it("handleWikiStatus reports uninitialized wikis when pages are missing", () => {
-    const blankRoot = mkdtempSync(path.join(os.tmpdir(), "nixpi-wiki-blank-"));
+    const blankRoot = mkdtempSync(path.join(os.tmpdir(), "ownloom-wiki-blank-"));
     try {
-      process.env.NIXPI_WIKI_HOST = "yoga-nixos";
+      process.env.OWNLOOM_WIKI_HOST = "yoga-nixos";
       const result = handleWikiStatus(blankRoot);
       expect(result.isOk()).toBe(true);
       if (result.isOk()) {
@@ -463,7 +463,7 @@ summary: Rebuilt page
   });
 
   it("handleWikiStatus reports domain counts and visible pages for the current host", () => {
-    process.env.NIXPI_WIKI_HOST = "yoga-nixos";
+    process.env.OWNLOOM_WIKI_HOST = "yoga-nixos";
     writeFileSync(
       path.join(wikiRoot, "pages", "resources", "technical", "host-note.md"),
       `---
@@ -515,7 +515,7 @@ summary: Stable personal notes
   });
 
   it("handleWikiStatus counts sources, journals, and unspecified domains", () => {
-    process.env.NIXPI_WIKI_HOST = "yoga-nixos";
+    process.env.OWNLOOM_WIKI_HOST = "yoga-nixos";
     mkdirSync(path.join(wikiRoot, "pages", "sources"), { recursive: true });
     writeFileSync(
       path.join(wikiRoot, "pages", "resources", "technical", "global-note.md"),
@@ -612,7 +612,7 @@ summary: Daily note
   });
 
   it("buildWikiDigest filters by host and excludes identity and journal pages", () => {
-    process.env.NIXPI_WIKI_HOST = "yoga-nixos";
+    process.env.OWNLOOM_WIKI_HOST = "yoga-nixos";
     writeFileSync(
       path.join(wikiRoot, "pages", "resources", "technical", "shared.md"),
       `---
@@ -697,7 +697,7 @@ summary: Stable personal notes
   });
 
   it("buildWikiDigest returns empty when no active canonical pages are visible", () => {
-    process.env.NIXPI_WIKI_HOST = "yoga-nixos";
+    process.env.OWNLOOM_WIKI_HOST = "yoga-nixos";
     writeFileSync(
       path.join(wikiRoot, "pages", "resources", "technical", "draft.md"),
       `---
@@ -739,7 +739,7 @@ summary: Daily note
   });
 
   it("buildWikiDigest omits summary separators for empty summaries and caps output", () => {
-    process.env.NIXPI_WIKI_HOST = "yoga-nixos";
+    process.env.OWNLOOM_WIKI_HOST = "yoga-nixos";
     for (let i = 0; i < 16; i += 1) {
       writeFileSync(
         path.join(wikiRoot, "pages", "resources", "technical", `note-${i}.md`),

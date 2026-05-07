@@ -8,7 +8,7 @@ describe("actions-meta wiki digest", () => {
   let wikiRoot: string;
 
   beforeEach(() => {
-    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "nixpi-wiki-digest-"));
+    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "ownloom-wiki-digest-"));
     mkdirSync(path.join(wikiRoot, "pages", "journal", "daily"), { recursive: true });
     mkdirSync(path.join(wikiRoot, "pages", "resources", "knowledge"), { recursive: true });
     mkdirSync(path.join(wikiRoot, "pages", "planner", "tasks"), { recursive: true });
@@ -18,13 +18,13 @@ describe("actions-meta wiki digest", () => {
   afterEach(() => {
     vi.useRealTimers();
     rmSync(wikiRoot, { recursive: true, force: true });
-    delete process.env.NIXPI_WIKI_HOST;
+    delete process.env.OWNLOOM_WIKI_HOST;
   });
 
   it("surfaces today's note and active knowledge notes but not planner context pages", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-21T09:00:00Z"));
-    process.env.NIXPI_WIKI_HOST = "vps-nixos";
+    process.env.OWNLOOM_WIKI_HOST = "vps-nixos";
 
     writeFileSync(
       path.join(wikiRoot, "pages", "journal", "daily", "2026-04-21.md"),

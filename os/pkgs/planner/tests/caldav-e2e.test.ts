@@ -81,7 +81,7 @@ if (!radicaleAvailable()) {
 } else {
   test("PlannerClient: full round-trip against real Radicale", async () => {
     const port = await findFreePort();
-    const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-planner-e2e-"));
+    const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-planner-e2e-"));
     const storageDir = path.join(tmp, "collections");
     let proc: ChildProcess | undefined;
 
@@ -129,7 +129,7 @@ if (!radicaleAvailable()) {
 
   test("PlannerClient: reschedule updates due date", async () => {
     const port = await findFreePort();
-    const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-planner-e2e-"));
+    const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-planner-e2e-"));
     let proc: ChildProcess | undefined;
 
     try {

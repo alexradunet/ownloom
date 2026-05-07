@@ -48,8 +48,8 @@ describe("PI adapter", () => {
     rmSync(state.wikiRoot, { recursive: true, force: true });
     mkdirSync(path.join(state.wikiRoot, "objects"), { recursive: true });
     process.env.HOME = path.join(process.cwd(), ".tmp-test-home");
-    mkdirSync(path.join(process.env.HOME, "NixPI", "hosts", "nixpi-vps"), { recursive: true });
-    writeFileSync(path.join(process.env.HOME, "NixPI", "hosts", "nixpi-vps", "default.nix"), "{}\n");
+    mkdirSync(path.join(process.env.HOME, "ownloom", "hosts", "nixpi-vps"), { recursive: true });
+    writeFileSync(path.join(process.env.HOME, "ownloom", "hosts", "nixpi-vps", "default.nix"), "{}\n");
   });
 
   afterEach(() => {
@@ -67,7 +67,7 @@ describe("PI adapter", () => {
     return api;
   }
 
-  async function loadNixpiAdapter() {
+  async function loadOwnloomAdapter() {
     const api = createMockExtensionAPI();
     const mod = await import("../../pi-adapter/extension/index.ts");
     mod.default(api as never);
@@ -80,11 +80,11 @@ describe("PI adapter", () => {
     expect(api._registeredCommands.map((command) => command.name)).toEqual(expect.arrayContaining(["memory", "today"]));
   });
 
-  it("full NixPI adapter keeps only wiki tools plus nixpi_planner as registered tools", async () => {
-    const api = await loadNixpiAdapter();
+  it("full ownloom adapter keeps only wiki tools plus ownloom_planner as registered tools", async () => {
+    const api = await loadOwnloomAdapter();
     const names = api._registeredTools.map((tool) => tool.name);
-    expect(names).toEqual([...toolManifest.map((tool) => tool.name), "nixpi_planner"]);
-    expect(api._registeredCommands.map((command) => command.name)).toContain("nixpi");
+    expect(names).toEqual([...toolManifest.map((tool) => tool.name), "ownloom_planner"]);
+    expect(api._registeredCommands.map((command) => command.name)).toContain("ownloom");
   });
 
   it("wiki registered tools delegate to the shared dispatcher with mutation policy", async () => {

@@ -28,28 +28,28 @@ import {
 } from "../src/wiki/paths.ts";
 
 afterEach(() => {
-  delete process.env.NIXPI_WIKI_ROOT;
-  delete process.env.NIXPI_WIKI_DIR;
-  delete process.env.NIXPI_WIKI_HOST;
-  delete process.env.NIXPI_WIKI_WORKSPACE;
-  delete process.env.NIXPI_WIKI_DEFAULT_DOMAIN;
+  delete process.env.OWNLOOM_WIKI_ROOT;
+  delete process.env.OWNLOOM_WIKI_DIR;
+  delete process.env.OWNLOOM_WIKI_HOST;
+  delete process.env.OWNLOOM_WIKI_WORKSPACE;
+  delete process.env.OWNLOOM_WIKI_DEFAULT_DOMAIN;
 
 });
 
 describe("getWikiRoot", () => {
-  it("uses NIXPI_WIKI_ROOT when set", () => {
-    process.env.NIXPI_WIKI_ROOT = "/tmp/nixpi-wiki";
-    expect(getWikiRoot()).toBe("/tmp/nixpi-wiki");
+  it("uses OWNLOOM_WIKI_ROOT when set", () => {
+    process.env.OWNLOOM_WIKI_ROOT = "/tmp/ownloom-wiki";
+    expect(getWikiRoot()).toBe("/tmp/ownloom-wiki");
   });
 
   it("falls back to ~/wiki", () => {
-    delete process.env.NIXPI_WIKI_ROOT;
-    delete process.env.NIXPI_WIKI_DIR;
+    delete process.env.OWNLOOM_WIKI_ROOT;
+    delete process.env.OWNLOOM_WIKI_DIR;
     expect(getWikiRoot()).toBe(path.join(process.env.HOME ?? "/root", "wiki"));
   });
 
   it("uses one root for every domain", () => {
-    process.env.NIXPI_WIKI_ROOT = "/tmp/default-wiki";
+    process.env.OWNLOOM_WIKI_ROOT = "/tmp/default-wiki";
     expect(getWikiRoots()).toEqual({ wiki: "/tmp/default-wiki" });
     expect(getWikiRootForDomain(" technical ")).toBe("/tmp/default-wiki");
     expect(getWikiRootForDomain("personal")).toBe("/tmp/default-wiki");
@@ -58,7 +58,7 @@ describe("getWikiRoot", () => {
   });
 
   it("does not infer sibling split roots", () => {
-    process.env.NIXPI_WIKI_ROOT = "/srv/wiki";
+    process.env.OWNLOOM_WIKI_ROOT = "/srv/wiki";
 
     expect(getWikiRootForDomain("technical")).toBe("/srv/wiki");
     expect(getWikiRootForDomain("personal")).toBe("/srv/wiki");
@@ -68,19 +68,19 @@ describe("getWikiRoot", () => {
 
 describe("workspace roots", () => {
   it("defaults technical and personal domains to the same wiki root", () => {
-    process.env.NIXPI_WIKI_ROOT = "/tmp/wiki";
+    process.env.OWNLOOM_WIKI_ROOT = "/tmp/wiki";
 
     const profile = getWorkspaceProfile();
 
-    expect(profile.name).toBe("nixpi");
+    expect(profile.name).toBe("ownloom");
     expect(profile.defaultDomain).toBe("technical");
     expect(profile.domains.technical?.root).toBe("/tmp/wiki");
     expect(profile.domains.personal?.root).toBe("/tmp/wiki");
   });
 
   it("supports workspace env overrides without changing domain availability", () => {
-    process.env.NIXPI_WIKI_WORKSPACE = "work";
-    process.env.NIXPI_WIKI_ROOT = "/work/wiki";
+    process.env.OWNLOOM_WIKI_WORKSPACE = "work";
+    process.env.OWNLOOM_WIKI_ROOT = "/work/wiki";
 
     const profile = getWorkspaceProfile();
 
@@ -89,17 +89,17 @@ describe("workspace roots", () => {
     expect(profile.domains.personal?.root).toBe("/work/wiki");
   });
 
-  it("supports NixPI workspace and default-domain env", () => {
-    process.env.NIXPI_WIKI_ROOT = "/nixpi/wiki";
-    process.env.NIXPI_WIKI_WORKSPACE = "client-work";
-    process.env.NIXPI_WIKI_DEFAULT_DOMAIN = "work";
+  it("supports ownloom workspace and default-domain env", () => {
+    process.env.OWNLOOM_WIKI_ROOT = "/ownloom/wiki";
+    process.env.OWNLOOM_WIKI_WORKSPACE = "client-work";
+    process.env.OWNLOOM_WIKI_DEFAULT_DOMAIN = "work";
 
     const profile = getWorkspaceProfile();
 
     expect(profile.name).toBe("client-work");
     expect(profile.defaultDomain).toBe("work");
-    expect(profile.domains.technical?.root).toBe("/nixpi/wiki");
-    expect(profile.domains.personal?.root).toBe("/nixpi/wiki");
+    expect(profile.domains.technical?.root).toBe("/ownloom/wiki");
+    expect(profile.domains.personal?.root).toBe("/ownloom/wiki");
   });
 });
 
@@ -109,9 +109,9 @@ describe("domain, area, and host normalization", () => {
     expect(normalizeAreas([" AI ", "ai", "Infra "])).toEqual(["ai", "infra"]);
   });
 
-  it("uses NIXPI_WIKI_HOST", () => {
-    process.env.NIXPI_WIKI_HOST = "NixPI-Host";
-    expect(appliesToHost(["nixpi-host"])).toBe(true);
+  it("uses OWNLOOM_WIKI_HOST", () => {
+    process.env.OWNLOOM_WIKI_HOST = "ownloom-host";
+    expect(appliesToHost(["ownloom-host"])).toBe(true);
   });
 
   it("normalizes hosts and evaluates host scope", () => {
@@ -185,7 +185,7 @@ describe("slug, ids, and wiki links", () => {
 });
 
 describe("path protection and markdown extraction", () => {
-  const wikiRoot = "/tmp/nixpi-wiki";
+  const wikiRoot = "/tmp/ownloom-wiki";
 
   it("protects raw and meta but allows pages", () => {
     expect(isProtectedPath(wikiRoot, `${wikiRoot}/raw/SRC-001/manifest.json`)).toBe(true);

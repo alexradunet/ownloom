@@ -7,13 +7,13 @@ import { loadConfig, validateGatewayConfig } from "../src/config.js";
 
 const minimalConfig = {
   gateway: {
-    statePath: "/var/lib/nixpi-gateway/gateway-state.json",
-    sessionDir: "/var/lib/nixpi-gateway/sessions",
+    statePath: "/var/lib/ownloom-gateway/gateway-state.json",
+    sessionDir: "/var/lib/ownloom-gateway/sessions",
     maxReplyChars: 1400,
     maxReplyChunks: 4,
   },
   pi: {
-    cwd: "/home/alex/NixPI",
+    cwd: "/home/alex/ownloom",
     agentDir: "/home/alex/.pi/agent",
     timeoutMs: 300000,
   },
@@ -23,7 +23,7 @@ const minimalConfig = {
       trustedNumbers: ["whatsapp:+15550001111"],
       adminNumbers: ["whatsapp:+15550001111"],
       directMessagesOnly: true,
-      sessionDataPath: "/var/lib/nixpi-gateway/whatsapp/auth",
+      sessionDataPath: "/var/lib/ownloom-gateway/whatsapp/auth",
       model: "hf:moonshotai/Kimi-K2.6",
       allowedModels: ["hf:moonshotai/Kimi-K2.6"],
     },
@@ -33,7 +33,7 @@ const minimalConfig = {
 test("validateGatewayConfig accepts the generated declarative config shape", () => {
   const config = validateGatewayConfig(minimalConfig);
 
-  assert.equal(config.gateway.statePath, "/var/lib/nixpi-gateway/gateway-state.json");
+  assert.equal(config.gateway.statePath, "/var/lib/ownloom-gateway/gateway-state.json");
   assert.equal(config.pi.agentDir, "/home/alex/.pi/agent");
   assert.equal(config.transports.whatsapp?.trustedNumbers[0], "whatsapp:+15550001111");
 });
@@ -64,19 +64,19 @@ test("validateGatewayConfig rejects removed Signal transport", () => {
 });
 
 test("loadConfig parses YAML and validates it", () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-config-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-config-"));
   try {
-    const configPath = path.join(tmp, "nixpi-gateway.yml");
+    const configPath = path.join(tmp, "ownloom-gateway.yml");
     writeFileSync(
       configPath,
       [
         "gateway:",
-        "  statePath: /var/lib/nixpi-gateway/gateway-state.json",
-        "  sessionDir: /var/lib/nixpi-gateway/sessions",
+        "  statePath: /var/lib/ownloom-gateway/gateway-state.json",
+        "  sessionDir: /var/lib/ownloom-gateway/sessions",
         "  maxReplyChars: 1400",
         "  maxReplyChunks: 4",
         "pi:",
-        "  cwd: /home/alex/NixPI",
+        "  cwd: /home/alex/ownloom",
         "  agentDir: /home/alex/.pi/agent",
         "transports:",
         "  whatsapp:",
@@ -84,7 +84,7 @@ test("loadConfig parses YAML and validates it", () => {
         "    trustedNumbers: ['+15550001111']",
         "    adminNumbers: ['+15550001111']",
         "    directMessagesOnly: true",
-        "    sessionDataPath: /var/lib/nixpi-gateway/whatsapp/auth",
+        "    sessionDataPath: /var/lib/ownloom-gateway/whatsapp/auth",
       ].join("\n"),
       "utf-8",
     );

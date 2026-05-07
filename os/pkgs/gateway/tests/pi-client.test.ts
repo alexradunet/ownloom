@@ -37,7 +37,7 @@ function fakeSession(options: {
 }
 
 test("PiClient applies per-call environment overrides around SDK prompts and restores them", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-pi-sdk-env-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-pi-sdk-env-"));
   const previous = process.env.PI_GATEWAY_PROFILE;
   delete process.env.PI_GATEWAY_PROFILE;
 
@@ -77,7 +77,7 @@ test("PiClient applies per-call environment overrides around SDK prompts and res
 });
 
 test("PiClient passes model, session, cwd, agentDir, and gateway prompt append to the SDK factory", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-pi-sdk-options-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-pi-sdk-options-"));
   try {
     const sessionPath = path.join(tmp, "sessions", "existing.jsonl");
     let seen: Parameters<PiSdkSessionFactory>[0] | undefined;
@@ -114,7 +114,7 @@ test("PiClient passes model, session, cwd, agentDir, and gateway prompt append t
 });
 
 test("PiClient converts image attachments to SDK image content", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-pi-sdk-attachments-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-pi-sdk-attachments-"));
   try {
     const imagePath = path.join(tmp, "image.png");
     writeFileSync(imagePath, "fake-image", "utf-8");
@@ -148,7 +148,7 @@ test("PiClient converts image attachments to SDK image content", async () => {
 });
 
 test("PiClient aborts and disposes the SDK session on timeout", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-pi-sdk-timeout-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-pi-sdk-timeout-"));
   try {
     let aborted = false;
     let disposed = false;
@@ -180,7 +180,7 @@ test("PiClient aborts and disposes the SDK session on timeout", async () => {
 });
 
 test("PiClient healthCheck delegates to the SDK health check", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-pi-sdk-health-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-pi-sdk-health-"));
   try {
     let calledWith: { cwd: string; agentDir?: string } | undefined;
     const client = new PiClient({
@@ -201,7 +201,7 @@ test("PiClient healthCheck delegates to the SDK health check", async () => {
 });
 
 test("PiClient calls onChunk for each text_delta event during streaming", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-pi-sdk-streaming-"));
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-pi-sdk-streaming-"));
   try {
     const listeners: AgentSessionEventListener[] = [];
     const factory: PiSdkSessionFactory = async () =>

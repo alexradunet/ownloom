@@ -10,7 +10,7 @@ describe("utils and filesystem helpers", () => {
   let tempDir: string;
 
   beforeEach(() => {
-    tempDir = mkdtempSync(path.join(os.tmpdir(), "nixpi-wiki-utils-"));
+    tempDir = mkdtempSync(path.join(os.tmpdir(), "ownloom-wiki-utils-"));
   });
 
   afterEach(() => {

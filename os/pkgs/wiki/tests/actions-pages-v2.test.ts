@@ -14,7 +14,7 @@ describe("actions-pages v2 scaffolding", () => {
   let wikiRoot: string;
 
   beforeEach(() => {
-    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "nixpi-wiki-pages-v2-"));
+    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "ownloom-wiki-pages-v2-"));
     mkdirSync(path.join(wikiRoot, "objects"), { recursive: true });
     mkdirSync(path.join(wikiRoot, "meta"), { recursive: true });
   });
@@ -89,7 +89,7 @@ describe("actions-pages v2 scaffolding", () => {
     rebuildAllMeta(wikiRoot);
 
     const person = handleEnsurePage(wikiRoot, { type: "person", title: "Alice", domain: "personal" });
-    const project = handleEnsurePage(wikiRoot, { type: "project", title: "NixPI v2", domain: "technical" });
+    const project = handleEnsurePage(wikiRoot, { type: "project", title: "ownloom v2", domain: "technical" });
     const decision = handleEnsurePage(wikiRoot, { type: "decision", title: "Use TypeScript", domain: "technical" });
 
     expect(person.isOk()).toBe(true);

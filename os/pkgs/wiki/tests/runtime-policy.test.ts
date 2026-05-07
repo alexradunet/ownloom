@@ -11,7 +11,7 @@ describe("runtime-policy helpers", () => {
   const originalHostname = process.env.HOSTNAME;
 
   beforeEach(() => {
-    process.env.HOME = path.join("/tmp", "nixpi-wiki-runtime-policy-home");
+    process.env.HOME = path.join("/tmp", "ownloom-wiki-runtime-policy-home");
     rmSync(process.env.HOME, { recursive: true, force: true });
     mkdirSync(process.env.HOME, { recursive: true });
     process.env.HOSTNAME = "runtime-test-host";

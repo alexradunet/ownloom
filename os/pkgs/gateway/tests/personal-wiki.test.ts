@@ -8,16 +8,16 @@ import { PersonalConversationCaptureService } from "../src/personal/conversation
 import { PersonalJournalService } from "../src/personal/journal.js";
 
 function withPersonalWikiRoot<T>(fn: (wikiRoot: string) => T): T {
-  const previous = process.env.NIXPI_WIKI_ROOT;
-  const wikiRoot = mkdtempSync(path.join(os.tmpdir(), "nixpi-gateway-personal-wiki-"));
-  process.env.NIXPI_WIKI_ROOT = wikiRoot;
+  const previous = process.env.OWNLOOM_WIKI_ROOT;
+  const wikiRoot = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-personal-wiki-"));
+  process.env.OWNLOOM_WIKI_ROOT = wikiRoot;
   try {
     return fn(wikiRoot);
   } finally {
     if (previous === undefined) {
-      delete process.env.NIXPI_WIKI_ROOT;
+      delete process.env.OWNLOOM_WIKI_ROOT;
     } else {
-      process.env.NIXPI_WIKI_ROOT = previous;
+      process.env.OWNLOOM_WIKI_ROOT = previous;
     }
     rmSync(wikiRoot, { recursive: true, force: true });
   }

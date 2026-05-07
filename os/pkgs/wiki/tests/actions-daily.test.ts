@@ -16,7 +16,7 @@ describe("actions-daily", () => {
   let wikiRoot: string;
 
   beforeEach(() => {
-    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "nixpi-wiki-daily-"));
+    wikiRoot = mkdtempSync(path.join(os.tmpdir(), "ownloom-wiki-daily-"));
   });
 
   afterEach(() => {
