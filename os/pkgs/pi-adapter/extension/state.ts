@@ -1,4 +1,3 @@
-import { withFileMutationQueue } from "@earendil-works/pi-coding-agent";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { agentDir, atomicWriteText } from "./shared.ts";
@@ -25,7 +24,5 @@ export function readUpdateStatus(): UpdateStatus | null {
 
 export async function writeUpdateStatus(status: UpdateStatus) {
   const p = updateStatusPath();
-  return withFileMutationQueue(p, async () => {
-    atomicWriteText(p, JSON.stringify(status, null, 2) + "\n");
-  });
+  atomicWriteText(p, JSON.stringify(status, null, 2) + "\n");
 }

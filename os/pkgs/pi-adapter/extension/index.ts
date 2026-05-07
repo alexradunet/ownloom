@@ -1,6 +1,5 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { StringEnum } from "@earendil-works/pi-ai";
 import { type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { formatFleetHostStatus } from "./shared.ts";
@@ -10,6 +9,10 @@ import registerWikiExtension from "./wiki/index.ts";
 const execFileAsync = promisify(execFile);
 const PLANNER_ACTIONS = ["init", "add_task", "add_reminder", "add_event", "snooze", "reschedule", "list", "done", "edit", "delete"] as const;
 const PLANNER_VIEWS = ["all", "today", "upcoming", "overdue"] as const;
+
+function stringEnum(values: readonly string[], options?: Record<string, unknown>) {
+  return Type.Unsafe({ type: "string", enum: [...values], ...(options ?? {}) });
+}
 
 async function runText(command: string, args: string[], timeout = 10_000): Promise<string> {
   const { stdout } = await execFileAsync(command, args, { timeout, maxBuffer: 2 * 1024 * 1024 });
@@ -38,7 +41,7 @@ function registerPlannerTool(pi: ExtensionAPI) {
       "Use action=list with view=today/upcoming/overdue before summarizing current planner state.",
     ],
     parameters: Type.Object({
-      action: StringEnum(PLANNER_ACTIONS, { description: "init, add_task, add_reminder, add_event, list, or done." }),
+      action: stringEnum(PLANNER_ACTIONS, { description: "init, add_task, add_reminder, add_event, list, or done." }),
       title: Type.Optional(Type.String({ description: "Title for add_task/add_reminder/add_event." })),
       description: Type.Optional(Type.String({ description: "Optional item description." })),
       due: Type.Optional(Type.String({ description: "Due date/time for add_task." })),
@@ -49,7 +52,7 @@ function registerPlannerTool(pi: ExtensionAPI) {
       categories: Type.Optional(Type.Array(Type.String({ description: "Optional categories/tags." }))),
       uid_prefix: Type.Optional(Type.String({ description: "UID prefix for done/reschedule/edit/delete; reminder UID prefix for snooze." })),
       reschedule_to: Type.Optional(Type.String({ description: "New date/time for snooze." })),
-      view: Type.Optional(StringEnum(PLANNER_VIEWS, { description: "List view. Defaults to upcoming." })),
+      view: Type.Optional(stringEnum(PLANNER_VIEWS, { description: "List view. Defaults to upcoming." })),
       rrule: Type.Optional(Type.String({ description: "RFC 5545 RRULE string." })),
       repeat: Type.Optional(Type.String({ description: "Shorthand repeat: daily | weekly | monthly | yearly | weekdays" })),
       add_categories: Type.Optional(Type.Array(Type.String({ description: "Categories to add to an existing item." }))),
