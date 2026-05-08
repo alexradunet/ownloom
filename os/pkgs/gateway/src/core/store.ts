@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -20,7 +21,7 @@ function atomicWriteJson(filePath: string, data: unknown): void {
 }
 
 function emptyState(): StateSchema {
-  return { processedMessages: {}, chatSessions: {}, sentReminders: {}, queuedDeliveries: {}, attachments: {}, idempotency: {} };
+  return { processedMessages: {}, chatSessions: {}, sentReminders: {}, queuedDeliveries: {}, attachments: {}, idempotency: {}, runtimeClients: {} };
 }
 
 function normalizeState(input: Partial<StateSchema>): StateSchema {
@@ -31,6 +32,7 @@ function normalizeState(input: Partial<StateSchema>): StateSchema {
     queuedDeliveries: input.queuedDeliveries ?? {},
     attachments: input.attachments ?? {},
     idempotency: input.idempotency ?? {},
+    runtimeClients: input.runtimeClients ?? {},
   };
 }
 
@@ -90,6 +92,18 @@ export type IdempotencyResult = {
   error?: { message: string; code?: string };
 };
 
+export type RuntimeClientRecord = {
+  id: string;
+  displayName: string;
+  scopes: Array<"read" | "write" | "admin">;
+  tokenHash?: string;
+  tokenPreview?: string;
+  createdAt: string;
+  updatedAt: string;
+  rotatedAt?: string;
+  revokedAt?: string;
+};
+
 export type IdempotencyEntry = {
   key: string;
   status: "pending" | "done";
@@ -105,6 +119,7 @@ type StateSchema = {
   queuedDeliveries: Record<string, QueuedDelivery>;
   attachments: Record<string, StoredAttachment>;
   idempotency: Record<string, IdempotencyEntry>;
+  runtimeClients: Record<string, RuntimeClientRecord>;
 };
 
 function makeReminderKey(reminderKey: string, channel: string, recipientId: string): string {
@@ -117,6 +132,18 @@ function makeDeliveryId(): string {
 
 function makeAttachmentId(): string {
   return `attachment-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function makeClientToken(): string {
+  return `ogw_${randomBytes(24).toString("base64url")}`;
+}
+
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function tokenPreview(token: string): string {
+  return `${token.slice(0, 7)}…${token.slice(-4)}`;
 }
 
 function safeFileName(value: string): string {
@@ -351,6 +378,80 @@ export class Store {
     }
     if (removed > 0) writeState(this.statePath, state);
     return removed;
+  }
+
+  listRuntimeClients(): RuntimeClientRecord[] {
+    const state = readState(this.statePath);
+    return Object.values(state.runtimeClients).sort((a, b) => a.id.localeCompare(b.id));
+  }
+
+  getRuntimeClient(id: string): RuntimeClientRecord | null {
+    const state = readState(this.statePath);
+    return state.runtimeClients[id] ?? null;
+  }
+
+  rotateRuntimeClient(input: {
+    id: string;
+    displayName: string;
+    scopes: Array<"read" | "write" | "admin">;
+  }): { client: RuntimeClientRecord; token: string } {
+    const state = readState(this.statePath);
+    const now = utcNow();
+    const token = makeClientToken();
+    const existing = state.runtimeClients[input.id];
+    const client: RuntimeClientRecord = {
+      id: input.id,
+      displayName: input.displayName,
+      scopes: input.scopes,
+      tokenHash: hashToken(token),
+      tokenPreview: tokenPreview(token),
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+      rotatedAt: now,
+    };
+    state.runtimeClients[input.id] = client;
+    writeState(this.statePath, state);
+    return { client, token };
+  }
+
+  revokeRuntimeClient(input: {
+    id: string;
+    displayName: string;
+    scopes: Array<"read" | "write" | "admin">;
+  }): RuntimeClientRecord {
+    const state = readState(this.statePath);
+    const now = utcNow();
+    const existing = state.runtimeClients[input.id];
+    const client: RuntimeClientRecord = {
+      id: input.id,
+      displayName: input.displayName,
+      scopes: input.scopes,
+      ...(existing?.tokenHash ? { tokenHash: existing.tokenHash } : {}),
+      ...(existing?.tokenPreview ? { tokenPreview: existing.tokenPreview } : {}),
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+      ...(existing?.rotatedAt ? { rotatedAt: existing.rotatedAt } : {}),
+      revokedAt: now,
+    };
+    state.runtimeClients[input.id] = client;
+    writeState(this.statePath, state);
+    return client;
+  }
+
+  resolveRuntimeClientToken(token: string): RuntimeClientRecord | null {
+    const state = readState(this.statePath);
+    const hashed = hashToken(token);
+    return Object.values(state.runtimeClients).find((client) => !client.revokedAt && client.tokenHash === hashed) ?? null;
+  }
+
+  hasRuntimeClientToken(id: string): boolean {
+    const state = readState(this.statePath);
+    return !!state.runtimeClients[id]?.tokenHash;
+  }
+
+  isRuntimeClientRevoked(id: string): boolean {
+    const state = readState(this.statePath);
+    return !!state.runtimeClients[id]?.revokedAt;
   }
 
   beginIdempotentRequest(key: string, maxAgeMs: number):

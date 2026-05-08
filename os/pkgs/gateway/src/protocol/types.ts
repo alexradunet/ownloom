@@ -90,6 +90,8 @@ export const METHODS = {
 
   // Clients
   CLIENTS_LIST: "clients.list",
+  CLIENTS_ROTATE_TOKEN: "clients.rotateToken",
+  CLIENTS_REVOKE: "clients.revoke",
 
   // System
   HEALTH: "health",

@@ -89,6 +89,9 @@ export function registerV1Methods(
     startedAtMs: number;
     handleAgent: (ctx: MethodContext) => Promise<MethodResult>;
     onDeliveryRetry?: () => Promise<unknown> | unknown;
+    listClients?: () => Array<{ id: string; displayName: string; scopes: Scope[]; tokenPreview?: string; rotatedAt?: string; revokedAt?: string }>;
+    rotateClientToken?: (id: string) => { client: unknown; token: string } | null;
+    revokeClient?: (id: string) => unknown | null;
     clients?: Array<{ id: string; displayName: string; scopes: Scope[] }>;
   },
 ): void {
@@ -181,9 +184,27 @@ export function registerV1Methods(
             ? { id: ctx.client.identity.id, displayName: ctx.client.identity.displayName, scopes: ctx.client.identity.scopes }
             : null,
         },
-        clients: deps.clients ?? [],
+        clients: deps.listClients?.() ?? deps.clients ?? [],
       },
     };
+  });
+
+  // clients.rotateToken
+  registry.register(METHODS.CLIENTS_ROTATE_TOKEN, (ctx) => {
+    const id = ctx.params["id"] as string | undefined;
+    if (!id) return { ok: false, error: { message: "id is required", code: "INVALID_REQUEST" } };
+    const result = deps.rotateClientToken?.(id);
+    if (!result) return { ok: false, error: { message: `Unknown client: ${id}`, code: "NOT_FOUND" } };
+    return { ok: true, payload: result };
+  });
+
+  // clients.revoke
+  registry.register(METHODS.CLIENTS_REVOKE, (ctx) => {
+    const id = ctx.params["id"] as string | undefined;
+    if (!id) return { ok: false, error: { message: "id is required", code: "INVALID_REQUEST" } };
+    const client = deps.revokeClient?.(id);
+    if (!client) return { ok: false, error: { message: `Unknown client: ${id}`, code: "NOT_FOUND" } };
+    return { ok: true, payload: { client } };
   });
 
   // agent methods — delegate to the provided handler (which calls Router).

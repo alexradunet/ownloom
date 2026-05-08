@@ -230,6 +230,57 @@ test("v1 sessions.reset resets a chat session", async () => {
   }
 });
 
+test("v1 client lifecycle rotates and revokes token without listing secret", async () => {
+  const { store, cleanup } = makeStore();
+  try {
+    const commands = new CommandRegistry();
+    const registry = new MethodRegistry();
+    registerV1Methods(registry, {
+      store,
+      commands,
+      agentName: "pi",
+      transportNames: [],
+      startedAtMs: Date.now(),
+      listClients: () => store.listRuntimeClients().map(({ tokenHash, ...client }) => client),
+      rotateClientToken: (id) => {
+        if (id !== "web") return null;
+        const { client, token } = store.rotateRuntimeClient({ id: "web", displayName: "Web", scopes: ["read", "write"] });
+        const { tokenHash, ...safeClient } = client;
+        return { client: safeClient, token };
+      },
+      revokeClient: (id) => {
+        if (id !== "web") return null;
+        const { tokenHash, ...safeClient } = store.revokeRuntimeClient({ id: "web", displayName: "Web", scopes: ["read", "write"] });
+        return safeClient;
+      },
+      handleAgent: async () => ({ ok: true, payload: { runId: "r1", status: "accepted" } }),
+    });
+
+    const rotated = await registry.dispatch(makeCtx({ _method: METHODS.CLIENTS_ROTATE_TOKEN, id: "web" }));
+    assert.equal(rotated.ok, true);
+    if (rotated.ok) {
+      const p = rotated.payload as any;
+      assert.match(p.token, /^ogw_/);
+      assert.equal(p.client.tokenHash, undefined);
+    }
+
+    const listed = await registry.dispatch(makeCtx({ _method: METHODS.CLIENTS_LIST }));
+    assert.equal(listed.ok, true);
+    if (listed.ok) {
+      const p = listed.payload as any;
+      assert.equal(p.clients[0].tokenHash, undefined);
+      assert.equal(p.clients[0].token, undefined);
+      assert.match(p.clients[0].tokenPreview, /^ogw_/);
+    }
+
+    const revoked = await registry.dispatch(makeCtx({ _method: METHODS.CLIENTS_REVOKE, id: "web" }));
+    assert.equal(revoked.ok, true);
+    assert.notEqual(store.getRuntimeClient("web")?.revokedAt, undefined);
+  } finally {
+    cleanup();
+  }
+});
+
 test("v1 clients.list returns current and configured clients without tokens", async () => {
   const { store, cleanup } = makeStore();
   try {

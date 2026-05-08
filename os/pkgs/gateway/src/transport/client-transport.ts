@@ -17,7 +17,7 @@ import type { ClientTransportConfig } from "../config.js";
 import type { DeliveryService } from "../core/delivery.js";
 import type { InboundAttachment, InboundMessage } from "../core/types.js";
 import type { GatewayTransport } from "../transports/types.js";
-import type { Store } from "../core/store.js";
+import type { RuntimeClientRecord, Store } from "../core/store.js";
 import type { CommandRegistry } from "../core/commands.js";
 import type { IdentityResolver, Identity } from "../core/identity.js";
 import type { Router } from "../core/router.js";
@@ -55,11 +55,9 @@ export class ClientTransport implements GatewayTransport {
       startedAtMs: this.startedAtMs,
       handleAgent: (ctx) => this.handleAgentMethod(ctx),
       onDeliveryRetry: () => this.delivery?.drainQueuedDeliveries(),
-      clients: (config.clients ?? []).map((client) => ({
-        id: client.id,
-        displayName: client.displayName,
-        scopes: client.scopes,
-      })),
+      listClients: () => this.listClientSummaries(),
+      rotateClientToken: (id) => this.rotateClientToken(id),
+      revokeClient: (id) => this.revokeClient(id),
     });
   }
 
@@ -536,8 +534,23 @@ export class ClientTransport implements GatewayTransport {
   }
 
   private resolveTokenIdentity(token?: string): Identity | null {
-    if (!token || !this.identityResolver) return null;
-    return this.identityResolver.resolve("token", token);
+    if (!token) return null;
+    const runtimeClient = this.store.resolveRuntimeClientToken(token);
+    if (runtimeClient) {
+      return {
+        id: runtimeClient.id,
+        displayName: runtimeClient.displayName,
+        scopes: runtimeClient.scopes,
+        source: "token",
+        matchedBy: `runtime-token:${runtimeClient.id}`,
+      };
+    }
+    if (!this.identityResolver) return null;
+    const identity = this.identityResolver.resolve("token", token);
+    if (!identity) return null;
+    if (this.store.isRuntimeClientRevoked(identity.id)) return null;
+    if (this.store.hasRuntimeClientToken(identity.id)) return null;
+    return identity;
   }
 
   private authenticateRestRequest(req: IncomingMessage, requiredScope: "read" | "write" | "admin"):
@@ -558,7 +571,63 @@ export class ClientTransport implements GatewayTransport {
     return { ok: true };
   }
 
+  private listClientSummaries(): Array<{ id: string; displayName: string; scopes: Array<"read" | "write" | "admin">; tokenPreview?: string; rotatedAt?: string; revokedAt?: string }> {
+    const runtimeById = new Map(this.store.listRuntimeClients().map((client) => [client.id, client]));
+    const configured = (this.config.clients ?? []).map((client) => this.clientSummary({
+      ...client,
+      runtime: runtimeById.get(client.id),
+    }));
+    const configuredIds = new Set((this.config.clients ?? []).map((client) => client.id));
+    const runtimeOnly = [...runtimeById.values()]
+      .filter((client) => !configuredIds.has(client.id))
+      .map((client) => this.clientSummary({
+        id: client.id,
+        displayName: client.displayName,
+        scopes: client.scopes,
+        runtime: client,
+      }));
+    return [...configured, ...runtimeOnly].sort((a, b) => a.id.localeCompare(b.id));
+  }
+
+  private clientSummary(input: {
+    id: string;
+    displayName: string;
+    scopes: Array<"read" | "write" | "admin">;
+    runtime?: RuntimeClientRecord;
+  }): { id: string; displayName: string; scopes: Array<"read" | "write" | "admin">; tokenPreview?: string; rotatedAt?: string; revokedAt?: string } {
+    return {
+      id: input.id,
+      displayName: input.displayName,
+      scopes: input.runtime?.scopes ?? input.scopes,
+      ...(input.runtime?.tokenPreview ? { tokenPreview: input.runtime.tokenPreview } : {}),
+      ...(input.runtime?.rotatedAt ? { rotatedAt: input.runtime.rotatedAt } : {}),
+      ...(input.runtime?.revokedAt ? { revokedAt: input.runtime.revokedAt } : {}),
+    };
+  }
+
+  private rotateClientToken(id: string): { client: unknown; token: string } | null {
+    const configured = (this.config.clients ?? []).find((client) => client.id === id);
+    const runtime = this.store.getRuntimeClient(id);
+    const base = configured ?? runtime;
+    if (!base) return null;
+    const result = this.store.rotateRuntimeClient({ id: base.id, displayName: base.displayName, scopes: base.scopes });
+    return { client: this.clientSummary({ ...base, runtime: result.client }), token: result.token };
+  }
+
+  private revokeClient(id: string): unknown | null {
+    const configured = (this.config.clients ?? []).find((client) => client.id === id);
+    const runtime = this.store.getRuntimeClient(id);
+    const base = configured ?? runtime;
+    if (!base) return null;
+    const client = this.store.revokeRuntimeClient({ id: base.id, displayName: base.displayName, scopes: base.scopes });
+    return this.clientSummary({ ...base, runtime: client });
+  }
+
   private emitChangedEventForMethod(method: string): void {
+    if (method === "clients.rotateToken" || method === "clients.revoke") {
+      this.broadcastEvent(EVENTS.CLIENTS_CHANGED, this.clientsChangedPayload());
+      return;
+    }
     if (method === "sessions.reset") {
       this.broadcastEvent(EVENTS.SESSIONS_CHANGED, {});
       return;
@@ -595,7 +664,7 @@ function requiredScopeForMethod(method: string): "read" | "write" | "admin" | nu
     return "read";
   }
   if (method === "agent" || method === "agent.wait") return "write";
-  if (method === "sessions.reset" || method === "deliveries.retry" || method === "deliveries.delete") return "admin";
+  if (method === "sessions.reset" || method === "deliveries.retry" || method === "deliveries.delete" || method === "clients.rotateToken" || method === "clients.revoke") return "admin";
   return null;
 }
 

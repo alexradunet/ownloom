@@ -36,7 +36,7 @@ Scope rules:
 
 - `read`: `health`, `status`, `commands.list`, `clients.list`, `sessions.list`, `sessions.get`, `deliveries.list`
 - `write`: `agent`, `agent.wait`
-- `admin`: `sessions.reset`, `deliveries.retry`, `deliveries.delete`
+- `admin`: `sessions.reset`, `deliveries.retry`, `deliveries.delete`, `clients.rotateToken`, `clients.revoke`
 
 Example named client config:
 
@@ -80,7 +80,7 @@ Successful response:
     "protocol": 1,
     "server": { "version": "1.0.0", "connId": "client-..." },
     "features": {
-      "methods": ["agent", "agent.wait", "clients.list", "commands.list", "deliveries.delete", "deliveries.list", "deliveries.retry", "health", "sessions.get", "sessions.list", "sessions.reset", "status"],
+      "methods": ["agent", "agent.wait", "clients.list", "clients.revoke", "clients.rotateToken", "commands.list", "deliveries.delete", "deliveries.list", "deliveries.retry", "health", "sessions.get", "sessions.list", "sessions.reset", "status"],
       "events": ["agent", "clients.changed", "deliveries.changed", "sessions.changed", "shutdown", "tick"]
     },
     "auth": { "role": "operator", "scopes": ["read", "write"] },
@@ -259,6 +259,24 @@ named clients without token material:
 ```json
 { "type": "req", "id": "clients-1", "method": "clients.list", "params": {} }
 ```
+
+Admin clients can rotate or revoke a named client token:
+
+```json
+{ "type": "req", "id": "rotate-1", "method": "clients.rotateToken", "params": { "id": "web-main" } }
+```
+
+The rotate response includes the new token once. Copy it immediately. After a
+rotation, the old declarative/private-config token for that client id is no
+longer accepted. Revocation disables both rotated and declarative tokens for the
+client id:
+
+```json
+{ "type": "req", "id": "revoke-1", "method": "clients.revoke", "params": { "id": "web-main" } }
+```
+
+Runtime token state is stored in the gateway state file; Git/private config is
+not modified by these operations.
 
 ### Delivery administration
 

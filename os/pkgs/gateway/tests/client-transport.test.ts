@@ -315,6 +315,42 @@ test("ClientTransport requires admin scope for admin methods", async () => {
     assert.equal(responses[1].ok, false);
     assert.equal(responses[1].error.code, "FORBIDDEN");
     assert.equal(responses[2].ok, true);
+
+    (transport as any).handleRequest({
+      type: "req",
+      id: "req-4",
+      method: "clients.rotateToken",
+      params: { id: "web" },
+    }, writeClient, (frame: any) => responses.push(frame));
+
+    assert.equal(responses.length, 4);
+    assert.equal(responses[3].ok, false);
+    assert.equal(responses[3].error.code, "FORBIDDEN");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("ClientTransport rotates configured client token and rejects old token", () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const store = new Store(path.join(tmp, "state.json"));
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0, clients: [{ id: "web", displayName: "Web", token: "old-token", scopes: ["read", "write", "admin"] }] },
+      store,
+      new CommandRegistry(),
+      new SimpleIdentityResolver([{ id: "web", displayName: "Web", scopes: ["read", "write", "admin"], keys: ["token:old-token"] }]),
+    );
+
+    const rotated = (transport as any).rotateClientToken("web");
+    assert.match(rotated.token, /^ogw_/);
+    assert.equal(rotated.client.tokenHash, undefined);
+    assert.equal((transport as any).resolveTokenIdentity("old-token"), null);
+    assert.equal((transport as any).resolveTokenIdentity(rotated.token).id, "web");
+
+    const revoked = (transport as any).revokeClient("web");
+    assert.notEqual(revoked.revokedAt, undefined);
+    assert.equal((transport as any).resolveTokenIdentity(rotated.token), null);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

@@ -311,7 +311,11 @@ function renderClients(payload) {
     const current = client.current ? "Current connection" : client.displayName;
     const name = client.identity?.displayName ?? client.displayName ?? client.clientId ?? client.id ?? client.connId ?? "client";
     const scopes = (client.identity?.scopes ?? client.scopes ?? []).join(", ");
-    return `<strong>${escapeHtml(name)}</strong><br><small>${escapeHtml(current ?? "Configured client")} · ${escapeHtml(scopes)}</small>`;
+    const status = client.revokedAt ? "revoked" : client.rotatedAt ? `rotated ${client.tokenPreview ?? ""}` : "configured";
+    const actions = client.id && !client.current
+      ? `<div class="row item-actions"><button data-client-rotate="${escapeHtml(client.id)}">Rotate token</button><button data-client-revoke="${escapeHtml(client.id)}">Revoke</button></div>`
+      : "";
+    return `<strong>${escapeHtml(name)}</strong><br><small>${escapeHtml(current ?? status)} · ${escapeHtml(scopes)}</small>${actions}`;
   });
 }
 
@@ -344,6 +348,21 @@ els.rememberSettings.addEventListener("change", () => {
 });
 els.healthButton.addEventListener("click", () => health().catch((error) => log("health failed", error.message)));
 els.refreshButton.addEventListener("click", () => refreshLists().catch((error) => log("refresh failed", error.message)));
+els.clients.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  const rotateId = target.getAttribute("data-client-rotate");
+  const revokeId = target.getAttribute("data-client-revoke");
+  if (rotateId) {
+    request("clients.rotateToken", { id: rotateId }).then((payload) => {
+      log("client token rotated", { id: rotateId, token: payload.token });
+      addMessage("system", `New token for ${rotateId}: ${payload.token}\nCopy it now; it will not be shown again.`);
+      return refreshLists();
+    }).catch((error) => log("client token rotate failed", error.message));
+  } else if (revokeId) {
+    request("clients.revoke", { id: revokeId }).then(refreshLists).catch((error) => log("client revoke failed", error.message));
+  }
+});
 els.sessions.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
