@@ -134,6 +134,11 @@ Send a message to Pi:
 `client:<sessionKey>`. Without it, the gateway uses the connection id, so a new
 WebSocket connection starts a different session.
 
+Protocol clients may also pass `chatId` to attach locally to an existing gateway
+session, for example `whatsapp:+407...`. Non-`client:` chat ids must already
+exist in `sessions.list`; replies stream back to the protocol client and are not
+sent to the original transport.
+
 During the run, clients receive `agent` events:
 
 ```json
@@ -156,10 +161,10 @@ Today `agent` and `agent.wait` share the same implementation and both wait for
 the local Pi run to finish while emitting events. Keep using `agent.wait` when a
 client explicitly expects that behavior.
 
-Only one agent run may be active per `sessionKey` at a time. If a client sends a
+Only one agent run may be active per chat id at a time. If a client sends a
 second agent request for the same session while one is still running, the gateway
 returns `AGENT_BUSY`; retry after the current run finishes or use a different
-session key.
+session.
 
 ### Duplicate request protection
 

@@ -22,7 +22,7 @@ runCommand "ownloom-gateway-web-smoke" {
   grep -q 'pairButton' "$root/index.html"
   grep -q 'newChatButton' "$root/index.html"
   grep -q 'agent.wait' "$root/app.js"
-  grep -q 'data-session-switch' "$root/app.js"
+  grep -q 'data-session-switch-chat' "$root/app.js"
   grep -q '/api/v1/pair' "$root/app.js"
   grep -q '/api/v1/attachments' "$root/app.js"
   grep -q 'deliveries.list' "$root/app.js"

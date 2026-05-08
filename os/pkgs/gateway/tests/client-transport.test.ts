@@ -92,6 +92,60 @@ test("ClientTransport agent uses protocol sessionKey as stable Pi chat session",
   }
 });
 
+test("ClientTransport agent can attach to an existing WhatsApp chat session", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const store = new Store(path.join(tmp, "state.json"));
+    store.upsertChatSession("whatsapp:+15550001111", "whatsapp:+15550001111", "/tmp/pi-session.json");
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0 },
+      store,
+      new CommandRegistry(),
+    );
+
+    const seen: InboundMessage[] = [];
+    transport.setRouter({
+      handleMessage: async (msg: InboundMessage) => {
+        seen.push(msg);
+        return { replies: ["ok"], markProcessed: true };
+      },
+    } as any);
+
+    const result = await (transport as any).handleAgentMethod(makeCtx({ message: "continue", chatId: "whatsapp:+15550001111" }));
+
+    assert.equal(result.ok, true);
+    assert.equal(seen.length, 1);
+    assert.equal(seen[0]?.channel, "whatsapp");
+    assert.equal(seen[0]?.chatId, "whatsapp:+15550001111");
+    assert.equal(seen[0]?.senderId, "whatsapp:+15550001111");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("ClientTransport rejects unknown non-client chat attachment", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const store = new Store(path.join(tmp, "state.json"));
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0 },
+      store,
+      new CommandRegistry(),
+    );
+
+    transport.setRouter({
+      handleMessage: async () => ({ replies: ["ok"], markProcessed: true }),
+    } as any);
+
+    const result = await (transport as any).handleAgentMethod(makeCtx({ message: "continue", chatId: "whatsapp:+15550001111" }));
+
+    assert.equal(result.ok, false);
+    assert.equal(result.error.code, "NOT_FOUND");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test("ClientTransport rejects concurrent agent runs for the same protocol session", async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {

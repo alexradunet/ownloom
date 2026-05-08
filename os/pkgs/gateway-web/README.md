@@ -37,7 +37,7 @@ Current features:
 - protocol/v1 WebSocket `connect`
 - `health`
 - `agent.wait` chat with stable `sessionKey`
-- current session display, New chat, and session switching from the Sessions panel; session changes are blocked while an agent run is active
+- current conversation display, New chat, web session switching, and local attach to existing WhatsApp sessions from the Sessions panel; conversation changes are blocked while an agent run is active
 - streamed `agent` event display
 - REST attachment upload using one-shot attachment refs
 - sessions, clients, deliveries, and commands list panels

@@ -527,10 +527,25 @@ export class ClientTransport implements GatewayTransport {
       return { ok: false, error: { message: "message is required", code: "INVALID_REQUEST" } };
     }
 
+    const webSenderId = ctx.client.identity ? `client:${ctx.client.identity.id}` : `client:${ctx.client.connId}`;
+    const explicitChatId = typeof ctx.params["chatId"] === "string" ? ctx.params["chatId"].trim() : "";
     const sessionKey = typeof ctx.params["sessionKey"] === "string" && ctx.params["sessionKey"].trim()
       ? ctx.params["sessionKey"].trim()
       : ctx.client.connId;
-    const chatId = `client:${sessionKey}`;
+    const chatId = explicitChatId || `client:${sessionKey}`;
+    if (!this.isValidChatId(chatId)) {
+      return { ok: false, error: { message: "chatId is invalid", code: "INVALID_REQUEST" } };
+    }
+
+    const existingSession = this.store.getChatSession(chatId);
+    if (explicitChatId && !chatId.startsWith("client:") && !existingSession) {
+      return { ok: false, error: { message: `Unknown session: ${chatId}`, code: "NOT_FOUND" } };
+    }
+
+    const channel = this.channelForChatId(chatId);
+    const senderId = explicitChatId && !chatId.startsWith("client:") && existingSession
+      ? existingSession.senderId
+      : webSenderId;
     if (this.activeAgentSessions.has(chatId)) {
       return {
         ok: false,
@@ -544,16 +559,15 @@ export class ClientTransport implements GatewayTransport {
     const attachments = this.resolveAttachmentRefs(attachmentRefs);
 
     const runId = randomUUID();
-    const senderId = ctx.client.identity ? `client:${ctx.client.identity.id}` : `client:${ctx.client.connId}`;
 
     const inbound: InboundMessage = {
-      channel: "client",
+      channel,
       chatId,
       senderId,
       messageId: runId,
       timestamp: new Date().toISOString(),
       text: message,
-      isGroup: false,
+      isGroup: chatId.startsWith("whatsapp-group:"),
       access: {
         allowedSenderIds: [senderId],
         adminSenderIds: ctx.client.identity?.scopes?.includes("admin") ? [senderId] : [],
@@ -587,6 +601,16 @@ export class ClientTransport implements GatewayTransport {
     } finally {
       this.activeAgentSessions.delete(chatId);
     }
+  }
+
+  private isValidChatId(chatId: string): boolean {
+    return /^[a-z0-9-]+:[^\s]+$/i.test(chatId);
+  }
+
+  private channelForChatId(chatId: string): string {
+    if (chatId.startsWith("whatsapp:") || chatId.startsWith("whatsapp-group:")) return "whatsapp";
+    const separator = chatId.indexOf(":");
+    return separator > 0 ? chatId.slice(0, separator) : "client";
   }
 
   private resolveAttachmentRefs(refs: AttachmentRef[]): InboundAttachment[] {

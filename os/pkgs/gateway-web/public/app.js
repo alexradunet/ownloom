@@ -11,6 +11,7 @@ const state = {
   stagedAttachments: [],
   currentRun: null,
   agentRunning: false,
+  activeChatId: null,
   terminalLoaded: false,
 };
 
@@ -83,6 +84,7 @@ function loadSettings() {
     if (typeof saved.httpUrl === "string") els.httpUrl.value = saved.httpUrl;
     if (typeof saved.token === "string") els.token.value = saved.token;
     if (typeof saved.sessionKey === "string") els.sessionKey.value = saved.sessionKey;
+    if (typeof saved.chatId === "string") state.activeChatId = saved.chatId;
     if (typeof saved.remember === "boolean") els.rememberSettings.checked = saved.remember;
   } catch (error) {
     log("failed to load saved settings", error.message);
@@ -96,6 +98,7 @@ function saveSettings() {
     httpUrl: els.httpUrl.value.trim(),
     token: els.token.value.trim(),
     sessionKey: els.sessionKey.value.trim(),
+    chatId: currentChatId(),
     remember: true,
   }));
 }
@@ -124,11 +127,13 @@ function currentSessionKey() {
 }
 
 function currentChatId() {
-  return `client:${currentSessionKey()}`;
+  return state.activeChatId || `client:${currentSessionKey()}`;
 }
 
 function updateCurrentSession() {
-  els.currentSession.textContent = `Session: ${currentSessionKey()}`;
+  const chatId = currentChatId();
+  els.currentSession.textContent = `Conversation: ${sessionTitle(chatId)}`;
+  els.currentSession.title = chatId;
 }
 
 function clearMessagesWithNotice(message) {
@@ -144,16 +149,27 @@ function makeNewSessionKey() {
   return `web-${stamp}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
-function switchSessionKey(sessionKey, reason = "Switched session") {
+function switchChatId(chatId, reason = "Switched conversation") {
   if (state.agentRunning) {
-    addMessage("system", "Wait for the current answer before switching sessions.");
-    log("session switch blocked while agent is running", { sessionKey });
+    addMessage("system", "Wait for the current answer before switching conversations.");
+    log("conversation switch blocked while agent is running", { chatId });
     return;
   }
-  els.sessionKey.value = sessionKey;
+  state.activeChatId = chatId;
+  const sessionKey = clientSessionKey(chatId);
+  if (sessionKey) els.sessionKey.value = sessionKey;
   saveSettings();
-  clearMessagesWithNotice(`${reason}: ${sessionKey}`);
+  clearMessagesWithNotice(`${reason}: ${sessionTitle(chatId)} (${chatId})`);
   refreshLists().catch((error) => log("refresh failed", error.message));
+}
+
+function switchSessionKey(sessionKey, reason = "Switched session") {
+  switchChatId(`client:${sessionKey}`, reason);
+}
+
+function syncActiveChatFromSessionInput() {
+  state.activeChatId = `client:${currentSessionKey()}`;
+  updateCurrentSession();
 }
 
 function setConnection(status, className = "") {
@@ -387,7 +403,8 @@ async function sendMessage() {
   const message = els.messageInput.value.trim();
   if (!message && state.stagedAttachments.length === 0) return;
   const attachments = [...state.stagedAttachments];
-  const sessionKey = currentSessionKey();
+  const chatId = currentChatId();
+  const sessionKey = clientSessionKey(chatId) ?? currentSessionKey();
   state.agentRunning = true;
   updateSendButton();
   els.messageInput.value = "";
@@ -397,6 +414,7 @@ async function sendMessage() {
     const payload = await request("agent.wait", {
       message: message || "Please inspect the attachment(s).",
       sessionKey,
+      chatId,
       idempotencyKey: `web-${crypto.randomUUID()}`,
       ...(attachments.length ? { attachments } : {}),
     });
@@ -420,10 +438,10 @@ async function refreshLists() {
   const admin = (clients.current?.scopes ?? []).includes("admin");
   renderList(els.sessions, sessions.sessions ?? [], (s) => {
     const chatId = s.chatId ?? s.id ?? "session";
-    const sessionKey = clientSessionKey(chatId);
     const current = chatId === currentChatId();
     const disabled = state.agentRunning ? " disabled" : "";
-    const switchButton = sessionKey && !current ? `<button data-session-switch="${escapeHtml(sessionKey)}"${disabled}>Switch</button>` : "";
+    const switchLabel = chatId.startsWith("client:") ? "Switch" : "Attach";
+    const switchButton = !current ? `<button data-session-switch-chat="${escapeHtml(chatId)}"${disabled}>${switchLabel}</button>` : "";
     const resetButton = admin ? `<button data-session-reset="${escapeHtml(chatId)}"${disabled}>Reset</button>` : "";
     const actions = switchButton || resetButton ? `<div class="row item-actions">${switchButton}${resetButton}</div>` : "";
     const badge = current ? " · current" : "";
@@ -499,7 +517,8 @@ function clientStatus(client) {
 function sessionTitle(chatId) {
   const value = String(chatId);
   if (value.startsWith("client:")) return `Web chat: ${value.slice("client:".length)}`;
-  if (value.startsWith("whatsapp:")) return "WhatsApp chat";
+  if (value.startsWith("whatsapp:")) return `WhatsApp chat: ${value.slice("whatsapp:".length)}`;
+  if (value.startsWith("whatsapp-group:")) return `WhatsApp group: ${value.slice("whatsapp-group:".length)}`;
   return value;
 }
 
@@ -550,8 +569,11 @@ els.disconnectButton.addEventListener("click", disconnect);
 els.clearSettingsButton.addEventListener("click", clearSettings);
 els.httpUrl.addEventListener("change", saveSettings);
 els.token.addEventListener("change", saveSettings);
-els.sessionKey.addEventListener("input", updateCurrentSession);
-els.sessionKey.addEventListener("change", saveSettings);
+els.sessionKey.addEventListener("input", syncActiveChatFromSessionInput);
+els.sessionKey.addEventListener("change", () => {
+  syncActiveChatFromSessionInput();
+  saveSettings();
+});
 els.rememberSettings.addEventListener("change", () => {
   if (els.rememberSettings.checked) saveSettings();
   else localStorage.removeItem(SETTINGS_KEY);
@@ -578,10 +600,10 @@ els.clients.addEventListener("click", (event) => {
 els.sessions.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
-  const switchTo = target.getAttribute("data-session-switch");
+  const switchTo = target.getAttribute("data-session-switch-chat");
   const chatId = target.getAttribute("data-session-reset");
   if (switchTo) {
-    switchSessionKey(switchTo);
+    switchChatId(switchTo, switchTo.startsWith("client:") ? "Switched session" : "Attached conversation");
     return;
   }
   if (!chatId) return;
@@ -618,6 +640,7 @@ if (window.location.protocol === "http:" || window.location.protocol === "https:
   els.httpUrl.value = window.location.origin;
 }
 loadSettings();
+if (!state.activeChatId) state.activeChatId = `client:${currentSessionKey()}`;
 updateCurrentSession();
 selectTab(localStorage.getItem(ACTIVE_TAB_KEY) ?? "chat");
 

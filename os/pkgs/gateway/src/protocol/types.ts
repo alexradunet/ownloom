@@ -123,7 +123,10 @@ export type AttachmentRef = {
 
 export type AgentParams = {
   message: string;
+  /** Client-session shorthand; maps to chatId `client:<sessionKey>`. */
   sessionKey?: string;
+  /** Existing gateway chat id to attach to, e.g. `whatsapp:+407...`. */
+  chatId?: string;
   /** Optional duplicate-request guard for client retries. */
   idempotencyKey?: string;
   attachments?: AttachmentRef[];
