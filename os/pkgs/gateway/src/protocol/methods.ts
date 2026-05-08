@@ -89,7 +89,7 @@ export function registerV1Methods(
     startedAtMs: number;
     handleAgent: (ctx: MethodContext) => Promise<MethodResult>;
     onDeliveryRetry?: () => Promise<unknown> | unknown;
-    listClients?: () => Array<{ id: string; displayName: string; scopes: Scope[]; tokenPreview?: string; rotatedAt?: string; revokedAt?: string }>;
+    listClients?: () => Array<{ id: string; displayName: string; scopes: Scope[]; managedBy?: "config" | "runtime"; canRotate?: boolean; canRevoke?: boolean; tokenPreview?: string; rotatedAt?: string; revokedAt?: string }>;
     rotateClientToken?: (id: string) => { client: unknown; token: string } | null;
     revokeClient?: (id: string) => unknown | null;
     clients?: Array<{ id: string; displayName: string; scopes: Scope[] }>;

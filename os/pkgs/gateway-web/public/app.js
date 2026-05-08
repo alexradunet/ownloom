@@ -305,16 +305,24 @@ async function refreshLists() {
 
 function renderClients(payload) {
   const rows = [];
+  const currentScopes = payload.current?.scopes ?? [];
+  const admin = currentScopes.includes("admin");
   if (payload.current) rows.push({ ...payload.current, current: true });
   for (const client of payload.clients ?? []) rows.push(client);
   renderList(els.clients, rows, (client) => {
     const current = client.current ? "Current connection" : client.displayName;
     const name = client.identity?.displayName ?? client.displayName ?? client.clientId ?? client.id ?? client.connId ?? "client";
     const scopes = (client.identity?.scopes ?? client.scopes ?? []).join(", ");
-    const status = client.revokedAt ? "revoked" : client.rotatedAt ? `rotated ${client.tokenPreview ?? ""}` : "configured";
-    const actions = client.id && !client.current
-      ? `<div class="row item-actions"><button data-client-rotate="${escapeHtml(client.id)}">Rotate token</button><button data-client-revoke="${escapeHtml(client.id)}">Revoke</button></div>`
-      : "";
+    const status = client.revokedAt
+      ? "revoked"
+      : client.rotatedAt
+        ? `runtime token ${client.tokenPreview ?? ""}`
+        : client.managedBy === "runtime"
+          ? "runtime token"
+          : "config-managed";
+    const rotateButton = admin && client.canRotate ? `<button data-client-rotate="${escapeHtml(client.id)}">Rotate token</button>` : "";
+    const revokeButton = admin && client.canRevoke ? `<button data-client-revoke="${escapeHtml(client.id)}">Revoke</button>` : "";
+    const actions = !client.current && (rotateButton || revokeButton) ? `<div class="row item-actions">${rotateButton}${revokeButton}</div>` : "";
     return `<strong>${escapeHtml(name)}</strong><br><small>${escapeHtml(current ?? status)} · ${escapeHtml(scopes)}</small>${actions}`;
   });
 }

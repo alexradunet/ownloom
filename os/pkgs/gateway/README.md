@@ -187,7 +187,7 @@ Rules:
 Upload attachment bytes over REST first:
 
 ```bash
-curl -X POST "http://127.0.0.1:5233/api/v1/attachments" \
+curl -X POST "http://127.0.0.1:8081/api/v1/attachments" \
   -H "Authorization: Bearer $OWNLOOM_GATEWAY_TOKEN" \
   -H "Content-Type: image/jpeg" \
   -H "x-ownloom-attachment-kind: image" \
@@ -260,23 +260,25 @@ named clients without token material:
 { "type": "req", "id": "clients-1", "method": "clients.list", "params": {} }
 ```
 
-Admin clients can rotate or revoke a named client token:
+Declarative clients from private Nix config are config-managed. Change them by
+editing the private config, not through the protocol.
+
+Admin clients can rotate or revoke runtime clients, such as future paired
+devices:
 
 ```json
-{ "type": "req", "id": "rotate-1", "method": "clients.rotateToken", "params": { "id": "web-main" } }
+{ "type": "req", "id": "rotate-1", "method": "clients.rotateToken", "params": { "id": "phone-main" } }
 ```
 
-The rotate response includes the new token once. Copy it immediately. After a
-rotation, the old declarative/private-config token for that client id is no
-longer accepted. Revocation disables both rotated and declarative tokens for the
-client id:
+The rotate response includes the new token once. Copy it immediately. Revocation
+closes matching active WebSocket connections and disables that runtime token:
 
 ```json
-{ "type": "req", "id": "revoke-1", "method": "clients.revoke", "params": { "id": "web-main" } }
+{ "type": "req", "id": "revoke-1", "method": "clients.revoke", "params": { "id": "phone-main" } }
 ```
 
-Runtime token state is stored in the gateway state file; Git/private config is
-not modified by these operations.
+Runtime token state stores only token hashes/previews in the gateway state file;
+Git/private config is not modified by these operations.
 
 ### Delivery administration
 

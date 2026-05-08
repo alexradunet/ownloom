@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -9,6 +10,20 @@ import { ClientTransport } from "../src/transport/client-transport.js";
 import type { InboundMessage } from "../src/core/types.js";
 import type { MethodContext } from "../src/protocol/methods.js";
 import { SimpleIdentityResolver, type Scope } from "../src/core/identity.js";
+
+class FakeWs extends EventEmitter {
+  readyState = 1;
+  readonly sent: any[] = [];
+
+  send(raw: string): void {
+    this.sent.push(JSON.parse(raw));
+  }
+
+  close(): void {
+    this.readyState = 3;
+    this.emit("close");
+  }
+}
 
 async function waitFor(predicate: () => boolean): Promise<void> {
   for (let i = 0; i < 20; i += 1) {
@@ -232,6 +247,39 @@ test("ClientTransport accepts named client tokens and uses identity scopes", () 
   }
 });
 
+test("ClientTransport validates protocol frames before dispatch", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0 },
+      new Store(path.join(tmp, "state.json")),
+      new CommandRegistry(),
+    );
+
+    const rejected = new FakeWs();
+    (transport as any).handleConnection(rejected);
+    rejected.emit("message", Buffer.from(JSON.stringify({ type: "req", id: "too-early", method: "health" })));
+    assert.equal(rejected.sent[0].ok, false);
+    assert.equal(rejected.sent[0].error.code, "CONNECT_REQUIRED");
+    assert.equal(rejected.readyState, 3);
+
+    const ws = new FakeWs();
+    (transport as any).handleConnection(ws);
+    ws.emit("message", Buffer.from(JSON.stringify({ type: "connect", protocol: 1, auth: {} })));
+    await waitFor(() => ws.sent.some((frame) => frame.id === "connect" && frame.ok));
+
+    ws.emit("message", Buffer.from(JSON.stringify({ type: "req", id: "bad", method: "health", params: [] })));
+    await waitFor(() => ws.sent.some((frame) => frame.id === "bad"));
+    assert.equal(ws.sent.find((frame) => frame.id === "bad").error.code, "INVALID_FRAME");
+
+    ws.emit("message", Buffer.from(JSON.stringify({ type: "req", id: "health-1", method: "health" })));
+    await waitFor(() => ws.sent.some((frame) => frame.id === "health-1"));
+    assert.equal(ws.sent.find((frame) => frame.id === "health-1").ok, true);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test("ClientTransport enforces method scopes", async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {
@@ -331,10 +379,11 @@ test("ClientTransport requires admin scope for admin methods", async () => {
   }
 });
 
-test("ClientTransport rotates configured client token and rejects old token", () => {
+test("ClientTransport keeps configured clients declarative and rotates runtime clients only", () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {
     const store = new Store(path.join(tmp, "state.json"));
+    const initialRuntime = store.rotateRuntimeClient({ id: "phone", displayName: "Phone", scopes: ["read", "write"] });
     const transport = new ClientTransport(
       { enabled: true, host: "127.0.0.1", port: 0, clients: [{ id: "web", displayName: "Web", token: "old-token", scopes: ["read", "write", "admin"] }] },
       store,
@@ -342,13 +391,17 @@ test("ClientTransport rotates configured client token and rejects old token", ()
       new SimpleIdentityResolver([{ id: "web", displayName: "Web", scopes: ["read", "write", "admin"], keys: ["token:old-token"] }]),
     );
 
-    const rotated = (transport as any).rotateClientToken("web");
+    assert.equal((transport as any).rotateRuntimeClientToken("web"), null);
+    assert.equal((transport as any).resolveTokenIdentity("old-token")?.id, "web");
+    assert.equal((transport as any).resolveTokenIdentity(initialRuntime.token)?.id, "phone");
+
+    const rotated = (transport as any).rotateRuntimeClientToken("phone");
     assert.match(rotated.token, /^ogw_/);
     assert.equal(rotated.client.tokenHash, undefined);
-    assert.equal((transport as any).resolveTokenIdentity("old-token"), null);
-    assert.equal((transport as any).resolveTokenIdentity(rotated.token).id, "web");
+    assert.equal((transport as any).resolveTokenIdentity(initialRuntime.token), null);
+    assert.equal((transport as any).resolveTokenIdentity(rotated.token).id, "phone");
 
-    const revoked = (transport as any).revokeClient("web");
+    const revoked = (transport as any).revokeRuntimeClient("phone");
     assert.notEqual(revoked.revokedAt, undefined);
     assert.equal((transport as any).resolveTokenIdentity(rotated.token), null);
   } finally {

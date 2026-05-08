@@ -4,9 +4,9 @@ import { WebSocketServer, WebSocket } from "ws";
 import {
   PROTOCOL_VERSION,
   type ConnectFrame,
+  type RequestFrame,
   type ResponseFrame,
   type EventFrame,
-  type ClientFrame,
   type ConnectOkPayload,
   EVENTS,
   type AgentAcceptedPayload,
@@ -19,8 +19,20 @@ import type { InboundAttachment, InboundMessage } from "../core/types.js";
 import type { GatewayTransport } from "../transports/types.js";
 import type { RuntimeClientRecord, Store } from "../core/store.js";
 import type { CommandRegistry } from "../core/commands.js";
-import type { IdentityResolver, Identity } from "../core/identity.js";
+import type { IdentityResolver, Identity, Scope } from "../core/identity.js";
 import type { Router } from "../core/router.js";
+
+type ClientSummary = {
+  id: string;
+  displayName: string;
+  scopes: Scope[];
+  managedBy: "config" | "runtime";
+  canRotate: boolean;
+  canRevoke: boolean;
+  tokenPreview?: string;
+  rotatedAt?: string;
+  revokedAt?: string;
+};
 
 // ── ClientTransport ──────────────────────────────────────────────────────────
 // First-party client transport. Speaks protocol/v1 only:
@@ -56,8 +68,8 @@ export class ClientTransport implements GatewayTransport {
       handleAgent: (ctx) => this.handleAgentMethod(ctx),
       onDeliveryRetry: () => this.delivery?.drainQueuedDeliveries(),
       listClients: () => this.listClientSummaries(),
-      rotateClientToken: (id) => this.rotateClientToken(id),
-      revokeClient: (id) => this.revokeClient(id),
+      rotateClientToken: (id) => this.rotateRuntimeClientToken(id),
+      revokeClient: (id) => this.revokeRuntimeClient(id),
     });
   }
 
@@ -250,33 +262,34 @@ export class ClientTransport implements GatewayTransport {
     ws.on("error", (err) => close(`ws error: ${err.message}`));
 
     ws.on("message", (rawData) => {
-      let frame: ClientFrame;
+      let parsed: unknown;
       try {
-        frame = JSON.parse(rawData.toString()) as ClientFrame;
+        parsed = JSON.parse(rawData.toString());
       } catch {
         close("invalid JSON");
         return;
       }
 
       if (!client) {
-        if (frame.type !== "connect") {
+        const connectFrame = parseConnectFrame(parsed);
+        if (!connectFrame.ok) {
           sendJson({
             type: "res",
             id: "connect",
             ok: false,
-            error: { message: "First frame must be connect", code: "CONNECT_REQUIRED" },
+            error: { message: connectFrame.error, code: connectFrame.code },
           });
-          close("non-connect first frame");
+          close("invalid connect frame");
           return;
         }
-        this.handleConnect(ws, connId, frame, sendJson, close, (newChatId, newClient) => {
+        this.handleConnect(ws, connId, connectFrame.frame, sendJson, close, (newChatId, newClient) => {
           chatId = newChatId;
           client = newClient;
         });
         return;
       }
 
-      if (frame.type === "connect") {
+      if (isRecord(parsed) && parsed.type === "connect") {
         sendJson({
           type: "res",
           id: "connect",
@@ -286,7 +299,18 @@ export class ClientTransport implements GatewayTransport {
         return;
       }
 
-      this.handleRequest(frame, client, sendJson);
+      const requestFrame = parseRequestFrame(parsed);
+      if (!requestFrame.ok) {
+        sendJson({
+          type: "res",
+          id: requestFrame.id,
+          ok: false,
+          error: { message: requestFrame.error, code: requestFrame.code },
+        });
+        return;
+      }
+
+      this.handleRequest(requestFrame.frame, client, sendJson);
     });
   }
 
@@ -310,7 +334,7 @@ export class ClientTransport implements GatewayTransport {
     }
 
     const identity = this.resolveTokenIdentity(frame.auth.token);
-    const hasClientIdentities = (this.config.clients?.length ?? 0) > 0;
+    const hasClientIdentities = this.hasClientIdentities();
     const tokenMatchesGlobalAuth = !!this.config.authToken && frame.auth.token === this.config.authToken;
     if ((this.config.authToken || hasClientIdentities) && !tokenMatchesGlobalAuth && !identity) {
       sendJson({
@@ -329,7 +353,7 @@ export class ClientTransport implements GatewayTransport {
       ...(typeof frame.client?.id === "string" && frame.client.id.trim() ? { clientId: frame.client.id.trim() } : {}),
       identity,
       role: frame.role ?? "operator",
-      scopes: identity?.scopes ?? frame.scopes ?? ["read", "write", "admin"],
+      scopes: identity?.scopes ?? frame.scopes,
       seq: 0,
       send: (f) => sendJson(f),
     };
@@ -359,7 +383,7 @@ export class ClientTransport implements GatewayTransport {
     this.broadcastEvent(EVENTS.CLIENTS_CHANGED, this.clientsChangedPayload());
   }
 
-  private handleRequest(frame: ClientFrame, client: ConnectedClient, sendJson: (frame: ResponseFrame | EventFrame) => void): void {
+  private handleRequest(frame: RequestFrame, client: ConnectedClient, sendJson: (frame: ResponseFrame | EventFrame) => void): void {
     if (frame.type !== "req") {
       sendJson({
         type: "res",
@@ -437,7 +461,7 @@ export class ClientTransport implements GatewayTransport {
           ok: result.ok,
           ...(result.ok ? { payload: result.payload } : { error: result.error }),
         } as ResponseFrame);
-        if (result.ok) this.emitChangedEventForMethod(frame.method);
+        if (result.ok) this.emitChangedEventForMethod(frame.method, frame.params);
       } catch (err) {
         const result: MethodResult = {
           ok: false,
@@ -546,11 +570,7 @@ export class ClientTransport implements GatewayTransport {
       };
     }
     if (!this.identityResolver) return null;
-    const identity = this.identityResolver.resolve("token", token);
-    if (!identity) return null;
-    if (this.store.isRuntimeClientRevoked(identity.id)) return null;
-    if (this.store.hasRuntimeClientToken(identity.id)) return null;
-    return identity;
+    return this.identityResolver.resolve("token", token);
   }
 
   private authenticateRestRequest(req: IncomingMessage, requiredScope: "read" | "write" | "admin"):
@@ -559,7 +579,7 @@ export class ClientTransport implements GatewayTransport {
     const authHeader = req.headers["authorization"];
     const header = Array.isArray(authHeader) ? authHeader[0] : authHeader;
     const token = header?.startsWith("Bearer ") ? header.slice(7).trim() : "";
-    const hasClientIdentities = (this.config.clients?.length ?? 0) > 0;
+    const hasClientIdentities = this.hasClientIdentities();
     const authRequired = !!this.config.authToken || hasClientIdentities;
     if (!authRequired) return { ok: true };
 
@@ -571,19 +591,21 @@ export class ClientTransport implements GatewayTransport {
     return { ok: true };
   }
 
-  private listClientSummaries(): Array<{ id: string; displayName: string; scopes: Array<"read" | "write" | "admin">; tokenPreview?: string; rotatedAt?: string; revokedAt?: string }> {
-    const runtimeById = new Map(this.store.listRuntimeClients().map((client) => [client.id, client]));
-    const configured = (this.config.clients ?? []).map((client) => this.clientSummary({
-      ...client,
-      runtime: runtimeById.get(client.id),
-    }));
+  private listClientSummaries(): ClientSummary[] {
     const configuredIds = new Set((this.config.clients ?? []).map((client) => client.id));
-    const runtimeOnly = [...runtimeById.values()]
+    const configured = (this.config.clients ?? []).map((client) => this.clientSummary({
+      id: client.id,
+      displayName: client.displayName,
+      scopes: client.scopes,
+      managedBy: "config",
+    }));
+    const runtimeOnly = this.store.listRuntimeClients()
       .filter((client) => !configuredIds.has(client.id))
       .map((client) => this.clientSummary({
         id: client.id,
         displayName: client.displayName,
         scopes: client.scopes,
+        managedBy: "runtime",
         runtime: client,
       }));
     return [...configured, ...runtimeOnly].sort((a, b) => a.id.localeCompare(b.id));
@@ -593,39 +615,42 @@ export class ClientTransport implements GatewayTransport {
     id: string;
     displayName: string;
     scopes: Array<"read" | "write" | "admin">;
+    managedBy: "config" | "runtime";
     runtime?: RuntimeClientRecord;
-  }): { id: string; displayName: string; scopes: Array<"read" | "write" | "admin">; tokenPreview?: string; rotatedAt?: string; revokedAt?: string } {
+  }): ClientSummary {
+    const revoked = !!input.runtime?.revokedAt;
     return {
       id: input.id,
       displayName: input.displayName,
       scopes: input.runtime?.scopes ?? input.scopes,
+      managedBy: input.managedBy,
+      canRotate: input.managedBy === "runtime",
+      canRevoke: input.managedBy === "runtime" && !revoked,
       ...(input.runtime?.tokenPreview ? { tokenPreview: input.runtime.tokenPreview } : {}),
       ...(input.runtime?.rotatedAt ? { rotatedAt: input.runtime.rotatedAt } : {}),
       ...(input.runtime?.revokedAt ? { revokedAt: input.runtime.revokedAt } : {}),
     };
   }
 
-  private rotateClientToken(id: string): { client: unknown; token: string } | null {
-    const configured = (this.config.clients ?? []).find((client) => client.id === id);
+  private rotateRuntimeClientToken(id: string): { client: ClientSummary; token: string } | null {
     const runtime = this.store.getRuntimeClient(id);
-    const base = configured ?? runtime;
-    if (!base) return null;
-    const result = this.store.rotateRuntimeClient({ id: base.id, displayName: base.displayName, scopes: base.scopes });
-    return { client: this.clientSummary({ ...base, runtime: result.client }), token: result.token };
+    if (!runtime) return null;
+    const result = this.store.rotateRuntimeClient({ id: runtime.id, displayName: runtime.displayName, scopes: runtime.scopes });
+    return { client: this.clientSummary({ ...runtime, managedBy: "runtime", runtime: result.client }), token: result.token };
   }
 
-  private revokeClient(id: string): unknown | null {
-    const configured = (this.config.clients ?? []).find((client) => client.id === id);
+  private revokeRuntimeClient(id: string): ClientSummary | null {
     const runtime = this.store.getRuntimeClient(id);
-    const base = configured ?? runtime;
-    if (!base) return null;
-    const client = this.store.revokeRuntimeClient({ id: base.id, displayName: base.displayName, scopes: base.scopes });
-    return this.clientSummary({ ...base, runtime: client });
+    if (!runtime) return null;
+    const client = this.store.revokeRuntimeClient({ id: runtime.id, displayName: runtime.displayName, scopes: runtime.scopes });
+    return this.clientSummary({ ...runtime, managedBy: "runtime", runtime: client });
   }
 
-  private emitChangedEventForMethod(method: string): void {
+  private emitChangedEventForMethod(method: string, params: Record<string, unknown>): void {
     if (method === "clients.rotateToken" || method === "clients.revoke") {
       this.broadcastEvent(EVENTS.CLIENTS_CHANGED, this.clientsChangedPayload());
+      const id = typeof params["id"] === "string" ? params["id"] : "";
+      if (id) setTimeout(() => this.disconnectIdentity(id), 0);
       return;
     }
     if (method === "sessions.reset") {
@@ -634,6 +659,17 @@ export class ClientTransport implements GatewayTransport {
     }
     if (method === "deliveries.retry" || method === "deliveries.delete") {
       this.broadcastEvent(EVENTS.DELIVERIES_CHANGED, {});
+    }
+  }
+
+  private hasClientIdentities(): boolean {
+    return (this.config.clients?.length ?? 0) > 0 || this.store.listRuntimeClients().length > 0;
+  }
+
+  private disconnectIdentity(identityId: string): void {
+    for (const connection of this.connections.values()) {
+      if (connection.client.identity?.id !== identityId) continue;
+      if (connection.ws.readyState === WebSocket.OPEN) connection.ws.close(1008, "client credentials changed");
     }
   }
 
@@ -666,6 +702,83 @@ function requiredScopeForMethod(method: string): "read" | "write" | "admin" | nu
   if (method === "agent" || method === "agent.wait") return "write";
   if (method === "sessions.reset" || method === "deliveries.retry" || method === "deliveries.delete" || method === "clients.rotateToken" || method === "clients.revoke") return "admin";
   return null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseConnectFrame(value: unknown):
+  | { ok: true; frame: ConnectFrame }
+  | { ok: false; error: string; code: "CONNECT_REQUIRED" | "INVALID_FRAME" } {
+  if (!isRecord(value) || value.type !== "connect") {
+    return { ok: false, error: "First frame must be connect", code: "CONNECT_REQUIRED" };
+  }
+  if (typeof value.protocol !== "number" || !Number.isFinite(value.protocol)) {
+    return { ok: false, error: "connect.protocol must be a number", code: "INVALID_FRAME" };
+  }
+  const role = value.role === "node" ? "node" : value.role === undefined || value.role === "operator" ? "operator" : null;
+  if (!role) return { ok: false, error: "connect.role must be operator or node", code: "INVALID_FRAME" };
+
+  const scopes = parseScopes(value.scopes, ["read", "write"]);
+  if (!scopes) return { ok: false, error: "connect.scopes must contain read, write, or admin", code: "INVALID_FRAME" };
+
+  let auth: { token?: string } = {};
+  if (value.auth !== undefined) {
+    if (!isRecord(value.auth)) return { ok: false, error: "connect.auth must be an object", code: "INVALID_FRAME" };
+    if (value.auth.token !== undefined && typeof value.auth.token !== "string") {
+      return { ok: false, error: "connect.auth.token must be a string", code: "INVALID_FRAME" };
+    }
+    auth = value.auth.token ? { token: value.auth.token } : {};
+  }
+
+  let client: ConnectFrame["client"];
+  if (value.client !== undefined) {
+    if (!isRecord(value.client)) return { ok: false, error: "connect.client must be an object", code: "INVALID_FRAME" };
+    client = {
+      ...(typeof value.client.id === "string" ? { id: value.client.id } : {}),
+      ...(typeof value.client.version === "string" ? { version: value.client.version } : {}),
+      ...(typeof value.client.platform === "string" ? { platform: value.client.platform } : {}),
+    };
+  }
+
+  return { ok: true, frame: { type: "connect", protocol: value.protocol, role, scopes, auth, ...(client ? { client } : {}) } };
+}
+
+function parseRequestFrame(value: unknown):
+  | { ok: true; frame: RequestFrame }
+  | { ok: false; id: string; error: string; code: "INVALID_FRAME" } {
+  if (!isRecord(value) || value.type !== "req") {
+    return { ok: false, id: "unknown", error: "Frame type must be req", code: "INVALID_FRAME" };
+  }
+  const id = typeof value.id === "string" && value.id.trim() ? value.id : "unknown";
+  if (id === "unknown") return { ok: false, id, error: "req.id must be a non-empty string", code: "INVALID_FRAME" };
+  if (typeof value.method !== "string" || !value.method.trim()) {
+    return { ok: false, id, error: "req.method must be a non-empty string", code: "INVALID_FRAME" };
+  }
+  if (value.params !== undefined && !isRecord(value.params)) {
+    return { ok: false, id, error: "req.params must be an object", code: "INVALID_FRAME" };
+  }
+  return {
+    ok: true,
+    frame: {
+      type: "req",
+      id,
+      method: value.method.trim(),
+      params: value.params ?? {},
+    },
+  };
+}
+
+function parseScopes(value: unknown, fallback: Scope[]): Scope[] | null {
+  if (value === undefined) return fallback;
+  if (!Array.isArray(value)) return null;
+  const scopes: Scope[] = [];
+  for (const scope of value) {
+    if (scope !== "read" && scope !== "write" && scope !== "admin") return null;
+    if (!scopes.includes(scope)) scopes.push(scope);
+  }
+  return scopes;
 }
 
 function readRequestBody(req: IncomingMessage, maxBytes: number): Promise<Buffer> {

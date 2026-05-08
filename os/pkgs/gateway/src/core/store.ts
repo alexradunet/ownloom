@@ -444,16 +444,6 @@ export class Store {
     return Object.values(state.runtimeClients).find((client) => !client.revokedAt && client.tokenHash === hashed) ?? null;
   }
 
-  hasRuntimeClientToken(id: string): boolean {
-    const state = readState(this.statePath);
-    return !!state.runtimeClients[id]?.tokenHash;
-  }
-
-  isRuntimeClientRevoked(id: string): boolean {
-    const state = readState(this.statePath);
-    return !!state.runtimeClients[id]?.revokedAt;
-  }
-
   beginIdempotentRequest(key: string, maxAgeMs: number):
     | { status: "started" }
     | { status: "duplicate"; result: IdempotencyResult }
