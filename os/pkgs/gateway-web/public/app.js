@@ -126,6 +126,14 @@ function handleAgentEvent(payload) {
     els.messages.scrollTop = els.messages.scrollHeight;
     return;
   }
+  if (payload.stream === "result" && typeof payload.text === "string") {
+    if (!state.currentRun) state.currentRun = addMessage("agent", "");
+    if (!state.currentRun.textContent) state.currentRun.textContent = payload.text;
+    else if (state.currentRun.textContent !== payload.text) state.currentRun.textContent += `\n${payload.text}`;
+    els.messages.scrollTop = els.messages.scrollHeight;
+    state.currentRun = null;
+    return;
+  }
   if (payload.stream === "done" || payload.status === "done") state.currentRun = null;
 }
 
@@ -235,7 +243,11 @@ async function refreshLists() {
   ]);
   renderList(els.sessions, sessions.sessions ?? [], (s) => `<strong>${escapeHtml(s.chatId ?? s.id ?? "session")}</strong><br><small>${escapeHtml(s.updatedAt ?? s.createdAt ?? "")}</small>`);
   renderList(els.deliveries, deliveries.deliveries ?? [], (d) => `<strong>${escapeHtml(d.status ?? "queued")}</strong> ${escapeHtml(d.id ?? "")}<br><small>${escapeHtml(d.target ?? d.recipient ?? "")}</small>`);
-  renderList(els.commands, commands.commands ?? [], (c) => `<strong>/${escapeHtml(c.name ?? "command")}</strong><br><small>${escapeHtml(c.description ?? "")}</small>`);
+  renderList(els.commands, commands.commands ?? [], (c) => {
+    const name = typeof c === "string" ? c : c.name;
+    const description = typeof c === "string" ? "" : c.description;
+    return `<strong>/${escapeHtml(name ?? "command")}</strong><br><small>${escapeHtml(description ?? "")}</small>`;
+  });
   log("lists refreshed");
 }
 
@@ -273,5 +285,9 @@ els.attachmentInput.addEventListener("change", () => {
 els.messageInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) sendMessage().catch((error) => log("send failed", error.message));
 });
+
+if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+  els.httpUrl.value = window.location.origin;
+}
 
 setConnection("disconnected");

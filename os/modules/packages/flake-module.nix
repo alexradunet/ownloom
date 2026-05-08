@@ -73,11 +73,13 @@ in {
       piApp = mkApp pkgs.pi;
       ownloomWikiApp = mkApp pkgs.ownloom-wiki;
       ownloomContextApp = mkApp pkgs.ownloom-context;
+      ownloomGatewayWebApp = mkApp pkgs.ownloom-gateway-web;
       ownloomPlannerApp = mkApp pkgs.ownloom-planner;
     in {
       pi = piApp;
       ownloom-wiki = ownloomWikiApp;
       ownloom-context = ownloomContextApp;
+      ownloom-gateway-web = ownloomGatewayWebApp;
       ownloom-planner = ownloomPlannerApp;
       default = piApp;
     };
