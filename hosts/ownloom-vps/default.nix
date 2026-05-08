@@ -260,7 +260,7 @@ in {
 
     ownloom-terminal = {
       enable = true;
-      # Loopback-only ttyd terminal for the cockpit Terminal tab.
+      # Loopback-only Zellij web terminal for the cockpit Terminal tab.
     };
 
     ownloom-planner = {

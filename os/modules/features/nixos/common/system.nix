@@ -1,8 +1,30 @@
 {
   config,
   lib,
+  pkgs,
   ...
-}: {
+}: let
+  terminalSessionName = lib.attrByPath ["services" "ownloom-terminal" "sessionName"] "ownloom" config;
+  terminalBasePath = lib.attrByPath ["services" "ownloom-terminal" "basePath"] "/terminal" config;
+  terminalBaseUrl =
+    if lib.hasSuffix "/" terminalBasePath
+    then terminalBasePath
+    else "${terminalBasePath}/";
+  terminalHost = lib.attrByPath ["services" "ownloom-terminal" "host"] "127.0.0.1" config;
+  terminalPort = lib.attrByPath ["services" "ownloom-terminal" "port"] 8091 config;
+  shellZellijConfig = pkgs.writeText "ownloom-shell-zellij.kdl" ''
+    default_cwd ${builtins.toJSON config.ownloom.root}
+    session_name ${builtins.toJSON terminalSessionName}
+    attach_to_session true
+    web_server_ip ${builtins.toJSON terminalHost}
+    web_server_port ${toString terminalPort}
+    web_sharing "on"
+
+    web_client {
+        base_url ${builtins.toJSON terminalBaseUrl}
+    }
+  '';
+in {
   time.timeZone = "Europe/Bucharest";
   i18n.defaultLocale = "en_US.UTF-8";
   console.keyMap = "us";
@@ -26,8 +48,9 @@
           && [ -t 0 ] \
           && [ -t 1 ] \
           && command -v zellij >/dev/null 2>&1; then
-          cd ${config.ownloom.root} 2>/dev/null || cd
-          exec zellij attach --create ownloom
+          cd ${lib.escapeShellArg config.ownloom.root} 2>/dev/null || cd
+          export ZELLIJ_CONFIG_FILE=${lib.escapeShellArg shellZellijConfig}
+          exec zellij attach --create --forget ${lib.escapeShellArg terminalSessionName}
         fi
       '';
     };

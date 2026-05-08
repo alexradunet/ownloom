@@ -28,7 +28,9 @@ For ad-hoc local use without the NixOS service:
 nix run .#ownloom-gateway-web
 ```
 
-The server serves the static UI and proxies `/api/v1/*` plus WebSocket upgrades to `OWNLOOM_GATEWAY_URL`, defaulting to `http://127.0.0.1:8081`. When `OWNLOOM_TERMINAL_URL` is set, `/terminal/` is proxied to ttyd for the cockpit Terminal tab.
+The server serves the static UI and proxies `/api/v1/*` plus WebSocket upgrades to `OWNLOOM_GATEWAY_URL`, defaulting to `http://127.0.0.1:8081`. When `OWNLOOM_TERMINAL_URL` is set, `/terminal/` is proxied to the loopback Zellij web client for the cockpit Terminal tab.
+
+The terminal tab opens the shared `ownloom` Zellij session at `/terminal/ownloom`. Zellij web requires its own login token. The NixOS service creates one on first start and stores it at `/var/lib/ownloom-terminal/login-token`. The cockpit can copy that token from the loopback-only **Copy Zellij token** button; after login, Zellij stores a browser session cookie.
 
 Current features:
 
@@ -45,6 +47,7 @@ Current features:
 - operator action buttons with confirmation prompts
 - Send button disabled while an agent run is active
 - confirmations for destructive session, delivery, and runtime-client actions
-- Terminal tab that embeds `/terminal/` when the loopback ttyd service is enabled
+- Terminal tab that embeds `/terminal/ownloom` when the loopback Zellij web service is enabled
+- loopback-only helper button to copy the generated Zellij web login token
 
 The gateway client transport is still expected to stay loopback-only until HTTPS/reverse-proxy/pairing is designed.

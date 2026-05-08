@@ -112,6 +112,7 @@ p { margin: 0.25rem 0 0; color: #9aa7b8; }
   text-align: center;
 }
 .terminal-card { display: grid; gap: 1rem; }
+.terminal-actions { justify-content: flex-end; }
 .terminal-frame {
   width: 100%;
   height: min(72vh, 48rem);

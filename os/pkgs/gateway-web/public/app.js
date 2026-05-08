@@ -43,6 +43,8 @@ const els = {
   tabButtons: [...document.querySelectorAll("[data-tab-target]")],
   tabPanels: [...document.querySelectorAll("[data-tab-panel]")],
   terminalFrame: $("terminalFrame"),
+  copyTerminalTokenButton: $("copyTerminalTokenButton"),
+  terminalTokenStatus: $("terminalTokenStatus"),
 };
 
 function selectTab(tab) {
@@ -288,6 +290,29 @@ function handleAgentEvent(payload) {
     return;
   }
   if (payload.stream === "done" || payload.status === "done") state.currentRun = null;
+}
+
+async function copyTerminalToken() {
+  els.copyTerminalTokenButton.disabled = true;
+  els.terminalTokenStatus.textContent = "Reading token…";
+  try {
+    const response = await fetch("/api/v1/terminal-token", { cache: "no-store" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error ?? `token request failed: ${response.status}`);
+    if (typeof body.token !== "string" || !body.token.trim()) throw new Error("token response was empty");
+
+    try {
+      await navigator.clipboard.writeText(body.token);
+      els.terminalTokenStatus.textContent = "Copied. Paste into Zellij login.";
+    } catch {
+      window.prompt("Copy Zellij login token:", body.token);
+      els.terminalTokenStatus.textContent = "Token shown in copy prompt.";
+    }
+  } catch (error) {
+    els.terminalTokenStatus.textContent = `Token unavailable: ${error.message}`;
+  } finally {
+    els.copyTerminalTokenButton.disabled = false;
+  }
 }
 
 async function pairBrowser() {
@@ -580,6 +605,7 @@ els.rememberSettings.addEventListener("change", () => {
 });
 els.healthButton.addEventListener("click", () => health().catch((error) => log("health failed", error.message)));
 els.refreshButton.addEventListener("click", () => refreshLists().catch((error) => log("refresh failed", error.message)));
+els.copyTerminalTokenButton.addEventListener("click", () => copyTerminalToken());
 els.clients.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;

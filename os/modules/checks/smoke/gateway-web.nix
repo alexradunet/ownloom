@@ -19,6 +19,8 @@ runCommand "ownloom-gateway-web-smoke" {
   grep -qi 'Ownloom Cockpit' "$root/index.html"
   grep -q 'data-tab-target="terminal"' "$root/index.html"
   grep -q 'terminalFrame' "$root/index.html"
+  grep -q 'copyTerminalTokenButton' "$root/index.html"
+  grep -q '/terminal/ownloom' "$root/index.html"
   grep -q 'pairButton' "$root/index.html"
   grep -q 'newChatButton' "$root/index.html"
   grep -q 'agent.wait' "$root/app.js"
@@ -28,9 +30,16 @@ runCommand "ownloom-gateway-web-smoke" {
   grep -q 'deliveries.list' "$root/app.js"
   grep -q 'clients.list' "$root/app.js"
   grep -q 'selectTab' "$root/app.js"
+  grep -q 'copyTerminalToken' "$root/app.js"
+  grep -q '/api/v1/terminal-token' ${ownloom-gateway-web}/share/ownloom-gateway-web/server.mjs
+  grep -q 'stripTerminalPrefix' ${ownloom-gateway-web}/share/ownloom-gateway-web/server.mjs
+
+  token_file=$(mktemp)
+  printf '# smoke token\nsmoke-zellij-token\n' > "$token_file"
 
   OWNLOOM_GATEWAY_WEB_HOST=127.0.0.1 \
   OWNLOOM_GATEWAY_WEB_PORT=18090 \
+  OWNLOOM_TERMINAL_TOKEN_FILE="$token_file" \
   ${ownloom-gateway-web}/bin/ownloom-gateway-web >server.log 2>&1 &
   server_pid=$!
   trap 'kill $server_pid 2>/dev/null || true' EXIT
@@ -42,6 +51,8 @@ runCommand "ownloom-gateway-web-smoke" {
     sleep 0.1
   done
   grep -qi 'Ownloom Cockpit' /tmp/index.html
+  curl -fsS http://127.0.0.1:18090/api/v1/terminal-token >/tmp/terminal-token.json
+  grep -q '"token":"smoke-zellij-token"' /tmp/terminal-token.json
 
   mkdir -p $out
   touch $out/passed

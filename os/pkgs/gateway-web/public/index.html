@@ -121,11 +121,15 @@
           <div class="chat-heading">
             <div>
               <h2>Terminal</h2>
-              <p>Advanced operator shell for Pi TUI and coding sessions. Loopback-only; access through the cockpit tunnel.</p>
+              <p>Advanced Zellij shell for Pi TUI and coding sessions. Loopback-only; access through the cockpit tunnel.</p>
             </div>
-            <a id="openTerminalLink" class="button-link" href="/terminal/" target="_blank" rel="noreferrer">Open full terminal</a>
+            <div class="row terminal-actions">
+              <button id="copyTerminalTokenButton" type="button">Copy Zellij token</button>
+              <a id="openTerminalLink" class="button-link" href="/terminal/ownloom" target="_blank" rel="noreferrer">Open full terminal</a>
+              <span id="terminalTokenStatus" class="chip" aria-live="polite">Token stays local.</span>
+            </div>
           </div>
-          <iframe id="terminalFrame" class="terminal-frame" title="Ownloom terminal" data-src="/terminal/"></iframe>
+          <iframe id="terminalFrame" class="terminal-frame" title="Ownloom terminal" data-src="/terminal/ownloom"></iframe>
         </section>
       </section>
 

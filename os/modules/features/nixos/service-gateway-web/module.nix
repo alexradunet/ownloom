@@ -33,7 +33,19 @@ in {
     terminalUrl = lib.mkOption {
       type = lib.types.str;
       default = "http://127.0.0.1:8091";
-      description = "Loopback URL of the optional ownloom terminal endpoint to proxy under /terminal/.";
+      description = "Loopback URL of the optional Zellij web terminal endpoint to proxy under /terminal/.";
+    };
+
+    terminalTokenFile = lib.mkOption {
+      type = lib.types.str;
+      default = "/var/lib/ownloom-terminal/login-token";
+      description = "Local Zellij web login token file exposed through the loopback-only cockpit.";
+    };
+
+    terminalTokenGroup = lib.mkOption {
+      type = lib.types.str;
+      default = "ownloom-terminal";
+      description = "Group allowed to read the local Zellij web login token.";
     };
   };
 
@@ -53,6 +65,8 @@ in {
       }
     ];
 
+    users.groups.${cfg.terminalTokenGroup} = {};
+
     systemd.services.ownloom-gateway-web = {
       description = "ownloom gateway web client";
       after = ["network.target" "ownloom-gateway.service"];
@@ -63,6 +77,7 @@ in {
         OWNLOOM_GATEWAY_WEB_PORT = toString cfg.port;
         OWNLOOM_GATEWAY_URL = cfg.gatewayUrl;
         OWNLOOM_TERMINAL_URL = cfg.terminalUrl;
+        OWNLOOM_TERMINAL_TOKEN_FILE = toString cfg.terminalTokenFile;
       };
       serviceConfig = {
         Type = "simple";
@@ -76,6 +91,7 @@ in {
         DynamicUser = true;
         User = "ownloom-gateway-web";
         Group = "ownloom-gateway-web";
+        SupplementaryGroups = [cfg.terminalTokenGroup];
         PrivateTmp = true;
         ProtectSystem = "strict";
         ProtectHome = true;
