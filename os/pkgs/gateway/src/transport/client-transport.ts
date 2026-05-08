@@ -49,6 +49,7 @@ export class ClientTransport implements GatewayTransport {
   readonly name = "client";
 
   private readonly connections = new Map<string, { ws: WebSocket; client: ConnectedClient }>();
+  private readonly activeAgentSessions = new Set<string>();
   private readonly methodRegistry = new MethodRegistry();
   private router!: Router;
   private delivery?: DeliveryService;
@@ -496,16 +497,23 @@ export class ClientTransport implements GatewayTransport {
       return { ok: false, error: { message: "message is required", code: "INVALID_REQUEST" } };
     }
 
+    const sessionKey = typeof ctx.params["sessionKey"] === "string" && ctx.params["sessionKey"].trim()
+      ? ctx.params["sessionKey"].trim()
+      : ctx.client.connId;
+    const chatId = `client:${sessionKey}`;
+    if (this.activeAgentSessions.has(chatId)) {
+      return {
+        ok: false,
+        error: { message: `Agent is already running for ${chatId}`, code: "AGENT_BUSY" },
+      };
+    }
+
     const attachmentRefs = Array.isArray(ctx.params["attachments"])
       ? (ctx.params["attachments"] as AttachmentRef[])
       : [];
     const attachments = this.resolveAttachmentRefs(attachmentRefs);
 
     const runId = randomUUID();
-    const sessionKey = typeof ctx.params["sessionKey"] === "string" && ctx.params["sessionKey"].trim()
-      ? ctx.params["sessionKey"].trim()
-      : ctx.client.connId;
-    const chatId = `client:${sessionKey}`;
     const senderId = ctx.client.identity ? `client:${ctx.client.identity.id}` : `client:${ctx.client.connId}`;
 
     const inbound: InboundMessage = {
@@ -529,6 +537,7 @@ export class ClientTransport implements GatewayTransport {
       ctx.emit(EVENTS.AGENT, { runId, stream: "chunk", text: chunk });
     };
 
+    this.activeAgentSessions.add(chatId);
     try {
       const result = await this.router.handleMessage(inbound, onChunk);
       this.broadcastEvent(EVENTS.SESSIONS_CHANGED, { chatId });
@@ -545,6 +554,8 @@ export class ClientTransport implements GatewayTransport {
         ok: false,
         error: { message: err instanceof Error ? err.message : String(err) },
       };
+    } finally {
+      this.activeAgentSessions.delete(chatId);
     }
   }
 

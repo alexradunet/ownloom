@@ -156,6 +156,11 @@ Today `agent` and `agent.wait` share the same implementation and both wait for
 the local Pi run to finish while emitting events. Keep using `agent.wait` when a
 client explicitly expects that behavior.
 
+Only one agent run may be active per `sessionKey` at a time. If a client sends a
+second agent request for the same session while one is still running, the gateway
+returns `AGENT_BUSY`; retry after the current run finishes or use a different
+session key.
+
 ### Duplicate request protection
 
 For requests that may cause side effects, clients should include an

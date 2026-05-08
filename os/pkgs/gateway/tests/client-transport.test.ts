@@ -92,6 +92,50 @@ test("ClientTransport agent uses protocol sessionKey as stable Pi chat session",
   }
 });
 
+test("ClientTransport rejects concurrent agent runs for the same protocol session", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const store = new Store(path.join(tmp, "state.json"));
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0 },
+      store,
+      new CommandRegistry(),
+    );
+
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => { release = resolve; });
+    let calls = 0;
+    transport.setRouter({
+      handleMessage: async () => {
+        calls += 1;
+        await blocked;
+        return { replies: ["ok"], markProcessed: true };
+      },
+    } as any);
+
+    const first = (transport as any).handleAgentMethod(makeCtx({ message: "first", sessionKey: "web-main" }));
+    await waitFor(() => calls === 1);
+
+    const second = await (transport as any).handleAgentMethod(makeCtx({ message: "second", sessionKey: "web-main" }));
+    assert.equal(second.ok, false);
+    assert.equal(second.error.code, "AGENT_BUSY");
+    assert.equal(calls, 1);
+
+    const other = (transport as any).handleAgentMethod(makeCtx({ message: "other", sessionKey: "web-other" }));
+    await waitFor(() => calls === 2);
+
+    release();
+    assert.equal((await first).ok, true);
+    assert.equal((await other).ok, true);
+
+    const third = await (transport as any).handleAgentMethod(makeCtx({ message: "third", sessionKey: "web-main" }));
+    assert.equal(third.ok, true);
+    assert.equal(calls, 3);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test("ClientTransport replays stored response for duplicate idempotencyKey", async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {
