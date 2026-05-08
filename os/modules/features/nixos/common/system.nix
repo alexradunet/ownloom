@@ -19,6 +19,15 @@
     bash = {
       enable = true;
       completion.enable = true;
+      loginShellInit = ''
+        if [ "''${USER:-}" = "${config.ownloom.human.name}" ] \
+          && [ -z "''${ZELLIJ:-}" ] \
+          && [ -t 0 ] \
+          && [ -t 1 ] \
+          && command -v zellij >/dev/null 2>&1; then
+          exec zellij attach --create main
+        fi
+      '';
     };
 
     # whois (new NixOS module in 26.05) — intelligent WHOIS client.

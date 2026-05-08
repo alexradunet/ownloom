@@ -17,7 +17,7 @@
     procs
     python3
     ripgrep
-    screen
+    zellij
     # Language servers (visible to pi agent and any LSP-capable editor)
     nixd # Nix LSP, nix-community supported
     bash-language-server
