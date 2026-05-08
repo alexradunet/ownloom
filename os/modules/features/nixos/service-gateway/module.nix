@@ -409,6 +409,7 @@ in {
         pkgs.nixos-rebuild
         pkgs.podman
         pkgs.ownloom-context
+        pkgs.ownloom-planner
       ];
       environment =
         {
