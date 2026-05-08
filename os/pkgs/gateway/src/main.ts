@@ -9,7 +9,7 @@ import { PiClient } from "./core/pi-client.js";
 import { noopHooks } from "./core/hooks.js";
 import { CommandRegistry } from "./core/commands.js";
 import { registerCoreCommands } from "./core/register-core-commands.js";
-import { SimpleIdentityResolver, type IdentityEntry } from "./core/identity.js";
+import { FULL_OPERATOR_SCOPES, SimpleIdentityResolver, type IdentityEntry } from "./core/identity.js";
 import { OwnloomPersonalHooks } from "./personal/hooks.js";
 import { registerPersonalCommands } from "./personal/commands.js";
 import { ReminderDeliveryWorker } from "./personal/reminder-delivery.js";
@@ -46,8 +46,9 @@ function runStoreMaintenance(store: Store): void {
 
 // ── Identity configuration ──────────────────────────────────────────────────
 // Build identity entries from configured transport credentials.
-// WhatsApp remains single-user/admin for now; protocol clients can be named
-// explicitly with per-client tokens and scopes.
+// Current trust model: allowlisted/pairing-authenticated gateway clients are
+// full operators, equivalent to Pi TUI. Configured scopes are accepted for
+// compatibility but ignored for authorization.
 
 function buildIdentityEntries(config: ReturnType<typeof loadConfig>): IdentityEntry[] {
   const entries: IdentityEntry[] = [];
@@ -58,7 +59,7 @@ function buildIdentityEntries(config: ReturnType<typeof loadConfig>): IdentityEn
       entries.push({
         id: "alex",
         displayName: "Alex",
-        scopes: ["read", "write", "admin"],
+        scopes: FULL_OPERATOR_SCOPES,
         keys: numbers.map((n) => `whatsapp:${n}`),
       });
     }
@@ -69,7 +70,7 @@ function buildIdentityEntries(config: ReturnType<typeof loadConfig>): IdentityEn
     entries.push({
       id: client.id,
       displayName: client.displayName,
-      scopes: client.scopes,
+      scopes: FULL_OPERATOR_SCOPES,
       keys: [`token:${client.token}`],
     });
   }

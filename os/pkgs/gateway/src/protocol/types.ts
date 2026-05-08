@@ -10,9 +10,9 @@ export const PROTOCOL_VERSION = 1;
 export type Role = "operator" | "node";
 
 export type Scope =
-  | "read"     // can query status, sessions, models
-  | "write"    // can send messages, invoke agent
-  | "admin";   // can reset sessions, run admin commands
+  | "read"     // compatibility label; accepted clients currently receive all scopes
+  | "write"    // compatibility label; accepted clients currently receive all scopes
+  | "admin";   // full operator access; current trust model grants this to every accepted client
 
 // ── Frames ───────────────────────────────────────────────────────────────────
 

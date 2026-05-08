@@ -27,17 +27,16 @@ http://127.0.0.1:<transports.client.port>/api/v1/...
 Authentication options:
 
 - `transports.client.authToken` is a global pre-shared token.
-- `transports.client.clients` defines named client identities with individual tokens and scopes.
+- `transports.client.clients` defines named client identities with individual tokens.
 - If either is configured, WebSocket `connect.auth.token` must match the global token or a named client token.
 - REST calls must include `Authorization: Bearer <token>` matching the global token or a named client token.
-- Named client REST calls enforce scopes: `read` for status/list endpoints, `write` for attachment upload.
-- `POST /api/v1/pair` is the only unauthenticated REST endpoint; it is accepted only from loopback and creates a read/write runtime client for local browser pairing.
+- `POST /api/v1/pair` is the only unauthenticated REST endpoint; it is accepted only from loopback and creates a full-operator runtime client for local browser pairing.
 
-Scope rules:
+Current trust model:
 
-- `read`: `health`, `status`, `commands.list`, `clients.list`, `sessions.list`, `sessions.get`, `deliveries.list`
-- `write`: `agent`, `agent.wait`
-- `admin`: `sessions.reset`, `deliveries.retry`, `deliveries.delete`, `clients.rotateToken`, `clients.revoke`
+- Gateway access is the authorization boundary.
+- Any accepted protocol client or allowlisted WhatsApp conversation has full operator access, equivalent to Pi TUI.
+- Protocol/config `scopes` remain as compatibility metadata, but every accepted client is reported with `read`, `write`, and `admin` and may call every method.
 
 Example named client config:
 
@@ -51,7 +50,7 @@ transports:
       - id: web-main
         displayName: Web Main
         token: change-me-in-private-config
-        scopes: [read, write]
+        scopes: [read, write, admin]
 ```
 
 ### Connect
@@ -63,7 +62,7 @@ The first WebSocket frame must be `connect`:
   "type": "connect",
   "protocol": 1,
   "role": "operator",
-  "scopes": ["read", "write"],
+  "scopes": ["read", "write", "admin"],
   "auth": { "token": "optional-token" },
   "client": { "id": "web-main", "version": "0.1.0", "platform": "web" }
 }
@@ -84,7 +83,7 @@ Successful response:
       "methods": ["agent", "agent.wait", "clients.list", "clients.revoke", "clients.rotateToken", "commands.list", "deliveries.delete", "deliveries.list", "deliveries.retry", "health", "sessions.get", "sessions.list", "sessions.reset", "status"],
       "events": ["agent", "clients.changed", "deliveries.changed", "sessions.changed", "shutdown", "tick"]
     },
-    "auth": { "role": "operator", "scopes": ["read", "write"] },
+    "auth": { "role": "operator", "scopes": ["read", "write", "admin"] },
     "policy": { "maxPayload": 1048576, "tickIntervalMs": 15000 }
   }
 }
@@ -277,7 +276,7 @@ named clients without token material:
 Declarative clients from private Nix config are config-managed. Change them by
 editing the private config, not through the protocol.
 
-Admin clients can rotate or revoke runtime clients, such as future paired
+Any accepted client can rotate or revoke runtime clients, such as future paired
 devices:
 
 ```json
@@ -300,12 +299,12 @@ Local browser pairing uses the same runtime-client store:
 curl -X POST "http://127.0.0.1:8081/api/v1/pair?clientId=browser-main&displayName=Browser"
 ```
 
-The response includes a one-time token and a client summary. Pairing is loopback-only, grants only `read`/`write`, and refuses ids that are already config-managed.
+The response includes a one-time token and a client summary. Pairing is loopback-only, grants full operator access, and refuses ids that are already config-managed.
 
 ### Delivery administration
 
 Queued/dead-lettered deliveries can be inspected with `deliveries.list` and
-manually managed over WebSocket with an admin-scoped client:
+manually managed over WebSocket by any accepted client:
 
 ```json
 { "type": "req", "id": "retry-1", "method": "deliveries.retry", "params": { "id": "delivery-..." } }

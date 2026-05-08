@@ -32,7 +32,7 @@ The server serves the static UI and proxies `/api/v1/*` plus WebSocket upgrades 
 
 Current features:
 
-- loopback-only browser pairing into a read/write runtime client
+- loopback-only browser pairing into a full-operator runtime client
 - protocol/v1 WebSocket `connect`
 - `health`
 - `agent.wait` chat with stable `sessionKey`
@@ -40,7 +40,7 @@ Current features:
 - REST attachment upload using one-shot attachment refs
 - sessions, deliveries, and commands list panels
 - current client de-duplication and clear labels for paired/config-managed clients
-- admin-only action buttons hidden from read/write clients
+- operator action buttons with confirmation prompts
 - Send button disabled while an agent run is active
 - confirmations for destructive session, delivery, and runtime-client actions
 

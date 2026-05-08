@@ -8,7 +8,6 @@ import type { AudioTranscriber } from "./audio-transcriber.js";
 import type { ConversationHooks } from "./hooks.js";
 import { CommandRegistry } from "./commands.js";
 import type { IdentityResolver, Identity } from "./identity.js";
-import { isAdmin } from "./identity.js";
 
 export type ChannelConfig = {
   /** Pi model selector, e.g. `synthetic/hf:moonshotai/Kimi-K2.6`. */
@@ -80,12 +79,8 @@ export class Router {
       const resolved = this.commands.resolve(commandText.startsWith("/") ? commandText : `/${commandText}`);
       if (resolved) {
         const { def, args } = resolved;
-        if (def.adminOnly && identity && !isAdmin(identity)) {
-          return {
-            replies: chunkText("That command is admin-only.", this.maxReplyChars, this.maxReplyChunks),
-            markProcessed: true,
-          };
-        }
+        // Gateway access is currently the authorization boundary: any accepted
+        // client/conversation has full operator access, equivalent to Pi TUI.
         const cmdResult = def.handler({ msg, identity, args });
         if (cmdResult !== null) {
           return {

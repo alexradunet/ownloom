@@ -264,7 +264,7 @@ async function connect() {
     type: "connect",
     protocol: 1,
     role: "operator",
-    scopes: ["read", "write"],
+    scopes: ["read", "write", "admin"],
     auth: els.token.value.trim() ? { token: els.token.value.trim() } : {},
     client: { id: "web-main", version: "0.1.0", platform: "web" },
   }));

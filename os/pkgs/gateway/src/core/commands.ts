@@ -18,7 +18,7 @@ export type CommandDef = {
   aliases?: string[];
   /** One-line help text. */
   helpText: string;
-  /** If true, only identities with admin scope can run this. */
+  /** Compatibility marker for help/UI; gateway access currently implies full operator access. */
   adminOnly?: boolean;
   /** Handler. Returns the reply text, or null if not handled. */
   handler(ctx: CommandContext): string | null;

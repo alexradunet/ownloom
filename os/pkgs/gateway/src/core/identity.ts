@@ -4,6 +4,12 @@
 
 export type Scope = "read" | "write" | "admin";
 
+// Current trust model: once a client/conversation is accepted by the gateway
+// boundary, it has the same full operator power as Pi TUI. The protocol still
+// exposes scopes for client compatibility, but every accepted identity gets all
+// scopes for now.
+export const FULL_OPERATOR_SCOPES: Scope[] = ["read", "write", "admin"];
+
 export type IdentitySource =
   | "whatsapp"   // matched by phone number
   | "token";     // matched by API bearer token (HTTP/WS protocol clients)

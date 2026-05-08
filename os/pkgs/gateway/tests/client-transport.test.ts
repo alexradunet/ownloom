@@ -9,7 +9,7 @@ import { Store } from "../src/core/store.js";
 import { ClientTransport } from "../src/transport/client-transport.js";
 import type { InboundMessage } from "../src/core/types.js";
 import type { MethodContext } from "../src/protocol/methods.js";
-import { SimpleIdentityResolver, type Scope } from "../src/core/identity.js";
+import { FULL_OPERATOR_SCOPES, SimpleIdentityResolver, type Scope } from "../src/core/identity.js";
 
 class FakeWs extends EventEmitter {
   readyState = 1;
@@ -261,7 +261,7 @@ test("ClientTransport rejects unknown tokens when named clients are configured",
   }
 });
 
-test("ClientTransport accepts named client tokens and uses identity scopes", () => {
+test("ClientTransport accepts named client tokens and grants full operator scopes", () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {
     const transport = new ClientTransport(
@@ -284,7 +284,8 @@ test("ClientTransport accepts named client tokens and uses identity scopes", () 
 
     assert.equal(responses[0].ok, true);
     assert.equal(connectedClient.identity.id, "web");
-    assert.deepEqual(connectedClient.scopes, ["read"]);
+    assert.deepEqual(connectedClient.identity.scopes, FULL_OPERATOR_SCOPES);
+    assert.deepEqual(connectedClient.scopes, FULL_OPERATOR_SCOPES);
     assert.equal(connectedClient.clientId, "web-main");
   } finally {
     rmSync(tmp, { recursive: true, force: true });
@@ -324,16 +325,20 @@ test("ClientTransport validates protocol frames before dispatch", async () => {
   }
 });
 
-test("ClientTransport enforces method scopes", async () => {
+test("ClientTransport treats accepted clients as full operators", async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {
+    const store = new Store(path.join(tmp, "state.json"));
+    store.upsertChatSession("client:web", "sender", "/tmp/session");
+    const delivery = store.enqueueDelivery("client:web", "client", "hello", "offline");
+    store.rotateRuntimeClient({ id: "runtime", displayName: "Runtime", scopes: ["read"] });
     const transport = new ClientTransport(
       { enabled: true, host: "127.0.0.1", port: 0 },
-      new Store(path.join(tmp, "state.json")),
+      store,
       new CommandRegistry(),
     );
 
-    const readOnlyClient = {
+    const acceptedClient = {
       connId: "conn-1",
       identity: null,
       role: "operator" as const,
@@ -345,79 +350,27 @@ test("ClientTransport enforces method scopes", async () => {
     (transport as any).handleRequest({
       type: "req",
       id: "req-1",
-      method: "agent.wait",
-      params: { message: "hello" },
-    }, readOnlyClient, (frame: any) => responses.push(frame));
-
-    assert.equal(responses.length, 1);
-    assert.equal(responses[0].ok, false);
-    assert.equal(responses[0].error.code, "FORBIDDEN");
-  } finally {
-    rmSync(tmp, { recursive: true, force: true });
-  }
-});
-
-test("ClientTransport requires admin scope for admin methods", async () => {
-  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
-  try {
-    const store = new Store(path.join(tmp, "state.json"));
-    store.upsertChatSession("client:web", "sender", "/tmp/session");
-    const transport = new ClientTransport(
-      { enabled: true, host: "127.0.0.1", port: 0 },
-      store,
-      new CommandRegistry(),
-    );
-
-    const writeClient = {
-      connId: "conn-1",
-      identity: null,
-      role: "operator" as const,
-      scopes: ["read", "write"] as Scope[],
-      seq: 0,
-      send: () => {},
-    };
-    const responses: any[] = [];
-    (transport as any).handleRequest({
-      type: "req",
-      id: "req-1",
       method: "sessions.reset",
       params: { chatId: "client:web" },
-    }, writeClient, (frame: any) => responses.push(frame));
-
-    assert.equal(responses.length, 1);
-    assert.equal(responses[0].ok, false);
-    assert.equal(responses[0].error.code, "FORBIDDEN");
-    assert.notEqual(store.getChatSession("client:web"), null);
-
+    }, acceptedClient, (frame: any) => responses.push(frame));
     (transport as any).handleRequest({
       type: "req",
       id: "req-2",
       method: "deliveries.retry",
-      params: { id: "delivery-1" },
-    }, writeClient, (frame: any) => responses.push(frame));
-
+      params: { id: delivery.id },
+    }, acceptedClient, (frame: any) => responses.push(frame));
     (transport as any).handleRequest({
       type: "req",
       id: "req-3",
-      method: "clients.list",
-      params: {},
-    }, writeClient, (frame: any) => responses.push(frame));
+      method: "clients.rotateToken",
+      params: { id: "runtime" },
+    }, acceptedClient, (frame: any) => responses.push(frame));
 
     await waitFor(() => responses.length === 3);
-    assert.equal(responses[1].ok, false);
-    assert.equal(responses[1].error.code, "FORBIDDEN");
-    assert.equal(responses[2].ok, true);
-
-    (transport as any).handleRequest({
-      type: "req",
-      id: "req-4",
-      method: "clients.rotateToken",
-      params: { id: "web" },
-    }, writeClient, (frame: any) => responses.push(frame));
-
-    assert.equal(responses.length, 4);
-    assert.equal(responses[3].ok, false);
-    assert.equal(responses[3].error.code, "FORBIDDEN");
+    assert.equal(responses.find((frame) => frame.id === "req-1").ok, true);
+    assert.equal(store.getChatSession("client:web"), null);
+    assert.equal(responses.find((frame) => frame.id === "req-2").ok, true);
+    assert.equal(responses.find((frame) => frame.id === "req-3").ok, true);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -519,7 +472,7 @@ test("ClientTransport REST pairs a loopback browser as a runtime client", async 
     const body = JSON.parse(res.body);
     assert.equal(body.client.id, "browser-test");
     assert.equal(body.client.managedBy, "runtime");
-    assert.deepEqual(body.client.scopes, ["read", "write"]);
+    assert.deepEqual(body.client.scopes, FULL_OPERATOR_SCOPES);
     assert.match(body.token, /^ogw_/);
     assert.equal((transport as any).resolveTokenIdentity(body.token).id, "browser-test");
   } finally {
@@ -580,7 +533,7 @@ test("ClientTransport REST refuses to pair over a config-managed client id", asy
   }
 });
 
-test("ClientTransport REST accepts named client token with read scope", async () => {
+test("ClientTransport REST accepts named client token as full operator", async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {
     const transport = new ClientTransport(
@@ -604,7 +557,7 @@ test("ClientTransport REST accepts named client token with read scope", async ()
   }
 });
 
-test("ClientTransport REST rejects named client without required write scope", async () => {
+test("ClientTransport REST accepts named client token for write endpoints regardless configured scopes", async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {
     const transport = new ClientTransport(
@@ -613,13 +566,27 @@ test("ClientTransport REST rejects named client without required write scope", a
       new CommandRegistry(),
       new SimpleIdentityResolver([{ id: "status", displayName: "Status", scopes: ["read"], keys: ["token:read-token"] }]),
     );
-    const req = { method: "POST", url: "/api/v1/attachments", headers: { authorization: "Bearer read-token", host: "localhost" } };
+    const req = Object.assign(new EventEmitter(), {
+      method: "POST",
+      url: "/api/v1/attachments",
+      headers: {
+        authorization: "Bearer read-token",
+        host: "localhost",
+        "x-ownloom-attachment-kind": "image",
+        "content-type": "image/png",
+      },
+      resume: () => {},
+    });
     const res = makeMockRes();
 
-    await (transport as any).serveRestApi(req, res);
+    const pending = (transport as any).serveRestApi(req, res);
+    req.emit("data", Buffer.from("png"));
+    req.emit("end");
+    await pending;
 
-    assert.equal(res.status, 403);
-    assert.equal(JSON.parse(res.body).error, "Forbidden");
+    assert.equal(res.status, 201);
+    const body = JSON.parse(res.body);
+    assert.match(body.id, /^attachment-/);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

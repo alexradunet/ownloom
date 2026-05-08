@@ -41,7 +41,7 @@ export function registerCoreCommands(
       return [
         `channel: ${ctx.msg.channel}`,
         `sender:  ${ctx.msg.senderId}`,
-        `admin:   ${ctx.identity ? "yes" : "unknown"}`,
+        "admin:   yes",
         `chat_id: ${ctx.msg.chatId}`,
         `session: ${existing?.sessionPath ?? "none"}`,
       ].join("\n");

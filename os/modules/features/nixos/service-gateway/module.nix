@@ -220,7 +220,7 @@ in {
           authToken = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;
-            description = "Global pre-shared token protocol clients may send in the connect frame. Prefer clients for named/scoped access.";
+            description = "Global pre-shared token protocol clients may send in the connect frame. Any accepted client is currently a full operator.";
           };
 
           clients = lib.mkOption {
@@ -240,8 +240,8 @@ in {
                 };
                 scopes = lib.mkOption {
                   type = lib.types.listOf (lib.types.enum ["read" "write" "admin"]);
-                  default = ["read" "write"];
-                  description = "Protocol scopes granted to this client.";
+                  default = ["read" "write" "admin"];
+                  description = "Compatibility metadata only; accepted clients currently receive full operator access.";
                 };
               };
             });

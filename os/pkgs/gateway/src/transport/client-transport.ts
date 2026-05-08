@@ -19,7 +19,7 @@ import type { InboundAttachment, InboundMessage } from "../core/types.js";
 import type { GatewayTransport } from "../transports/types.js";
 import type { RuntimeClientRecord, Store } from "../core/store.js";
 import type { CommandRegistry } from "../core/commands.js";
-import type { IdentityResolver, Identity, Scope } from "../core/identity.js";
+import { FULL_OPERATOR_SCOPES, type IdentityResolver, type Identity, type Scope } from "../core/identity.js";
 import type { Router } from "../core/router.js";
 
 const CLIENT_WS_MAX_PAYLOAD_BYTES = 1024 * 1024;
@@ -158,8 +158,7 @@ export class ClientTransport implements GatewayTransport {
       return;
     }
 
-    const requiredScope = req.method === "POST" && path === "/api/v1/attachments" ? "write" : "read";
-    const auth = this.authenticateRestRequest(req, requiredScope);
+    const auth = this.authenticateRestRequest(req);
     if (!auth.ok) {
       res.writeHead(auth.status, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: auth.error }));
@@ -226,7 +225,7 @@ export class ClientTransport implements GatewayTransport {
     }
 
     const displayName = sanitizeDisplayName(url.searchParams.get("displayName") ?? "") ?? "Paired browser";
-    const result = this.store.rotateRuntimeClient({ id, displayName, scopes: ["read", "write"] });
+    const result = this.store.rotateRuntimeClient({ id, displayName, scopes: FULL_OPERATOR_SCOPES });
     const client = this.clientSummary({
       id: result.client.id,
       displayName: result.client.displayName,
@@ -402,7 +401,7 @@ export class ClientTransport implements GatewayTransport {
       ...(typeof frame.client?.id === "string" && frame.client.id.trim() ? { clientId: frame.client.id.trim() } : {}),
       identity,
       role: frame.role ?? "operator",
-      scopes: identity?.scopes ?? frame.scopes,
+      scopes: FULL_OPERATOR_SCOPES,
       seq: 0,
       send: (f) => sendJson(f),
     };
@@ -439,17 +438,6 @@ export class ClientTransport implements GatewayTransport {
         id: "unknown",
         ok: false,
         error: { message: `Unsupported frame type: ${frame.type}`, code: "INVALID_FRAME" },
-      });
-      return;
-    }
-
-    const requiredScope = requiredScopeForMethod(frame.method);
-    if (requiredScope && !client.scopes.includes(requiredScope)) {
-      sendJson({
-        type: "res",
-        id: frame.id,
-        ok: false,
-        error: { message: `Method ${frame.method} requires ${requiredScope} scope`, code: "FORBIDDEN" },
       });
       return;
     }
@@ -623,18 +611,19 @@ export class ClientTransport implements GatewayTransport {
       return {
         id: runtimeClient.id,
         displayName: runtimeClient.displayName,
-        scopes: runtimeClient.scopes,
+        scopes: FULL_OPERATOR_SCOPES,
         source: "token",
         matchedBy: `runtime-token:${runtimeClient.id}`,
       };
     }
     if (!this.identityResolver) return null;
-    return this.identityResolver.resolve("token", token);
+    const identity = this.identityResolver.resolve("token", token);
+    return identity ? { ...identity, scopes: FULL_OPERATOR_SCOPES } : null;
   }
 
-  private authenticateRestRequest(req: IncomingMessage, requiredScope: "read" | "write" | "admin"):
+  private authenticateRestRequest(req: IncomingMessage):
     | { ok: true }
-    | { ok: false; status: 401 | 403; error: string } {
+    | { ok: false; status: 401; error: string } {
     const authHeader = req.headers["authorization"];
     const header = Array.isArray(authHeader) ? authHeader[0] : authHeader;
     const token = header?.startsWith("Bearer ") ? header.slice(7).trim() : "";
@@ -646,7 +635,6 @@ export class ClientTransport implements GatewayTransport {
 
     const identity = this.resolveTokenIdentity(token);
     if (!identity) return { ok: false, status: 401, error: "Unauthorized" };
-    if (!identity.scopes.includes(requiredScope)) return { ok: false, status: 403, error: "Forbidden" };
     return { ok: true };
   }
 
@@ -681,7 +669,7 @@ export class ClientTransport implements GatewayTransport {
     return {
       id: input.id,
       displayName: input.displayName,
-      scopes: input.runtime?.scopes ?? input.scopes,
+      scopes: FULL_OPERATOR_SCOPES,
       managedBy: input.managedBy,
       canRotate: input.managedBy === "runtime",
       canRevoke: input.managedBy === "runtime" && !revoked,
@@ -694,14 +682,14 @@ export class ClientTransport implements GatewayTransport {
   private rotateRuntimeClientToken(id: string): { client: ClientSummary; token: string } | null {
     const runtime = this.store.getRuntimeClient(id);
     if (!runtime) return null;
-    const result = this.store.rotateRuntimeClient({ id: runtime.id, displayName: runtime.displayName, scopes: runtime.scopes });
+    const result = this.store.rotateRuntimeClient({ id: runtime.id, displayName: runtime.displayName, scopes: FULL_OPERATOR_SCOPES });
     return { client: this.clientSummary({ ...runtime, managedBy: "runtime", runtime: result.client }), token: result.token };
   }
 
   private revokeRuntimeClient(id: string): ClientSummary | null {
     const runtime = this.store.getRuntimeClient(id);
     if (!runtime) return null;
-    const client = this.store.revokeRuntimeClient({ id: runtime.id, displayName: runtime.displayName, scopes: runtime.scopes });
+    const client = this.store.revokeRuntimeClient({ id: runtime.id, displayName: runtime.displayName, scopes: FULL_OPERATOR_SCOPES });
     return this.clientSummary({ ...runtime, managedBy: "runtime", runtime: client });
   }
 
@@ -754,15 +742,6 @@ export class ClientTransport implements GatewayTransport {
   }
 }
 
-function requiredScopeForMethod(method: string): "read" | "write" | "admin" | null {
-  if (method === "health" || method === "status" || method === "commands.list" || method === "clients.list" || method === "sessions.list" || method === "sessions.get" || method === "deliveries.list") {
-    return "read";
-  }
-  if (method === "agent" || method === "agent.wait") return "write";
-  if (method === "sessions.reset" || method === "deliveries.retry" || method === "deliveries.delete" || method === "clients.rotateToken" || method === "clients.revoke") return "admin";
-  return null;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -779,7 +758,7 @@ function parseConnectFrame(value: unknown):
   const role = value.role === "node" ? "node" : value.role === undefined || value.role === "operator" ? "operator" : null;
   if (!role) return { ok: false, error: "connect.role must be operator or node", code: "INVALID_FRAME" };
 
-  const scopes = parseScopes(value.scopes, ["read", "write"]);
+  const scopes = parseScopes(value.scopes, FULL_OPERATOR_SCOPES);
   if (!scopes) return { ok: false, error: "connect.scopes must contain read, write, or admin", code: "INVALID_FRAME" };
 
   let auth: { token?: string } = {};

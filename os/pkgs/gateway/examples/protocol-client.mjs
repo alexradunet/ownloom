@@ -80,7 +80,7 @@ async function main() {
     type: "connect",
     protocol: 1,
     role: "operator",
-    scopes: ["read", "write"],
+    scopes: ["read", "write", "admin"],
     auth: token ? { token } : {},
     client: { id: "example-client", version: "0.1.0", platform: "node" },
   }));
