@@ -52,6 +52,11 @@ export class ClientTransport implements GatewayTransport {
       transportNames,
       startedAtMs: this.startedAtMs,
       handleAgent: (ctx) => this.handleAgentMethod(ctx),
+      clients: (config.clients ?? []).map((client) => ({
+        id: client.id,
+        displayName: client.displayName,
+        scopes: client.scopes,
+      })),
     });
   }
 
@@ -546,7 +551,7 @@ export class ClientTransport implements GatewayTransport {
 }
 
 function requiredScopeForMethod(method: string): "read" | "write" | "admin" | null {
-  if (method === "health" || method === "status" || method === "commands.list" || method === "sessions.list" || method === "sessions.get" || method === "deliveries.list") {
+  if (method === "health" || method === "status" || method === "commands.list" || method === "clients.list" || method === "sessions.list" || method === "sessions.get" || method === "deliveries.list") {
     return "read";
   }
   if (method === "agent" || method === "agent.wait") return "write";

@@ -20,6 +20,7 @@ runCommand "ownloom-gateway-web-smoke" {
   grep -q 'agent.wait' "$root/app.js"
   grep -q '/api/v1/attachments' "$root/app.js"
   grep -q 'deliveries.list' "$root/app.js"
+  grep -q 'clients.list' "$root/app.js"
 
   OWNLOOM_GATEWAY_WEB_HOST=127.0.0.1 \
   OWNLOOM_GATEWAY_WEB_PORT=18090 \

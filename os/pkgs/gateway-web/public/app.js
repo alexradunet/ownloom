@@ -23,6 +23,7 @@ const els = {
   sendButton: $("sendButton"),
   clearButton: $("clearButton"),
   messages: $("messages"),
+  clients: $("clients"),
   sessions: $("sessions"),
   deliveries: $("deliveries"),
   commands: $("commands"),
@@ -236,11 +237,13 @@ async function sendMessage() {
 }
 
 async function refreshLists() {
-  const [sessions, deliveries, commands] = await Promise.all([
+  const [clients, sessions, deliveries, commands] = await Promise.all([
+    request("clients.list").catch((error) => ({ error: error.message, clients: [], current: null })),
     request("sessions.list").catch((error) => ({ error: error.message, sessions: [] })),
     request("deliveries.list").catch((error) => ({ error: error.message, deliveries: [] })),
     request("commands.list").catch((error) => ({ error: error.message, commands: [] })),
   ]);
+  renderClients(clients);
   renderList(els.sessions, sessions.sessions ?? [], (s) => `<strong>${escapeHtml(s.chatId ?? s.id ?? "session")}</strong><br><small>${escapeHtml(s.updatedAt ?? s.createdAt ?? "")}</small>`);
   renderList(els.deliveries, deliveries.deliveries ?? [], (d) => {
     const status = d.deadAt ? "dead" : d.nextAttemptAt ? "waiting" : "queued";
@@ -253,6 +256,18 @@ async function refreshLists() {
     return `<strong>/${escapeHtml(name ?? "command")}</strong><br><small>${escapeHtml(description ?? "")}</small>`;
   });
   log("lists refreshed");
+}
+
+function renderClients(payload) {
+  const rows = [];
+  if (payload.current) rows.push({ ...payload.current, current: true });
+  for (const client of payload.clients ?? []) rows.push(client);
+  renderList(els.clients, rows, (client) => {
+    const current = client.current ? "Current connection" : client.displayName;
+    const name = client.identity?.displayName ?? client.displayName ?? client.clientId ?? client.id ?? client.connId ?? "client";
+    const scopes = (client.identity?.scopes ?? client.scopes ?? []).join(", ");
+    return `<strong>${escapeHtml(name)}</strong><br><small>${escapeHtml(current ?? "Configured client")} · ${escapeHtml(scopes)}</small>`;
+  });
 }
 
 async function health() {

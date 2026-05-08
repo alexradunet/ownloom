@@ -304,9 +304,17 @@ test("ClientTransport requires admin scope for admin methods", async () => {
       params: { id: "delivery-1" },
     }, writeClient, (frame: any) => responses.push(frame));
 
-    assert.equal(responses.length, 2);
+    (transport as any).handleRequest({
+      type: "req",
+      id: "req-3",
+      method: "clients.list",
+      params: {},
+    }, writeClient, (frame: any) => responses.push(frame));
+
+    await waitFor(() => responses.length === 3);
     assert.equal(responses[1].ok, false);
     assert.equal(responses[1].error.code, "FORBIDDEN");
+    assert.equal(responses[2].ok, true);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

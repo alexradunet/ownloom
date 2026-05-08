@@ -88,6 +88,7 @@ export function registerV1Methods(
     transportNames: string[];
     startedAtMs: number;
     handleAgent: (ctx: MethodContext) => Promise<MethodResult>;
+    clients?: Array<{ id: string; displayName: string; scopes: Scope[] }>;
   },
 ): void {
   // health
@@ -162,6 +163,25 @@ export function registerV1Methods(
     const deleted = deps.store.deleteQueuedDelivery(id);
     if (!deleted) return { ok: false, error: { message: `Unknown delivery: ${id}`, code: "NOT_FOUND" } };
     return { ok: true, payload: { id } };
+  });
+
+  // clients.list
+  registry.register(METHODS.CLIENTS_LIST, (ctx) => {
+    return {
+      ok: true,
+      payload: {
+        current: {
+          connId: ctx.client.connId,
+          clientId: ctx.client.clientId ?? null,
+          role: ctx.client.role,
+          scopes: ctx.client.scopes,
+          identity: ctx.client.identity
+            ? { id: ctx.client.identity.id, displayName: ctx.client.identity.displayName, scopes: ctx.client.identity.scopes }
+            : null,
+        },
+        clients: deps.clients ?? [],
+      },
+    };
   });
 
   // agent methods — delegate to the provided handler (which calls Router).

@@ -229,6 +229,34 @@ test("v1 sessions.reset resets a chat session", async () => {
   }
 });
 
+test("v1 clients.list returns current and configured clients without tokens", async () => {
+  const { store, cleanup } = makeStore();
+  try {
+    const commands = new CommandRegistry();
+    const registry = new MethodRegistry();
+    registerV1Methods(registry, {
+      store,
+      commands,
+      agentName: "pi",
+      transportNames: [],
+      startedAtMs: Date.now(),
+      clients: [{ id: "web", displayName: "Web", scopes: ["read", "write"] }],
+      handleAgent: async () => ({ ok: true, payload: { runId: "r1", status: "accepted" } }),
+    });
+
+    const result = await registry.dispatch(makeCtx({ _method: METHODS.CLIENTS_LIST }));
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      const p = result.payload as any;
+      assert.equal(p.current.connId, "test-conn");
+      assert.deepEqual(p.clients, [{ id: "web", displayName: "Web", scopes: ["read", "write"] }]);
+      assert.equal("token" in p.clients[0], false);
+    }
+  } finally {
+    cleanup();
+  }
+});
+
 test("v1 delivery admin methods retry and delete queued deliveries", async () => {
   const { store, cleanup } = makeStore();
   try {

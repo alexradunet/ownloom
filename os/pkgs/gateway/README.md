@@ -34,7 +34,7 @@ Authentication options:
 
 Scope rules:
 
-- `read`: `health`, `status`, `commands.list`, `sessions.list`, `sessions.get`, `deliveries.list`
+- `read`: `health`, `status`, `commands.list`, `clients.list`, `sessions.list`, `sessions.get`, `deliveries.list`
 - `write`: `agent`, `agent.wait`
 - `admin`: `sessions.reset`, `deliveries.retry`, `deliveries.delete`
 
@@ -80,7 +80,7 @@ Successful response:
     "protocol": 1,
     "server": { "version": "1.0.0", "connId": "client-..." },
     "features": {
-      "methods": ["agent", "agent.wait", "commands.list", "deliveries.delete", "deliveries.list", "deliveries.retry", "health", "sessions.get", "sessions.list", "sessions.reset", "status"],
+      "methods": ["agent", "agent.wait", "clients.list", "commands.list", "deliveries.delete", "deliveries.list", "deliveries.retry", "health", "sessions.get", "sessions.list", "sessions.reset", "status"],
       "events": ["agent", "shutdown", "tick"]
     },
     "auth": { "role": "operator", "scopes": ["read", "write"] },
@@ -236,6 +236,15 @@ Current limits:
 - `x-ownloom-attachment-kind` must be `image` or `audio`.
 - Upload body must be non-empty.
 - Max upload size is 25 MiB.
+
+### Client identities
+
+`clients.list` returns the current WebSocket client identity/scopes and configured
+named clients without token material:
+
+```json
+{ "type": "req", "id": "clients-1", "method": "clients.list", "params": {} }
+```
 
 ### Delivery administration
 

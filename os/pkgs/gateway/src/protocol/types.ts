@@ -88,6 +88,9 @@ export const METHODS = {
   DELIVERIES_RETRY: "deliveries.retry",
   DELIVERIES_DELETE: "deliveries.delete",
 
+  // Clients
+  CLIENTS_LIST: "clients.list",
+
   // System
   HEALTH: "health",
   STATUS: "status",
