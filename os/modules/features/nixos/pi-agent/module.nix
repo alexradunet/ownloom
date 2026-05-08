@@ -13,9 +13,11 @@
     ownloom = "${config.ownloom.root}/os/pkgs/pi-adapter/extension";
   };
 
-  desiredSettings =
+  desiredGlobalSettings =
     {
-      inherit (cfg) packages;
+      # npm Pi packages are project-scoped below so installs go under
+      # $OWNLOOM_ROOT/.pi/npm instead of npm's global prefix in the Nix store.
+      packages = [];
       extensions = map (name: extensionSources.${name}) cfg.extensions;
       inherit (cfg) skills;
       inherit (cfg) prompts;
@@ -25,7 +27,12 @@
       inherit (cfg) enableSkillCommands;
     };
 
-  desiredSettingsFile = pkgs.writeText "ownloom-pi-settings.json" (builtins.toJSON desiredSettings);
+  desiredProjectSettings = {
+    inherit (cfg) packages;
+  };
+
+  desiredGlobalSettingsFile = pkgs.writeText "ownloom-pi-global-settings.json" (builtins.toJSON desiredGlobalSettings);
+  desiredProjectSettingsFile = pkgs.writeText "ownloom-pi-project-settings.json" (builtins.toJSON desiredProjectSettings);
   extensionSourceChecks =
     lib.concatMapStringsSep "\n" (name: ''
       if [ ! -d ${lib.escapeShellArg extensionSources.${name}} ]; then
@@ -97,11 +104,12 @@ in {
 
     system.activationScripts.ownloom-pi-settings = lib.stringAfter ["users"] ''
       install -d -m 0755 -o ${userName} -g ${userGroup} ${lib.escapeShellArg "${userHome}/.pi/agent"}
+      install -d -m 0755 -o ${userName} -g ${userGroup} ${lib.escapeShellArg "${config.ownloom.root}/.pi"}
 
       ${extensionSourceChecks}
 
       settings=${lib.escapeShellArg "${userHome}/.pi/agent/settings.json"}
-      desired=${lib.escapeShellArg desiredSettingsFile}
+      desired=${lib.escapeShellArg desiredGlobalSettingsFile}
 
       # Merge desired keys into existing settings.json, creating it if absent.
       # jq null-input reads desired, then slurps existing (if present) and merges.
@@ -112,8 +120,17 @@ in {
       fi
       mv "$settings.tmp" "$settings"
 
-      chown ${userName}:${userGroup} ${lib.escapeShellArg "${userHome}/.pi/agent/settings.json"}
-      chmod 0644 ${lib.escapeShellArg "${userHome}/.pi/agent/settings.json"}
+      project_settings=${lib.escapeShellArg "${config.ownloom.root}/.pi/settings.json"}
+      project_desired=${lib.escapeShellArg desiredProjectSettingsFile}
+      if [ -f "$project_settings" ]; then
+        ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$project_settings" "$project_desired" > "$project_settings.tmp"
+      else
+        ${pkgs.jq}/bin/jq '.' "$project_desired" > "$project_settings.tmp"
+      fi
+      mv "$project_settings.tmp" "$project_settings"
+
+      chown ${userName}:${userGroup} ${lib.escapeShellArg "${userHome}/.pi/agent/settings.json"} "$project_settings"
+      chmod 0644 ${lib.escapeShellArg "${userHome}/.pi/agent/settings.json"} "$project_settings"
     '';
   };
 }

@@ -9,6 +9,7 @@
   ];
   expectedPiPackages = [
     "git:github.com/aliou/pi-synthetic@v0.15.0"
+    "npm:pi-subagents@0.24.0"
   ];
   assertFleet = name: host: let
     userHome = host.config.ownloom.human.homeDirectory;
@@ -41,7 +42,9 @@
     assert lib.asserts.assertMsg (!gatewayEnabled || gatewayServiceConfig.StateDirectoryMode == "0700") "${name} gateway state directory must be private";
     assert lib.asserts.assertMsg (activationText != "") "${name} must define the PI activation script";
     assert lib.asserts.assertMsg (lib.hasInfix "${userHome}/.pi/agent/settings.json" activationText) "${name} PI activation must manage settings.json";
-    assert lib.asserts.assertMsg (lib.hasInfix "ownloom-pi-settings.json" activationText) "${name} PI activation must consume generated declarative settings";
+    assert lib.asserts.assertMsg (lib.hasInfix "ownloom-pi-global-settings.json" activationText) "${name} PI activation must consume generated global settings";
+    assert lib.asserts.assertMsg (lib.hasInfix "ownloom-pi-project-settings.json" activationText) "${name} PI activation must consume generated project settings";
+    assert lib.asserts.assertMsg (lib.hasInfix "${userHome}/ownloom/.pi/settings.json" activationText) "${name} PI activation must manage project settings for package installs";
     assert assertFleet name host; true;
 in
   assert assertHost "ownloom-vps" vps;

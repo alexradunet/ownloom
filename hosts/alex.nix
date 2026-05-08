@@ -27,6 +27,7 @@ _: {
 
       packages = [
         "git:github.com/aliou/pi-synthetic@v0.15.0"
+        "npm:pi-subagents@0.24.0"
       ];
     };
 
