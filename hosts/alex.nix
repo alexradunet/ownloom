@@ -28,6 +28,8 @@ _: {
       packages = [
         "git:github.com/aliou/pi-synthetic@v0.15.0"
         "npm:pi-subagents@0.24.0"
+        "npm:pi-btw@0.4.0"
+        "npm:pi-mermaid@0.3.0"
       ];
     };
 

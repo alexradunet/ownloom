@@ -13,8 +13,9 @@ runCommand "ownloom-gateway-web-smoke" {
   test -f "$root/index.html"
   test -f "$root/app.js"
   test -f "$root/style.css"
-  test -f "$root/manifest.webmanifest"
-  test -f "$root/sw.js"
+  test ! -e "$root/manifest.webmanifest"
+  test ! -e "$root/sw.js"
+  test ! -e "$root/js/pwa.js"
   test -f "$root/icons/icon.svg"
   test -f "$root/styles/tokens.css"
   test -f "$root/styles/base.css"
@@ -33,7 +34,8 @@ runCommand "ownloom-gateway-web-smoke" {
   node --check "$server"
 
   grep -qi 'Ownloom Cockpit' "$root/index.html"
-  grep -q 'rel="manifest"' "$root/index.html"
+  ! grep -q 'rel="manifest"' "$root/index.html"
+  ! grep -q 'pwaStatus' "$root/index.html"
   grep -q 'role="tablist"' "$root/index.html"
   grep -q 'role="tab"' "$root/index.html"
   grep -q 'aria-controls="tab-terminal"' "$root/index.html"
@@ -42,6 +44,7 @@ runCommand "ownloom-gateway-web-smoke" {
   grep -q '/terminal/ownloom' "$root/index.html"
   grep -q 'pairButton' "$root/index.html"
   grep -q 'newChatButton' "$root/index.html"
+  grep -q 'threadRailToggle' "$root/index.html"
   grep -R -q 'agent.wait' "$root"
   grep -R -q 'data-session-switch-chat' "$root"
   grep -R -q '/api/v1/pair' "$root"
@@ -50,11 +53,10 @@ runCommand "ownloom-gateway-web-smoke" {
   grep -R -q 'clients.list' "$root"
   grep -R -q 'createTabController' "$root"
   grep -R -q 'copyTerminalToken' "$root"
-  grep -q '/api/' "$root/sw.js"
-  grep -q '/terminal/' "$root/sw.js"
-  grep -q 'Authorization' "$root/sw.js"
-  grep -q 'no-store' "$root/sw.js"
-  grep -q 'application/manifest+json' "$server"
+  grep -R -q 'cleanupOldServiceWorkers' "$root"
+  grep -R -q 'setupThreadRail' "$root"
+  ! grep -R -q 'registerPwa' "$root"
+  ! grep -q 'application/manifest+json' "$server"
   grep -q 'Content-Security-Policy' "$server"
   grep -q 'wss://localhost' "$server"
   grep -q 'Misdirected request' "$server"
@@ -84,13 +86,11 @@ runCommand "ownloom-gateway-web-smoke" {
   grep -qi 'x-content-type-options: nosniff' /tmp/index.headers
   grep -qi 'referrer-policy: no-referrer' /tmp/index.headers
 
-  curl -fsS -D /tmp/manifest.headers http://127.0.0.1:18090/manifest.webmanifest >/tmp/manifest.webmanifest
-  grep -q '"name": "Ownloom Cockpit"' /tmp/manifest.webmanifest
-  grep -qi 'content-type: application/manifest+json' /tmp/manifest.headers
+  curl -sS -D /tmp/manifest.headers http://127.0.0.1:18090/manifest.webmanifest >/tmp/manifest.webmanifest || true
+  grep -q '404' /tmp/manifest.headers
 
-  curl -fsS -D /tmp/sw.headers http://127.0.0.1:18090/sw.js >/tmp/sw.js
-  grep -q 'STATIC_ASSETS' /tmp/sw.js
-  grep -qi 'cache-control: no-cache' /tmp/sw.headers
+  curl -sS -D /tmp/sw.headers http://127.0.0.1:18090/sw.js >/tmp/sw.js || true
+  grep -q '404' /tmp/sw.headers
 
   curl -fsS -D /tmp/terminal-token.headers http://127.0.0.1:18090/api/v1/terminal-token >/tmp/terminal-token.json
   grep -q '"token":"smoke-zellij-token"' /tmp/terminal-token.json

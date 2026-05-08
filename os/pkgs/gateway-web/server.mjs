@@ -20,7 +20,6 @@ const mimeTypes = {
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
-  ".webmanifest": "application/manifest+json; charset=utf-8",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
   ".png": "image/png",
@@ -37,8 +36,6 @@ const staticSecurityHeaders = {
     "img-src 'self' data: blob:",
     "connect-src 'self' http://127.0.0.1:* http://[::1]:* http://localhost:* https://127.0.0.1:* https://[::1]:* https://localhost:* ws://127.0.0.1:* ws://[::1]:* ws://localhost:* wss://127.0.0.1:* wss://[::1]:* wss://localhost:*",
     "frame-src 'self'",
-    "worker-src 'self'",
-    "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'none'",
@@ -304,7 +301,7 @@ function serveStatic(url, res) {
   res.writeHead(200, {
     "Content-Type": mimeTypes[extname(filePath)] ?? "application/octet-stream",
     "Content-Length": stats.size,
-    "Cache-Control": pathname === "/sw.js" ? "no-cache" : "no-cache, max-age=0",
+    "Cache-Control": "no-cache, max-age=0",
     ...staticSecurityHeaders,
   });
   createReadStream(filePath).pipe(res);

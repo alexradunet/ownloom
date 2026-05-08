@@ -13,14 +13,13 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at 16% 8%, rgb(125 240 214 / 0.13), transparent 30rem),
-    radial-gradient(circle at 82% 2%, rgb(245 215 138 / 0.10), transparent 24rem),
-    linear-gradient(135deg, rgb(125 240 214 / 0.035) 0 1px, transparent 1px 28px),
-    linear-gradient(90deg, var(--palette-void-950), #090f16 52%, #080c12);
+    linear-gradient(90deg, rgb(255 245 223 / 0.018) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(0deg, rgb(255 245 223 / 0.014) 1px, transparent 1px) 0 0 / 24px 24px,
+    var(--palette-void-950);
 }
 
 ::selection {
-  background: rgb(125 240 214 / 0.32);
+  background: rgb(240 182 109 / 0.34);
   color: var(--color-text);
 }
 
@@ -31,7 +30,7 @@ textarea { font: inherit; }
 button,
 .button-link {
   min-block-size: 2.75rem;
-  border: 1px solid rgb(3 20 17 / 0.18);
+  border: 1px solid rgb(33 17 10 / 0.20);
   border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
@@ -40,7 +39,7 @@ button,
   padding: var(--space-control-y) var(--space-control-x);
   background: var(--button-primary-bg);
   color: var(--button-primary-text);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.32), 0 10px 24px rgb(0 0 0 / 0.20);
+  box-shadow: none;
   cursor: pointer;
   font-weight: var(--font-medium);
   text-decoration: none;
@@ -55,8 +54,9 @@ button,
 
 button:hover:not(:disabled),
 .button-link:hover {
-  background: linear-gradient(180deg, var(--color-accent-hover), var(--color-accent));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.36), 0 14px 30px rgb(0 0 0 / 0.24);
+  border-color: var(--color-warning);
+  background: var(--color-accent-hover);
+  box-shadow: none;
 }
 
 button:active:not(:disabled),
@@ -76,7 +76,7 @@ textarea {
   padding: 0.72rem 0.8rem;
   background: var(--input-bg);
   color: inherit;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025);
+  box-shadow: inset 0 1px 0 rgb(255 245 223 / 0.03);
 }
 
 input::placeholder,
@@ -85,7 +85,7 @@ textarea::placeholder { color: var(--color-faint); }
 input:focus,
 textarea:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 1px rgb(125 240 214 / 0.32), inset 0 1px 0 rgb(255 255 255 / 0.035);
+  box-shadow: 0 0 0 1px rgb(240 182 109 / 0.36), inset 0 1px 0 rgb(255 245 223 / 0.04);
 }
 
 label {

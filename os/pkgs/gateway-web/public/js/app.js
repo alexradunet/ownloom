@@ -1,7 +1,6 @@
-import { all, byId, setText } from "./dom.js";
+import { all, byId } from "./dom.js";
 import { createTabController } from "./a11y.js";
 import { createGatewayClient } from "./gateway-client.js";
-import { registerPwa } from "./pwa.js";
 import { createAppState, currentChatId, currentSessionKey, sessionTitle } from "./state.js";
 import { getActiveTab, loadSettings, saveSettings, setActiveTab } from "./storage.js";
 import { createChatController } from "./controllers/chat-controller.js";
@@ -108,6 +107,7 @@ export function startApp() {
   });
   createTerminalController({ els, gatewayClient });
   createOrganizerController();
+  setupThreadRail(els);
 
   const requestedTab = new URLSearchParams(window.location.search).get("tab");
   createTabController({
@@ -120,10 +120,7 @@ export function startApp() {
     },
   });
 
-  registerPwa({
-    log,
-    setStatus: (status) => setText(els.pwaStatus, status),
-  });
+  cleanupOldServiceWorkers(log);
 
   setConnection("disconnected");
   if (els.rememberSettings.checked && els.token.value.trim()) {
@@ -137,7 +134,6 @@ function collectElements() {
     token: byId("token"),
     sessionKey: byId("sessionKey"),
     connectionState: byId("connectionState"),
-    pwaStatus: byId("pwaStatus"),
     rememberSettings: byId("rememberSettings"),
     connectButton: byId("connectButton"),
     pairButton: byId("pairButton"),
@@ -145,6 +141,10 @@ function collectElements() {
     healthButton: byId("healthButton"),
     refreshButton: byId("refreshButton"),
     currentSession: byId("currentSession"),
+    workbenchShell: document.querySelector("[data-workbench-shell]"),
+    threadRail: byId("threadRail"),
+    threadRailToggle: byId("threadRailToggle"),
+    threadRailClose: byId("threadRailClose"),
     newChatButton: byId("newChatButton"),
     messageInput: byId("messageInput"),
     attachmentInput: byId("attachmentInput"),
@@ -164,6 +164,54 @@ function collectElements() {
     copyTerminalTokenButton: byId("copyTerminalTokenButton"),
     terminalTokenStatus: byId("terminalTokenStatus"),
   };
+}
+
+function setupThreadRail(els) {
+  const shell = els.workbenchShell;
+  if (!shell) return;
+
+  function setOpen(open) {
+    shell.classList.toggle("thread-rail-open", open);
+    els.threadRailToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    els.threadRail.setAttribute("aria-hidden", open ? "false" : "true");
+    if (open) els.threadRailClose.focus();
+  }
+
+  els.threadRailToggle.addEventListener("click", () => {
+    setOpen(!shell.classList.contains("thread-rail-open"));
+  });
+  els.threadRailClose.addEventListener("click", () => setOpen(false));
+  els.sessions.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof HTMLElement && target.hasAttribute("data-session-switch-chat")) setOpen(false);
+  });
+  shell.addEventListener("click", (event) => {
+    if (event.target === shell) setOpen(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && shell.classList.contains("thread-rail-open")) setOpen(false);
+  });
+}
+
+function cleanupOldServiceWorkers(log) {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations()
+      .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+      .then((results) => {
+        if (results.some(Boolean)) log("old service workers unregistered");
+      })
+      .catch((error) => log("service worker cleanup failed", error.message));
+  }
+
+  if (!("caches" in window)) return;
+  caches.keys()
+    .then((names) => Promise.all(names
+      .filter((name) => name.startsWith("ownloom-gateway-web-"))
+      .map((name) => caches.delete(name))))
+    .then((results) => {
+      if (results.some(Boolean)) log("old pwa caches cleared");
+    })
+    .catch((error) => log("pwa cache cleanup failed", error.message));
 }
 
 function applyInitialSettings(els, state, log) {

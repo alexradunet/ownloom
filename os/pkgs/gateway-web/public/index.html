@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Private local cockpit for Ownloom chat, planning, configuration, and terminal sessions." />
     <meta name="application-name" content="Ownloom Cockpit" />
-    <meta name="theme-color" content="#070b10" />
+    <meta name="theme-color" content="#1a100b" />
     <title>Ownloom Cockpit</title>
-    <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./style.css" />
   </head>
@@ -17,36 +16,36 @@
       <div class="cockpit-layout">
         <aside class="cockpit-sidebar" aria-label="Ownloom cockpit menu">
           <div class="sidebar-brand">
-            <span class="eyebrow">Private local cockpit</span>
+            <span class="eyebrow">Digital scoarță</span>
             <p class="sidebar-title">Ownloom</p>
-            <p>Welcome back. Your local space for context, planning, configuration, and terminal work is ready.</p>
+            <p>One local workbench: active thread first, tools close by.</p>
           </div>
 
           <nav class="tabs sidebar-tabs" role="tablist" aria-orientation="vertical" aria-label="Ownloom cockpit sections">
             <button id="tab-chat-button" class="tab-button active" type="button" role="tab" data-tab-target="chat" aria-controls="tab-chat" aria-selected="true" tabindex="0">
-              <span class="tab-label">Chat</span>
-              <span class="tab-description">Ask, attach, and continue sessions.</span>
+              <span class="tab-label">Workbench</span>
+              <span class="tab-description">Active conversation thread.</span>
             </button>
             <button id="tab-organizer-button" class="tab-button" type="button" role="tab" data-tab-target="organizer" aria-controls="tab-organizer" aria-selected="false" tabindex="-1">
-              <span class="tab-label">Organizer</span>
-              <span class="tab-description">Today, upcoming, and planner context.</span>
+              <span class="tab-label">Planner</span>
+              <span class="tab-description">Today and upcoming context.</span>
             </button>
             <button id="tab-config-button" class="tab-button" type="button" role="tab" data-tab-target="config" aria-controls="tab-config" aria-selected="false" tabindex="-1">
-              <span class="tab-label">Config</span>
-              <span class="tab-description">Pair browsers and inspect clients.</span>
+              <span class="tab-label">Access</span>
+              <span class="tab-description">Pair and inspect clients.</span>
             </button>
             <button id="tab-terminal-button" class="tab-button" type="button" role="tab" data-tab-target="terminal" aria-controls="tab-terminal" aria-selected="false" tabindex="-1">
-              <span class="tab-label">Terminal</span>
-              <span class="tab-description">Open the local Zellij workspace.</span>
+              <span class="tab-label">Shell</span>
+              <span class="tab-description">Local Zellij workspace.</span>
             </button>
             <button id="tab-log-button" class="tab-button" type="button" role="tab" data-tab-target="log" aria-controls="tab-log" aria-selected="false" tabindex="-1">
-              <span class="tab-label">Log</span>
-              <span class="tab-description">Review local cockpit events.</span>
+              <span class="tab-label">Trace</span>
+              <span class="tab-description">Local cockpit events.</span>
             </button>
           </nav>
 
           <div class="sidebar-note">
-            <span class="chip chip-private">Private by design</span>
+            <span class="chip chip-private">Woven locally</span>
             <p>Loopback-first, tunnel-friendly, and honest about live state.</p>
           </div>
         </aside>
@@ -55,44 +54,57 @@
           <header>
             <div>
               <h1>Ownloom Cockpit</h1>
-              <p>Own your context in one warm, inspectable cockpit — chat, planner context, config, terminal, and logs within reach.</p>
+              <p>Woven context, local control — start with the active thread, then reach for planner, access, shell, and trace only when needed.</p>
             </div>
             <div class="header-status" aria-label="Cockpit status">
+              <span id="currentSession" class="chip chip-thread">Conversation: web-main</span>
               <span class="chip chip-private">Loopback / tunnel only</span>
               <span id="connectionState" class="pill" role="status" aria-live="polite">disconnected</span>
-              <span id="pwaStatus" class="chip" role="status" aria-live="polite">Online</span>
             </div>
           </header>
 
           <section id="tab-chat" class="tab-panel active" role="tabpanel" data-tab-panel="chat" aria-labelledby="tab-chat-button" tabindex="0">
-        <section class="grid">
-          <section class="card chat" aria-labelledby="chat-heading">
-            <div class="chat-heading">
-              <h2 id="chat-heading">Chat</h2>
+        <section class="workbench-shell" data-workbench-shell>
+          <section class="card chat workbench-card" aria-labelledby="chat-heading">
+            <div class="chat-heading workbench-heading">
+              <div>
+                <h2 id="chat-heading">Active thread</h2>
+                <p>Clean conversation space. Keep the thread rail closed until you need to switch context.</p>
+              </div>
               <div class="row">
-                <span id="currentSession" class="chip">Session: web-main</span>
-                <button id="newChatButton" class="button-secondary" type="button">New chat</button>
+                <button id="threadRailToggle" class="button-secondary" type="button" aria-controls="threadRail" aria-expanded="false">Threads</button>
+                <button id="newChatButton" class="button-secondary" type="button">New thread</button>
               </div>
             </div>
-            <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions text" aria-busy="false"></div>
-            <label>
-              Attachments
-              <input id="attachmentInput" type="file" multiple accept="image/*,audio/*" />
-            </label>
-            <div id="attachments" class="attachments" role="list" aria-label="Staged attachments"></div>
-            <label>
-              Message
-              <textarea id="messageInput" rows="4" placeholder="Ask Ownloom…"></textarea>
-            </label>
-            <div class="row">
-              <button id="sendButton" type="button" disabled>Send</button>
-              <button id="clearButton" class="button-secondary" type="button">Clear</button>
+            <div id="messages" class="messages thread-messages" role="log" aria-live="polite" aria-relevant="additions text" aria-busy="false" aria-label="Active thread messages"></div>
+            <div class="composer" aria-label="Thread composer">
+              <div class="composer-row">
+                <label class="attachment-field">
+                  Material
+                  <input id="attachmentInput" type="file" multiple accept="image/*,audio/*" />
+                </label>
+                <div id="attachments" class="attachments" role="list" aria-label="Staged attachments"></div>
+              </div>
+              <label>
+                Next instruction
+                <textarea id="messageInput" rows="4" placeholder="Message Ownloom…"></textarea>
+              </label>
+              <div class="row composer-actions">
+                <button id="sendButton" type="button" disabled>Send</button>
+                <button id="clearButton" class="button-secondary" type="button">Clear view</button>
+              </div>
             </div>
           </section>
 
-          <aside class="card side" aria-labelledby="sessions-heading">
-            <h2 id="sessions-heading">Sessions</h2>
-            <ul id="sessions" class="list empty" aria-label="Sessions"><li>Connect and refresh.</li></ul>
+          <aside id="threadRail" class="card side thread-rail" aria-labelledby="sessions-heading" aria-hidden="true">
+            <div class="card-header thread-rail-header">
+              <div>
+                <h2 id="sessions-heading">Threads</h2>
+                <p class="card-meta">Switch web threads or attach existing conversations.</p>
+              </div>
+              <button id="threadRailClose" class="button-secondary button-small" type="button" aria-label="Close threads">Close</button>
+            </div>
+            <ul id="sessions" class="list empty" aria-label="Threads"><li>Connect and refresh.</li></ul>
           </aside>
         </section>
       </section>
@@ -116,6 +128,10 @@
 
       <section id="tab-config" class="tab-panel" role="tabpanel" data-tab-panel="config" aria-labelledby="tab-config-button" tabindex="0" hidden>
         <section class="card settings" aria-label="Gateway connection settings">
+          <div class="settings-intro">
+            <h2>Gateway access</h2>
+            <p>Connect this browser to the local operator gateway. Tokens stay local when remembered.</p>
+          </div>
           <label>
             Gateway HTTP URL
             <input id="httpUrl" value="http://127.0.0.1:8081" autocomplete="off" />
@@ -144,13 +160,13 @@
 
         <section class="grid config-grid">
           <section class="card side" aria-labelledby="clients-heading">
-            <h2 id="clients-heading">Clients</h2>
+            <h2 id="clients-heading">Runtime clients</h2>
             <ul id="clients" class="list empty" aria-label="Clients"><li>Connect and refresh.</li></ul>
           </section>
           <section class="card side">
-            <h2 id="deliveries-heading">Deliveries</h2>
+            <h2 id="deliveries-heading">Delivery queue</h2>
             <ul id="deliveries" class="list empty" aria-labelledby="deliveries-heading"><li>Connect and refresh.</li></ul>
-            <h2 id="commands-heading">Commands</h2>
+            <h2 id="commands-heading">Command queue</h2>
             <ul id="commands" class="list empty" aria-labelledby="commands-heading"><li>Connect and refresh.</li></ul>
           </section>
         </section>
@@ -160,7 +176,7 @@
         <section class="card terminal-card">
           <div class="chat-heading">
             <div>
-              <h2>Terminal</h2>
+              <h2>Shell</h2>
               <p>Advanced Zellij shell for Pi TUI and coding sessions. Loopback-only; access through the cockpit tunnel.</p>
             </div>
             <div class="row terminal-actions">
@@ -175,7 +191,7 @@
 
       <section id="tab-log" class="tab-panel" role="tabpanel" data-tab-panel="log" aria-labelledby="tab-log-button" tabindex="0" hidden>
         <section class="card">
-          <h2>Event log</h2>
+          <h2>Trace</h2>
           <pre id="log" class="log"></pre>
         </section>
           </section>

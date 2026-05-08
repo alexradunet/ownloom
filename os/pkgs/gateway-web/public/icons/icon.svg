@@ -1,23 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
   <title id="title">Ownloom Cockpit</title>
-  <desc id="desc">A teal woven loop and terminal cursor on a dark ink background.</desc>
-  <defs>
-    <linearGradient id="bg" x1="80" x2="432" y1="56" y2="456" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#101823" />
-      <stop offset="1" stop-color="#070b10" />
-    </linearGradient>
-    <linearGradient id="thread" x1="111" x2="405" y1="171" y2="339" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#7df0d6" />
-      <stop offset="1" stop-color="#23aa93" />
-    </linearGradient>
-    <linearGradient id="loomlight" x1="133" x2="379" y1="334" y2="175" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#f5d78a" />
-      <stop offset="1" stop-color="#7df0d6" />
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)" />
-  <path d="M121 284c0-73 57-130 130-130h20c73 0 130 57 130 130" fill="none" stroke="url(#thread)" stroke-width="44" stroke-linecap="round" />
-  <path d="M391 228c0 73-57 130-130 130h-20c-73 0-130-57-130-130" fill="none" stroke="url(#loomlight)" stroke-width="44" stroke-linecap="round" opacity="0.92" />
-  <path d="M167 239l51 43-51 43" fill="none" stroke="#f4f7f4" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" />
-  <path d="M247 326h90" stroke="#f4f7f4" stroke-width="28" stroke-linecap="round" />
+  <desc id="desc">A blocky pixel-loom diamond and terminal cursor on a charred walnut background.</desc>
+  <rect width="512" height="512" rx="72" fill="#1a100b" />
+  <path d="M256 76l180 180-180 180L76 256 256 76z" fill="#25170f" stroke="#f0c86d" stroke-width="16" />
+  <path d="M256 132l124 124-124 124-124-124 124-124z" fill="#332016" stroke="#b84d35" stroke-width="14" />
+  <path d="M256 188l68 68-68 68-68-68 68-68z" fill="#3d271a" stroke="#f0c86d" stroke-width="12" />
+  <g fill="#f0c86d" opacity="0.95">
+    <rect x="116" y="92" width="28" height="28" />
+    <rect x="368" y="92" width="28" height="28" />
+    <rect x="116" y="392" width="28" height="28" />
+    <rect x="368" y="392" width="28" height="28" />
+  </g>
+  <g fill="#b84d35">
+    <rect x="156" y="132" width="24" height="24" />
+    <rect x="332" y="132" width="24" height="24" />
+    <rect x="156" y="356" width="24" height="24" />
+    <rect x="332" y="356" width="24" height="24" />
+  </g>
+  <path d="M188 226l44 34-44 34" fill="none" stroke="#fff5df" stroke-width="26" stroke-linecap="square" stroke-linejoin="miter" />
+  <path d="M252 300h84" stroke="#fff5df" stroke-width="26" stroke-linecap="square" />
 </svg>

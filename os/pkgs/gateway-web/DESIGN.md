@@ -1,126 +1,119 @@
-# Ownloom Cockpit Design Guideline
+# Ownloom Cockpit Design System
 
-Ownloom Cockpit is a private, local-first operator surface for Alex and his AI system. It should feel like a calm command center for context, planning, chat, and infrastructure — not like a generic SaaS dashboard.
+Ownloom Cockpit is a private, local-first operator surface for Alex and his AI system. The design direction is now **Digital Scoarță / Pixel Loom Minimalism**: warm, grounded software that translates Romanian `scoarțe` / loom structure into a calm pixel-like workbench.
 
-## Design direction: calm sovereign cockpit
+The UI should feel useful first: flat, blocky, readable, warm, and lightly woven. It must not feel like a generic SaaS dashboard, a glossy themed skin, or decorative folklore wallpaper.
 
-Ownloom is about owned context, personal continuity, and inspectable automation.
+## Research basis
 
-The UI should communicate:
+Web research anchors for this direction:
 
-- **Sovereignty** — local-first, private, tunnel/loopback-oriented, no external assets.
-- **Calm** — low-noise, focused, no gamified dopamine UI.
-- **Capability** — chat, planner, config, logs, and terminal are all first-class.
-- **Continuity** — sessions, reminders, wiki memory, and agent work feel connected.
-- **Inspectability** — the user can see system state, logs, tokens, and boundaries clearly.
+- UNESCO describes traditional wall-carpet craftsmanship in Romania and Moldova as loom-based work with motifs that carry origin, identity, dowry, ritual, and community meaning: <https://ich.unesco.org/en/RL/traditional-wall-carpet-craftsmanship-in-romania-and-the-republic-of-moldova-01167>
+- The National Museum of the Romanian Peasant describes `scoarțe` as a major element of the peasant interior, with regional variation, wool, natural/vegetal colors, borders, rhombi, tree/flower/vine motifs, birds, animals, human figures, and successive serrated bands: <https://muzeultaranuluiroman.ro/en/carpet/>
+- Eliznik’s Romanian textile notes describe loom-made woven patterns, stripes, checks, `alesătură`, `neveditură`, diamonds, zigzags, waves, and spruce/fir branches: <https://eliznik.org.uk/traditions-in-romania/traditional-clothing/materials-and-decorations/woven-and-printed-patterns/>
+- The National Village Museum and rural-interior references reinforce the material mood: simple wood furniture, wool/hemp/cotton textiles, ceramic plates, old beams, geometric wall carpets, yellow/blue/green accents, and warm layered rooms.
 
-A useful internal phrase: **Own your context.** Use it sparingly; the product should prove it through clarity and control.
+Use these as direction, not as assets. The product remains local and self-contained: no remote images, fonts, scripts, or icons.
 
-## Ownloom palette
+## Concept: Digital Scoarță
 
-Ownloom uses its own identity: **dark ink + teal thread + amber loomlight**.
+Internal metaphor: **digital scoarță** — a woven wall-carpet logic translated into software layout.
 
-- **Dark ink**: the private local workspace, terminal depth, quiet control.
-- **Teal thread**: active context, primary action, connection, agent continuity.
-- **Amber loomlight**: focus, attention, human review, warmth.
-- **Moss**: healthy/connected/done states.
-- **Ember**: destructive or error states.
+- **Pixel loom**: woven motifs become small square accents, not illustration.
+- **Vatra / hearth**: warmth, privacy, home base, human review, safety.
+- **Război / loom**: structured threads, agent sessions, planner continuity, repeatable systems.
+- **Scoarță / wall carpet**: panels with borders, fields, rhythm, and symbolic motifs.
+- **Sat vechi / old village**: useful materials, low gloss, durable objects, visible craft.
 
-This should feel distinct from Nord, Catppuccin, generic VS Code themes, and SaaS dashboards. Borrow the discipline of those palettes, not their exact look.
+Product phrase to guide tone: **woven context, local control**. Use sparingly.
 
-## Visual metaphor
+## Visual principles
 
-Ownloom suggests threads, weaving, memory, and durable structure. Use this subtly:
+1. **Useful before ornamental** — Romanian textile cues should organize state and hierarchy, not distract.
+2. **Flat before glossy** — prefer solid surfaces, crisp borders, and restrained shadows; avoid glow-heavy artificial dashboards.
+3. **Pixel motif as structure** — small blocky stripes, teeth, and diamonds are allowed only at edges, dividers, active states, and the icon.
+4. **Warm sovereignty** — local-first privacy should feel like a protected home/workroom, not a cold bunker.
+5. **Woven workbench** — organize around one active work thread plus supporting tools, not dashboard decoration.
+6. **Earthy restraint** — clay, wool, walnut, ochre, madder red, moss, and muted indigo; avoid neon/cyberpunk.
+7. **No stale truth** — live state must stay explicit; never make cached planner/API data look current.
 
-- thin line accents
-- connected status chips
-- timeline/thread-like separators
-- layered panels that feel woven together
-- clear “current thread/session” emphasis
+## Palette
 
-Avoid literal loom illustrations, mascots, busy decorative patterns, or cyberpunk styling.
+Default theme is warm dark/operator mode.
 
-## Principles
+### Primitive color story
 
-1. **State first** — connection, offline/PWA state, current session, agent-running state, terminal-token state, and destructive-action state must be visible and textual.
-2. **Content before chrome** — chat, planner context, actions, and logs matter more than decoration.
-3. **One primary action per area** — avoid competing accent buttons.
-4. **Advanced areas stay honest** — Config, Terminal, and Log are operator tools; make them clear, not hidden or cute.
-5. **Reviewable mutation** — destructive actions need explicit labels, danger styling, and confirmation.
-6. **Native controls first** — use semantic HTML and browser behavior before custom widgets.
-7. **Motion explains** — animation should clarify feedback/state changes, not decorate.
-8. **No stale truth** — never present cached API/planner/terminal data as current.
+- **Charred walnut** — private dark canvas, terminal depth.
+- **Burnt clay** — panel warmth, village walls, pottery.
+- **Undyed wool / hemp** — readable text, dividers, low-noise surfaces.
+- **Madder red / brick** — primary action, user agency, festive protective thread.
+- **Ochre / loomlight** — focus, attention, warning, lamp/hearth glow.
+- **Moss** — healthy/connected/done.
+- **Muted indigo** — secondary thread, historical textile dye accent, agent/system contrast.
+- **Ember** — destructive/error states.
+
+### Usage ratios
+
+- 75% dark walnut/clay surfaces.
+- 18% wool/hemp text and borders.
+- 5% ochre/madder pixel accents.
+- 2% moss/indigo/ember state colors.
+
+### Accessibility rules
+
+- Normal text contrast: WCAG AA 4.5:1 minimum.
+- Large text and UI boundaries/states: 3:1 minimum.
+- State cannot rely on color alone; pair color with readable labels.
+- Use warm accent only where it helps users act or orient.
+
+## Motif grammar
+
+Use CSS gradients and borders only. No decorative image assets.
+
+Allowed motifs:
+
+- **Warp/weft lines**: a faint page grid only; avoid patterned fields behind text.
+- **Rhombus / diamond**: app icon or occasional empty-state mark; not as page wallpaper.
+- **Serrated teeth**: selected sidebar edge, status emphasis, section divider.
+- **Pixel stripes / registers**: card top edges and header edge only.
+- **Tree/vine inspiration**: deferred; avoid literal illustration for now.
+
+Avoid:
+
+- busy folk wallpaper behind text;
+- literal costumes, flags, mascots, or stock “traditional” images;
+- copying sacred/ritual motifs without understanding;
+- turning the operator UI into a souvenir shop aesthetic.
 
 ## Token architecture
 
 Use CSS custom properties only. No token JSON, build step, framework, Tailwind, or generated utilities.
 
-Tokens live in `public/styles/tokens.css` and should be organized as comments/sections:
+Tokens live in `public/styles/tokens.css` and should remain additive/compatible:
 
 1. **Primitive tokens** — raw palette, spacing, radius, typography, shadows, motion.
 2. **Semantic tokens** — UI roles like background, surface, text, border, accent, danger, focus.
 3. **Component tokens** — repeated roles for buttons, cards, chips, messages, inputs.
 
-Keep existing token names working when refactoring so incremental changes remain safe.
-
-## Color
-
-Default theme is dark/operator mode. Light mode can come later via semantic token remapping.
-
-Preferred direction:
-
-- dark neutral canvas
-- layered blue/ink surfaces
-- cool teal/cyan accent for primary action
-- warm amber/yellow focus and attention
-- semantic green/amber/red states
-
-Rules:
-
-- Normal text contrast: WCAG AA 4.5:1 minimum.
-- Large text and UI boundaries/states: 3:1 minimum.
-- State cannot rely on color alone; pair color with text labels.
-- Avoid heavy glassmorphism or gradients behind text.
-- No remote images, fonts, icons, or decorative network assets.
+Keep existing token names working when refactoring so incremental changes stay safe.
 
 ## Typography
 
-Use system fonts. Do not import remote fonts.
-
-Guidelines:
+Use system fonts only.
 
 - Body: readable `1rem` base, line-height around `1.5`.
-- Labels/meta: compact but readable; do not make operational controls tiny.
+- Headings: compact, warm, clear, slightly editorial; no decorative fonts.
+- Labels/meta: compact but readable; operational controls must not be tiny.
 - Logs/tokens/technical snippets: monospace system stack.
-- Avoid fixed-height text containers except deliberate scroll regions like chat log, event log, and terminal iframe.
 
-## Spacing and shape
+## Layout and surfaces
 
-Use a simple 4px/8px-friendly rhythm.
-
-- Controls should target about 44px height where practical.
-- Cards should be spacious enough to scan but compact enough for daily operator use.
-- Rounded surfaces are good; avoid over-soft “consumer toy” shapes.
-- Prefer border + surface contrast + subtle shadow over dramatic elevation.
-
-## Motion
-
-Motion should be short, purposeful, and optional.
-
-Recommended use:
-
-- hover/focus/press feedback
-- tab/panel transition
-- new message entry
-- one-shot status change feedback
-- loading state only when paired with text/`aria-busy`
-
-Rules:
-
-- Animate `opacity` and `transform` where possible.
-- Avoid parallax, animated backgrounds, bouncing, and decorative loops.
-- Respect `prefers-reduced-motion`; reduced motion should remove meaningful animation.
-- Never require motion to understand state.
+- Shell max width around 1320px.
+- Sidebar is the loom frame: persistent navigation, warm border, one pixel-woven edge.
+- Cards are `scoarță` fields: flat dark clay surfaces with crisp borders and one small top stitch.
+- Header is the workbench lintel: title, meaning, and live status in one quiet band.
+- Prefer border + surface contrast over dramatic elevation.
+- Keep geometry mostly rectangular: small radii, blocky chips, and square-ish controls.
 
 ## Components
 
@@ -129,36 +122,34 @@ Rules:
 The header should quickly answer:
 
 - Where am I? Ownloom Cockpit.
-- What is this? Local operator hub.
+- What is this? A local loom for chat, planner context, config, terminal, and logs.
 - Is it connected/offline? Status chips.
-
-A small “loopback/tunnel only” cue is acceptable if it does not clutter mobile.
 
 ### Sidebar navigation
 
-Preserve the native ARIA tab structure inside the sidebar. Active state should differ by more than color: use fill, border/accent, and text contrast.
-
-Primary sections should feel warmer and more inviting than advanced operator sections, while Config, Terminal, and Log remain clear first-class tools.
+Preserve the native ARIA tab structure inside the sidebar. Active state should differ by more than color: use fill, border/accent, text contrast, and the left “woven edge”.
 
 ### Cards
 
-Cards are major surfaces, not decoration. Use them for meaningful grouping:
+Cards group meaningful operator work:
 
-- chat composer/log
-- sessions
-- today/upcoming planner context
-- config/client/delivery groups
-- terminal/log panels
+- chat composer/log;
+- sessions;
+- planner context;
+- config/client/delivery groups;
+- terminal/log panels.
+
+Give each card a quiet textile edge; do not add decorative motifs that compete with content.
 
 ### Buttons
 
 Use clear variants:
 
-- primary: main action in an area
-- secondary: neutral action
-- ghost: low emphasis, if needed
-- danger: delete/revoke/reset/forget
-- small: repeated list actions
+- primary: madder/ochre clay thread, one main action per area;
+- secondary: muted wool-on-clay;
+- ghost: low emphasis;
+- danger: ember/red for destructive actions;
+- small: repeated list actions.
 
 Destructive actions still require confirmation.
 
@@ -166,61 +157,85 @@ Destructive actions still require confirmation.
 
 Use for status, identity, scope, and source:
 
-- connected/offline/error
-- web-main/current session
-- config-managed/paired browser
-- WhatsApp/web/local
+- connected/offline/error;
+- web-main/current session;
+- config-managed/paired browser;
+- WhatsApp/web/local.
 
 Every chip must contain readable text; color is reinforcement.
 
-### Chat
+### Workbench
 
-Chat is the main working surface.
+Workbench is the main working surface: a clean ChatGPT/Claude-like conversation with one composer and a slide-out thread rail.
 
-- user messages right, agent/system left
-- preserve `role="log"` and polite live updates
-- keep message bubbles readable at long lengths
-- attachments stay explicit and one-shot
-- do not switch sessions while an agent run is active
+- default state should be quiet: conversation centered, thread rail closed;
+- current conversation state belongs in the global status/thread bar;
+- active thread content gets the largest field on the page;
+- composer is a simple bottom tool strip, not a generic form block;
+- thread switching lives in an explicit slide-out rail, not an always-visible dashboard column;
+- user messages right, in madder/clay tones;
+- agent/system left, in walnut/indigo tones;
+- preserve `role="log"` and polite live updates;
+- attachments stay explicit and one-shot;
+- do not switch sessions while an agent run is active.
 
-### Organizer
+### Planner
 
-Organizer is planner-backed, not wiki-task-backed.
+Planner is planner-backed, not wiki-task-backed.
 
 Until the planner API is designed, show honest placeholders for:
 
-- Today
-- Upcoming
-- Reminders/events
+- Today;
+- Upcoming;
+- Reminders/events.
 
 Copy should mention Ownloom Planner / CalDAV / iCalendar, not Markdown task pages.
 
-### Config
+### Access
 
-Config should be clear and slightly more “operator” in tone.
+Access should be clear and slightly more operator in tone.
 
-- pairing creates a full-operator runtime client
-- token storage depends on Remember locally
-- revoke/delete/forget use danger styling
-- do not echo tokens into logs or normal text
+- pairing creates a full-operator runtime client;
+- token storage depends on Remember locally;
+- revoke/delete/forget use danger styling;
+- do not echo tokens into logs or normal text.
 
-### Terminal
+### Shell
 
-Terminal is powerful and advanced.
+Shell is powerful and advanced.
 
-- keep loopback-only copy visible
-- lazy-load iframe only on the Terminal tab
-- token copy should be local and short-lived
-- do not broaden frame/proxy/security assumptions
+- keep loopback-only copy visible;
+- lazy-load iframe only on the Shell tab;
+- token copy should be local and short-lived;
+- do not broaden frame/proxy/security assumptions.
 
-### Log
+### Trace
 
-Log is local trace, not durable memory.
+Trace is local trace, not durable memory.
 
-- monospace
-- compact
-- readable wrapping
-- no token echoing beyond existing redaction assumptions
+- monospace;
+- compact;
+- readable wrapping;
+- no token echoing beyond existing redaction assumptions.
+
+## Motion
+
+Motion should be short, purposeful, and optional.
+
+Recommended use:
+
+- hover/focus/press feedback;
+- tab/panel transition;
+- new message entry;
+- one-shot status change feedback;
+- loading state only when paired with text/`aria-busy`.
+
+Rules:
+
+- Animate `opacity` and `transform` where possible.
+- Avoid parallax, animated backgrounds, bouncing, and decorative loops.
+- Respect `prefers-reduced-motion`.
+- Never require motion to understand state.
 
 ## Accessibility
 
@@ -238,24 +253,23 @@ Accessibility is part of the visual system.
 
 ## Responsive behavior
 
-- Keep the shell around 1200px max width.
-- Desktop: chat + side session column works well.
-- Mobile/tablet: stack grids and settings controls.
-- Tabs may scroll horizontally.
+- Desktop: sidebar + main content.
+- Tablet/mobile: stack layout and settings controls.
+- Tabs may scroll horizontally if needed.
 - The page should not horizontally scroll except terminal/log/code-like content when unavoidable.
 - Header status wraps above tabs.
 - Button rows wrap cleanly; narrow cards may stack actions.
 
-## Security and PWA design boundaries
+## Security and mobile boundaries
 
 Design work must not weaken the operator security model.
 
 - No external scripts/styles/fonts/icons.
 - No inline scripts/styles that conflict with CSP.
 - No broadening of `connect-src`, `frame-src`, or loopback assumptions without explicit approval.
-- Service worker caches static shell only.
+- No PWA manifest or service worker for now; a proper mobile app can come later.
 - Never cache API, planner, terminal, token, Authorization, WebSocket, or operator-data responses.
-- Offline mode is a static shell only; live actions should fail honestly.
+- If old PWA assets existed in a browser, the current app may unregister/clear them as a transitional cleanup only.
 
 ## Implementation order
 
@@ -274,5 +288,5 @@ Design work must not weaken the operator security model.
 - No Tailwind.
 - No remote design assets.
 - No custom animation engine.
-- No live Organizer data until planner API shape is designed.
-- No theme marketplace or large design-system process.
+- No theme marketplace.
+- No live Planner data until planner API shape is designed.

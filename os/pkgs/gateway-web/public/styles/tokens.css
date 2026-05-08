@@ -1,32 +1,45 @@
 :root {
   color-scheme: dark;
 
-  /* Ownloom primitives: dark ink, teal thread, amber loomlight. */
-  --palette-void-950: #070b10;
-  --palette-ink-925: #0b1118;
-  --palette-ink-900: #101823;
-  --palette-ink-850: #141e2b;
-  --palette-ink-800: #192637;
-  --palette-ink-750: #203047;
-  --palette-ink-700: #2a3d54;
-  --palette-ink-600: #38516b;
-  --palette-mist-100: #f4f7f4;
-  --palette-mist-200: #dce8e3;
-  --palette-mist-300: #c7d6d1;
-  --palette-mist-500: #94aaa5;
-  --palette-mist-600: #758b89;
-  --palette-thread-200: #b9fff0;
-  --palette-thread-300: #7df0d6;
-  --palette-thread-400: #42d8bd;
-  --palette-thread-500: #23aa93;
-  --palette-thread-900: #06201d;
-  --palette-loom-300: #f5d78a;
-  --palette-loom-400: #e8ba5f;
-  --palette-moss-300: #b7dfa0;
-  --palette-moss-900: #112211;
-  --palette-ember-300: #ff9aac;
-  --palette-ember-400: #ef6f86;
-  --palette-ember-950: #21070d;
+  /*
+   * Ownloom primitives: Digital Scoarță / Pixel Loom Minimalism.
+   * Warm, earthy colors inspired by scoarțe, wool, clay, wood, ochre,
+   * madder red, moss, and muted indigo. Existing token names are kept
+   * for compatibility with the current CSS/JS surface.
+   */
+  --palette-void-950: #1a100b;
+  --palette-ink-925: #21140d;
+  --palette-ink-900: #29180f;
+  --palette-ink-850: #332016;
+  --palette-ink-800: #3d271a;
+  --palette-ink-750: #4d3220;
+  --palette-ink-700: #624329;
+  --palette-ink-600: #7c5a38;
+  --palette-mist-100: #fff5df;
+  --palette-mist-200: #f2dfbe;
+  --palette-mist-300: #e2c79f;
+  --palette-mist-500: #bea47c;
+  --palette-mist-600: #a78a62;
+  --palette-thread-200: #ffdca3;
+  --palette-thread-300: #f2b66d;
+  --palette-thread-400: #d98348;
+  --palette-thread-500: #b85736;
+  --palette-thread-900: #35160e;
+  --palette-loom-300: #f0c86d;
+  --palette-loom-400: #d79a3b;
+  --palette-moss-300: #c4cf93;
+  --palette-moss-900: #1c2411;
+  --palette-ember-300: #ffad8f;
+  --palette-ember-400: #e06d51;
+  --palette-ember-950: #35100a;
+  --palette-madder-300: #f0a070;
+  --palette-madder-500: #b84d35;
+  --palette-madder-800: #5a2118;
+  --palette-indigo-300: #aec1c5;
+  --palette-indigo-500: #6d8891;
+  --palette-indigo-900: #17242a;
+  --palette-clay-500: #9e6040;
+  --palette-walnut-700: #4a2f1d;
 
   /* Typography. */
   --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -64,15 +77,15 @@
   --space-control-gap: var(--space-3);
 
   /* Shape and elevation. */
-  --radius-xs: 0.35rem;
-  --radius-sm: 0.6rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 0.9rem;
-  --radius-xl: 1.05rem;
-  --radius-2xl: 1.25rem;
-  --radius-pill: 999px;
-  --shadow-card: 0 18px 50px rgb(0 0 0 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.025);
-  --shadow-raised: 0 22px 70px rgb(0 0 0 / 0.34), 0 0 0 1px rgb(125 240 214 / 0.08);
+  --radius-xs: 0.12rem;
+  --radius-sm: 0.22rem;
+  --radius-md: 0.32rem;
+  --radius-lg: 0.42rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.62rem;
+  --radius-pill: 0.34rem;
+  --shadow-card: 0 1px 0 rgb(255 245 223 / 0.035), 0 10px 28px rgb(0 0 0 / 0.18);
+  --shadow-raised: 0 1px 0 rgb(255 245 223 / 0.045), 0 14px 32px rgb(0 0 0 / 0.22);
 
   /* Motion. */
   --duration-fast: 120ms;
@@ -87,44 +100,43 @@
   --color-surface-2: var(--palette-ink-850);
   --color-surface-3: var(--palette-ink-800);
   --color-surface-hover: var(--palette-ink-750);
-  --color-border: rgb(125 240 214 / 0.14);
-  --color-border-strong: var(--palette-ink-600);
+  --color-border: rgb(240 200 109 / 0.18);
+  --color-border-strong: rgb(226 199 159 / 0.35);
   --color-text: var(--palette-mist-100);
-  --color-muted: var(--palette-mist-300);
-  --color-subtle: var(--palette-mist-500);
-  --color-faint: var(--palette-mist-600);
+  --color-muted: var(--palette-mist-200);
+  --color-subtle: var(--palette-mist-300);
+  --color-faint: var(--palette-mist-500);
   --color-accent: var(--palette-thread-300);
   --color-accent-hover: var(--palette-thread-200);
-  --color-accent-text: #031411;
+  --color-accent-text: #21110a;
   --color-success: var(--palette-moss-300);
-  --color-on-success: #081405;
+  --color-on-success: #111707;
   --color-warning: var(--palette-loom-300);
-  --color-on-warning: #171004;
+  --color-on-warning: #201307;
   --color-danger: var(--palette-ember-300);
-  --color-danger-hover: #ffc0cb;
+  --color-danger-hover: #ffd1bf;
   --color-on-danger: var(--palette-ember-950);
   --color-focus: var(--palette-loom-300);
-  --color-disabled: rgb(199 214 209 / 0.42);
+  --color-disabled: rgb(226 199 159 / 0.44);
 
   /* Component roles. */
-  --focus-ring: 3px solid var(--color-focus);
-  --card-bg: linear-gradient(180deg, rgb(16 24 35 / 0.96), rgb(11 17 24 / 0.98));
+  --focus-ring: 2px solid var(--color-focus);
+  --card-bg: rgb(43 27 18 / 0.98);
   --card-border: 1px solid var(--color-border);
-  --button-primary-bg: linear-gradient(180deg, var(--color-accent), var(--palette-thread-400));
+  --button-primary-bg: var(--palette-loom-300);
   --button-primary-text: var(--color-accent-text);
-  --button-secondary-bg: rgb(125 240 214 / 0.08);
+  --button-secondary-bg: rgb(255 245 223 / 0.065);
   --button-secondary-text: var(--color-muted);
-  --button-danger-bg: linear-gradient(180deg, var(--color-danger), var(--palette-ember-400));
+  --button-danger-bg: var(--color-danger);
   --button-danger-text: var(--color-on-danger);
-  --chip-bg: rgb(125 240 214 / 0.08);
-  --chip-border: rgb(125 240 214 / 0.16);
-  --message-user-bg: linear-gradient(135deg, #123f46, #0f323d);
-  --message-agent-bg: linear-gradient(135deg, #182738, #142233);
-  --message-system-bg: linear-gradient(135deg, #221f31, #191d2b);
-  --input-bg: rgb(11 17 24 / 0.82);
-  --terminal-bg: #05080d;
+  --chip-bg: rgb(255 245 223 / 0.055);
+  --chip-border: rgb(240 200 109 / 0.20);
+  --message-user-bg: #5a2619;
+  --message-agent-bg: #322217;
+  --message-system-bg: #1e2b31;
+  --input-bg: rgb(26 16 11 / 0.92);
+  --terminal-bg: #120c09;
   --shell-width: 1320px;
-  --sidebar-width: 17.5rem;
-  --sidebar-bg: linear-gradient(180deg, rgb(20 30 43 / 0.96), rgb(13 18 25 / 0.98));
-  --sidebar-warm-glow: rgb(245 215 138 / 0.12);
+  --sidebar-width: 16.5rem;
+  --sidebar-bg: rgb(37 23 15 / 0.98);
 }

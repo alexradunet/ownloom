@@ -4,7 +4,7 @@ Small protocol/v1-only Ownloom cockpit for local operator use.
 
 It is intentionally static HTML/CSS/JS: no bundled legacy gateway UI, no framework, no build step. The browser app uses native ES modules plus a pragmatic Atomic Design layout.
 
-Design direction and guardrails live in [`DESIGN.md`](./DESIGN.md): **calm sovereign cockpit** — local-first, accessible, low-noise, inspectable, and subtly based on the Ownloom idea of owned context and woven continuity.
+Design direction and guardrails live in [`DESIGN.md`](./DESIGN.md): **Digital Scoarță / Pixel Loom Minimalism** — local-first, accessible, low-noise, inspectable, flat, warm, earthy, and inspired by Romanian `scoarțe` structure without folk-wallpaper noise.
 
 ## Use
 
@@ -48,7 +48,6 @@ public/
     storage.js            # localStorage helpers
     dom.js                # safe DOM helpers
     gateway-client.js     # protocol/v1 WebSocket + REST wrappers
-    pwa.js                # service worker registration/status
     a11y.js               # ARIA tab controller
     components/
       atoms.js
@@ -62,8 +61,6 @@ public/
     components.css
     utilities.css
     responsive.css
-  manifest.webmanifest
-  sw.js
   icons/icon.svg
 ```
 
@@ -76,26 +73,11 @@ Atomic Design is used as file organization, not framework ceremony:
 
 Dynamic UI is rendered with DOM APIs and `textContent`; avoid `innerHTML`, `outerHTML`, and `insertAdjacentHTML`.
 
-CSS is split through `public/style.css` with cascade layers and tokenized colors/spacing/focus treatment. Keep it no-build: add new CSS files explicitly and include them in the service worker allowlist/smoke check when needed.
+CSS is split through `public/style.css` with cascade layers and tokenized colors/spacing/focus treatment. Keep it no-build: add new CSS files explicitly and include them in the smoke check when needed.
 
-## PWA and cache boundaries
+## Mobile/PWA status
 
-The cockpit has a minimal PWA shell:
-
-- `manifest.webmanifest` for install metadata/shortcuts
-- `sw.js` for an offline static shell only
-- `icons/icon.svg` as the local app icon
-
-The service worker is intentionally strict:
-
-- caches only the static app shell allowlist
-- bypasses non-GET requests
-- bypasses cross-origin requests
-- bypasses `/api/*`, `/api/v1/terminal-token`, and `/terminal/*`
-- bypasses requests with `Authorization`
-- bypasses requests using `cache: "no-store"`
-
-Never cache API, planner, terminal, token, WebSocket, or operator-data responses. Offline mode is only a shell; protocol/API/terminal actions should fail normally while offline instead of returning stale data.
+There is intentionally no PWA manifest or service worker for now. A proper mobile app can be designed later without carrying a half-PWA shell. The browser app unregisters any old `ownloom-gateway-web-*` service workers/caches left by earlier builds.
 
 ## Security headers
 
@@ -110,14 +92,14 @@ It also rejects non-loopback `Host`/`Origin` headers to reduce DNS-rebinding exp
 
 ## Current features
 
-- warm sidebar tab shell for Chat, Organizer, Config, Terminal, and Log
+- flat Digital Scoarță / pixel-loom workbench shell for Workbench, Planner, Access, Shell, and Trace
 - accessible ARIA tab navigation with keyboard support
-- PWA manifest/service-worker static shell
+- no PWA manifest/service-worker; old PWA caches are cleaned up on load
 - loopback-only browser pairing into a full-operator runtime client
 - protocol/v1 WebSocket `connect`
 - `health`
 - `agent.wait` chat with stable `sessionKey`
-- current conversation display, New chat, web session switching, and local attach to existing WhatsApp sessions from the Sessions panel; conversation changes are blocked while an agent run is active
+- clean centered Workbench conversation, slide-out thread rail, New thread, web session switching, and local attach to existing WhatsApp sessions; conversation changes are blocked while an agent run is active
 - streamed `agent` event display
 - REST attachment upload using one-shot attachment refs
 - sessions, clients, deliveries, and commands list panels
@@ -125,7 +107,7 @@ It also rejects non-loopback `Host`/`Origin` headers to reduce DNS-rebinding exp
 - operator action buttons with confirmation prompts
 - Send button disabled while an agent run is active
 - confirmations for destructive session, delivery, and runtime-client actions
-- Terminal tab that embeds `/terminal/ownloom` when the loopback Zellij web service is enabled
+- Shell tab that embeds `/terminal/ownloom` when the loopback Zellij web service is enabled
 - loopback-only helper button to copy the generated Zellij web login token
 
 The gateway client transport is still expected to stay loopback-only until HTTPS/reverse-proxy/pairing is designed.
@@ -139,8 +121,8 @@ nix build .#ownloom-gateway-web --no-link
 nix build .#checks.x86_64-linux.ownloom-gateway-web-smoke --no-link
 ```
 
-For local header/token smoke testing, run the package on a temporary port with a temporary terminal token file, then verify `/`, `/manifest.webmanifest`, `/sw.js`, `/api/v1/terminal-token`, and a proxy error path with `curl -D-`.
+For local header/token smoke testing, run the package on a temporary port with a temporary terminal token file, then verify `/`, `/api/v1/terminal-token`, and a proxy error path with `curl -D-`.
 
 ## Rollback
 
-Prefer reverting the modernization commit(s). If a bad service worker is ever shipped, either clear it from browser DevTools during local testing or ship a temporary `sw.js` that deletes `ownloom-gateway-web-*` caches and unregisters itself during activation.
+Prefer reverting the modernization commit(s). If an old service worker remains in a browser from pre-removal builds, clear it from browser DevTools or reload the current cockpit once so the cleanup hook can unregister it.

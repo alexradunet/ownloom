@@ -15,7 +15,8 @@
   .settings,
   .grid,
   .config-grid,
-  .organizer-grid { grid-template-columns: 1fr; }
+  .organizer-grid,
+  .composer-row { grid-template-columns: 1fr; }
 
   header {
     align-items: flex-start;
@@ -33,6 +34,12 @@
 
   header,
   .card { padding: var(--space-6); }
+
+  .workbench-card { padding: 0; }
+
+  .workbench-heading,
+  .thread-messages,
+  .composer { padding: var(--space-6); }
 
   button,
   .button-link { width: 100%; }
