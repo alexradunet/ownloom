@@ -147,6 +147,17 @@ export class ClientTransport implements GatewayTransport {
   private async serveRestApi(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     const path = parsedUrl.pathname;
+
+    if (path === "/api/v1/pair") {
+      if (req.method !== "POST") {
+        res.writeHead(405, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Method not allowed" }));
+        return;
+      }
+      this.handleClientPair(req, res, parsedUrl);
+      return;
+    }
+
     const requiredScope = req.method === "POST" && path === "/api/v1/attachments" ? "write" : "read";
     const auth = this.authenticateRestRequest(req, requiredScope);
     if (!auth.ok) {
@@ -197,6 +208,37 @@ export class ClientTransport implements GatewayTransport {
 
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(result));
+  }
+
+  private handleClientPair(req: IncomingMessage, res: ServerResponse, url: URL): void {
+    req.resume();
+    if (!isLoopbackAddress(req.socket.remoteAddress)) {
+      res.writeHead(403, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Pairing is only allowed from loopback" }));
+      return;
+    }
+
+    const id = sanitizeClientId(url.searchParams.get("clientId") ?? "") ?? `browser-${randomUUID()}`;
+    if (this.config.clients?.some((client) => client.id === id)) {
+      res.writeHead(409, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: `Client id is config-managed: ${id}` }));
+      return;
+    }
+
+    const displayName = sanitizeDisplayName(url.searchParams.get("displayName") ?? "") ?? "Paired browser";
+    const result = this.store.rotateRuntimeClient({ id, displayName, scopes: ["read", "write"] });
+    const client = this.clientSummary({
+      id: result.client.id,
+      displayName: result.client.displayName,
+      scopes: result.client.scopes,
+      managedBy: "runtime",
+      runtime: result.client,
+    });
+
+    this.broadcastEvent(EVENTS.CLIENTS_CHANGED, this.clientsChangedPayload());
+    setTimeout(() => this.disconnectIdentity(id), 0);
+    res.writeHead(201, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ client, token: result.token }));
   }
 
   private async handleAttachmentUpload(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -796,6 +838,23 @@ function parseScopes(value: unknown, fallback: Scope[]): Scope[] | null {
     if (!scopes.includes(scope)) scopes.push(scope);
   }
   return scopes;
+}
+
+function isLoopbackAddress(address?: string): boolean {
+  return address === "127.0.0.1" || address === "::1" || address === "::ffff:127.0.0.1";
+}
+
+function sanitizeClientId(value: string): string | null {
+  const sanitized = value.trim()
+    .replace(/[^a-zA-Z0-9._:-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return sanitized || null;
+}
+
+function sanitizeDisplayName(value: string): string | null {
+  const sanitized = value.trim().replace(/\s+/g, " ").slice(0, 80);
+  return sanitized || null;
 }
 
 function readRequestBody(req: IncomingMessage, maxBytes: number): Promise<Buffer> {

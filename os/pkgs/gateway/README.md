@@ -31,6 +31,7 @@ Authentication options:
 - If either is configured, WebSocket `connect.auth.token` must match the global token or a named client token.
 - REST calls must include `Authorization: Bearer <token>` matching the global token or a named client token.
 - Named client REST calls enforce scopes: `read` for status/list endpoints, `write` for attachment upload.
+- `POST /api/v1/pair` is the only unauthenticated REST endpoint; it is accepted only from loopback and creates a read/write runtime client for local browser pairing.
 
 Scope rules:
 
@@ -293,6 +294,14 @@ closes matching active WebSocket connections and disables that runtime token:
 Runtime token state stores only token hashes/previews in the gateway state file;
 Git/private config is not modified by these operations.
 
+Local browser pairing uses the same runtime-client store:
+
+```bash
+curl -X POST "http://127.0.0.1:8081/api/v1/pair?clientId=browser-main&displayName=Browser"
+```
+
+The response includes a one-time token and a client summary. Pairing is loopback-only, grants only `read`/`write`, and refuses ids that are already config-managed.
+
 ### Delivery administration
 
 Queued/dead-lettered deliveries can be inspected with `deliveries.list` and
@@ -319,6 +328,12 @@ GET /api/v1/status
 GET /api/v1/commands
 GET /api/v1/sessions
 GET /api/v1/deliveries
+```
+
+Pair local browser runtime client:
+
+```text
+POST /api/v1/pair?clientId=<optional>&displayName=<optional>
 ```
 
 Attachment upload:

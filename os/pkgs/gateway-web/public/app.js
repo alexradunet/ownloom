@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
 const SETTINGS_KEY = "ownloom.gatewayWeb.settings.v1";
+const BROWSER_CLIENT_ID_KEY = "ownloom.gatewayWeb.browserClientId.v1";
 
 const state = {
   ws: null,
@@ -18,6 +19,7 @@ const els = {
   connectionState: $("connectionState"),
   rememberSettings: $("rememberSettings"),
   connectButton: $("connectButton"),
+  pairButton: $("pairButton"),
   disconnectButton: $("disconnectButton"),
   healthButton: $("healthButton"),
   refreshButton: $("refreshButton"),
@@ -78,11 +80,25 @@ function clearSettings() {
   log("forgot local settings");
 }
 
+function browserClientId() {
+  const existing = localStorage.getItem(BROWSER_CLIENT_ID_KEY);
+  if (existing) return existing;
+  const id = `browser-${crypto.randomUUID()}`;
+  localStorage.setItem(BROWSER_CLIENT_ID_KEY, id);
+  return id;
+}
+
+function browserDisplayName() {
+  const platform = navigator.platform ? ` on ${navigator.platform}` : "";
+  return `Ownloom web${platform}`;
+}
+
 function setConnection(status, className = "") {
   els.connectionState.textContent = status;
   els.connectionState.className = `pill ${className}`.trim();
   const connected = status === "connected";
   els.connectButton.disabled = connected;
+  els.pairButton.disabled = connected || status === "connecting";
   els.disconnectButton.disabled = !connected;
   els.healthButton.disabled = !connected;
   els.refreshButton.disabled = !connected;
@@ -191,6 +207,32 @@ function handleAgentEvent(payload) {
     return;
   }
   if (payload.stream === "done" || payload.status === "done") state.currentRun = null;
+}
+
+async function pairBrowser() {
+  if (isConnected()) return;
+  els.pairButton.disabled = true;
+  try {
+    const params = new URLSearchParams({
+      clientId: browserClientId(),
+      displayName: browserDisplayName(),
+    });
+    const response = await fetch(`${httpUrl()}/api/v1/pair?${params.toString()}`, { method: "POST" });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error ?? `pairing failed: ${response.status}`);
+    els.token.value = body.token;
+    if (!els.rememberSettings.checked) els.rememberSettings.checked = true;
+    saveSettings();
+    log("paired browser", { id: body.client?.id, scopes: body.client?.scopes });
+    addMessage("system", `Paired this browser as ${body.client?.id ?? "runtime client"}.`);
+    await connect();
+  } finally {
+    updatePairButton();
+  }
+}
+
+function updatePairButton() {
+  els.pairButton.disabled = isConnected() || els.connectionState.textContent === "connecting";
 }
 
 async function connect() {
@@ -383,6 +425,11 @@ els.connectButton.addEventListener("click", () => connect().catch((error) => {
   setConnection("error", "error");
   log("connect failed", error.message);
 }));
+els.pairButton.addEventListener("click", () => pairBrowser().catch((error) => {
+  setConnection("error", "error");
+  addMessage("system", `Pairing failed: ${error.message}`);
+  log("pairing failed", error.message);
+}));
 els.disconnectButton.addEventListener("click", disconnect);
 els.clearSettingsButton.addEventListener("click", clearSettings);
 els.httpUrl.addEventListener("change", saveSettings);
@@ -447,3 +494,9 @@ if (window.location.protocol === "http:" || window.location.protocol === "https:
 loadSettings();
 
 setConnection("disconnected");
+if (els.rememberSettings.checked && els.token.value.trim()) {
+  connect().catch((error) => {
+    setConnection("error", "error");
+    log("auto-connect failed", error.message);
+  });
+}

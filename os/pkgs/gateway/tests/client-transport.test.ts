@@ -494,6 +494,92 @@ test("ClientTransport emits change events for mutating methods", async () => {
   }
 });
 
+test("ClientTransport REST pairs a loopback browser as a runtime client", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const store = new Store(path.join(tmp, "state.json"));
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0, clients: [{ id: "web", displayName: "Web", token: "read-token", scopes: ["read"] }] },
+      store,
+      new CommandRegistry(),
+      new SimpleIdentityResolver([{ id: "web", displayName: "Web", scopes: ["read"], keys: ["token:read-token"] }]),
+    );
+    const req = {
+      method: "POST",
+      url: "/api/v1/pair?clientId=browser-test&displayName=Test%20Browser",
+      headers: { host: "localhost" },
+      socket: { remoteAddress: "127.0.0.1" },
+      resume: () => {},
+    };
+    const res = makeMockRes();
+
+    await (transport as any).serveRestApi(req, res);
+
+    assert.equal(res.status, 201);
+    const body = JSON.parse(res.body);
+    assert.equal(body.client.id, "browser-test");
+    assert.equal(body.client.managedBy, "runtime");
+    assert.deepEqual(body.client.scopes, ["read", "write"]);
+    assert.match(body.token, /^ogw_/);
+    assert.equal((transport as any).resolveTokenIdentity(body.token).id, "browser-test");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("ClientTransport REST rejects non-loopback browser pairing", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0 },
+      new Store(path.join(tmp, "state.json")),
+      new CommandRegistry(),
+    );
+    const req = {
+      method: "POST",
+      url: "/api/v1/pair?clientId=browser-test",
+      headers: { host: "localhost" },
+      socket: { remoteAddress: "203.0.113.10" },
+      resume: () => {},
+    };
+    const res = makeMockRes();
+
+    await (transport as any).serveRestApi(req, res);
+
+    assert.equal(res.status, 403);
+    assert.equal(JSON.parse(res.body).error, "Pairing is only allowed from loopback");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("ClientTransport REST refuses to pair over a config-managed client id", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0, clients: [{ id: "web", displayName: "Web", token: "read-token", scopes: ["read"] }] },
+      new Store(path.join(tmp, "state.json")),
+      new CommandRegistry(),
+      new SimpleIdentityResolver([{ id: "web", displayName: "Web", scopes: ["read"], keys: ["token:read-token"] }]),
+    );
+    const req = {
+      method: "POST",
+      url: "/api/v1/pair?clientId=web",
+      headers: { host: "localhost" },
+      socket: { remoteAddress: "::ffff:127.0.0.1" },
+      resume: () => {},
+    };
+    const res = makeMockRes();
+
+    await (transport as any).serveRestApi(req, res);
+
+    assert.equal(res.status, 409);
+    assert.equal(JSON.parse(res.body).error, "Client id is config-managed: web");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test("ClientTransport REST accepts named client token with read scope", async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {

@@ -18,7 +18,9 @@ From another machine, use an SSH tunnel:
 ssh -L 8090:127.0.0.1:8090 ownloom-vps
 ```
 
-Then open <http://127.0.0.1:8090>, enter a named client token, and connect.
+Then open <http://127.0.0.1:8090> and click **Pair this browser**. The browser receives a loopback-only runtime token, stores it in local storage, and connects automatically.
+
+You can still paste a named client token manually and click **Connect** if needed.
 
 For ad-hoc local use without the NixOS service:
 
@@ -30,6 +32,7 @@ The server serves the static UI and proxies `/api/v1/*` plus WebSocket upgrades 
 
 Current features:
 
+- loopback-only browser pairing into a read/write runtime client
 - protocol/v1 WebSocket `connect`
 - `health`
 - `agent.wait` chat with stable `sessionKey`
