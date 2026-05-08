@@ -84,7 +84,7 @@ Successful response:
       "events": ["agent", "clients.changed", "deliveries.changed", "sessions.changed", "shutdown", "tick"]
     },
     "auth": { "role": "operator", "scopes": ["read", "write"] },
-    "policy": { "maxPayload": 26214400, "tickIntervalMs": 15000 }
+    "policy": { "maxPayload": 1048576, "tickIntervalMs": 15000 }
   }
 }
 ```
@@ -231,8 +231,16 @@ Attachment lifecycle:
 - Failed agent runs keep attachments so the client can retry.
 - Uploading a new attachment also prunes staged uploads older than 24 hours.
 
+Gateway state hygiene:
+
+- At startup and hourly, the gateway prunes stale processed-message markers,
+  idempotency keys, delivered/dead deliveries, and staged attachments.
+- `status` and `/api/v1/status` include state counts for sessions,
+  deliveries, attachments, idempotency, and runtime clients.
+
 Current limits:
 
+- WebSocket protocol frames are limited to 1 MiB; upload large media through REST attachments.
 - `x-ownloom-attachment-kind` must be `image` or `audio`.
 - Upload body must be non-empty.
 - Max upload size is 25 MiB.

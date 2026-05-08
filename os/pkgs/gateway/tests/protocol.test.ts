@@ -123,6 +123,9 @@ test("v1 status returns agent info", async () => {
       const p = result.payload as any;
       assert.equal(p.agent, "pi");
       assert.equal(p.identity, null);
+      assert.equal(p.connections, null);
+      assert.equal(p.state.chatSessions, 0);
+      assert.equal(p.state.deliveries.queued, 0);
     }
   } finally {
     cleanup();

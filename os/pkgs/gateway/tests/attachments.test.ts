@@ -68,6 +68,71 @@ test("Store prunes stale uploaded attachments", () => {
   }
 });
 
+test("Store maintenance prunes stale operational state and reports counts", () => {
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-maintenance-"));
+  try {
+    const statePath = path.join(tmpDir, "gateway-state.json");
+    const staleFile = path.join(tmpDir, "stale.bin");
+    const freshFile = path.join(tmpDir, "fresh.bin");
+    writeFileSync(staleFile, "stale");
+    writeFileSync(freshFile, "fresh");
+    const now = new Date().toISOString();
+    const old = "2000-01-01T00:00:00.000Z";
+    writeFileSync(statePath, JSON.stringify({
+      processedMessages: {
+        stale: { chatId: "c", senderId: "s", receivedAt: old, processedAt: old },
+        fresh: { chatId: "c", senderId: "s", receivedAt: now, processedAt: now },
+      },
+      idempotency: {
+        stale: { key: "stale", status: "done", createdAt: old, updatedAt: old, result: { ok: true } },
+        fresh: { key: "fresh", status: "pending", createdAt: now, updatedAt: now },
+      },
+      queuedDeliveries: {
+        delivered: { id: "delivered", recipientId: "whatsapp:+1", transport: "whatsapp", text: "done", createdAt: old, attempts: 0, deliveredAt: old },
+        dead: { id: "dead", recipientId: "whatsapp:+1", transport: "whatsapp", text: "dead", createdAt: old, attempts: 10, deadAt: old },
+        queued: { id: "queued", recipientId: "whatsapp:+1", transport: "whatsapp", text: "queued", createdAt: now, attempts: 0 },
+      },
+      attachments: {
+        stale: { id: "stale", kind: "image", path: staleFile, mimeType: "image/png", sizeBytes: 5, createdAt: old },
+        fresh: { id: "fresh", kind: "image", path: freshFile, mimeType: "image/png", sizeBytes: 5, createdAt: now },
+      },
+      runtimeClients: {
+        active: { id: "active", displayName: "Active", scopes: ["read"], createdAt: now, updatedAt: now },
+        revoked: { id: "revoked", displayName: "Revoked", scopes: ["read"], createdAt: old, updatedAt: now, revokedAt: now },
+      },
+    }), "utf-8");
+
+    const store = new Store(statePath);
+    assert.deepEqual(store.maintenance({
+      processedMessagesMaxAgeMs: 1000,
+      idempotencyMaxAgeMs: 1000,
+      deliveredDeliveriesMaxAgeMs: 1000,
+      deadDeliveriesMaxAgeMs: 1000,
+      attachmentsMaxAgeMs: 1000,
+    }), {
+      processedMessages: 1,
+      idempotency: 1,
+      deliveredDeliveries: 1,
+      deadDeliveries: 1,
+      attachments: 1,
+    });
+
+    assert.equal(existsSync(staleFile), false);
+    assert.equal(existsSync(freshFile), true);
+    assert.deepEqual(store.getStats(), {
+      processedMessages: 1,
+      chatSessions: 0,
+      sentReminders: 0,
+      attachments: 1,
+      idempotency: { total: 1, pending: 1, done: 0 },
+      deliveries: { queued: 1, due: 1, dead: 0, delivered: 0 },
+      runtimeClients: { total: 2, revoked: 1 },
+    });
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test("Store saves and resolves uploaded attachments", () => {
   const tmpDir = mkdtempSync(path.join(os.tmpdir(), "ownloom-gateway-attachments-"));
   try {

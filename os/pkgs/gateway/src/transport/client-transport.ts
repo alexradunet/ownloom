@@ -22,6 +22,10 @@ import type { CommandRegistry } from "../core/commands.js";
 import type { IdentityResolver, Identity, Scope } from "../core/identity.js";
 import type { Router } from "../core/router.js";
 
+const CLIENT_WS_MAX_PAYLOAD_BYTES = 1024 * 1024;
+const ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
+const TICK_INTERVAL_MS = 15_000;
+
 type ClientSummary = {
   id: string;
   displayName: string;
@@ -65,6 +69,7 @@ export class ClientTransport implements GatewayTransport {
       agentName,
       transportNames,
       startedAtMs: this.startedAtMs,
+      connectionCount: () => this.connections.size,
       handleAgent: (ctx) => this.handleAgentMethod(ctx),
       onDeliveryRetry: () => this.delivery?.drainQueuedDeliveries(),
       listClients: () => this.listClientSummaries(),
@@ -91,7 +96,7 @@ export class ClientTransport implements GatewayTransport {
       const server = createServer((req, res) => {
         void this.serveHttp(req, res);
       });
-      const wss = new WebSocketServer({ server });
+      const wss = new WebSocketServer({ server, maxPayload: CLIENT_WS_MAX_PAYLOAD_BYTES });
 
       wss.on("connection", (ws) => this.handleConnection(ws));
       wss.on("error", (err) => {
@@ -175,6 +180,7 @@ export class ClientTransport implements GatewayTransport {
         transports: this.transportNames,
         connections: this.connections.size,
         commands: this.commands.listNames(),
+        state: this.store.getStats(),
       };
     } else if (path === "/api/v1/commands") {
       result = { commands: this.commands.listNames() };
@@ -205,7 +211,7 @@ export class ClientTransport implements GatewayTransport {
     const fileName = Array.isArray(fileNameHeader) ? fileNameHeader[0] : fileNameHeader;
     let data: Buffer;
     try {
-      data = await readRequestBody(req, 25 * 1024 * 1024);
+      data = await readRequestBody(req, ATTACHMENT_MAX_BYTES);
     } catch (err) {
       res.writeHead(413, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }));
@@ -374,8 +380,8 @@ export class ClientTransport implements GatewayTransport {
         scopes: client.scopes,
       },
       policy: {
-        maxPayload: 25 * 1024 * 1024,
-        tickIntervalMs: 15_000,
+        maxPayload: CLIENT_WS_MAX_PAYLOAD_BYTES,
+        tickIntervalMs: TICK_INTERVAL_MS,
       },
     };
 

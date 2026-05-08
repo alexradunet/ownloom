@@ -4,7 +4,7 @@ import type { AgentClient } from "./core/agent-client.js";
 import { WhisperCliAudioTranscriber } from "./core/audio-transcriber.js";
 import { DeliveryService } from "./core/delivery.js";
 import { Router, type ChannelConfig } from "./core/router.js";
-import { Store } from "./core/store.js";
+import { Store, type StoreMaintenanceOptions } from "./core/store.js";
 import { PiClient } from "./core/pi-client.js";
 import { noopHooks } from "./core/hooks.js";
 import { CommandRegistry } from "./core/commands.js";
@@ -28,6 +28,21 @@ const WHATSAPP_SYSTEM_PROMPT_ADDENDUM = [
 
 const WHATSAPP_RESET_HINT =
   "For anything that should survive future resets, ask naturally — for example: remember that …";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const STORE_MAINTENANCE: StoreMaintenanceOptions = {
+  processedMessagesMaxAgeMs: 30 * DAY_MS,
+  idempotencyMaxAgeMs: 7 * DAY_MS,
+  deliveredDeliveriesMaxAgeMs: 7 * DAY_MS,
+  deadDeliveriesMaxAgeMs: 30 * DAY_MS,
+  attachmentsMaxAgeMs: DAY_MS,
+};
+
+function runStoreMaintenance(store: Store): void {
+  const report = store.maintenance(STORE_MAINTENANCE);
+  const removed = Object.values(report).reduce((sum, count) => sum + count, 0);
+  if (removed > 0) console.log(`store: maintenance removed ${removed} stale item(s): ${JSON.stringify(report)}`);
+}
 
 // ── Identity configuration ──────────────────────────────────────────────────
 // Build identity entries from configured transport credentials.
@@ -86,6 +101,7 @@ async function main(): Promise<void> {
   const config = loadConfig(configPath);
 
   const store = new Store(config.gateway.statePath);
+  runStoreMaintenance(store);
   const transports: GatewayTransport[] = [];
   const channelConfigs: Record<string, ChannelConfig> = {};
 
@@ -186,6 +202,15 @@ async function main(): Promise<void> {
       console.error("Queued delivery drain failed:", err);
     });
   }, 60_000);
+
+  // Keep the JSON state bounded and attachments tidy.
+  setInterval(() => {
+    try {
+      runStoreMaintenance(store);
+    } catch (err) {
+      console.error("Store maintenance failed:", err);
+    }
+  }, 60 * 60_000);
 
   if (config.transports.whatsapp?.enabled) {
     const recipientIds = config.transports.whatsapp.trustedNumbers.map((n) => `whatsapp:${n}`);

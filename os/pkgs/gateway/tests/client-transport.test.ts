@@ -465,7 +465,10 @@ test("ClientTransport REST accepts named client token with read scope", async ()
     await (transport as any).serveRestApi(req, res);
 
     assert.equal(res.status, 200);
-    assert.equal(JSON.parse(res.body).ok, true);
+    const body = JSON.parse(res.body);
+    assert.equal(body.ok, true);
+    assert.equal(body.state.chatSessions, 0);
+    assert.equal(body.state.deliveries.queued, 0);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

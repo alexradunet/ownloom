@@ -87,6 +87,7 @@ export function registerV1Methods(
     agentName: string;
     transportNames: string[];
     startedAtMs: number;
+    connectionCount?: () => number;
     handleAgent: (ctx: MethodContext) => Promise<MethodResult>;
     onDeliveryRetry?: () => Promise<unknown> | unknown;
     listClients?: () => Array<{ id: string; displayName: string; scopes: Scope[]; managedBy?: "config" | "runtime"; canRotate?: boolean; canRevoke?: boolean; tokenPreview?: string; rotatedAt?: string; revokedAt?: string }>;
@@ -116,6 +117,8 @@ export function registerV1Methods(
           : null,
         agent: deps.agentName,
         transports: deps.transportNames,
+        connections: deps.connectionCount?.() ?? null,
+        state: deps.store.getStats(),
       },
     };
   });

@@ -104,6 +104,32 @@ export type RuntimeClientRecord = {
   revokedAt?: string;
 };
 
+export type StoreStats = {
+  processedMessages: number;
+  chatSessions: number;
+  sentReminders: number;
+  attachments: number;
+  idempotency: { total: number; pending: number; done: number };
+  deliveries: { queued: number; due: number; dead: number; delivered: number };
+  runtimeClients: { total: number; revoked: number };
+};
+
+export type StoreMaintenanceOptions = {
+  processedMessagesMaxAgeMs: number;
+  idempotencyMaxAgeMs: number;
+  deliveredDeliveriesMaxAgeMs: number;
+  deadDeliveriesMaxAgeMs: number;
+  attachmentsMaxAgeMs: number;
+};
+
+export type StoreMaintenanceReport = {
+  processedMessages: number;
+  idempotency: number;
+  deliveredDeliveries: number;
+  deadDeliveries: number;
+  attachments: number;
+};
+
 export type IdempotencyEntry = {
   key: string;
   status: "pending" | "done";
@@ -442,6 +468,78 @@ export class Store {
     const state = readState(this.statePath);
     const hashed = hashToken(token);
     return Object.values(state.runtimeClients).find((client) => !client.revokedAt && client.tokenHash === hashed) ?? null;
+  }
+
+  getStats(): StoreStats {
+    const state = readState(this.statePath);
+    const deliveries = Object.values(state.queuedDeliveries);
+    const idempotency = Object.values(state.idempotency);
+    const runtimeClients = Object.values(state.runtimeClients);
+    const now = utcNow();
+    return {
+      processedMessages: Object.keys(state.processedMessages).length,
+      chatSessions: Object.keys(state.chatSessions).length,
+      sentReminders: Object.keys(state.sentReminders).length,
+      attachments: Object.keys(state.attachments).length,
+      idempotency: {
+        total: idempotency.length,
+        pending: idempotency.filter((entry) => entry.status === "pending").length,
+        done: idempotency.filter((entry) => entry.status === "done").length,
+      },
+      deliveries: {
+        queued: deliveries.filter((delivery) => !delivery.deliveredAt && !delivery.deadAt).length,
+        due: deliveries.filter((delivery) => !delivery.deliveredAt && !delivery.deadAt && (!delivery.nextAttemptAt || delivery.nextAttemptAt <= now)).length,
+        dead: deliveries.filter((delivery) => !delivery.deliveredAt && !!delivery.deadAt).length,
+        delivered: deliveries.filter((delivery) => !!delivery.deliveredAt).length,
+      },
+      runtimeClients: {
+        total: runtimeClients.length,
+        revoked: runtimeClients.filter((client) => !!client.revokedAt).length,
+      },
+    };
+  }
+
+  maintenance(options: StoreMaintenanceOptions): StoreMaintenanceReport {
+    const state = readState(this.statePath);
+    const report: StoreMaintenanceReport = {
+      processedMessages: 0,
+      idempotency: 0,
+      deliveredDeliveries: 0,
+      deadDeliveries: 0,
+      attachments: 0,
+    };
+
+    for (const [id, entry] of Object.entries(state.processedMessages)) {
+      if (!isOlderThan(entry.processedAt, options.processedMessagesMaxAgeMs)) continue;
+      delete state.processedMessages[id];
+      report.processedMessages += 1;
+    }
+
+    for (const [key, entry] of Object.entries(state.idempotency)) {
+      if (!isOlderThan(entry.updatedAt, options.idempotencyMaxAgeMs)) continue;
+      delete state.idempotency[key];
+      report.idempotency += 1;
+    }
+
+    for (const [id, delivery] of Object.entries(state.queuedDeliveries)) {
+      if (delivery.deliveredAt && isOlderThan(delivery.deliveredAt, options.deliveredDeliveriesMaxAgeMs)) {
+        delete state.queuedDeliveries[id];
+        report.deliveredDeliveries += 1;
+      } else if (delivery.deadAt && isOlderThan(delivery.deadAt, options.deadDeliveriesMaxAgeMs)) {
+        delete state.queuedDeliveries[id];
+        report.deadDeliveries += 1;
+      }
+    }
+
+    for (const [id, attachment] of Object.entries(state.attachments)) {
+      if (!isOlderThan(attachment.createdAt, options.attachmentsMaxAgeMs)) continue;
+      delete state.attachments[id];
+      if (existsSync(attachment.path)) unlinkSync(attachment.path);
+      report.attachments += 1;
+    }
+
+    if (Object.values(report).some((count) => count > 0)) writeState(this.statePath, state);
+    return report;
   }
 
   beginIdempotentRequest(key: string, maxAgeMs: number):
