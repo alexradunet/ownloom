@@ -87,6 +87,10 @@ function proxyHttp(req, res, upstreamTarget, name) {
     upstreamRes.pipe(res);
   });
   upstream.on("error", (err) => {
+    if (res.headersSent) {
+      res.destroy(err);
+      return;
+    }
     res.writeHead(502, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: `${name} proxy failed: ${err.message}` }));
   });

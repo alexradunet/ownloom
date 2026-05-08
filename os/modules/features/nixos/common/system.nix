@@ -22,10 +22,12 @@
       loginShellInit = ''
         if [ "''${USER:-}" = "${config.ownloom.human.name}" ] \
           && [ -z "''${ZELLIJ:-}" ] \
+          && [ -z "''${OWNLOOM_NO_ZELLIJ:-}" ] \
           && [ -t 0 ] \
           && [ -t 1 ] \
           && command -v zellij >/dev/null 2>&1; then
-          exec zellij attach --create main
+          cd ${config.ownloom.root} 2>/dev/null || cd
+          exec zellij attach --create ownloom
         fi
       '';
     };

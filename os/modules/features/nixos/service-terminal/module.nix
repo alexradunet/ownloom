@@ -7,6 +7,10 @@
 }: let
   cfg = config.services.ownloom-terminal;
   zellijCommand = ''
+    uid="$(${pkgs.coreutils}/bin/id -u)"
+    if [ -d "/run/user/$uid" ]; then
+      export XDG_RUNTIME_DIR="/run/user/$uid"
+    fi
     cd ${lib.escapeShellArg cfg.workingDirectory} && exec ${lib.getExe pkgs.zellij} attach --create ${lib.escapeShellArg cfg.sessionName}
   '';
 in {
@@ -55,7 +59,7 @@ in {
 
     sessionName = lib.mkOption {
       type = lib.types.str;
-      default = "main";
+      default = "ownloom";
       description = "Zellij session name to attach/create.";
     };
 
