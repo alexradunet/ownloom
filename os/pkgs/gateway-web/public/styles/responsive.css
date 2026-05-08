@@ -1,3 +1,16 @@
+@media (max-width: 1100px) {
+  .cockpit-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cockpit-sidebar {
+    position: static;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 @media (max-width: 900px) {
   .settings,
   .grid,
@@ -24,7 +37,9 @@
   button,
   .button-link { width: 100%; }
 
-  .tab-button { width: auto; }
+  .tabs:not(.sidebar-tabs) .tab-button { width: auto; }
+
+  .sidebar-tabs .tab-button { width: 100%; }
 
   .message { max-width: 96%; }
 }
@@ -34,6 +49,7 @@
   .button-link,
   .tab-button.active,
   .tab-button[aria-selected="true"],
+  .cockpit-sidebar,
   .chip,
   .pill,
   .pill.connected,

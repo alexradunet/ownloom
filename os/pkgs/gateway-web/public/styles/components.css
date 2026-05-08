@@ -61,6 +61,68 @@
   box-shadow: inset 0 -2px 0 var(--color-accent), 0 10px 28px rgb(0 0 0 / 0.18);
 }
 
+.sidebar-tabs .tab-button {
+  display: grid;
+  justify-content: stretch;
+  width: 100%;
+  min-block-size: 4.35rem;
+  border-color: rgb(125 240 214 / 0.13);
+  padding: var(--space-5) var(--space-6);
+  background: rgb(7 11 16 / 0.34);
+  color: var(--color-muted);
+  text-align: start;
+  white-space: normal;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025);
+}
+
+.sidebar-tabs .tab-button:hover:not(:disabled) {
+  border-color: rgb(245 215 138 / 0.26);
+  background: rgb(245 215 138 / 0.08);
+  color: var(--color-text);
+}
+
+.sidebar-tabs .tab-button.active,
+.sidebar-tabs .tab-button[aria-selected="true"] {
+  border-color: rgb(245 215 138 / 0.42);
+  background:
+    linear-gradient(90deg, rgb(245 215 138 / 0.18), rgb(125 240 214 / 0.10)),
+    rgb(16 24 35 / 0.82);
+  color: var(--color-text);
+  box-shadow:
+    inset 3px 0 0 var(--color-warning),
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 14px 34px rgb(0 0 0 / 0.22);
+}
+
+.tab-label,
+.tab-description {
+  display: block;
+  min-width: 0;
+}
+
+.tab-label {
+  font-weight: var(--font-bold);
+  line-height: var(--line-tight);
+}
+
+.tab-description {
+  margin-block-start: var(--space-1);
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
+  font-weight: var(--font-normal);
+  line-height: var(--line-tight);
+}
+
+.sidebar-tabs .tab-button.active .tab-description,
+.sidebar-tabs .tab-button[aria-selected="true"] .tab-description {
+  color: var(--palette-mist-200);
+}
+
+.sidebar-note p {
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
+}
+
 .checkbox {
   display: flex;
   flex-direction: row;

@@ -134,11 +134,11 @@ The header should quickly answer:
 
 A small “loopback/tunnel only” cue is acceptable if it does not clutter mobile.
 
-### Tabs
+### Sidebar navigation
 
-Preserve the native ARIA tab structure. Active state should differ by more than color: use fill, border/underline, and text contrast.
+Preserve the native ARIA tab structure inside the sidebar. Active state should differ by more than color: use fill, border/accent, and text contrast.
 
-Primary sections should feel more important than advanced operator sections, but the current simple top tabs are acceptable.
+Primary sections should feel warmer and more inviting than advanced operator sections, while Config, Terminal, and Log remain clear first-class tools.
 
 ### Cards
 

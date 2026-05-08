@@ -123,5 +123,8 @@
   --message-system-bg: linear-gradient(135deg, #221f31, #191d2b);
   --input-bg: rgb(11 17 24 / 0.82);
   --terminal-bg: #05080d;
-  --shell-width: 1200px;
+  --shell-width: 1320px;
+  --sidebar-width: 17.5rem;
+  --sidebar-bg: linear-gradient(180deg, rgb(20 30 43 / 0.96), rgb(13 18 25 / 0.98));
+  --sidebar-warm-glow: rgb(245 215 138 / 0.12);
 }

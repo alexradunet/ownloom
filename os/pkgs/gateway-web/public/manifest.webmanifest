@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Ownloom Cockpit",
   "short_name": "Ownloom",
-  "description": "Private local cockpit for Ownloom chat, planning, configuration, and terminal sessions."
+  "description": "Private local cockpit for Ownloom chat, planning, configuration, and terminal sessions.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

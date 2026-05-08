@@ -110,7 +110,7 @@ It also rejects non-loopback `Host`/`Origin` headers to reduce DNS-rebinding exp
 
 ## Current features
 
-- cockpit tab shell for Chat, Organizer, Config, Terminal, and Log
+- warm sidebar tab shell for Chat, Organizer, Config, Terminal, and Log
 - accessible ARIA tab navigation with keyboard support
 - PWA manifest/service-worker static shell
 - loopback-only browser pairing into a full-operator runtime client

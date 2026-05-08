@@ -34,10 +34,10 @@ export function createTabController({ buttons, panels, initialTab = "chat", onSe
   for (const button of buttons) {
     button.addEventListener("click", () => select(button.dataset.tabTarget));
     button.addEventListener("keydown", (event) => {
-      if (event.key === "ArrowLeft") {
+      if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
         event.preventDefault();
         selectByOffset(button, -1);
-      } else if (event.key === "ArrowRight") {
+      } else if (event.key === "ArrowRight" || event.key === "ArrowDown") {
         event.preventDefault();
         selectByOffset(button, 1);
       } else if (event.key === "Home") {

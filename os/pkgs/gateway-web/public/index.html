@@ -12,29 +12,59 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <a class="skip-link button-link" href="#main">Skip to cockpit</a>
+    <a class="skip-link button-link" href="#cockpit-content">Skip to cockpit content</a>
     <main id="main" class="shell">
-      <header>
-        <div>
-          <h1>Ownloom Cockpit</h1>
-          <p>Own your context. A private local cockpit for chat, planning, configuration, and advanced terminal sessions.</p>
-        </div>
-        <div class="header-status" aria-label="Cockpit status">
-          <span class="chip chip-private">Loopback / tunnel only</span>
-          <span id="connectionState" class="pill" role="status" aria-live="polite">disconnected</span>
-          <span id="pwaStatus" class="chip" role="status" aria-live="polite">Online</span>
-        </div>
-      </header>
+      <div class="cockpit-layout">
+        <aside class="cockpit-sidebar" aria-label="Ownloom cockpit menu">
+          <div class="sidebar-brand">
+            <span class="eyebrow">Private local cockpit</span>
+            <p class="sidebar-title">Ownloom</p>
+            <p>Welcome back. Your local space for context, planning, configuration, and terminal work is ready.</p>
+          </div>
 
-      <nav class="tabs" role="tablist" aria-label="Ownloom cockpit sections">
-        <button id="tab-chat-button" class="tab-button active" type="button" role="tab" data-tab-target="chat" aria-controls="tab-chat" aria-selected="true" tabindex="0">Chat</button>
-        <button id="tab-organizer-button" class="tab-button" type="button" role="tab" data-tab-target="organizer" aria-controls="tab-organizer" aria-selected="false" tabindex="-1">Organizer</button>
-        <button id="tab-config-button" class="tab-button" type="button" role="tab" data-tab-target="config" aria-controls="tab-config" aria-selected="false" tabindex="-1">Config</button>
-        <button id="tab-terminal-button" class="tab-button" type="button" role="tab" data-tab-target="terminal" aria-controls="tab-terminal" aria-selected="false" tabindex="-1">Terminal</button>
-        <button id="tab-log-button" class="tab-button" type="button" role="tab" data-tab-target="log" aria-controls="tab-log" aria-selected="false" tabindex="-1">Log</button>
-      </nav>
+          <nav class="tabs sidebar-tabs" role="tablist" aria-orientation="vertical" aria-label="Ownloom cockpit sections">
+            <button id="tab-chat-button" class="tab-button active" type="button" role="tab" data-tab-target="chat" aria-controls="tab-chat" aria-selected="true" tabindex="0">
+              <span class="tab-label">Chat</span>
+              <span class="tab-description">Ask, attach, and continue sessions.</span>
+            </button>
+            <button id="tab-organizer-button" class="tab-button" type="button" role="tab" data-tab-target="organizer" aria-controls="tab-organizer" aria-selected="false" tabindex="-1">
+              <span class="tab-label">Organizer</span>
+              <span class="tab-description">Today, upcoming, and planner context.</span>
+            </button>
+            <button id="tab-config-button" class="tab-button" type="button" role="tab" data-tab-target="config" aria-controls="tab-config" aria-selected="false" tabindex="-1">
+              <span class="tab-label">Config</span>
+              <span class="tab-description">Pair browsers and inspect clients.</span>
+            </button>
+            <button id="tab-terminal-button" class="tab-button" type="button" role="tab" data-tab-target="terminal" aria-controls="tab-terminal" aria-selected="false" tabindex="-1">
+              <span class="tab-label">Terminal</span>
+              <span class="tab-description">Open the local Zellij workspace.</span>
+            </button>
+            <button id="tab-log-button" class="tab-button" type="button" role="tab" data-tab-target="log" aria-controls="tab-log" aria-selected="false" tabindex="-1">
+              <span class="tab-label">Log</span>
+              <span class="tab-description">Review local cockpit events.</span>
+            </button>
+          </nav>
 
-      <section id="tab-chat" class="tab-panel active" role="tabpanel" data-tab-panel="chat" aria-labelledby="tab-chat-button" tabindex="0">
+          <div class="sidebar-note">
+            <span class="chip chip-private">Private by design</span>
+            <p>Loopback-first, tunnel-friendly, and honest about live state.</p>
+          </div>
+        </aside>
+
+        <div id="cockpit-content" class="cockpit-content" tabindex="-1">
+          <header>
+            <div>
+              <h1>Ownloom Cockpit</h1>
+              <p>Own your context in one warm, inspectable cockpit — chat, planner context, config, terminal, and logs within reach.</p>
+            </div>
+            <div class="header-status" aria-label="Cockpit status">
+              <span class="chip chip-private">Loopback / tunnel only</span>
+              <span id="connectionState" class="pill" role="status" aria-live="polite">disconnected</span>
+              <span id="pwaStatus" class="chip" role="status" aria-live="polite">Online</span>
+            </div>
+          </header>
+
+          <section id="tab-chat" class="tab-panel active" role="tabpanel" data-tab-panel="chat" aria-labelledby="tab-chat-button" tabindex="0">
         <section class="grid">
           <section class="card chat" aria-labelledby="chat-heading">
             <div class="chat-heading">
@@ -148,7 +178,9 @@
           <h2>Event log</h2>
           <pre id="log" class="log"></pre>
         </section>
-      </section>
+          </section>
+        </div>
+      </div>
     </main>
     <script type="module" src="./app.js"></script>
   </body>
