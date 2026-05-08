@@ -146,6 +146,24 @@ export function registerV1Methods(
     return { ok: true, payload: { deliveries: deps.store.listQueuedDeliveries(undefined, { includeDead: true }) } };
   });
 
+  // deliveries.retry
+  registry.register(METHODS.DELIVERIES_RETRY, (ctx) => {
+    const id = ctx.params["id"] as string | undefined;
+    if (!id) return { ok: false, error: { message: "id is required", code: "INVALID_REQUEST" } };
+    const delivery = deps.store.retryQueuedDelivery(id);
+    if (!delivery) return { ok: false, error: { message: `Unknown or delivered delivery: ${id}`, code: "NOT_FOUND" } };
+    return { ok: true, payload: { delivery } };
+  });
+
+  // deliveries.delete
+  registry.register(METHODS.DELIVERIES_DELETE, (ctx) => {
+    const id = ctx.params["id"] as string | undefined;
+    if (!id) return { ok: false, error: { message: "id is required", code: "INVALID_REQUEST" } };
+    const deleted = deps.store.deleteQueuedDelivery(id);
+    if (!deleted) return { ok: false, error: { message: `Unknown delivery: ${id}`, code: "NOT_FOUND" } };
+    return { ok: true, payload: { id } };
+  });
+
   // agent methods — delegate to the provided handler (which calls Router).
   // Today both methods wait for the local Pi run to complete and emit agent events;
   // keep both names so clients can opt into explicit wait semantics.

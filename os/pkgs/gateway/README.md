@@ -36,7 +36,7 @@ Scope rules:
 
 - `read`: `health`, `status`, `commands.list`, `sessions.list`, `sessions.get`, `deliveries.list`
 - `write`: `agent`, `agent.wait`
-- `admin`: `sessions.reset`
+- `admin`: `sessions.reset`, `deliveries.retry`, `deliveries.delete`
 
 Example named client config:
 
@@ -80,7 +80,7 @@ Successful response:
     "protocol": 1,
     "server": { "version": "1.0.0", "connId": "client-..." },
     "features": {
-      "methods": ["agent", "agent.wait", "commands.list", "health", "sessions.get", "sessions.list", "sessions.reset", "status"],
+      "methods": ["agent", "agent.wait", "commands.list", "deliveries.delete", "deliveries.list", "deliveries.retry", "health", "sessions.get", "sessions.list", "sessions.reset", "status"],
       "events": ["agent", "shutdown", "tick"]
     },
     "auth": { "role": "operator", "scopes": ["read", "write"] },
@@ -236,6 +236,22 @@ Current limits:
 - `x-ownloom-attachment-kind` must be `image` or `audio`.
 - Upload body must be non-empty.
 - Max upload size is 25 MiB.
+
+### Delivery administration
+
+Queued/dead-lettered deliveries can be inspected with `deliveries.list` and
+manually managed over WebSocket with an admin-scoped client:
+
+```json
+{ "type": "req", "id": "retry-1", "method": "deliveries.retry", "params": { "id": "delivery-..." } }
+```
+
+`deliveries.retry` clears `deadAt`/`nextAttemptAt` and resets attempts so the
+periodic delivery drain can try it again. To remove a queued delivery:
+
+```json
+{ "type": "req", "id": "delete-1", "method": "deliveries.delete", "params": { "id": "delivery-..." } }
+```
 
 ## REST API
 

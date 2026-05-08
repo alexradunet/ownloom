@@ -242,7 +242,11 @@ async function refreshLists() {
     request("commands.list").catch((error) => ({ error: error.message, commands: [] })),
   ]);
   renderList(els.sessions, sessions.sessions ?? [], (s) => `<strong>${escapeHtml(s.chatId ?? s.id ?? "session")}</strong><br><small>${escapeHtml(s.updatedAt ?? s.createdAt ?? "")}</small>`);
-  renderList(els.deliveries, deliveries.deliveries ?? [], (d) => `<strong>${escapeHtml(d.status ?? "queued")}</strong> ${escapeHtml(d.id ?? "")}<br><small>${escapeHtml(d.target ?? d.recipient ?? "")}</small>`);
+  renderList(els.deliveries, deliveries.deliveries ?? [], (d) => {
+    const status = d.deadAt ? "dead" : d.nextAttemptAt ? "waiting" : "queued";
+    const recipient = d.recipientId ?? d.target ?? d.recipient ?? "";
+    return `<strong>${escapeHtml(status)}</strong> ${escapeHtml(d.id ?? "")}<br><small>${escapeHtml(recipient)}</small><div class="row item-actions"><button data-delivery-retry="${escapeHtml(d.id ?? "")}">Retry</button><button data-delivery-delete="${escapeHtml(d.id ?? "")}">Delete</button></div>`;
+  });
   renderList(els.commands, commands.commands ?? [], (c) => {
     const name = typeof c === "string" ? c : c.name;
     const description = typeof c === "string" ? "" : c.description;
@@ -272,6 +276,17 @@ els.connectButton.addEventListener("click", () => connect().catch((error) => {
 els.disconnectButton.addEventListener("click", disconnect);
 els.healthButton.addEventListener("click", () => health().catch((error) => log("health failed", error.message)));
 els.refreshButton.addEventListener("click", () => refreshLists().catch((error) => log("refresh failed", error.message)));
+els.deliveries.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  const retryId = target.getAttribute("data-delivery-retry");
+  const deleteId = target.getAttribute("data-delivery-delete");
+  if (retryId) {
+    request("deliveries.retry", { id: retryId }).then(refreshLists).catch((error) => log("delivery retry failed", error.message));
+  } else if (deleteId) {
+    request("deliveries.delete", { id: deleteId }).then(refreshLists).catch((error) => log("delivery delete failed", error.message));
+  }
+});
 els.sendButton.addEventListener("click", () => sendMessage().catch((error) => {
   state.currentRun = null;
   addMessage("system", `Send failed: ${error.message}`);

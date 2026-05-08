@@ -85,6 +85,8 @@ export const METHODS = {
 
   // Deliveries
   DELIVERIES_LIST: "deliveries.list",
+  DELIVERIES_RETRY: "deliveries.retry",
+  DELIVERIES_DELETE: "deliveries.delete",
 
   // System
   HEALTH: "health",

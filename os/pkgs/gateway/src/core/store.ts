@@ -263,6 +263,25 @@ export class Store {
     writeState(this.statePath, state);
   }
 
+  retryQueuedDelivery(id: string): QueuedDelivery | null {
+    const state = readState(this.statePath);
+    const delivery = state.queuedDeliveries[id];
+    if (!delivery || delivery.deliveredAt) return null;
+    delivery.attempts = 0;
+    delete delivery.deadAt;
+    delete delivery.nextAttemptAt;
+    writeState(this.statePath, state);
+    return delivery;
+  }
+
+  deleteQueuedDelivery(id: string): boolean {
+    const state = readState(this.statePath);
+    if (!(id in state.queuedDeliveries)) return false;
+    delete state.queuedDeliveries[id];
+    writeState(this.statePath, state);
+    return true;
+  }
+
   recordQueuedDeliveryFailure(id: string, error: string, options: { maxAttempts: number; nextAttemptAt?: string }): void {
     const state = readState(this.statePath);
     const delivery = state.queuedDeliveries[id];

@@ -550,7 +550,7 @@ function requiredScopeForMethod(method: string): "read" | "write" | "admin" | nu
     return "read";
   }
   if (method === "agent" || method === "agent.wait") return "write";
-  if (method === "sessions.reset") return "admin";
+  if (method === "sessions.reset" || method === "deliveries.retry" || method === "deliveries.delete") return "admin";
   return null;
 }
 

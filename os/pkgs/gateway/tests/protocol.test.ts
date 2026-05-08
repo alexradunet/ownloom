@@ -229,6 +229,39 @@ test("v1 sessions.reset resets a chat session", async () => {
   }
 });
 
+test("v1 delivery admin methods retry and delete queued deliveries", async () => {
+  const { store, cleanup } = makeStore();
+  try {
+    const commands = new CommandRegistry();
+    const registry = new MethodRegistry();
+    registerV1Methods(registry, {
+      store,
+      commands,
+      agentName: "pi",
+      transportNames: [],
+      startedAtMs: Date.now(),
+      handleAgent: async () => ({ ok: true, payload: { runId: "r1", status: "accepted" } }),
+    });
+
+    const delivery = store.enqueueDelivery("whatsapp:+15550001111", "whatsapp", "hello", "offline");
+    store.recordQueuedDeliveryFailure(delivery.id, "still offline", { maxAttempts: 1 });
+    assert.equal(store.listQueuedDeliveries(undefined, { includeDead: true })[0]?.deadAt !== undefined, true);
+
+    const retry = await registry.dispatch(makeCtx({ _method: METHODS.DELIVERIES_RETRY, id: delivery.id }));
+    assert.equal(retry.ok, true);
+    const retried = store.listQueuedDeliveries(undefined, { includeDead: true })[0];
+    assert.equal(retried.attempts, 0);
+    assert.equal(retried.deadAt, undefined);
+    assert.equal(retried.nextAttemptAt, undefined);
+
+    const deleted = await registry.dispatch(makeCtx({ _method: METHODS.DELIVERIES_DELETE, id: delivery.id }));
+    assert.equal(deleted.ok, true);
+    assert.deepEqual(store.listQueuedDeliveries(undefined, { includeDead: true }), []);
+  } finally {
+    cleanup();
+  }
+});
+
 test("PROTOCOL_VERSION is 1", () => {
   assert.equal(PROTOCOL_VERSION, 1);
 });

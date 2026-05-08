@@ -265,7 +265,7 @@ test("ClientTransport enforces method scopes", async () => {
   }
 });
 
-test("ClientTransport requires admin scope for sessions.reset", async () => {
+test("ClientTransport requires admin scope for admin methods", async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {
     const store = new Store(path.join(tmp, "state.json"));
@@ -296,6 +296,17 @@ test("ClientTransport requires admin scope for sessions.reset", async () => {
     assert.equal(responses[0].ok, false);
     assert.equal(responses[0].error.code, "FORBIDDEN");
     assert.notEqual(store.getChatSession("client:web"), null);
+
+    (transport as any).handleRequest({
+      type: "req",
+      id: "req-2",
+      method: "deliveries.retry",
+      params: { id: "delivery-1" },
+    }, writeClient, (frame: any) => responses.push(frame));
+
+    assert.equal(responses.length, 2);
+    assert.equal(responses[1].ok, false);
+    assert.equal(responses[1].error.code, "FORBIDDEN");
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

@@ -86,6 +86,8 @@ p { margin: 0.25rem 0 0; color: #9aa7b8; }
   overflow-wrap: anywhere;
 }
 .item small { color: #9aa7b8; }
+.item-actions { margin-top: 0.5rem; }
+.item-actions button { padding: 0.35rem 0.55rem; font-size: 0.8rem; }
 .log {
   min-height: 8rem;
   max-height: 18rem;
