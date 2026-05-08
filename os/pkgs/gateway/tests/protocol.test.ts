@@ -40,10 +40,11 @@ test("MethodRegistry dispatches unknown methods", async () => {
   if (!result.ok) assert.equal(result.error.code, "UNKNOWN_METHOD");
 });
 
-test("MethodRegistry lists registered methods", () => {
+test("MethodRegistry lists registered methods and v1 events", () => {
   const registry = new MethodRegistry();
   registry.register("test.method", () => ({ ok: true }));
   assert.deepEqual(registry.listMethods(), ["test.method"]);
+  assert.deepEqual(registry.listEvents(), ["agent", "clients.changed", "deliveries.changed", "sessions.changed", "tick", "shutdown"]);
 });
 
 test("v1 registers agent and agent.wait", async () => {

@@ -320,6 +320,47 @@ test("ClientTransport requires admin scope for admin methods", async () => {
   }
 });
 
+test("ClientTransport emits change events for mutating methods", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const store = new Store(path.join(tmp, "state.json"));
+    store.upsertChatSession("client:web", "sender", "/tmp/session");
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0 },
+      store,
+      new CommandRegistry(),
+    );
+
+    const sent: any[] = [];
+    const client = {
+      connId: "conn-1",
+      identity: null,
+      role: "operator" as const,
+      scopes: ["read", "write", "admin"] as Scope[],
+      seq: 0,
+      send: () => {},
+    };
+    (transport as any).connections.set("v1-test", {
+      ws: { readyState: 1, send: (raw: string) => sent.push(JSON.parse(raw)) },
+      client,
+    });
+
+    const responses: any[] = [];
+    (transport as any).handleRequest({
+      type: "req",
+      id: "req-1",
+      method: "sessions.reset",
+      params: { chatId: "client:web" },
+    }, client, (frame: any) => responses.push(frame));
+
+    await waitFor(() => responses.length === 1 && sent.length === 1);
+    assert.equal(responses[0].ok, true);
+    assert.equal(sent[0].event, "sessions.changed");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test("ClientTransport REST accepts named client token with read scope", async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {

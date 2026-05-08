@@ -103,6 +103,9 @@ export type MethodName = (typeof METHODS)[keyof typeof METHODS];
 
 export const EVENTS = {
   AGENT: "agent",
+  CLIENTS_CHANGED: "clients.changed",
+  DELIVERIES_CHANGED: "deliveries.changed",
+  SESSIONS_CHANGED: "sessions.changed",
   TICK: "tick",
   SHUTDOWN: "shutdown",
 } as const;

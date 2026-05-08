@@ -81,7 +81,7 @@ Successful response:
     "server": { "version": "1.0.0", "connId": "client-..." },
     "features": {
       "methods": ["agent", "agent.wait", "clients.list", "commands.list", "deliveries.delete", "deliveries.list", "deliveries.retry", "health", "sessions.get", "sessions.list", "sessions.reset", "status"],
-      "events": ["agent", "shutdown", "tick"]
+      "events": ["agent", "clients.changed", "deliveries.changed", "sessions.changed", "shutdown", "tick"]
     },
     "auth": { "role": "operator", "scopes": ["read", "write"] },
     "policy": { "maxPayload": 26214400, "tickIntervalMs": 15000 }
@@ -236,6 +236,20 @@ Current limits:
 - `x-ownloom-attachment-kind` must be `image` or `audio`.
 - Upload body must be non-empty.
 - Max upload size is 25 MiB.
+
+### Change events
+
+Protocol clients receive lightweight change notifications and should refresh the
+relevant lists when they arrive:
+
+```json
+{ "type": "event", "event": "clients.changed", "seq": 3, "payload": { "connections": 2 } }
+{ "type": "event", "event": "sessions.changed", "seq": 4, "payload": { "chatId": "client:web-main" } }
+{ "type": "event", "event": "deliveries.changed", "seq": 5, "payload": {} }
+```
+
+These are hints, not durable events; clients can always recover by calling the
+corresponding `*.list` method.
 
 ### Client identities
 

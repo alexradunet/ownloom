@@ -232,12 +232,20 @@ export class ClientTransport implements GatewayTransport {
 
     const close = (reason: string): void => {
       console.log(`client: closing ${connId} — ${reason}`);
-      if (chatId) this.connections.delete(chatId);
+      if (chatId) {
+        this.connections.delete(chatId);
+        chatId = null;
+        this.broadcastEvent(EVENTS.CLIENTS_CHANGED, this.clientsChangedPayload());
+      }
       if (ws.readyState === WebSocket.OPEN) ws.close();
     };
 
     ws.on("close", () => {
-      if (chatId) this.connections.delete(chatId);
+      if (chatId) {
+        this.connections.delete(chatId);
+        chatId = null;
+        this.broadcastEvent(EVENTS.CLIENTS_CHANGED, this.clientsChangedPayload());
+      }
       console.log(`client: client ${connId} disconnected`);
     });
 
@@ -350,6 +358,7 @@ export class ClientTransport implements GatewayTransport {
     };
 
     sendJson({ type: "res", id: "connect", ok: true, payload: helloOk });
+    this.broadcastEvent(EVENTS.CLIENTS_CHANGED, this.clientsChangedPayload());
   }
 
   private handleRequest(frame: ClientFrame, client: ConnectedClient, sendJson: (frame: ResponseFrame | EventFrame) => void): void {
@@ -430,6 +439,7 @@ export class ClientTransport implements GatewayTransport {
           ok: result.ok,
           ...(result.ok ? { payload: result.payload } : { error: result.error }),
         } as ResponseFrame);
+        if (result.ok) this.emitChangedEventForMethod(frame.method);
       } catch (err) {
         const result: MethodResult = {
           ok: false,
@@ -493,6 +503,7 @@ export class ClientTransport implements GatewayTransport {
 
     try {
       const result = await this.router.handleMessage(inbound, onChunk);
+      this.broadcastEvent(EVENTS.SESSIONS_CHANGED, { chatId });
       for (const ref of attachmentRefs) this.store.deleteAttachment(ref.id);
       for (const reply of result.replies) {
         ctx.emit(EVENTS.AGENT, { runId, stream: "result", text: reply });
@@ -545,6 +556,28 @@ export class ClientTransport implements GatewayTransport {
     if (!identity) return { ok: false, status: 401, error: "Unauthorized" };
     if (!identity.scopes.includes(requiredScope)) return { ok: false, status: 403, error: "Forbidden" };
     return { ok: true };
+  }
+
+  private emitChangedEventForMethod(method: string): void {
+    if (method === "sessions.reset") {
+      this.broadcastEvent(EVENTS.SESSIONS_CHANGED, {});
+      return;
+    }
+    if (method === "deliveries.retry" || method === "deliveries.delete") {
+      this.broadcastEvent(EVENTS.DELIVERIES_CHANGED, {});
+    }
+  }
+
+  private broadcastEvent(event: string, payload?: unknown): void {
+    for (const connection of this.connections.values()) {
+      if (connection.ws.readyState !== WebSocket.OPEN) continue;
+      connection.client.seq += 1;
+      connection.ws.send(JSON.stringify({ type: "event", event, payload, seq: connection.client.seq } satisfies EventFrame));
+    }
+  }
+
+  private clientsChangedPayload(): { connections: number } {
+    return { connections: this.connections.size };
   }
 
   private makeIdempotencyStoreKey(client: ConnectedClient, method: string, idempotencyKey: string): string {

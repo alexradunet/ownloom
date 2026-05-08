@@ -138,7 +138,7 @@ function request(method, params = {}) {
 function handleFrame(frame) {
   if (frame.type === "event") {
     if (frame.event === "agent") handleAgentEvent(frame.payload ?? {});
-    else log(`event:${frame.event}`, frame.payload);
+    else handleChangedEvent(frame.event, frame.payload);
     return;
   }
   if (frame.type !== "res") return;
@@ -147,6 +147,13 @@ function handleFrame(frame) {
   state.pending.delete(frame.id);
   if (frame.ok) pending.resolve(frame.payload);
   else pending.reject(new Error(`${frame.error?.code ?? "ERROR"}: ${frame.error?.message ?? "request failed"}`));
+}
+
+function handleChangedEvent(event, payload) {
+  log(`event:${event}`, payload);
+  if (event === "clients.changed" || event === "sessions.changed" || event === "deliveries.changed") {
+    refreshLists().catch((error) => log("auto-refresh failed", error.message));
+  }
 }
 
 function handleAgentEvent(payload) {
