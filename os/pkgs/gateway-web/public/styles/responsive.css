@@ -1,0 +1,52 @@
+@media (max-width: 900px) {
+  .settings,
+  .grid,
+  .config-grid,
+  .organizer-grid { grid-template-columns: 1fr; }
+
+  header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header-status { justify-content: flex-start; }
+}
+
+@media (max-width: 520px) {
+  .shell {
+    width: min(100vw - 1rem, var(--shell-width));
+    padding-block-start: var(--space-4);
+  }
+
+  header,
+  .card { padding: var(--space-6); }
+
+  button,
+  .button-link { width: 100%; }
+
+  .tab-button { width: auto; }
+
+  .message { max-width: 96%; }
+}
+
+@media (forced-colors: active) {
+  button,
+  .button-link,
+  .tab-button.active,
+  .tab-button[aria-selected="true"],
+  .chip,
+  .pill,
+  .pill.connected,
+  .pill.error,
+  .card,
+  .item,
+  input,
+  textarea {
+    border: 1px solid CanvasText;
+  }
+
+  .tab-button.active,
+  .tab-button[aria-selected="true"] {
+    outline: 2px solid CanvasText;
+  }
+}

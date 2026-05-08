@@ -20,14 +20,46 @@ const mimeTypes = {
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
   ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".webp": "image/webp",
 };
 
+const staticSecurityHeaders = {
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self'",
+    "img-src 'self' data: blob:",
+    "connect-src 'self' http://127.0.0.1:* http://[::1]:* http://localhost:* https://127.0.0.1:* https://[::1]:* https://localhost:* ws://127.0.0.1:* ws://[::1]:* ws://localhost:* wss://127.0.0.1:* wss://[::1]:* wss://localhost:*",
+    "frame-src 'self'",
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "frame-ancestors 'self'",
+  ].join("; "),
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "no-referrer",
+  "X-Frame-Options": "SAMEORIGIN",
+};
+
+const noStoreHeaders = {
+  "Cache-Control": "no-store, max-age=0",
+  Pragma: "no-cache",
+  Expires: "0",
+};
+
 const server = createServer((req, res) => {
+  if (!isAllowedRequest(req)) {
+    sendText(res, 421, "Misdirected request\n");
+    return;
+  }
   if (new URL(req.url ?? "/", "http://localhost").pathname === "/api/v1/terminal-token") {
     serveTerminalToken(req, res);
     return;
@@ -44,6 +76,10 @@ const server = createServer((req, res) => {
 });
 
 server.on("upgrade", (req, socket, head) => {
+  if (!isAllowedRequest(req)) {
+    socket.destroy();
+    return;
+  }
   if (isTerminalPath(req.url)) {
     if (!terminalTarget) {
       socket.destroy();
@@ -60,6 +96,35 @@ server.listen(port, host, () => {
   console.log(`ownloom-gateway-web: http://${host}:${port} -> ${target.href}${terminal}`);
 });
 
+function isAllowedRequest(req) {
+  return isAllowedHostHeader(req.headers.host) && isAllowedOriginHeader(req.headers.origin);
+}
+
+function isAllowedHostHeader(value) {
+  if (typeof value !== "string" || !value.trim()) return false;
+  try {
+    return isLoopbackHostname(new URL(`http://${value}`).hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedOriginHeader(value) {
+  if (value === undefined) return true;
+  if (Array.isArray(value)) return value.every((item) => isAllowedOriginHeader(item));
+  if (typeof value !== "string" || !value.trim()) return false;
+  try {
+    return isLoopbackHostname(new URL(value).hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isLoopbackHostname(value) {
+  const hostname = String(value ?? "").replace(/^\[|\]$/g, "").toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
 function isTerminalPath(url) {
   const pathname = new URL(url ?? "/", "http://localhost").pathname;
   return pathname === terminalPathPrefix || pathname.startsWith(`${terminalPathPrefix}/`);
@@ -67,12 +132,15 @@ function isTerminalPath(url) {
 
 function proxyTerminal(req, res) {
   if (!terminalTarget) {
-    res.writeHead(503, { "Content-Type": "text/plain; charset=utf-8" });
+    res.writeHead(503, {
+      "Content-Type": "text/plain; charset=utf-8",
+      ...noStoreHeaders,
+    });
     res.end("Ownloom terminal is not configured.\n");
     return;
   }
   if (new URL(req.url ?? "/", "http://localhost").pathname === terminalPathPrefix) {
-    res.writeHead(308, { Location: `${terminalPathPrefix}/` });
+    res.writeHead(308, { Location: `${terminalPathPrefix}/`, ...noStoreHeaders });
     res.end();
     return;
   }
@@ -140,7 +208,8 @@ function isLoopbackRemote(remoteAddress) {
 function sendJson(res, statusCode, body) {
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    ...noStoreHeaders,
   });
   res.end(JSON.stringify(body));
 }
@@ -155,10 +224,10 @@ function proxyHttp(req, res, upstreamTarget, name, proxyOptions = {}) {
     headers: { ...req.headers, host: upstreamTarget.host },
   };
   const upstream = httpRequest(options, (upstreamRes) => {
-    const headers = proxyOptions.rewriteHeaders
+    const rewrittenHeaders = proxyOptions.rewriteHeaders
       ? proxyOptions.rewriteHeaders(upstreamRes.headers)
       : upstreamRes.headers;
-    res.writeHead(upstreamRes.statusCode ?? 502, headers);
+    res.writeHead(upstreamRes.statusCode ?? 502, withNoStore(rewrittenHeaders));
     upstreamRes.pipe(res);
   });
   upstream.on("error", (err) => {
@@ -166,10 +235,28 @@ function proxyHttp(req, res, upstreamTarget, name, proxyOptions = {}) {
       res.destroy(err);
       return;
     }
-    res.writeHead(502, { "Content-Type": "application/json" });
+    res.writeHead(502, {
+      "Content-Type": "application/json; charset=utf-8",
+      "X-Content-Type-Options": "nosniff",
+      ...noStoreHeaders,
+    });
     res.end(JSON.stringify({ error: `${name} proxy failed: ${err.message}` }));
   });
   req.pipe(upstream);
+}
+
+function withNoStore(headers) {
+  const next = { ...headers };
+  delete next["cache-control"];
+  delete next["Cache-Control"];
+  delete next.pragma;
+  delete next.Pragma;
+  delete next.expires;
+  delete next.Expires;
+  return {
+    ...next,
+    ...noStoreHeaders,
+  };
 }
 
 function proxyUpgrade(req, socket, head, upstreamTarget, upstreamPath = req.url || "/") {
@@ -191,12 +278,17 @@ function proxyUpgrade(req, socket, head, upstreamTarget, upstreamPath = req.url 
 }
 
 function serveStatic(url, res) {
-  const pathname = decodeURIComponent(new URL(url, "http://localhost").pathname);
+  let pathname;
+  try {
+    pathname = decodeURIComponent(new URL(url, "http://localhost").pathname);
+  } catch {
+    sendText(res, 400, "Bad request\n");
+    return;
+  }
   const relative = pathname === "/" ? "index.html" : pathname.slice(1);
   const filePath = resolve(staticRoot, normalize(relative));
   if (!filePath.startsWith(`${staticRoot}/`) && filePath !== staticRoot) {
-    res.writeHead(403);
-    res.end("Forbidden");
+    sendText(res, 403, "Forbidden\n");
     return;
   }
 
@@ -205,14 +297,25 @@ function serveStatic(url, res) {
     stats = statSync(filePath);
     if (!stats.isFile()) throw new Error("not a file");
   } catch {
-    res.writeHead(404);
-    res.end("Not found");
+    sendText(res, 404, "Not found\n");
     return;
   }
 
   res.writeHead(200, {
     "Content-Type": mimeTypes[extname(filePath)] ?? "application/octet-stream",
     "Content-Length": stats.size,
+    "Cache-Control": pathname === "/sw.js" ? "no-cache" : "no-cache, max-age=0",
+    ...staticSecurityHeaders,
   });
   createReadStream(filePath).pipe(res);
+}
+
+function sendText(res, statusCode, body) {
+  res.writeHead(statusCode, {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Content-Length": Buffer.byteLength(body),
+    "Cache-Control": "no-cache, max-age=0",
+    ...staticSecurityHeaders,
+  });
+  res.end(body);
 }

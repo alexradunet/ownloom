@@ -3,79 +3,89 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Private local cockpit for Ownloom chat, planning, configuration, and terminal sessions." />
+    <meta name="application-name" content="Ownloom Cockpit" />
+    <meta name="theme-color" content="#070b10" />
     <title>Ownloom Cockpit</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <main class="shell">
+    <a class="skip-link button-link" href="#main">Skip to cockpit</a>
+    <main id="main" class="shell">
       <header>
         <div>
           <h1>Ownloom Cockpit</h1>
-          <p>Local operator hub for chat, planning, configuration, and advanced terminal sessions.</p>
+          <p>Own your context. A private local cockpit for chat, planning, configuration, and advanced terminal sessions.</p>
         </div>
-        <span id="connectionState" class="pill">disconnected</span>
+        <div class="header-status" aria-label="Cockpit status">
+          <span class="chip chip-private">Loopback / tunnel only</span>
+          <span id="connectionState" class="pill" role="status" aria-live="polite">disconnected</span>
+          <span id="pwaStatus" class="chip" role="status" aria-live="polite">Online</span>
+        </div>
       </header>
 
-      <nav class="tabs" aria-label="Ownloom cockpit sections">
-        <button class="tab-button active" data-tab-target="chat">Chat</button>
-        <button class="tab-button" data-tab-target="organizer">Organizer</button>
-        <button class="tab-button" data-tab-target="config">Config</button>
-        <button class="tab-button" data-tab-target="terminal">Terminal</button>
-        <button class="tab-button" data-tab-target="log">Log</button>
+      <nav class="tabs" role="tablist" aria-label="Ownloom cockpit sections">
+        <button id="tab-chat-button" class="tab-button active" type="button" role="tab" data-tab-target="chat" aria-controls="tab-chat" aria-selected="true" tabindex="0">Chat</button>
+        <button id="tab-organizer-button" class="tab-button" type="button" role="tab" data-tab-target="organizer" aria-controls="tab-organizer" aria-selected="false" tabindex="-1">Organizer</button>
+        <button id="tab-config-button" class="tab-button" type="button" role="tab" data-tab-target="config" aria-controls="tab-config" aria-selected="false" tabindex="-1">Config</button>
+        <button id="tab-terminal-button" class="tab-button" type="button" role="tab" data-tab-target="terminal" aria-controls="tab-terminal" aria-selected="false" tabindex="-1">Terminal</button>
+        <button id="tab-log-button" class="tab-button" type="button" role="tab" data-tab-target="log" aria-controls="tab-log" aria-selected="false" tabindex="-1">Log</button>
       </nav>
 
-      <section id="tab-chat" class="tab-panel active" data-tab-panel="chat">
+      <section id="tab-chat" class="tab-panel active" role="tabpanel" data-tab-panel="chat" aria-labelledby="tab-chat-button" tabindex="0">
         <section class="grid">
-          <section class="card chat">
+          <section class="card chat" aria-labelledby="chat-heading">
             <div class="chat-heading">
-              <h2>Chat</h2>
+              <h2 id="chat-heading">Chat</h2>
               <div class="row">
                 <span id="currentSession" class="chip">Session: web-main</span>
-                <button id="newChatButton">New chat</button>
+                <button id="newChatButton" class="button-secondary" type="button">New chat</button>
               </div>
             </div>
-            <div id="messages" class="messages" aria-live="polite"></div>
+            <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions text" aria-busy="false"></div>
             <label>
               Attachments
               <input id="attachmentInput" type="file" multiple accept="image/*,audio/*" />
             </label>
-            <div id="attachments" class="attachments"></div>
+            <div id="attachments" class="attachments" role="list" aria-label="Staged attachments"></div>
             <label>
               Message
               <textarea id="messageInput" rows="4" placeholder="Ask Ownloom…"></textarea>
             </label>
             <div class="row">
-              <button id="sendButton" disabled>Send</button>
-              <button id="clearButton">Clear</button>
+              <button id="sendButton" type="button" disabled>Send</button>
+              <button id="clearButton" class="button-secondary" type="button">Clear</button>
             </div>
           </section>
 
-          <aside class="card side">
-            <h2>Sessions</h2>
-            <div id="sessions" class="list empty">Connect and refresh.</div>
+          <aside class="card side" aria-labelledby="sessions-heading">
+            <h2 id="sessions-heading">Sessions</h2>
+            <ul id="sessions" class="list empty" aria-label="Sessions"><li>Connect and refresh.</li></ul>
           </aside>
         </section>
       </section>
 
-      <section id="tab-organizer" class="tab-panel" data-tab-panel="organizer" hidden>
+      <section id="tab-organizer" class="tab-panel" role="tabpanel" data-tab-panel="organizer" aria-labelledby="tab-organizer-button" tabindex="0" hidden>
         <section class="grid organizer-grid">
           <section class="card">
             <h2>Today</h2>
             <div class="placeholder">
-              Planner-backed tasks, reminders, and calendar items will live here.
+              Today’s Ownloom Planner items will appear here from the CalDAV/iCalendar backend.
             </div>
           </section>
           <section class="card">
             <h2>Upcoming</h2>
             <div class="placeholder">
-              Next step: read from Ownloom Planner / CalDAV and add quick-create controls.
+              Upcoming tasks, reminders, and events stay planner-backed — never cached as stale cockpit data.
             </div>
           </section>
         </section>
       </section>
 
-      <section id="tab-config" class="tab-panel" data-tab-panel="config" hidden>
-        <section class="card settings">
+      <section id="tab-config" class="tab-panel" role="tabpanel" data-tab-panel="config" aria-labelledby="tab-config-button" tabindex="0" hidden>
+        <section class="card settings" aria-label="Gateway connection settings">
           <label>
             Gateway HTTP URL
             <input id="httpUrl" value="http://127.0.0.1:8081" autocomplete="off" />
@@ -93,30 +103,30 @@
             Remember locally
           </label>
           <div class="row">
-            <button id="connectButton">Connect</button>
-            <button id="pairButton">Pair this browser</button>
-            <button id="disconnectButton" disabled>Disconnect</button>
-            <button id="healthButton" disabled>Health</button>
-            <button id="refreshButton" disabled>Refresh lists</button>
-            <button id="clearSettingsButton">Forget</button>
+            <button id="connectButton" type="button">Connect</button>
+            <button id="pairButton" type="button">Pair this browser</button>
+            <button id="disconnectButton" class="button-secondary" type="button" disabled>Disconnect</button>
+            <button id="healthButton" class="button-secondary" type="button" disabled>Health</button>
+            <button id="refreshButton" class="button-secondary" type="button" disabled>Refresh lists</button>
+            <button id="clearSettingsButton" class="button-danger" type="button">Forget</button>
           </div>
         </section>
 
         <section class="grid config-grid">
-          <section class="card side">
-            <h2>Clients</h2>
-            <div id="clients" class="list empty">Connect and refresh.</div>
+          <section class="card side" aria-labelledby="clients-heading">
+            <h2 id="clients-heading">Clients</h2>
+            <ul id="clients" class="list empty" aria-label="Clients"><li>Connect and refresh.</li></ul>
           </section>
           <section class="card side">
-            <h2>Deliveries</h2>
-            <div id="deliveries" class="list empty">Connect and refresh.</div>
-            <h2>Commands</h2>
-            <div id="commands" class="list empty">Connect and refresh.</div>
+            <h2 id="deliveries-heading">Deliveries</h2>
+            <ul id="deliveries" class="list empty" aria-labelledby="deliveries-heading"><li>Connect and refresh.</li></ul>
+            <h2 id="commands-heading">Commands</h2>
+            <ul id="commands" class="list empty" aria-labelledby="commands-heading"><li>Connect and refresh.</li></ul>
           </section>
         </section>
       </section>
 
-      <section id="tab-terminal" class="tab-panel" data-tab-panel="terminal" hidden>
+      <section id="tab-terminal" class="tab-panel" role="tabpanel" data-tab-panel="terminal" aria-labelledby="tab-terminal-button" tabindex="0" hidden>
         <section class="card terminal-card">
           <div class="chat-heading">
             <div>
@@ -124,16 +134,16 @@
               <p>Advanced Zellij shell for Pi TUI and coding sessions. Loopback-only; access through the cockpit tunnel.</p>
             </div>
             <div class="row terminal-actions">
-              <button id="copyTerminalTokenButton" type="button">Copy Zellij token</button>
-              <a id="openTerminalLink" class="button-link" href="/terminal/ownloom" target="_blank" rel="noreferrer">Open full terminal</a>
-              <span id="terminalTokenStatus" class="chip" aria-live="polite">Token stays local.</span>
+              <button id="copyTerminalTokenButton" class="button-secondary" type="button">Copy Zellij token</button>
+              <a id="openTerminalLink" class="button-link button-secondary" href="/terminal/ownloom" target="_blank" rel="noopener noreferrer">Open full terminal</a>
+              <span id="terminalTokenStatus" class="chip" role="status" aria-live="polite">Token stays local.</span>
             </div>
           </div>
           <iframe id="terminalFrame" class="terminal-frame" title="Ownloom terminal" data-src="/terminal/ownloom"></iframe>
         </section>
       </section>
 
-      <section id="tab-log" class="tab-panel" data-tab-panel="log" hidden>
+      <section id="tab-log" class="tab-panel" role="tabpanel" data-tab-panel="log" aria-labelledby="tab-log-button" tabindex="0" hidden>
         <section class="card">
           <h2>Event log</h2>
           <pre id="log" class="log"></pre>

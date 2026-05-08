@@ -1,0 +1,109 @@
+.shell {
+  width: min(var(--shell-width), calc(100vw - 2rem));
+  margin-inline: auto;
+  padding-block: var(--space-page) 2rem;
+}
+
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  border: 1px solid rgb(125 240 214 / 0.10);
+  border-radius: var(--radius-2xl);
+  background:
+    linear-gradient(135deg, rgb(125 240 214 / 0.075), transparent 42%),
+    linear-gradient(180deg, rgb(20 30 43 / 0.82), rgb(11 17 24 / 0.70));
+  box-shadow: var(--shadow-card);
+}
+
+header p { max-width: 56rem; }
+
+.header-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  min-width: min(100%, 18rem);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-3);
+  margin-block-start: var(--space-8);
+  overflow-x: auto;
+  padding-block-end: var(--space-1);
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+.tab-panel[hidden] { display: none; }
+
+.card {
+  container-type: inline-size;
+  margin-block-start: var(--space-8);
+  border: var(--card-border);
+  border-radius: var(--radius-2xl);
+  background: var(--card-bg);
+  padding: var(--space-card);
+  box-shadow: var(--shadow-card);
+}
+
+.card-header,
+.card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.card-title,
+.card-header h2 { margin: 0; }
+
+.card-meta { color: var(--color-subtle); }
+
+.settings {
+  display: grid;
+  grid-template-columns: 1.4fr 1.2fr 0.8fr auto auto;
+  gap: var(--space-6);
+  align-items: end;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-row);
+  align-items: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--space-8);
+}
+
+.config-grid,
+.organizer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.chat {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.chat-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.chat-heading h2 { margin: 0; }
+
+.terminal-card {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.terminal-actions { justify-content: flex-end; }

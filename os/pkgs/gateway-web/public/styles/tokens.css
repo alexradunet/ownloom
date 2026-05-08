@@ -1,0 +1,127 @@
+:root {
+  color-scheme: dark;
+
+  /* Ownloom primitives: dark ink, teal thread, amber loomlight. */
+  --palette-void-950: #070b10;
+  --palette-ink-925: #0b1118;
+  --palette-ink-900: #101823;
+  --palette-ink-850: #141e2b;
+  --palette-ink-800: #192637;
+  --palette-ink-750: #203047;
+  --palette-ink-700: #2a3d54;
+  --palette-ink-600: #38516b;
+  --palette-mist-100: #f4f7f4;
+  --palette-mist-200: #dce8e3;
+  --palette-mist-300: #c7d6d1;
+  --palette-mist-500: #94aaa5;
+  --palette-mist-600: #758b89;
+  --palette-thread-200: #b9fff0;
+  --palette-thread-300: #7df0d6;
+  --palette-thread-400: #42d8bd;
+  --palette-thread-500: #23aa93;
+  --palette-thread-900: #06201d;
+  --palette-loom-300: #f5d78a;
+  --palette-loom-400: #e8ba5f;
+  --palette-moss-300: #b7dfa0;
+  --palette-moss-900: #112211;
+  --palette-ember-300: #ff9aac;
+  --palette-ember-400: #ef6f86;
+  --palette-ember-950: #21070d;
+
+  /* Typography. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: clamp(1.55rem, 1.25rem + 1.2vw, 2.25rem);
+  --line-tight: 1.2;
+  --line-normal: 1.5;
+  --line-relaxed: 1.65;
+  --font-normal: 400;
+  --font-medium: 600;
+  --font-bold: 700;
+
+  /* Existing numeric spacing names kept for compatibility. */
+  --space-1: 0.25rem;
+  --space-2: 0.375rem;
+  --space-3: 0.5rem;
+  --space-4: 0.75rem;
+  --space-5: 0.875rem;
+  --space-6: 1rem;
+  --space-7: 1.25rem;
+  --space-8: 1.5rem;
+  --space-10: 2rem;
+  --space-12: 3rem;
+  --space-page: var(--space-8);
+  --space-card: var(--space-8);
+  --space-section: var(--space-10);
+  --space-row: var(--space-4);
+  --space-control-x: var(--space-6);
+  --space-control-y: 0.68rem;
+  --space-control-gap: var(--space-3);
+
+  /* Shape and elevation. */
+  --radius-xs: 0.35rem;
+  --radius-sm: 0.6rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 1.05rem;
+  --radius-2xl: 1.25rem;
+  --radius-pill: 999px;
+  --shadow-card: 0 18px 50px rgb(0 0 0 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.025);
+  --shadow-raised: 0 22px 70px rgb(0 0 0 / 0.34), 0 0 0 1px rgb(125 240 214 / 0.08);
+
+  /* Motion. */
+  --duration-fast: 120ms;
+  --duration-normal: 180ms;
+  --duration-slow: 260ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1.12);
+
+  /* Semantic colors. */
+  --color-bg: var(--palette-void-950);
+  --color-surface: var(--palette-ink-900);
+  --color-surface-2: var(--palette-ink-850);
+  --color-surface-3: var(--palette-ink-800);
+  --color-surface-hover: var(--palette-ink-750);
+  --color-border: rgb(125 240 214 / 0.14);
+  --color-border-strong: var(--palette-ink-600);
+  --color-text: var(--palette-mist-100);
+  --color-muted: var(--palette-mist-300);
+  --color-subtle: var(--palette-mist-500);
+  --color-faint: var(--palette-mist-600);
+  --color-accent: var(--palette-thread-300);
+  --color-accent-hover: var(--palette-thread-200);
+  --color-accent-text: #031411;
+  --color-success: var(--palette-moss-300);
+  --color-on-success: #081405;
+  --color-warning: var(--palette-loom-300);
+  --color-on-warning: #171004;
+  --color-danger: var(--palette-ember-300);
+  --color-danger-hover: #ffc0cb;
+  --color-on-danger: var(--palette-ember-950);
+  --color-focus: var(--palette-loom-300);
+  --color-disabled: rgb(199 214 209 / 0.42);
+
+  /* Component roles. */
+  --focus-ring: 3px solid var(--color-focus);
+  --card-bg: linear-gradient(180deg, rgb(16 24 35 / 0.96), rgb(11 17 24 / 0.98));
+  --card-border: 1px solid var(--color-border);
+  --button-primary-bg: linear-gradient(180deg, var(--color-accent), var(--palette-thread-400));
+  --button-primary-text: var(--color-accent-text);
+  --button-secondary-bg: rgb(125 240 214 / 0.08);
+  --button-secondary-text: var(--color-muted);
+  --button-danger-bg: linear-gradient(180deg, var(--color-danger), var(--palette-ember-400));
+  --button-danger-text: var(--color-on-danger);
+  --chip-bg: rgb(125 240 214 / 0.08);
+  --chip-border: rgb(125 240 214 / 0.16);
+  --message-user-bg: linear-gradient(135deg, #123f46, #0f323d);
+  --message-agent-bg: linear-gradient(135deg, #182738, #142233);
+  --message-system-bg: linear-gradient(135deg, #221f31, #191d2b);
+  --input-bg: rgb(11 17 24 / 0.82);
+  --terminal-bg: #05080d;
+  --shell-width: 1200px;
+}
