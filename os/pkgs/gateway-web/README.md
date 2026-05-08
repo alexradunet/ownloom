@@ -39,6 +39,8 @@ Current features:
 - streamed `agent` event display
 - REST attachment upload using one-shot attachment refs
 - sessions, deliveries, and commands list panels
+- current client de-duplication and clear labels for paired/config-managed clients
+- admin-only action buttons hidden from read/write clients
 - Send button disabled while an agent run is active
 - confirmations for destructive session, delivery, and runtime-client actions
 

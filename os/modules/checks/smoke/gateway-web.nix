@@ -17,7 +17,9 @@ runCommand "ownloom-gateway-web-smoke" {
   node --check ${ownloom-gateway-web}/share/ownloom-gateway-web/server.mjs
 
   grep -qi 'protocol/v1' "$root/index.html"
+  grep -q 'pairButton' "$root/index.html"
   grep -q 'agent.wait' "$root/app.js"
+  grep -q '/api/v1/pair' "$root/app.js"
   grep -q '/api/v1/attachments' "$root/app.js"
   grep -q 'deliveries.list' "$root/app.js"
   grep -q 'clients.list' "$root/app.js"

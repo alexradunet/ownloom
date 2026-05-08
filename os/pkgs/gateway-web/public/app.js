@@ -351,14 +351,17 @@ async function refreshLists() {
     request("commands.list").catch((error) => ({ error: error.message, commands: [] })),
   ]);
   renderClients(clients);
+  const admin = (clients.current?.scopes ?? []).includes("admin");
   renderList(els.sessions, sessions.sessions ?? [], (s) => {
     const chatId = s.chatId ?? s.id ?? "session";
-    return `<strong>${escapeHtml(chatId)}</strong><br><small>${escapeHtml(s.updatedAt ?? s.createdAt ?? "")}</small><div class="row item-actions"><button data-session-reset="${escapeHtml(chatId)}">Reset</button></div>`;
+    const resetButton = admin ? `<div class="row item-actions"><button data-session-reset="${escapeHtml(chatId)}">Reset</button></div>` : "";
+    return `<strong>${escapeHtml(sessionTitle(chatId))}</strong><br><small>${escapeHtml(chatId)} · ${escapeHtml(s.updatedAt ?? s.createdAt ?? "")}</small>${resetButton}`;
   });
   renderList(els.deliveries, deliveries.deliveries ?? [], (d) => {
     const status = d.deadAt ? "dead" : d.nextAttemptAt ? "waiting" : "queued";
     const recipient = d.recipientId ?? d.target ?? d.recipient ?? "";
-    return `<strong>${escapeHtml(status)}</strong> ${escapeHtml(d.id ?? "")}<br><small>${escapeHtml(recipient)}</small><div class="row item-actions"><button data-delivery-retry="${escapeHtml(d.id ?? "")}">Retry</button><button data-delivery-delete="${escapeHtml(d.id ?? "")}">Delete</button></div>`;
+    const actions = admin ? `<div class="row item-actions"><button data-delivery-retry="${escapeHtml(d.id ?? "")}">Retry</button><button data-delivery-delete="${escapeHtml(d.id ?? "")}">Delete</button></div>` : "";
+    return `<strong>${escapeHtml(status)}</strong> ${escapeHtml(d.id ?? "")}<br><small>${escapeHtml(recipient)}</small>${actions}`;
   });
   renderList(els.commands, commands.commands ?? [], (c) => {
     const name = typeof c === "string" ? c : c.name;
@@ -369,31 +372,63 @@ async function refreshLists() {
 }
 
 function renderClients(payload) {
-  const rows = [];
+  const rows = (payload.clients ?? []).map((client) => ({ ...client }));
   const currentScopes = payload.current?.scopes ?? [];
   const admin = currentScopes.includes("admin");
-  if (payload.current) rows.push({ ...payload.current, current: true });
-  for (const client of payload.clients ?? []) rows.push(client);
+  const currentIdentityId = payload.current?.identity?.id ?? null;
+  const currentClientId = payload.current?.clientId ?? null;
+  let markedCurrent = false;
+
+  for (const row of rows) {
+    if ((currentIdentityId && row.id === currentIdentityId) || (!currentIdentityId && currentClientId && row.id === currentClientId)) {
+      row.current = true;
+      markedCurrent = true;
+      break;
+    }
+  }
+
+  if (payload.current && !markedCurrent) {
+    rows.unshift({
+      id: currentIdentityId ?? currentClientId ?? payload.current.connId,
+      displayName: payload.current.identity?.displayName ?? currentClientId ?? "Current connection",
+      scopes: currentScopes,
+      managedBy: "connection",
+      current: true,
+      connId: payload.current.connId,
+    });
+  }
+
   renderList(els.clients, rows, (client) => {
-    const current = client.current ? "Current connection" : client.displayName;
     const name = client.identity?.displayName ?? client.displayName ?? client.clientId ?? client.id ?? client.connId ?? "client";
     const scopes = (client.identity?.scopes ?? client.scopes ?? []).join(", ");
-    const status = client.revokedAt
-      ? "revoked"
-      : client.rotatedAt
-        ? `runtime token ${client.tokenPreview ?? ""}`
-        : client.managedBy === "runtime"
-          ? "runtime token"
-          : "config-managed";
-    const rotateButton = admin && client.canRotate ? `<button data-client-rotate="${escapeHtml(client.id)}">Rotate token</button>` : "";
-    const revokeButton = admin && client.canRevoke ? `<button data-client-revoke="${escapeHtml(client.id)}">Revoke</button>` : "";
-    const actions = !client.current && (rotateButton || revokeButton) ? `<div class="row item-actions">${rotateButton}${revokeButton}</div>` : "";
-    return `<strong>${escapeHtml(name)}</strong><br><small>${escapeHtml(current ?? status)} · ${escapeHtml(scopes)}</small>${actions}`;
+    const status = clientStatus(client);
+    const rotateButton = admin && !client.current && client.canRotate ? `<button data-client-rotate="${escapeHtml(client.id)}">Rotate token</button>` : "";
+    const revokeButton = admin && !client.current && client.canRevoke ? `<button data-client-revoke="${escapeHtml(client.id)}">Revoke</button>` : "";
+    const actions = rotateButton || revokeButton ? `<div class="row item-actions">${rotateButton}${revokeButton}</div>` : "";
+    return `<strong>${escapeHtml(name)}</strong><br><small>${escapeHtml(status)} · ${escapeHtml(scopes)}</small>${actions}`;
   });
 }
 
 async function health() {
   log("health", await request("health"));
+}
+
+function clientStatus(client) {
+  const parts = [];
+  if (client.current) parts.push("Current");
+  if (client.revokedAt) parts.push("Revoked");
+  else if (client.managedBy === "runtime") parts.push("Paired browser");
+  else if (client.managedBy === "config") parts.push("Config-managed");
+  else parts.push("Connection");
+  if (client.tokenPreview && !client.revokedAt) parts.push(client.tokenPreview);
+  return parts.join(" · ");
+}
+
+function sessionTitle(chatId) {
+  const value = String(chatId);
+  if (value.startsWith("client:")) return `Web chat: ${value.slice("client:".length)}`;
+  if (value.startsWith("whatsapp:")) return "WhatsApp chat";
+  return value;
 }
 
 function confirmAction(message) {
