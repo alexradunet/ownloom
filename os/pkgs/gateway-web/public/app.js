@@ -23,6 +23,8 @@ const els = {
   disconnectButton: $("disconnectButton"),
   healthButton: $("healthButton"),
   refreshButton: $("refreshButton"),
+  currentSession: $("currentSession"),
+  newChatButton: $("newChatButton"),
   messageInput: $("messageInput"),
   attachmentInput: $("attachmentInput"),
   attachments: $("attachments"),
@@ -65,6 +67,7 @@ function loadSettings() {
 }
 
 function saveSettings() {
+  updateCurrentSession();
   if (!els.rememberSettings.checked) return;
   localStorage.setItem(SETTINGS_KEY, JSON.stringify({
     httpUrl: els.httpUrl.value.trim(),
@@ -91,6 +94,38 @@ function browserClientId() {
 function browserDisplayName() {
   const platform = navigator.platform ? ` on ${navigator.platform}` : "";
   return `Ownloom web${platform}`;
+}
+
+function currentSessionKey() {
+  return els.sessionKey.value.trim() || "web-main";
+}
+
+function currentChatId() {
+  return `client:${currentSessionKey()}`;
+}
+
+function updateCurrentSession() {
+  els.currentSession.textContent = `Session: ${currentSessionKey()}`;
+}
+
+function clearMessagesWithNotice(message) {
+  els.messages.replaceChildren();
+  state.currentRun = null;
+  addMessage("system", message);
+}
+
+function makeNewSessionKey() {
+  const stamp = new Date().toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d+Z$/, "Z");
+  return `web-${stamp}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+function switchSessionKey(sessionKey, reason = "Switched session") {
+  els.sessionKey.value = sessionKey;
+  saveSettings();
+  clearMessagesWithNotice(`${reason}: ${sessionKey}`);
+  refreshLists().catch((error) => log("refresh failed", error.message));
 }
 
 function setConnection(status, className = "") {
@@ -354,8 +389,13 @@ async function refreshLists() {
   const admin = (clients.current?.scopes ?? []).includes("admin");
   renderList(els.sessions, sessions.sessions ?? [], (s) => {
     const chatId = s.chatId ?? s.id ?? "session";
-    const resetButton = admin ? `<div class="row item-actions"><button data-session-reset="${escapeHtml(chatId)}">Reset</button></div>` : "";
-    return `<strong>${escapeHtml(sessionTitle(chatId))}</strong><br><small>${escapeHtml(chatId)} · ${escapeHtml(s.updatedAt ?? s.createdAt ?? "")}</small>${resetButton}`;
+    const sessionKey = clientSessionKey(chatId);
+    const current = chatId === currentChatId();
+    const switchButton = sessionKey && !current ? `<button data-session-switch="${escapeHtml(sessionKey)}">Switch</button>` : "";
+    const resetButton = admin ? `<button data-session-reset="${escapeHtml(chatId)}">Reset</button>` : "";
+    const actions = switchButton || resetButton ? `<div class="row item-actions">${switchButton}${resetButton}</div>` : "";
+    const badge = current ? " · current" : "";
+    return `<strong>${escapeHtml(sessionTitle(chatId))}</strong><br><small>${escapeHtml(chatId)}${escapeHtml(badge)} · ${escapeHtml(s.updatedAt ?? s.createdAt ?? "")}</small>${actions}`;
   });
   renderList(els.deliveries, deliveries.deliveries ?? [], (d) => {
     const status = d.deadAt ? "dead" : d.nextAttemptAt ? "waiting" : "queued";
@@ -431,6 +471,11 @@ function sessionTitle(chatId) {
   return value;
 }
 
+function clientSessionKey(chatId) {
+  const value = String(chatId);
+  return value.startsWith("client:") ? value.slice("client:".length) : null;
+}
+
 function confirmAction(message) {
   return window.confirm(message);
 }
@@ -469,6 +514,7 @@ els.disconnectButton.addEventListener("click", disconnect);
 els.clearSettingsButton.addEventListener("click", clearSettings);
 els.httpUrl.addEventListener("change", saveSettings);
 els.token.addEventListener("change", saveSettings);
+els.sessionKey.addEventListener("input", updateCurrentSession);
 els.sessionKey.addEventListener("change", saveSettings);
 els.rememberSettings.addEventListener("change", () => {
   if (els.rememberSettings.checked) saveSettings();
@@ -496,10 +542,18 @@ els.clients.addEventListener("click", (event) => {
 els.sessions.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
+  const switchTo = target.getAttribute("data-session-switch");
   const chatId = target.getAttribute("data-session-reset");
+  if (switchTo) {
+    switchSessionKey(switchTo);
+    return;
+  }
   if (!chatId) return;
   if (!confirmAction(`Reset session ${chatId}? This clears its stored conversation history.`)) return;
-  request("sessions.reset", { chatId }).then(refreshLists).catch((error) => log("session reset failed", error.message));
+  request("sessions.reset", { chatId }).then(() => {
+    if (chatId === currentChatId()) clearMessagesWithNotice(`Reset current session: ${currentSessionKey()}`);
+    return refreshLists();
+  }).catch((error) => log("session reset failed", error.message));
 });
 els.deliveries.addEventListener("click", (event) => {
   const target = event.target;
@@ -514,6 +568,7 @@ els.deliveries.addEventListener("click", (event) => {
   }
 });
 els.sendButton.addEventListener("click", () => sendMessage().catch(handleSendError));
+els.newChatButton.addEventListener("click", () => switchSessionKey(makeNewSessionKey(), "Started new chat"));
 els.clearButton.addEventListener("click", () => els.messages.replaceChildren());
 els.attachmentInput.addEventListener("change", () => {
   uploadAttachments([...els.attachmentInput.files]).catch((error) => log("upload failed", error.message));
@@ -527,6 +582,7 @@ if (window.location.protocol === "http:" || window.location.protocol === "https:
   els.httpUrl.value = window.location.origin;
 }
 loadSettings();
+updateCurrentSession();
 
 setConnection("disconnected");
 if (els.rememberSettings.checked && els.token.value.trim()) {

@@ -36,6 +36,7 @@ Current features:
 - protocol/v1 WebSocket `connect`
 - `health`
 - `agent.wait` chat with stable `sessionKey`
+- current session display, New chat, and session switching from the Sessions panel
 - streamed `agent` event display
 - REST attachment upload using one-shot attachment refs
 - sessions, deliveries, and commands list panels

@@ -45,7 +45,13 @@
 
       <section class="grid">
         <section class="card chat">
-          <h2>Chat</h2>
+          <div class="chat-heading">
+            <h2>Chat</h2>
+            <div class="row">
+              <span id="currentSession" class="chip">Session: web-main</span>
+              <button id="newChatButton">New chat</button>
+            </div>
+          </div>
           <div id="messages" class="messages" aria-live="polite"></div>
           <label>
             Attachments
