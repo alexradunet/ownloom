@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="Ownloom mini-lit and Tailwind component island catalog." />
+    <meta name="theme-color" content="#1a110f" />
+    <title>Ownloom Lit Component Loom</title>
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./generated/ownloom-lit.css" />
+    <script type="module" src="./generated/ownloom-lit.js"></script>
+  </head>
+  <body class="lit-catalog-shell">
+    <main class="container component-catalog" aria-labelledby="lit-catalog-heading">
+      <header class="component-hero">
+        <div>
+          <small class="section-kicker">Generated island</small>
+          <h1 id="lit-catalog-heading">Ownloom Lit Component Loom</h1>
+          <p>
+            Catalog-only proof that Ownloom can use mini-lit/Lit-style components and Tailwind v4 while keeping
+            Digital Scoarță tokens, local assets, and static runtime delivery.
+          </p>
+        </div>
+        <nav class="actions" aria-label="Component catalog navigation">
+          <a class="secondary outline small-button" href="./components.html" role="button">Static components</a>
+          <a class="secondary outline small-button" href="./" role="button">Back to cockpit</a>
+        </nav>
+      </header>
+
+      <section class="component-section" aria-labelledby="lit-foundation-heading">
+        <header>
+          <small class="section-kicker">Phase 2 island</small>
+          <h2 id="lit-foundation-heading">Tailwind token bridge + Lit components</h2>
+          <p>
+            These components are bundled into self-hosted assets under <code>public/generated/</code>. They do not touch
+            the live cockpit flows yet.
+          </p>
+        </header>
+        <ownloom-lit-catalog></ownloom-lit-catalog>
+      </section>
+    </main>
+  </body>
+</html>

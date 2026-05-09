@@ -15,6 +15,7 @@ node_modules
 coverage
 dist-test
 dist
+os/pkgs/gateway-web/public/generated/
 os/pkgs/wiki/extension
 os/pkgs/wiki/core
 

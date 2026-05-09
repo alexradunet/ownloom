@@ -12,8 +12,11 @@ runCommand "ownloom-gateway-web-smoke" {
 
     test -f "$root/index.html"
     test -f "$root/components.html"
+    test -f "$root/components-lit.html"
     test -f "$root/app.js"
     test -f "$root/style.css"
+    test -f "$root/generated/ownloom-lit.css"
+    test -f "$root/generated/ownloom-lit.js"
     test ! -e "$root/manifest.webmanifest"
     test ! -e "$root/sw.js"
     test ! -e "$root/js/pwa.js"
@@ -45,9 +48,20 @@ runCommand "ownloom-gateway-web-smoke" {
 
     grep -qi 'Ownloom Cockpit' "$root/index.html"
     grep -qi 'Ownloom Component Loom' "$root/components.html"
+    grep -qi 'Ownloom Lit Component Loom' "$root/components-lit.html"
+    grep -q './generated/ownloom-lit.css' "$root/components-lit.html"
+    grep -q './generated/ownloom-lit.js' "$root/components-lit.html"
+    grep -q 'ownloom-lit-catalog' "$root/components-lit.html"
+    grep -q 'tailwindcss v4' "$root/generated/ownloom-lit.css"
+    grep -q -- '--background:var(--ds-background)' "$root/generated/ownloom-lit.css"
+    grep -q 'ownloom-lit-button' "$root/generated/ownloom-lit.js"
+    grep -q 'ownloom-lit-catalog' "$root/generated/ownloom-lit.js"
+    ! grep -R -q 'cdn.tailwindcss.com' "$root"
+    ! grep -R -q 'fonts.googleapis.com' "$root"
     grep -q 'page-layout' "$root/index.html"
     grep -q 'page-sidebar' "$root/index.html"
     grep -q 'components.html' "$root/index.html"
+    grep -q 'components-lit.html' "$root/index.html"
     grep -q 'component-index' "$root/components.html"
     ! grep -q 'type="module"' "$root/components.html"
     ! grep -q 'rel="manifest"' "$root/index.html"
@@ -132,6 +146,22 @@ runCommand "ownloom-gateway-web-smoke" {
     grep -qi 'content-type: text/html' /tmp/components.headers
     grep -qi 'Ownloom Component Loom' /tmp/components.html
     grep -q 'Back to cockpit' /tmp/components.html
+
+    curl -fsS -D /tmp/components-lit.headers http://127.0.0.1:18090/components-lit.html >/tmp/components-lit.html
+    grep -qi 'content-type: text/html' /tmp/components-lit.headers
+    grep -qi 'Ownloom Lit Component Loom' /tmp/components-lit.html
+    grep -q './generated/ownloom-lit.css' /tmp/components-lit.html
+    grep -q './generated/ownloom-lit.js' /tmp/components-lit.html
+
+    curl -fsS -D /tmp/lit-css.headers http://127.0.0.1:18090/generated/ownloom-lit.css >/tmp/ownloom-lit.css
+    grep -qi 'content-type: text/css' /tmp/lit-css.headers
+    grep -q 'tailwindcss v4' /tmp/ownloom-lit.css
+    grep -q -- '--background:var(--ds-background)' /tmp/ownloom-lit.css
+
+    curl -fsS -D /tmp/lit-js.headers http://127.0.0.1:18090/generated/ownloom-lit.js >/tmp/ownloom-lit.js
+    grep -qi 'content-type: text/javascript' /tmp/lit-js.headers
+    node --check /tmp/ownloom-lit.js
+    grep -q 'ownloom-lit-button' /tmp/ownloom-lit.js
 
     curl -fsS -D /tmp/style.headers http://127.0.0.1:18090/style.css >/tmp/style.css
     grep -qi 'content-type: text/css' /tmp/style.headers

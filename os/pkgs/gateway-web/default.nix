@@ -1,21 +1,36 @@
 {
   lib,
+  buildNpmPackage,
   makeWrapper,
   nodejs,
-  stdenvNoCC,
 }:
-stdenvNoCC.mkDerivation {
+buildNpmPackage {
   pname = "ownloom-gateway-web";
   version = "0.1.0";
 
   src = lib.cleanSource ./.;
 
+  npmDepsHash = "sha256-U+5HTH/K1qnqzFiWziiY3RQONXoXnBRHV3/iuOpdONU=";
+
   nativeBuildInputs = [makeWrapper];
+
+  buildPhase = ''
+    runHook preBuild
+    npm run build
+    runHook postBuild
+  '';
+
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    npm run check
+    runHook postCheck
+  '';
 
   installPhase = ''
     runHook preInstall
     mkdir -p $out/share/ownloom-gateway-web $out/bin
-    cp -r public README.md server.mjs $out/share/ownloom-gateway-web/
+    cp -r public README.md server.mjs package.json $out/share/ownloom-gateway-web/
 
     makeWrapper ${nodejs}/bin/node $out/bin/ownloom-gateway-web \
       --add-flags "$out/share/ownloom-gateway-web/server.mjs" \

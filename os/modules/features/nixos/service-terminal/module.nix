@@ -20,6 +20,35 @@
 
     web_client {
         base_url ${builtins.toJSON terminalBaseUrl}
+        font "JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        cursor_blink true
+        cursor_style "block"
+        cursor_inactive_style "outline"
+        theme {
+            background 26 17 15
+            foreground 241 223 217
+            black 21 12 10
+            bright_black 86 66 60
+            red 255 180 171
+            bright_red 255 218 214
+            green 196 214 148
+            bright_green 220 235 176
+            yellow 233 194 103
+            bright_yellow 255 223 155
+            blue 118 213 220
+            bright_blue 147 242 249
+            magenta 255 181 157
+            bright_magenta 255 219 208
+            cyan 118 213 220
+            bright_cyan 147 242 249
+            white 241 223 217
+            bright_white 255 250 249
+            cursor 255 181 157
+            cursor_accent 93 24 0
+            selection_background 62 50 47
+            selection_foreground 241 223 217
+            selection_inactive_background 50 40 36
+        }
     }
   '';
   zellijEnv = ''

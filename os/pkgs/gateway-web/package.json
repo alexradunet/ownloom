@@ -1,0 +1,19 @@
+{
+  "name": "ownloom-gateway-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('public/generated',{recursive:true,force:true})\"",
+    "build:css": "tailwindcss -i src/styles/ownloom-tailwind.css -o public/generated/ownloom-lit.css --minify",
+    "build:js": "esbuild src/components/ownloom-lit.ts --bundle --format=esm --target=es2022 --outfile=public/generated/ownloom-lit.js",
+    "build": "npm run clean && npm run build:css && npm run build:js",
+    "check": "node --check public/generated/ownloom-lit.js"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.0",
+    "esbuild": "0.28.0",
+    "lit": "3.3.2",
+    "tailwindcss": "4.3.0"
+  }
+}

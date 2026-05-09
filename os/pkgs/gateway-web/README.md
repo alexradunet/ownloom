@@ -2,7 +2,7 @@
 
 Small protocol/v1-only Ownloom cockpit for local operator use.
 
-It is intentionally static HTML/CSS/JS: no bundled legacy gateway UI, no framework, no build step. The browser app uses native ES modules plus a pragmatic Atomic Design layout.
+It serves a static HTML/CSS/JS runtime. A small build step is allowed for generated Tailwind v4 CSS and Lit/mini-lit-style component islands, but the deployed browser assets remain self-hosted files with no runtime bundler, CDN, or framework server. The existing live cockpit still uses native ES modules plus a pragmatic Atomic Design layout while generated islands are introduced incrementally.
 
 Canonical design direction and guardrails live in the repo-level [`DESIGN.md`](../../../DESIGN.md): **Digital Scoarță / Pixel Loom Minimalism**. The gateway-specific [`DESIGN.md`](./DESIGN.md) explains how this package implements it: Pico-first, self-hosted assets, flat tonal layers, 4px rhythm, structural borders, pixel-stitch motifs, Newsreader headings, Work Sans interface text, and JetBrains Mono operational metadata.
 
@@ -42,6 +42,10 @@ The UI is organized as native ES modules:
 public/
   app.js                  # tiny compatibility bootstrap
   components.html         # static Ownloom component catalog / storybook-like loom
+  components-lit.html     # generated Lit/Tailwind component island catalog
+  generated/
+    ownloom-lit.css       # Tailwind v4 token-bridge output; no Preflight
+    ownloom-lit.js        # esbuild-bundled Lit island, self-hosted
   js/
     app.js                # app composition/root controller
     constants.js          # storage keys, protocol constants
@@ -77,7 +81,7 @@ Atomic Design is used as file organization, not framework ceremony:
 
 Dynamic UI is rendered with DOM APIs and `textContent`; avoid `innerHTML`, `outerHTML`, and `insertAdjacentHTML`.
 
-CSS is Pico-first: `public/style.css` imports the vendored `public/vendor/pico.min.css` base, then a small Ownloom theme/app layer maps the canonical Digital Scoarță palette, typography, spacing, and radius tokens from `DESIGN.md`. Runtime fonts/styles are self-hosted to preserve CSP and local-first operation. Keep it no-build: add new CSS files explicitly and include them in the smoke check when needed.
+CSS is Pico-first for existing live flows: `public/style.css` imports the vendored `public/vendor/pico.min.css` base, then a small Ownloom theme/app layer maps the canonical Digital Scoarță palette, typography, spacing, and radius tokens from `DESIGN.md`. Generated islands may additionally use Tailwind v4 compiled at build time from `src/styles/ownloom-tailwind.css`, with Preflight avoided while Pico remains. Runtime fonts/styles are self-hosted to preserve CSP and local-first operation; generated files must be emitted under `public/generated/` and covered by smoke checks.
 
 ## Mobile/PWA status
 
@@ -117,12 +121,14 @@ The `/radicale/` proxy deliberately keeps Radicale same-origin so it works throu
 - Shell tab that embeds `/terminal/ownloom` when the loopback Zellij web service is enabled
 - loopback-only helper button to copy the generated Zellij web login token
 - static `components.html` component loom for atoms, cards, rails, messages, list patterns, and trace surfaces
+- generated `components-lit.html` proof island for Lit/mini-lit-style components backed by Tailwind v4 Digital Scoarță token aliases
 
 The gateway client transport is still expected to stay loopback-only until HTTPS/reverse-proxy/pairing is designed.
 
 ## Validation
 
 ```bash
+cd os/pkgs/gateway-web && npm run build && npm run check
 find os/pkgs/gateway-web/public -name '*.js' -print0 | xargs -0 -n1 node --check
 node --check os/pkgs/gateway-web/server.mjs
 nix build .#ownloom-gateway-web --no-link

@@ -6,12 +6,14 @@ This package implements that system for the static local cockpit. If this file a
 
 ## Non-negotiables for gateway-web
 
-- Keep the app static: HTML, CSS, native ES modules, no framework, no bundler.
-- Keep Pico CSS as the baseline reset/component layer; map Ownloom tokens onto Pico variables in `public/styles/tokens.css`.
+- Keep the runtime static: served HTML, CSS, and JavaScript files with no browser-side build service.
+- Build-time Tailwind v4 and Lit/mini-lit-style component generation is allowed when output is self-hosted under `public/generated/`.
+- Keep Pico CSS as the temporary baseline reset/component layer; map Ownloom tokens onto Pico variables in `public/styles/tokens.css`.
+- Tailwind must use Digital Scoarță tokens as aliases, not introduce a second visual system. Avoid Tailwind Preflight while Pico remains.
 - Keep runtime assets self-hosted. No remote scripts, styles, fonts, icons, analytics, or image assets.
 - Preserve CSP compatibility: `style-src 'self'`, `font-src 'self'`, loopback-only API/WebSocket/frame assumptions.
 - Preserve required IDs, `data-*` hooks, ARIA tabs, terminal hooks, Radicale frame hooks, and protocol behavior.
-- Keep `components.html` as a static no-JS component loom for reusable Ownloom atoms, molecules, and page patterns.
+- Keep `components.html` as a static no-JS component loom and `components-lit.html` as the generated Lit/Tailwind proof island. The generated island must stay catalog-only until a migration step explicitly moves a live flow.
 
 ## Core visual contract
 
@@ -26,14 +28,18 @@ This package implements that system for the static local cockpit. If this file a
 ## File responsibilities
 
 ```text
-public/style.css              # import order: Pico, tokens/theme, app CSS
-public/vendor/pico.min.css    # self-hosted Pico CSS
-public/vendor/fonts/          # self-hosted Digital Scoarță typefaces
-public/styles/tokens.css      # canonical --ds-* tokens + Pico variable mapping
-public/styles/base.css        # base typography, forms, focus, selection
-public/styles/layout.css      # app shell, sidebar, workbench, grids
-public/styles/components.css  # cards, chips, messages, lists, service frames, log
-public/styles/responsive.css  # mobile/zoom/reduced-motion/forced-colors
+public/style.css                   # import order: Pico, tokens/theme, app CSS
+public/vendor/pico.min.css         # self-hosted Pico CSS
+public/vendor/fonts/               # self-hosted Digital Scoarță typefaces
+public/styles/tokens.css           # canonical --ds-* tokens + Pico variable mapping
+public/styles/base.css             # base typography, forms, focus, selection
+public/styles/layout.css           # app shell, sidebar, workbench, grids
+public/styles/components.css       # cards, chips, messages, lists, service frames, log
+public/styles/responsive.css       # mobile/zoom/reduced-motion/forced-colors
+src/styles/ownloom-tailwind.css    # Tailwind v4 token bridge; no Preflight
+src/components/ownloom-lit.ts      # catalog-only Lit component island source
+public/generated/ownloom-lit.css   # generated Tailwind CSS output
+public/generated/ownloom-lit.js    # bundled self-hosted Lit island output
 ```
 
 ## Component guidance
@@ -66,12 +72,13 @@ The main work surface is carded consistently. The Workbench/chat exception keeps
 Before committing gateway-web visual changes:
 
 1. Verify the change still follows `../../../DESIGN.md`.
-2. Keep custom CSS minimal and app-specific; prefer Pico semantics where possible.
-3. Avoid broad new class taxonomies or generated utility systems.
-4. Update smoke checks for intentional new static assets/selectors.
+2. Keep custom CSS minimal and app-specific; prefer Pico semantics for existing live flows until they are intentionally migrated.
+3. Use Tailwind utilities for generated islands only when they make the component clearer than hand-written CSS.
+4. Update smoke checks for intentional new static/generated assets/selectors.
 5. Run:
 
 ```bash
+cd os/pkgs/gateway-web && npm run build && npm run check
 find os/pkgs/gateway-web/public -name '*.js' -print0 | xargs -0 -n1 node --check
 node --check os/pkgs/gateway-web/server.mjs
 nix build .#ownloom-gateway-web --no-link

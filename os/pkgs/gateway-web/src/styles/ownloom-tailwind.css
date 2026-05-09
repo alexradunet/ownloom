@@ -1,0 +1,118 @@
+@layer theme, components, utilities;
+
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@source "../components/**/*.ts";
+@source "../../public/components-lit.html";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-hearth: var(--hearth);
+  --color-hearth-foreground: var(--hearth-foreground);
+  --color-terminal: var(--terminal);
+
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-headline);
+  --font-mono: var(--font-label);
+
+  --spacing-ds-base: var(--space-base);
+  --spacing-ds-xs: var(--space-xs);
+  --spacing-ds-sm: var(--space-sm);
+  --spacing-ds-md: var(--space-md);
+  --spacing-ds-lg: var(--space-lg);
+  --spacing-ds-xl: var(--space-xl);
+}
+
+@layer theme {
+  :root,
+  [data-theme="dark"] {
+    /* pi-web-ui / shadcn-style aliases backed by DESIGN.md tokens. */
+    --background: var(--ds-background);
+    --foreground: var(--ds-on-background);
+    --card: var(--ds-card);
+    --card-foreground: var(--ds-on-surface);
+    --popover: var(--ds-surface-container-high);
+    --popover-foreground: var(--ds-on-surface);
+    --primary: var(--ds-primary-container);
+    --primary-foreground: var(--ds-on-primary-container);
+    --secondary: var(--ds-surface-container-highest);
+    --secondary-foreground: var(--ds-on-surface-variant);
+    --muted: var(--ds-surface-container);
+    --muted-foreground: var(--ds-on-surface-variant);
+    --accent: var(--ds-secondary);
+    --accent-foreground: var(--ds-on-secondary);
+    --destructive: var(--ds-error-container);
+    --destructive-foreground: var(--ds-on-error-container);
+    --border: rgb(164 139 132 / 0.34);
+    --input: var(--ds-surface-container-lowest);
+    --ring: var(--ds-secondary);
+    --hearth: rgb(233 194 103 / 0.12);
+    --hearth-foreground: var(--ds-secondary);
+    --terminal: var(--ds-terminal);
+    --radius: var(--radius-default);
+    --shadow-2xs: none;
+    --shadow-xs: none;
+    --shadow-sm: none;
+    --shadow: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --shadow-xl: none;
+    --shadow-2xl: none;
+  }
+}
+
+@layer components {
+  .lit-catalog-shell {
+    background:
+      linear-gradient(135deg, rgb(184 87 54 / 0.08), transparent 32rem),
+      var(--background);
+    color: var(--foreground);
+  }
+
+  .lit-stitch {
+    position: relative;
+  }
+
+  .lit-stitch::before {
+    content: "";
+    position: absolute;
+    inset-inline: var(--space-sm);
+    inset-block-start: -1px;
+    block-size: var(--space-base);
+    background: var(--stitch-horizontal);
+    opacity: 0.62;
+    pointer-events: none;
+  }
+
+  .lit-notch::after {
+    content: "";
+    position: absolute;
+    inset-block-start: var(--space-xs);
+    inset-inline-end: var(--space-xs);
+    inline-size: var(--space-base);
+    block-size: var(--space-base);
+    background: var(--ds-secondary);
+    box-shadow: calc(-1 * var(--space-base)) 0 0 var(--ds-primary-container), 0 var(--space-base) 0 var(--ds-primary-container);
+    opacity: 0.72;
+    pointer-events: none;
+  }
+}
