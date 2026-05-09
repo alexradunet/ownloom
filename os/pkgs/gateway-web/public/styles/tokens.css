@@ -3,45 +3,52 @@
 
   /*
    * Ownloom primitives: Digital Scoarță / Pixel Loom Minimalism.
-   * Warm, earthy colors inspired by scoarțe, wool, clay, wood, ochre,
-   * madder red, moss, and muted indigo. Existing token names are kept
-   * for compatibility with the current CSS/JS surface.
+   * These keep the existing token names stable while aligning the real UI
+   * with the root mockups: charred walnut, clay, wool, madder, ochre,
+   * moss, muted indigo, and ember.
    */
-  --palette-void-950: #1a100b;
-  --palette-ink-925: #21140d;
-  --palette-ink-900: #29180f;
-  --palette-ink-850: #332016;
-  --palette-ink-800: #3d271a;
-  --palette-ink-750: #4d3220;
-  --palette-ink-700: #624329;
-  --palette-ink-600: #7c5a38;
-  --palette-mist-100: #fff5df;
-  --palette-mist-200: #f2dfbe;
-  --palette-mist-300: #e2c79f;
-  --palette-mist-500: #bea47c;
-  --palette-mist-600: #a78a62;
-  --palette-thread-200: #ffdca3;
-  --palette-thread-300: #f2b66d;
-  --palette-thread-400: #d98348;
+  --palette-void-950: #1a110f;
+  --palette-void-975: #150c0a;
+  --palette-ink-925: #231916;
+  --palette-ink-900: #271d1a;
+  --palette-ink-850: #322824;
+  --palette-ink-800: #3e322f;
+  --palette-ink-750: #4a3a35;
+  --palette-ink-700: #56423c;
+  --palette-ink-600: #6f5750;
+  --palette-mist-100: #fffaf9;
+  --palette-mist-150: #f1dfd9;
+  --palette-mist-200: #dcc1b8;
+  --palette-mist-300: #c9aba1;
+  --palette-mist-500: #a48b84;
+  --palette-mist-600: #8f746c;
+  --palette-thread-200: #ffdbd0;
+  --palette-thread-300: #ffb59d;
+  --palette-thread-400: #df7d5a;
   --palette-thread-500: #b85736;
-  --palette-thread-900: #35160e;
-  --palette-loom-300: #f0c86d;
-  --palette-loom-400: #d79a3b;
-  --palette-moss-300: #c4cf93;
-  --palette-moss-900: #1c2411;
-  --palette-ember-300: #ffad8f;
-  --palette-ember-400: #e06d51;
-  --palette-ember-950: #35100a;
-  --palette-madder-300: #f0a070;
-  --palette-madder-500: #b84d35;
-  --palette-madder-800: #5a2118;
-  --palette-indigo-300: #aec1c5;
-  --palette-indigo-500: #6d8891;
-  --palette-indigo-900: #17242a;
+  --palette-thread-700: #7e2c0e;
+  --palette-thread-900: #391107;
+  --palette-loom-300: #e9c267;
+  --palette-loom-400: #c7972f;
+  --palette-loom-700: #755800;
+  --palette-loom-900: #251a00;
+  --palette-moss-300: #c4d694;
+  --palette-moss-500: #8aa05f;
+  --palette-moss-900: #182211;
+  --palette-ember-300: #ffb4ab;
+  --palette-ember-400: #e67362;
+  --palette-ember-700: #93000a;
+  --palette-ember-950: #3a0808;
+  --palette-madder-300: #ffb59d;
+  --palette-madder-500: #b85736;
+  --palette-madder-800: #5d1800;
+  --palette-indigo-300: #76d5dc;
+  --palette-indigo-500: #008087;
+  --palette-indigo-900: #10282c;
   --palette-clay-500: #9e6040;
   --palette-walnut-700: #4a2f1d;
 
-  /* Typography. */
+  /* Typography: system fonts only, with editorial/technical hierarchy. */
   --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   --text-xs: 0.75rem;
@@ -49,7 +56,7 @@
   --text-base: 1rem;
   --text-md: 1.0625rem;
   --text-lg: 1.25rem;
-  --text-xl: clamp(1.55rem, 1.25rem + 1.2vw, 2.25rem);
+  --text-xl: clamp(1.65rem, 1.28rem + 1.4vw, 2.5rem);
   --line-tight: 1.2;
   --line-normal: 1.5;
   --line-relaxed: 1.65;
@@ -59,33 +66,35 @@
 
   /* Existing numeric spacing names kept for compatibility. */
   --space-1: 0.25rem;
-  --space-2: 0.375rem;
-  --space-3: 0.5rem;
-  --space-4: 0.75rem;
-  --space-5: 0.875rem;
-  --space-6: 1rem;
-  --space-7: 1.25rem;
-  --space-8: 1.5rem;
-  --space-10: 2rem;
-  --space-12: 3rem;
-  --space-page: var(--space-8);
-  --space-card: var(--space-8);
-  --space-section: var(--space-10);
-  --space-row: var(--space-4);
-  --space-control-x: var(--space-6);
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+  --space-8: 2.5rem;
+  --space-10: 3rem;
+  --space-12: 4rem;
+  --space-page: var(--space-6);
+  --space-card: var(--space-6);
+  --space-section: var(--space-8);
+  --space-row: var(--space-3);
+  --space-control-x: var(--space-4);
   --space-control-y: 0.68rem;
-  --space-control-gap: var(--space-3);
+  --space-control-gap: var(--space-2);
 
-  /* Shape and elevation. */
-  --radius-xs: 0.12rem;
-  --radius-sm: 0.22rem;
-  --radius-md: 0.32rem;
-  --radius-lg: 0.42rem;
-  --radius-xl: 0.5rem;
-  --radius-2xl: 0.62rem;
-  --radius-pill: 0.34rem;
-  --shadow-card: 0 1px 0 rgb(255 245 223 / 0.035), 0 10px 28px rgb(0 0 0 / 0.18);
-  --shadow-raised: 0 1px 0 rgb(255 245 223 / 0.045), 0 14px 32px rgb(0 0 0 / 0.22);
+  /* Shape and flat tonal depth. */
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.32rem;
+  --radius-xl: 0.38rem;
+  --radius-2xl: 0.45rem;
+  --radius-pill: 0.25rem;
+  --notch-size: 0.25rem;
+  --stitch-step: 0.5rem;
+  --shadow-card: 0 1px 0 rgb(255 250 249 / 0.035);
+  --shadow-raised: 0 1px 0 rgb(255 250 249 / 0.045);
 
   /* Motion. */
   --duration-fast: 120ms;
@@ -96,47 +105,51 @@
 
   /* Semantic colors. */
   --color-bg: var(--palette-void-950);
-  --color-surface: var(--palette-ink-900);
-  --color-surface-2: var(--palette-ink-850);
-  --color-surface-3: var(--palette-ink-800);
-  --color-surface-hover: var(--palette-ink-750);
-  --color-border: rgb(240 200 109 / 0.18);
-  --color-border-strong: rgb(226 199 159 / 0.35);
-  --color-text: var(--palette-mist-100);
+  --color-bg-deep: var(--palette-void-975);
+  --color-surface: var(--palette-ink-925);
+  --color-surface-2: var(--palette-ink-900);
+  --color-surface-3: var(--palette-ink-850);
+  --color-surface-hover: var(--palette-ink-800);
+  --color-border: rgb(164 139 132 / 0.28);
+  --color-border-soft: rgb(86 66 60 / 0.72);
+  --color-border-strong: rgb(164 139 132 / 0.55);
+  --color-text: var(--palette-mist-150);
   --color-muted: var(--palette-mist-200);
   --color-subtle: var(--palette-mist-300);
   --color-faint: var(--palette-mist-500);
   --color-accent: var(--palette-thread-300);
   --color-accent-hover: var(--palette-thread-200);
-  --color-accent-text: #21110a;
+  --color-accent-text: #390b00;
   --color-success: var(--palette-moss-300);
   --color-on-success: #111707;
   --color-warning: var(--palette-loom-300);
-  --color-on-warning: #201307;
+  --color-on-warning: var(--palette-loom-900);
+  --color-system: var(--palette-indigo-300);
+  --color-on-system: #00363a;
   --color-danger: var(--palette-ember-300);
-  --color-danger-hover: #ffd1bf;
-  --color-on-danger: var(--palette-ember-950);
+  --color-danger-hover: #ffdad6;
+  --color-on-danger: #690005;
   --color-focus: var(--palette-loom-300);
-  --color-disabled: rgb(226 199 159 / 0.44);
+  --color-disabled: rgb(220 193 184 / 0.44);
 
   /* Component roles. */
   --focus-ring: 2px solid var(--color-focus);
-  --card-bg: rgb(43 27 18 / 0.98);
-  --card-border: 1px solid var(--color-border);
-  --button-primary-bg: var(--palette-loom-300);
-  --button-primary-text: var(--color-accent-text);
-  --button-secondary-bg: rgb(255 245 223 / 0.065);
+  --card-bg: rgb(39 29 26 / 0.96);
+  --card-border: 1px solid var(--color-border-soft);
+  --button-primary-bg: var(--palette-thread-500);
+  --button-primary-text: var(--palette-mist-100);
+  --button-secondary-bg: rgb(62 50 47 / 0.78);
   --button-secondary-text: var(--color-muted);
-  --button-danger-bg: var(--color-danger);
-  --button-danger-text: var(--color-on-danger);
-  --chip-bg: rgb(255 245 223 / 0.055);
-  --chip-border: rgb(240 200 109 / 0.20);
-  --message-user-bg: #5a2619;
-  --message-agent-bg: #322217;
-  --message-system-bg: #1e2b31;
-  --input-bg: rgb(26 16 11 / 0.92);
+  --button-danger-bg: var(--palette-ember-700);
+  --button-danger-text: var(--palette-mist-100);
+  --chip-bg: rgb(62 50 47 / 0.64);
+  --chip-border: rgb(164 139 132 / 0.36);
+  --message-user-bg: #5d1800;
+  --message-agent-bg: #322824;
+  --message-system-bg: #10282c;
+  --input-bg: rgb(21 12 10 / 0.94);
   --terminal-bg: #120c09;
   --shell-width: 1320px;
-  --sidebar-width: 16.5rem;
-  --sidebar-bg: rgb(37 23 15 / 0.98);
+  --sidebar-width: 16rem;
+  --sidebar-bg: rgb(35 25 22 / 0.98);
 }

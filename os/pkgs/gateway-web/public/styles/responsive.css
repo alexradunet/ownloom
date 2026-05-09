@@ -9,25 +9,51 @@
     max-height: none;
     overflow: visible;
   }
+
+  .hearth-fixed {
+    display: none;
+  }
 }
 
 @media (max-width: 900px) {
-  .settings,
+  .settings.access-hero,
+  .settings-grid,
   .grid,
   .config-grid,
   .organizer-grid,
   .planner-form,
   .planner-grid,
-  .composer-row { grid-template-columns: 1fr; }
+  .composer-row {
+    grid-template-columns: 1fr;
+  }
 
-  .planner-wide { grid-column: auto; }
+  .planner-title-field,
+  .planner-wide,
+  .advanced-connection {
+    grid-column: auto;
+  }
 
-  header {
+  .access-actions,
+  .composer-actions,
+  .terminal-actions {
+    justify-content: flex-start;
+  }
+
+  .top-lintel,
+  header,
+  .danger-zone {
     align-items: flex-start;
     flex-direction: column;
   }
 
   .header-status { justify-content: flex-start; }
+}
+
+@media (max-width: 640px) {
+  .thread-rail {
+    inset-inline: 0.5rem;
+    width: auto;
+  }
 }
 
 @media (max-width: 520px) {
@@ -36,23 +62,44 @@
     padding-block-start: var(--space-4);
   }
 
+  .cockpit-sidebar,
+  .top-lintel,
   header,
-  .card { padding: var(--space-6); }
+  .card {
+    padding: var(--space-4);
+  }
 
   .workbench-card { padding: 0; }
 
   .workbench-heading,
   .thread-messages,
-  .composer { padding: var(--space-6); }
+  .composer { padding-inline: var(--space-3); }
+
+  .thread-messages {
+    min-height: 18rem;
+    max-height: none;
+  }
 
   button,
-  .button-link { width: 100%; }
+  .button-link,
+  .gateway-pair-button { width: 100%; }
 
   .tabs:not(.sidebar-tabs) .tab-button { width: auto; }
 
   .sidebar-tabs .tab-button { width: 100%; }
 
   .message { max-width: 96%; }
+
+  .section-register {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-item-header,
+  .item-header,
+  .card-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 @media (forced-colors: active) {
@@ -67,6 +114,8 @@
   .pill.error,
   .card,
   .item,
+  .hearth,
+  .warning-banner,
   input,
   select,
   textarea {
@@ -76,5 +125,14 @@
   .tab-button.active,
   .tab-button[aria-selected="true"] {
     outline: 2px solid CanvasText;
+  }
+
+  .pixel-notch::after,
+  .woven-accent::after,
+  .card::before,
+  .top-lintel::before,
+  header::before,
+  .cockpit-sidebar::before {
+    display: none;
   }
 }

@@ -189,10 +189,18 @@ function setupThreadRail(els) {
   if (!shell) return;
 
   function setOpen(open) {
+    if (open) els.threadRail.hidden = false;
     shell.classList.toggle("thread-rail-open", open);
     els.threadRailToggle.setAttribute("aria-expanded", open ? "true" : "false");
     els.threadRail.setAttribute("aria-hidden", open ? "false" : "true");
-    if (open) els.threadRailClose.focus();
+    els.threadRail.inert = !open;
+    if (open) {
+      els.threadRailClose.focus();
+    } else {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && els.threadRail.contains(active)) els.threadRailToggle.focus();
+      els.threadRail.hidden = true;
+    }
   }
 
   els.threadRailToggle.addEventListener("click", () => {

@@ -46,10 +46,25 @@ export function createConfigController({
     log("health", await gatewayClient.request("health"));
   }
 
+  async function handleOneShotRuntimeToken(clientId, token) {
+    if (!token) {
+      addSystemMessage(`Token rotated for ${clientId}, but no token was returned by the gateway.`);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(token);
+      addSystemMessage(`New token for ${clientId} copied to clipboard. Copy it now; it will not be shown again.`);
+    } catch {
+      window.prompt(`Copy new token for ${clientId}:`, token);
+      addSystemMessage(`New token for ${clientId} was shown in a one-time copy prompt. It will not be shown again.`);
+    }
+  }
+
   els.connectButton.addEventListener("click", () => connect());
   els.pairButton.addEventListener("click", () => pairBrowser());
   els.disconnectButton.addEventListener("click", gatewayClient.disconnect);
   els.clearSettingsButton.addEventListener("click", () => {
+    if (!confirmAction("Forget local browser settings? This removes the remembered gateway URL and token from this browser.")) return;
     forgetSettings();
     els.token.value = "";
     log("forgot local settings");
@@ -70,9 +85,9 @@ export function createConfigController({
     const revokeId = target.getAttribute("data-client-revoke");
     if (rotateId) {
       if (!confirmAction(`Rotate token for ${rotateId}? The old runtime token will stop working.`)) return;
-      gatewayClient.request("clients.rotateToken", { id: rotateId }).then((payload) => {
+      gatewayClient.request("clients.rotateToken", { id: rotateId }).then(async (payload) => {
         log("client token rotated", { id: rotateId, tokenReturnedOnce: Boolean(payload.token) });
-        addSystemMessage(`New token for ${rotateId}: ${payload.token}\nCopy it now; it will not be shown again.`);
+        await handleOneShotRuntimeToken(rotateId, payload.token);
         return refreshLists();
       }).catch((error) => log("client token rotate failed", error.message));
     } else if (revokeId) {

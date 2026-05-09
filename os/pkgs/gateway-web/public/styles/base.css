@@ -13,13 +13,14 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    linear-gradient(90deg, rgb(255 245 223 / 0.018) 1px, transparent 1px) 0 0 / 24px 24px,
-    linear-gradient(0deg, rgb(255 245 223 / 0.014) 1px, transparent 1px) 0 0 / 24px 24px,
-    var(--palette-void-950);
+    linear-gradient(90deg, rgb(255 250 249 / 0.018) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(0deg, rgb(255 250 249 / 0.014) 1px, transparent 1px) 0 0 / 24px 24px,
+    radial-gradient(circle at 8% 0%, rgb(184 87 54 / 0.18), transparent 28rem),
+    linear-gradient(180deg, var(--color-bg-deep), var(--color-bg));
 }
 
 ::selection {
-  background: rgb(240 182 109 / 0.34);
+  background: rgb(233 194 103 / 0.34);
   color: var(--color-text);
 }
 
@@ -30,8 +31,9 @@ textarea { font: inherit; }
 
 button,
 .button-link {
+  position: relative;
   min-block-size: 2.75rem;
-  border: 1px solid rgb(33 17 10 / 0.20);
+  border: 1px solid rgb(255 181 157 / 0.18);
   border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
@@ -55,9 +57,9 @@ button,
 
 button:hover:not(:disabled),
 .button-link:hover {
-  border-color: var(--color-warning);
-  background: var(--color-accent-hover);
-  box-shadow: none;
+  border-color: var(--color-accent-hover);
+  background: #c76746;
+  box-shadow: inset 0 0 0 1px rgb(255 250 249 / 0.08);
 }
 
 button:active:not(:disabled),
@@ -78,7 +80,14 @@ textarea {
   padding: 0.72rem 0.8rem;
   background: var(--input-bg);
   color: inherit;
-  box-shadow: inset 0 1px 0 rgb(255 245 223 / 0.03);
+  box-shadow: inset 0 1px 0 rgb(255 250 249 / 0.03);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+textarea {
+  min-height: 6rem;
+  resize: vertical;
 }
 
 input::placeholder,
@@ -88,7 +97,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 1px rgb(240 182 109 / 0.36), inset 0 1px 0 rgb(255 245 223 / 0.04);
+  box-shadow: 0 0 0 1px rgb(255 181 157 / 0.32), inset 0 -2px 0 rgb(233 194 103 / 0.36);
 }
 
 label {
@@ -108,6 +117,7 @@ a:hover { color: var(--color-accent-hover); }
 
 h1,
 h2,
+h3,
 p { margin-block-start: 0; }
 
 h1 {
@@ -118,10 +128,18 @@ h1 {
 }
 
 h2 {
-  margin-block-end: var(--space-6);
+  margin-block-end: var(--space-4);
   font-size: var(--text-md);
   line-height: var(--line-tight);
   letter-spacing: -0.015em;
+}
+
+h3 {
+  margin-block: var(--space-5) var(--space-3);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 p {
@@ -130,6 +148,12 @@ p {
 }
 
 small { line-height: var(--line-normal); }
+
+summary {
+  cursor: pointer;
+  color: var(--color-muted);
+  font-weight: var(--font-bold);
+}
 
 pre,
 code,

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Private local cockpit for Ownloom chat, planning, configuration, and terminal sessions." />
     <meta name="application-name" content="Ownloom Cockpit" />
-    <meta name="theme-color" content="#1a100b" />
+    <meta name="theme-color" content="#1a110f" />
     <title>Ownloom Cockpit</title>
     <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./style.css" />
@@ -15,248 +15,336 @@
     <main id="main" class="shell">
       <div class="cockpit-layout">
         <aside class="cockpit-sidebar" aria-label="Ownloom cockpit menu">
-          <div class="sidebar-brand">
+          <div class="sidebar-brand woven-accent">
             <span class="eyebrow">Digital scoarță</span>
             <p class="sidebar-title">Ownloom</p>
-            <p>One local workbench: active thread first, tools close by.</p>
+            <p>Local-first cockpit for the active thread, planner, access, shell, and trace.</p>
           </div>
 
           <nav class="tabs sidebar-tabs" role="tablist" aria-orientation="vertical" aria-label="Ownloom cockpit sections">
             <button id="tab-chat-button" class="tab-button active" type="button" role="tab" data-tab-target="chat" aria-controls="tab-chat" aria-selected="true" tabindex="0">
               <span class="tab-label">Workbench</span>
-              <span class="tab-description">Active conversation thread.</span>
+              <span class="tab-description">Quiet active conversation.</span>
             </button>
             <button id="tab-organizer-button" class="tab-button" type="button" role="tab" data-tab-target="organizer" aria-controls="tab-organizer" aria-selected="false" tabindex="-1">
               <span class="tab-label">Planner</span>
-              <span class="tab-description">Today and upcoming context.</span>
+              <span class="tab-description">CalDAV tasks and events.</span>
             </button>
             <button id="tab-config-button" class="tab-button" type="button" role="tab" data-tab-target="config" aria-controls="tab-config" aria-selected="false" tabindex="-1">
               <span class="tab-label">Access</span>
-              <span class="tab-description">Pair and inspect clients.</span>
+              <span class="tab-description">Pair browsers and clients.</span>
             </button>
             <button id="tab-terminal-button" class="tab-button" type="button" role="tab" data-tab-target="terminal" aria-controls="tab-terminal" aria-selected="false" tabindex="-1">
               <span class="tab-label">Shell</span>
-              <span class="tab-description">Local Zellij workspace.</span>
+              <span class="tab-description">Loopback Zellij workspace.</span>
             </button>
             <button id="tab-log-button" class="tab-button" type="button" role="tab" data-tab-target="log" aria-controls="tab-log" aria-selected="false" tabindex="-1">
               <span class="tab-label">Trace</span>
-              <span class="tab-description">Local cockpit events.</span>
+              <span class="tab-description">Redacted local event log.</span>
             </button>
           </nav>
 
-          <div class="sidebar-note">
-            <span class="chip chip-private">Woven locally</span>
-            <p>Loopback-first, tunnel-friendly, and honest about live state.</p>
+          <div class="sidebar-note hearth" aria-label="Local-first hearth status">
+            <span class="status-dot" aria-hidden="true"></span>
+            <div>
+              <span class="hearth-title">Hearth</span>
+              <p>Loopback-first surface. Live state comes from local Ownloom services.</p>
+            </div>
           </div>
         </aside>
 
         <div id="cockpit-content" class="cockpit-content" tabindex="-1">
-          <header>
-            <div>
+          <header class="top-lintel">
+            <div class="lintel-copy">
+              <span class="eyebrow">Woven context, local control</span>
               <h1>Ownloom Cockpit</h1>
-              <p>Woven context, local control — start with the active thread, then reach for planner, access, shell, and trace only when needed.</p>
+              <p>Start with the active work thread, then reach for planner, access, shell, and trace only when needed.</p>
             </div>
             <div class="header-status" aria-label="Cockpit status">
               <span id="currentSession" class="chip chip-thread">Conversation: web-main</span>
               <span class="chip chip-private">Loopback / tunnel only</span>
+              <span class="chip chip-system">Planner: local API</span>
               <span id="connectionState" class="pill" role="status" aria-live="polite">disconnected</span>
             </div>
           </header>
 
           <section id="tab-chat" class="tab-panel active" role="tabpanel" data-tab-panel="chat" aria-labelledby="tab-chat-button" tabindex="0">
-        <section class="workbench-shell" data-workbench-shell>
-          <section class="card chat workbench-card" aria-labelledby="chat-heading">
-            <div class="chat-heading workbench-heading">
-              <div>
-                <h2 id="chat-heading">Active thread</h2>
-                <p>Clean conversation space. Keep the thread rail closed until you need to switch context.</p>
+            <section class="workbench-shell" data-workbench-shell>
+              <section class="card chat workbench-card woven-accent" aria-labelledby="chat-heading">
+                <div class="chat-heading workbench-heading">
+                  <div>
+                    <span class="section-kicker">Workbench</span>
+                    <h2 id="chat-heading">Active thread</h2>
+                    <p>Centered conversation space. The thread rail stays closed until you ask for it.</p>
+                  </div>
+                  <div class="row workbench-actions">
+                    <button id="threadRailToggle" class="button-secondary" type="button" aria-controls="threadRail" aria-expanded="false">Threads</button>
+                    <button id="newChatButton" class="button-secondary" type="button">New thread</button>
+                  </div>
+                </div>
+
+                <div id="messages" class="messages thread-messages" role="log" aria-live="polite" aria-relevant="additions text" aria-busy="false" aria-label="Active thread messages"></div>
+
+                <div class="composer" aria-label="Thread composer">
+                  <div class="composer-topline pixel-stitch-h">
+                    <span>One-shot materials</span>
+                    <div id="attachments" class="attachments" role="list" aria-label="Staged attachments"></div>
+                  </div>
+                  <div class="composer-row">
+                    <label class="attachment-field button-secondary">
+                      Attach material
+                      <input id="attachmentInput" type="file" multiple accept="image/*,audio/*" />
+                    </label>
+                    <label class="composer-input-field">
+                      Next instruction
+                      <textarea id="messageInput" rows="4" placeholder="Message Ownloom…"></textarea>
+                    </label>
+                  </div>
+                  <div class="row composer-actions">
+                    <button id="sendButton" class="pixel-notch" type="button" disabled>Send</button>
+                    <button id="clearButton" class="button-secondary" type="button">Clear view</button>
+                  </div>
+                </div>
+              </section>
+
+              <aside id="threadRail" class="card side thread-rail woven-accent" aria-labelledby="sessions-heading" aria-hidden="true" hidden>
+                <div class="card-header thread-rail-header">
+                  <div>
+                    <span class="section-kicker">Threads</span>
+                    <h2 id="sessions-heading">Conversation rail</h2>
+                    <p class="card-meta">Switch web threads or attach existing conversations.</p>
+                  </div>
+                  <button id="threadRailClose" class="button-secondary button-small" type="button" aria-label="Close threads">Close</button>
+                </div>
+                <ul id="sessions" class="list empty" aria-label="Threads"><li>Connect and refresh.</li></ul>
+              </aside>
+            </section>
+          </section>
+
+          <section id="tab-organizer" class="tab-panel" role="tabpanel" data-tab-panel="organizer" aria-labelledby="tab-organizer-button" tabindex="0" hidden>
+            <section class="card planner-dashboard planner-add-card woven-accent" aria-labelledby="planner-heading">
+              <div class="card-header">
+                <div>
+                  <span class="section-kicker">Planner</span>
+                  <h2 id="planner-heading">Warp a live item to the loom</h2>
+                  <p class="card-meta">Backed by Ownloom Planner, CalDAV, iCalendar, VTODO, VEVENT, and VALARM.</p>
+                </div>
+                <div class="row">
+                  <span id="plannerStatus" class="chip" role="status" aria-live="polite">not loaded</span>
+                  <button id="plannerRefreshButton" class="button-secondary" type="button">Refresh planner</button>
+                </div>
               </div>
-              <div class="row">
-                <button id="threadRailToggle" class="button-secondary" type="button" aria-controls="threadRail" aria-expanded="false">Threads</button>
-                <button id="newChatButton" class="button-secondary" type="button">New thread</button>
-              </div>
-            </div>
-            <div id="messages" class="messages thread-messages" role="log" aria-live="polite" aria-relevant="additions text" aria-busy="false" aria-label="Active thread messages"></div>
-            <div class="composer" aria-label="Thread composer">
-              <div class="composer-row">
-                <label class="attachment-field">
-                  Material
-                  <input id="attachmentInput" type="file" multiple accept="image/*,audio/*" />
+
+              <form id="plannerForm" class="planner-form planner-strip" aria-label="Add planner item">
+                <label class="planner-title-field">
+                  New thread / task
+                  <input id="plannerTitle" autocomplete="off" required placeholder="What needs attention?" />
                 </label>
-                <div id="attachments" class="attachments" role="list" aria-label="Staged attachments"></div>
-              </div>
-              <label>
-                Next instruction
-                <textarea id="messageInput" rows="4" placeholder="Message Ownloom…"></textarea>
-              </label>
-              <div class="row composer-actions">
-                <button id="sendButton" type="button" disabled>Send</button>
-                <button id="clearButton" class="button-secondary" type="button">Clear view</button>
-              </div>
-            </div>
+                <label>
+                  Kind
+                  <select id="plannerKind">
+                    <option value="task">Task</option>
+                    <option value="reminder">Reminder</option>
+                    <option value="event">Event</option>
+                  </select>
+                </label>
+                <label>
+                  <span id="plannerWhenText">Due</span>
+                  <input id="plannerWhen" type="datetime-local" />
+                </label>
+                <label id="plannerEndLabel" hidden>
+                  End
+                  <input id="plannerEnd" type="datetime-local" />
+                </label>
+                <label id="plannerPriorityLabel">
+                  Priority
+                  <input id="plannerPriority" type="number" min="1" max="9" placeholder="1-9" />
+                </label>
+                <label>
+                  Repeat
+                  <select id="plannerRepeat">
+                    <option value="">No repeat</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekdays">Weekdays</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </label>
+                <label class="planner-wide">
+                  Description
+                  <textarea id="plannerDescription" rows="2" placeholder="Optional context"></textarea>
+                </label>
+                <label>
+                  Categories
+                  <input id="plannerCategories" autocomplete="off" placeholder="health, work" />
+                </label>
+                <div class="row planner-form-actions">
+                  <button class="pixel-notch" type="submit">Add planner item</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="grid organizer-grid planner-grid bento-grid" aria-label="Planner bento views">
+              <section class="card planner-list-card planner-overdue woven-accent" aria-labelledby="planner-overdue-heading">
+                <div class="section-register">
+                  <span class="status-dot status-dot-danger" aria-hidden="true"></span>
+                  <div>
+                    <h2 id="planner-overdue-heading">Overdue</h2>
+                    <p>Past due items from the live planner.</p>
+                  </div>
+                  <span class="chip planner-count" data-planner-count>—</span>
+                </div>
+                <ul id="plannerOverdueList" class="list empty planner-list" aria-label="Overdue planner items"><li>Open Planner to load items.</li></ul>
+              </section>
+              <section class="card planner-list-card planner-today woven-accent" aria-labelledby="planner-today-heading">
+                <div class="section-register">
+                  <span class="status-dot status-dot-warning" aria-hidden="true"></span>
+                  <div>
+                    <h2 id="planner-today-heading">Today</h2>
+                    <p>Due now, reminders, and calendar blocks.</p>
+                  </div>
+                  <span class="chip planner-count" data-planner-count>—</span>
+                </div>
+                <ul id="plannerTodayList" class="list empty planner-list" aria-label="Today planner items"><li>Open Planner to load items.</li></ul>
+              </section>
+              <section class="card planner-list-card planner-upcoming woven-accent" aria-labelledby="planner-upcoming-heading">
+                <div class="section-register">
+                  <span class="status-dot status-dot-system" aria-hidden="true"></span>
+                  <div>
+                    <h2 id="planner-upcoming-heading">Upcoming</h2>
+                    <p>Next horizon, excluding today.</p>
+                  </div>
+                  <span class="chip planner-count" data-planner-count>—</span>
+                </div>
+                <ul id="plannerUpcomingList" class="list empty planner-list" aria-label="Upcoming planner items"><li>Open Planner to load items.</li></ul>
+              </section>
+            </section>
           </section>
 
-          <aside id="threadRail" class="card side thread-rail" aria-labelledby="sessions-heading" aria-hidden="true">
-            <div class="card-header thread-rail-header">
+          <section id="tab-config" class="tab-panel" role="tabpanel" data-tab-panel="config" aria-labelledby="tab-config-button" tabindex="0" hidden>
+            <section class="card settings access-hero woven-accent" aria-label="Gateway connection settings">
+              <div class="access-hero-copy">
+                <span class="section-kicker">Access</span>
+                <h2>Gateway access</h2>
+                <p>Pair this browser to the local operator gateway. Runtime tokens remain masked and local to this browser when remembered.</p>
+              </div>
+              <div class="access-action-panel">
+                <span class="chip chip-private">Full-operator runtime client</span>
+                <button id="pairButton" class="pixel-notch gateway-pair-button" type="button">Pair this browser</button>
+                <p class="card-meta">Best path for trusted loopback or SSH-tunneled browsers.</p>
+              </div>
+
+              <details class="advanced-connection">
+                <summary>Advanced connection controls</summary>
+                <div class="settings-grid">
+                  <label>
+                    Gateway HTTP URL
+                    <input id="httpUrl" value="http://127.0.0.1:8081" autocomplete="off" />
+                  </label>
+                  <label>
+                    Bearer token
+                    <input id="token" type="password" placeholder="paste named client token" autocomplete="off" />
+                  </label>
+                  <label>
+                    Session key
+                    <input id="sessionKey" value="web-main" autocomplete="off" />
+                  </label>
+                  <label class="checkbox">
+                    <input id="rememberSettings" type="checkbox" checked />
+                    Remember locally
+                  </label>
+                </div>
+                <div class="row access-actions">
+                  <button id="connectButton" class="button-secondary" type="button">Connect manually</button>
+                  <button id="disconnectButton" class="button-secondary" type="button" disabled>Disconnect</button>
+                  <button id="healthButton" class="button-secondary" type="button" disabled>Health</button>
+                  <button id="refreshButton" class="button-secondary" type="button" disabled>Refresh lists</button>
+                </div>
+              </details>
+            </section>
+
+            <section class="grid config-grid access-grid" aria-label="Gateway runtime state">
+              <section class="card side access-list-card woven-accent" aria-labelledby="clients-heading">
+                <div class="card-header">
+                  <div>
+                    <span class="section-kicker">Runtime</span>
+                    <h2 id="clients-heading">Runtime clients</h2>
+                    <p class="card-meta">Current, paired browser, config-managed, and revoked clients.</p>
+                  </div>
+                </div>
+                <ul id="clients" class="list empty" aria-label="Clients"><li>Connect and refresh.</li></ul>
+              </section>
+              <section class="card side queue-card woven-accent" aria-labelledby="queues-heading">
+                <div class="card-header">
+                  <div>
+                    <span class="section-kicker">Gateway queues</span>
+                    <h2 id="queues-heading">Delivery and command queue</h2>
+                    <p class="card-meta">Live gateway lists; admin actions appear only when authorized.</p>
+                  </div>
+                </div>
+                <h3 id="deliveries-heading">Delivery queue</h3>
+                <ul id="deliveries" class="list empty" aria-labelledby="deliveries-heading"><li>Connect and refresh.</li></ul>
+                <h3 id="commands-heading">Command queue</h3>
+                <ul id="commands" class="list empty" aria-labelledby="commands-heading"><li>Connect and refresh.</li></ul>
+              </section>
+            </section>
+
+            <section class="card danger-zone" aria-labelledby="danger-heading">
               <div>
-                <h2 id="sessions-heading">Threads</h2>
-                <p class="card-meta">Switch web threads or attach existing conversations.</p>
+                <span class="section-kicker">Danger zone</span>
+                <h2 id="danger-heading">Forget local browser settings</h2>
+                <p class="card-meta">Clears the remembered token/settings from local storage and the token field. It does not revoke this browser id or any gateway runtime client.</p>
               </div>
-              <button id="threadRailClose" class="button-secondary button-small" type="button" aria-label="Close threads">Close</button>
-            </div>
-            <ul id="sessions" class="list empty" aria-label="Threads"><li>Connect and refresh.</li></ul>
-          </aside>
-        </section>
-      </section>
-
-      <section id="tab-organizer" class="tab-panel" role="tabpanel" data-tab-panel="organizer" aria-labelledby="tab-organizer-button" tabindex="0" hidden>
-        <section class="card planner-dashboard" aria-labelledby="planner-heading">
-          <div class="card-header">
-            <div>
-              <h2 id="planner-heading">Planner</h2>
-              <p class="card-meta">Live CalDAV/iCalendar tasks, reminders, and events from Ownloom Planner.</p>
-            </div>
-            <div class="row">
-              <span id="plannerStatus" class="chip" role="status" aria-live="polite">not loaded</span>
-              <button id="plannerRefreshButton" class="button-secondary" type="button">Refresh planner</button>
-            </div>
-          </div>
-
-          <form id="plannerForm" class="planner-form" aria-label="Add planner item">
-            <label>
-              Kind
-              <select id="plannerKind">
-                <option value="task">Task</option>
-                <option value="reminder">Reminder</option>
-                <option value="event">Event</option>
-              </select>
-            </label>
-            <label>
-              Title
-              <input id="plannerTitle" autocomplete="off" required placeholder="What needs attention?" />
-            </label>
-            <label>
-              <span id="plannerWhenText">Due</span>
-              <input id="plannerWhen" type="datetime-local" />
-            </label>
-            <label id="plannerEndLabel" hidden>
-              End
-              <input id="plannerEnd" type="datetime-local" />
-            </label>
-            <label id="plannerPriorityLabel">
-              Priority
-              <input id="plannerPriority" type="number" min="1" max="9" placeholder="1-9" />
-            </label>
-            <label>
-              Repeat
-              <select id="plannerRepeat">
-                <option value="">No repeat</option>
-                <option value="daily">Daily</option>
-                <option value="weekdays">Weekdays</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
-              </select>
-            </label>
-            <label class="planner-wide">
-              Description
-              <textarea id="plannerDescription" rows="2" placeholder="Optional context"></textarea>
-            </label>
-            <label>
-              Categories
-              <input id="plannerCategories" autocomplete="off" placeholder="health, work" />
-            </label>
-            <div class="row planner-form-actions">
-              <button type="submit">Add planner item</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="grid organizer-grid planner-grid">
-          <section class="card planner-list-card">
-            <h2>Overdue</h2>
-            <ul id="plannerOverdueList" class="list empty planner-list" aria-label="Overdue planner items"><li>Open Planner to load items.</li></ul>
+              <button id="clearSettingsButton" class="button-danger" type="button">Forget local settings</button>
+            </section>
           </section>
-          <section class="card planner-list-card">
-            <h2>Today</h2>
-            <ul id="plannerTodayList" class="list empty planner-list" aria-label="Today planner items"><li>Open Planner to load items.</li></ul>
-          </section>
-          <section class="card planner-list-card">
-            <h2>Upcoming</h2>
-            <ul id="plannerUpcomingList" class="list empty planner-list" aria-label="Upcoming planner items"><li>Open Planner to load items.</li></ul>
-          </section>
-        </section>
-      </section>
 
-      <section id="tab-config" class="tab-panel" role="tabpanel" data-tab-panel="config" aria-labelledby="tab-config-button" tabindex="0" hidden>
-        <section class="card settings" aria-label="Gateway connection settings">
-          <div class="settings-intro">
-            <h2>Gateway access</h2>
-            <p>Connect this browser to the local operator gateway. Tokens stay local when remembered.</p>
-          </div>
-          <label>
-            Gateway HTTP URL
-            <input id="httpUrl" value="http://127.0.0.1:8081" autocomplete="off" />
-          </label>
-          <label>
-            Bearer token
-            <input id="token" type="password" placeholder="paste named client token" autocomplete="off" />
-          </label>
-          <label>
-            Session key
-            <input id="sessionKey" value="web-main" autocomplete="off" />
-          </label>
-          <label class="checkbox">
-            <input id="rememberSettings" type="checkbox" checked />
-            Remember locally
-          </label>
-          <div class="row">
-            <button id="connectButton" type="button">Connect</button>
-            <button id="pairButton" type="button">Pair this browser</button>
-            <button id="disconnectButton" class="button-secondary" type="button" disabled>Disconnect</button>
-            <button id="healthButton" class="button-secondary" type="button" disabled>Health</button>
-            <button id="refreshButton" class="button-secondary" type="button" disabled>Refresh lists</button>
-            <button id="clearSettingsButton" class="button-danger" type="button">Forget</button>
-          </div>
-        </section>
-
-        <section class="grid config-grid">
-          <section class="card side" aria-labelledby="clients-heading">
-            <h2 id="clients-heading">Runtime clients</h2>
-            <ul id="clients" class="list empty" aria-label="Clients"><li>Connect and refresh.</li></ul>
+          <section id="tab-terminal" class="tab-panel" role="tabpanel" data-tab-panel="terminal" aria-labelledby="tab-terminal-button" tabindex="0" hidden>
+            <section class="card terminal-card woven-accent">
+              <div class="card-header terminal-header">
+                <div>
+                  <span class="section-kicker">Shell</span>
+                  <h2>Interactive shell</h2>
+                  <p>Advanced Zellij shell for Pi TUI and coding sessions. The iframe loads only when this tab is selected.</p>
+                </div>
+                <div class="row terminal-actions">
+                  <button id="copyTerminalTokenButton" class="button-secondary" type="button">Copy Zellij token</button>
+                  <a id="openTerminalLink" class="button-link button-secondary" href="/terminal/ownloom" target="_blank" rel="noopener noreferrer">Open full terminal</a>
+                  <span id="terminalTokenStatus" class="chip" role="status" aria-live="polite">Token stays local.</span>
+                </div>
+              </div>
+              <div class="warning-banner" role="note">
+                <strong>Local shell boundary.</strong>
+                <span>Use through loopback or an SSH tunnel. The terminal proxy remains same-origin and no-store.</span>
+              </div>
+              <div class="terminal-shell">
+                <iframe id="terminalFrame" class="terminal-frame" title="Ownloom terminal" data-src="/terminal/ownloom"></iframe>
+              </div>
+            </section>
           </section>
-          <section class="card side">
-            <h2 id="deliveries-heading">Delivery queue</h2>
-            <ul id="deliveries" class="list empty" aria-labelledby="deliveries-heading"><li>Connect and refresh.</li></ul>
-            <h2 id="commands-heading">Command queue</h2>
-            <ul id="commands" class="list empty" aria-labelledby="commands-heading"><li>Connect and refresh.</li></ul>
-          </section>
-        </section>
-      </section>
 
-      <section id="tab-terminal" class="tab-panel" role="tabpanel" data-tab-panel="terminal" aria-labelledby="tab-terminal-button" tabindex="0" hidden>
-        <section class="card terminal-card">
-          <div class="chat-heading">
-            <div>
-              <h2>Shell</h2>
-              <p>Advanced Zellij shell for Pi TUI and coding sessions. Loopback-only; access through the cockpit tunnel.</p>
-            </div>
-            <div class="row terminal-actions">
-              <button id="copyTerminalTokenButton" class="button-secondary" type="button">Copy Zellij token</button>
-              <a id="openTerminalLink" class="button-link button-secondary" href="/terminal/ownloom" target="_blank" rel="noopener noreferrer">Open full terminal</a>
-              <span id="terminalTokenStatus" class="chip" role="status" aria-live="polite">Token stays local.</span>
-            </div>
-          </div>
-          <iframe id="terminalFrame" class="terminal-frame" title="Ownloom terminal" data-src="/terminal/ownloom"></iframe>
-        </section>
-      </section>
-
-      <section id="tab-log" class="tab-panel" role="tabpanel" data-tab-panel="log" aria-labelledby="tab-log-button" tabindex="0" hidden>
-        <section class="card">
-          <h2>Trace</h2>
-          <pre id="log" class="log"></pre>
-        </section>
+          <section id="tab-log" class="tab-panel" role="tabpanel" data-tab-panel="log" aria-labelledby="tab-log-button" tabindex="0" hidden>
+            <section class="card trace-card woven-accent">
+              <div class="card-header">
+                <div>
+                  <span class="section-kicker">Trace</span>
+                  <h2>Local event trace</h2>
+                  <p class="card-meta">Redacted browser-side gateway events, useful for operator diagnosis.</p>
+                </div>
+                <span class="chip chip-system">textContent only</span>
+              </div>
+              <pre id="log" class="log trace-frame" aria-label="Local event trace"></pre>
+            </section>
           </section>
+        </div>
+      </div>
+
+      <div class="hearth hearth-fixed" aria-label="Ownloom local-first indicator">
+        <span class="status-dot" aria-hidden="true"></span>
+        <div>
+          <span class="hearth-title">Local hearth</span>
+          <span>loopback-first</span>
         </div>
       </div>
     </main>

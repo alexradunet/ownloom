@@ -179,6 +179,7 @@ export function createOrganizerController({ els, log }) {
 }
 
 function renderList(container, items, emptyText) {
+  updatePlannerCount(container, items.length);
   container.replaceChildren();
   container.classList.toggle("empty", items.length === 0);
   if (items.length === 0) {
@@ -197,7 +198,7 @@ function renderPlannerItem(item) {
   const li = document.createElement("li");
   const uid = actionUid(item.uid);
   const date = item.alarmAt || item.due || item.start || "";
-  li.className = "item planner-item";
+  li.className = ["item", "planner-item", `planner-item-${item.kind}`, item.status ? `planner-status-${item.status}` : ""].filter(Boolean).join(" ");
   li.dataset.plannerUid = uid;
   li.dataset.plannerKind = item.kind;
   li.dataset.plannerTitle = item.title || "";
@@ -260,6 +261,7 @@ function actionButton(action, label, extraClass = "button-secondary") {
 }
 
 function renderError(container, error) {
+  updatePlannerCount(container, "error");
   container.replaceChildren();
   container.classList.add("empty");
   const li = document.createElement("li");
@@ -267,11 +269,17 @@ function renderError(container, error) {
   container.append(li);
 }
 
+function updatePlannerCount(container, value) {
+  const count = container.closest(".planner-list-card")?.querySelector("[data-planner-count]");
+  if (count) count.textContent = String(value);
+}
+
 function setStatus(text, className = "") {
   const status = document.getElementById("plannerStatus");
   if (!status) return;
   status.textContent = text;
   status.classList.toggle("error", className === "error");
+  status.classList.toggle("loading", text === "loading…");
 }
 
 function actionUid(uid) {
