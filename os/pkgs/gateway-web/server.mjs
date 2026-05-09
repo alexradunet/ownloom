@@ -14,6 +14,7 @@ const terminalTargetRaw = process.env.OWNLOOM_TERMINAL_URL ?? "";
 const terminalTarget = terminalTargetRaw ? new URL(terminalTargetRaw) : null;
 const radicaleTarget = new URL(process.env.OWNLOOM_RADICALE_URL ?? "http://127.0.0.1:5232");
 const radicaleUser = process.env.OWNLOOM_RADICALE_USER ?? "alex";
+const radicalePassword = process.env.OWNLOOM_RADICALE_PASSWORD ?? "ownloom";
 const terminalPathPrefix = "/terminal";
 const radicalePathPrefix = "/radicale";
 const terminalTokenFile = process.env.OWNLOOM_TERMINAL_TOKEN_FILE ?? "";
@@ -155,7 +156,10 @@ function proxyRadicale(req, res) {
   }
   proxyHttp(req, res, radicaleTarget, "radicale", {
     path: stripRadicalePrefix(req.url ?? "/"),
-    headers: { "x-script-name": radicalePathPrefix },
+    headers: {
+      "x-script-name": radicalePathPrefix,
+      authorization: basicAuthHeader(radicaleUser, radicalePassword),
+    },
   });
 }
 
@@ -169,12 +173,16 @@ function stripRadicalePrefix(url) {
   return `${parsed.pathname}${parsed.search}`;
 }
 
+function basicAuthHeader(user, password) {
+  return `Basic ${Buffer.from(`${user}:${password}`).toString("base64")}`;
+}
+
 function serveRadicaleAutologinScript(req, res) {
   if (req.method !== "GET" && req.method !== "HEAD") {
     sendText(res, 405, "Method not allowed\n");
     return;
   }
-  const body = `import { LoadingScene } from "./scenes/LoadingScene.js";\nimport { LoginScene } from "./scenes/LoginScene.js";\nimport { push_scene } from "./scenes/scene_manager.js";\n\nnew LoadingScene().hide();\nconst loginScene = new LoginScene();\npush_scene(loginScene);\nloginScene._perform_login(${JSON.stringify(radicaleUser)}, "ownloom");\n`;
+  const body = `import { LoadingScene } from "./scenes/LoadingScene.js";\nimport { LoginScene } from "./scenes/LoginScene.js";\nimport { push_scene } from "./scenes/scene_manager.js";\n\nnew LoadingScene().hide();\nconst loginScene = new LoginScene();\npush_scene(loginScene);\nloginScene._perform_login(${JSON.stringify(radicaleUser)}, ${JSON.stringify(radicalePassword)});\n`;
   res.writeHead(200, {
     "Content-Type": "text/javascript; charset=utf-8",
     "Content-Length": Buffer.byteLength(body),

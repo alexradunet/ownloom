@@ -99,6 +99,9 @@ in {
         OWNLOOM_TERMINAL_URL = cfg.terminalUrl;
         OWNLOOM_RADICALE_URL = cfg.radicaleUrl;
         OWNLOOM_RADICALE_USER = cfg.radicaleUser;
+        # Non-secret dummy password. Radicale is loopback-only with auth.type=none;
+        # this just makes Radicale's built-in web UI skip its login form.
+        OWNLOOM_RADICALE_PASSWORD = "ownloom";
         OWNLOOM_TERMINAL_TOKEN_FILE = toString cfg.terminalTokenFile;
       };
       serviceConfig = {

@@ -102,7 +102,7 @@ runCommand "ownloom-gateway-web-smoke" {
     import { createServer } from "node:http";
     createServer((req, res) => {
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-      res.end(JSON.stringify({ url: req.url, scriptName: req.headers["x-script-name"] ?? "" }));
+      res.end(JSON.stringify({ url: req.url, scriptName: req.headers["x-script-name"] ?? "", auth: req.headers.authorization ?? "" }));
     }).listen(18083, "127.0.0.1");
   EOF
     node radicale-upstream.mjs >radicale-upstream.log 2>&1 &
@@ -166,6 +166,7 @@ runCommand "ownloom-gateway-web-smoke" {
     grep -qi 'cache-control: no-store' /tmp/radicale.headers
     grep -q '"url":"/.web/"' /tmp/radicale.json
     grep -q '"scriptName":"/radicale"' /tmp/radicale.json
+    grep -q '"auth":"Basic c21va2UtdXNlcjpvd25sb29t"' /tmp/radicale.json
 
     curl -fsS -D /tmp/radicale-js.headers http://127.0.0.1:18090/radicale/.web/js/main.js >/tmp/radicale-main.js
     grep -qi 'cache-control: no-store' /tmp/radicale-js.headers

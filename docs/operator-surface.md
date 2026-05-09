@@ -18,7 +18,7 @@ Ownloom is the AI/operator cockpit over standards-based local tools. It should n
 
 Radicale's own UI manages calendars, address books, and task-capable collections. It is not a full planner client for editing every individual task/event. That is acceptable: individual item operations go through Ownloom chat/CLI.
 
-The cockpit proxies Radicale under `/radicale/` instead of installing another web app. This is a deliberate same-origin trust choice so one loopback/SSH-tunneled Ownloom cockpit can embed the built-in UI. The proxy replaces Radicale's web `main.js` with a tiny auto-login shim for the local Ownloom user using a non-secret dummy password, avoiding an extra username/password prompt without changing Radicale's loopback-only `auth.type = none` setup. Treat Radicale as trusted local cockpit content, not as arbitrary third-party web content.
+The cockpit proxies Radicale under `/radicale/` instead of installing another web app. This is a deliberate same-origin trust choice so one loopback/SSH-tunneled Ownloom cockpit can embed the built-in UI. The proxy sends dummy Basic auth to Radicale and replaces Radicale's web `main.js` with a tiny auto-login shim for the local Ownloom user using the same non-secret dummy password, avoiding an extra username/password prompt without changing Radicale's loopback-only `auth.type = none` setup. Treat Radicale as trusted local cockpit content, not as arbitrary third-party web content.
 
 ## Wiki boundary
 

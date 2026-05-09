@@ -94,7 +94,7 @@ There is intentionally no PWA manifest or service worker for now. A proper mobil
 
 It also rejects non-loopback `Host`/`Origin` headers to reduce DNS-rebinding exposure, and forces `Cache-Control: no-store, max-age=0` on proxied `/api/v1/*`, `/radicale/*`, and `/terminal/*` HTTP responses, including proxy errors. Do not add HSTS while the supported deployment is loopback HTTP/SSH tunnel.
 
-The `/radicale/` proxy deliberately keeps Radicale same-origin so it works through the single Ownloom SSH tunnel and can be embedded as a tab. It replaces Radicale's web `main.js` with a tiny auto-login shim for the local Ownloom user using a non-secret dummy password; Radicale itself still stays configured with loopback-only `auth.type = none` so `ownloom-planner` CLI access remains simple. Treat Radicale as part of the trusted local cockpit, not as arbitrary third-party content.
+The `/radicale/` proxy deliberately keeps Radicale same-origin so it works through the single Ownloom SSH tunnel and can be embedded as a tab. It sends dummy Basic auth to Radicale and replaces Radicale's web `main.js` with a tiny auto-login shim for the local Ownloom user using the same non-secret dummy password; Radicale itself still stays configured with loopback-only `auth.type = none` so `ownloom-planner` CLI access remains simple. Treat Radicale as part of the trusted local cockpit, not as arbitrary third-party content.
 
 ## Current features
 
