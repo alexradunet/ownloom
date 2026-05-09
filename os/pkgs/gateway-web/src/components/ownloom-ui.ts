@@ -1,5 +1,4 @@
 import { LitElement, html, nothing } from "lit";
-import { customElement, property } from "lit/decorators.js";
 
 export class OwnloomLightElement extends LitElement {
   protected createRenderRoot() {
@@ -26,10 +25,14 @@ const ICONS: Record<string, ReturnType<typeof html>> = {
   close: html`<path d="M6 6l12 12M18 6 6 18" />`,
 };
 
-@customElement("ownloom-icon")
 export class OwnloomIcon extends OwnloomLightElement {
-  @property({ reflect: true }) name = "mesh";
-  @property() label = "";
+  static properties = {
+    name: { reflect: true },
+    label: {},
+  };
+
+  name = "mesh";
+  label = "";
 
   render() {
     const icon = ICONS[this.name] ?? ICONS.mesh;
@@ -48,10 +51,14 @@ export class OwnloomIcon extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-hearth")
 export class OwnloomHearth extends OwnloomLightElement {
-  @property() heading = "Hearth";
-  @property() detail = "Loopback-first, local Ownloom services.";
+  static properties = {
+    heading: {},
+    detail: {},
+  };
+
+  heading = "Hearth";
+  detail = "Loopback-first, local Ownloom services.";
 
   render() {
     return html`<footer class="mx-sm mt-auto grid grid-cols-[auto_minmax(0,1fr)] items-center gap-xs rounded border border-secondary/30 bg-secondary/10 p-xs text-on-surface" aria-label="Local-first hearth status">
@@ -60,3 +67,6 @@ export class OwnloomHearth extends OwnloomLightElement {
     </footer>`;
   }
 }
+
+customElements.define("ownloom-icon", OwnloomIcon);
+customElements.define("ownloom-hearth", OwnloomHearth);

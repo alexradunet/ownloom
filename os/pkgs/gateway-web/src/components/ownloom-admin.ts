@@ -1,5 +1,4 @@
 import { html } from "lit";
-import { customElement } from "lit/decorators.js";
 import "./ownloom-ui.js";
 import { OwnloomLightElement } from "./ownloom-ui.js";
 
@@ -14,7 +13,6 @@ const topbarClass = "loom-topbar flex h-16 shrink-0 items-center justify-between
 const cardClass = "lit-stitch lit-notch relative rounded border border-outline-variant bg-surface-container p-md";
 const railClass = "page-sidebar grid content-start gap-sm";
 
-@customElement("ownloom-admin-app")
 export class OwnloomAdminApp extends OwnloomLightElement {
   render() {
     return html`<main id="main" class=${shellClass}>
@@ -32,7 +30,6 @@ export class OwnloomAdminApp extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-admin-nav")
 class OwnloomAdminNav extends OwnloomLightElement {
   render() {
     return html`<aside class=${sideNavClass} aria-label="Ownloom cockpit menu">
@@ -85,7 +82,6 @@ class OwnloomAdminNav extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-admin-topbar")
 class OwnloomAdminTopbar extends OwnloomLightElement {
   render() {
     return html`<header class=${topbarClass}>
@@ -106,7 +102,6 @@ class OwnloomAdminTopbar extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-workbench-panel")
 class OwnloomWorkbenchPanel extends OwnloomLightElement {
   render() {
     return html`<section id="tab-chat" class=${`${panelClass} active p-0`} role="tabpanel" data-tab-panel="chat" aria-labelledby="tab-chat-button" tabindex="0">
@@ -160,7 +155,6 @@ class OwnloomWorkbenchPanel extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-planner-panel")
 class OwnloomPlannerPanel extends OwnloomLightElement {
   render() {
     return html`<section id="tab-organizer" class=${panelClass} role="tabpanel" data-tab-panel="organizer" aria-labelledby="tab-organizer-button" tabindex="0" hidden>
@@ -181,7 +175,6 @@ class OwnloomPlannerPanel extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-access-panel")
 class OwnloomAccessPanel extends OwnloomLightElement {
   render() {
     return html`<section id="tab-config" class=${panelClass} role="tabpanel" data-tab-panel="config" aria-labelledby="tab-config-button" tabindex="0" hidden>
@@ -213,7 +206,6 @@ class OwnloomAccessPanel extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-shell-panel")
 class OwnloomShellPanel extends OwnloomLightElement {
   render() {
     return html`<section id="tab-terminal" class=${panelClass} role="tabpanel" data-tab-panel="terminal" aria-labelledby="tab-terminal-button" tabindex="0" hidden>
@@ -229,7 +221,6 @@ class OwnloomShellPanel extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-trace-panel")
 class OwnloomTracePanel extends OwnloomLightElement {
   render() {
     return html`<section id="tab-log" class=${panelClass} role="tabpanel" data-tab-panel="log" aria-labelledby="tab-log-button" tabindex="0" hidden>
@@ -243,3 +234,13 @@ class OwnloomTracePanel extends OwnloomLightElement {
     </section>`;
   }
 }
+
+
+customElements.define("ownloom-admin-app", OwnloomAdminApp);
+customElements.define("ownloom-admin-nav", OwnloomAdminNav);
+customElements.define("ownloom-admin-topbar", OwnloomAdminTopbar);
+customElements.define("ownloom-workbench-panel", OwnloomWorkbenchPanel);
+customElements.define("ownloom-planner-panel", OwnloomPlannerPanel);
+customElements.define("ownloom-access-panel", OwnloomAccessPanel);
+customElements.define("ownloom-shell-panel", OwnloomShellPanel);
+customElements.define("ownloom-trace-panel", OwnloomTracePanel);

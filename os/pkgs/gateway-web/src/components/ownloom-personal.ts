@@ -1,5 +1,4 @@
 import { html } from "lit";
-import { customElement } from "lit/decorators.js";
 import { createGatewayClient } from "../../public/js/gateway-client.js";
 import { cleanupOldPwaState } from "../../public/js/pwa-cleanup.js";
 import { browserDisplayName, getBrowserClientId, loadSettings, saveSettings } from "../../public/js/storage.js";
@@ -22,7 +21,6 @@ const mainClass = "loom-content flex min-w-0 flex-1 flex-col overflow-hidden bg-
 const topbarClass = "loom-topbar flex h-16 shrink-0 items-center justify-between gap-sm border-b border-dashed border-outline-variant bg-background px-margin";
 const navLinkClass = "group flex items-start gap-xs rounded border border-transparent px-sm py-xs text-on-surface-variant no-underline transition-colors hover:border-outline-variant hover:bg-surface-container hover:text-primary";
 
-@customElement("ownloom-personal-app")
 export class OwnloomPersonalApp extends OwnloomLightElement {
   render() {
     return html`<main id="main" class=${shellClass}>
@@ -72,7 +70,6 @@ export class OwnloomPersonalApp extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-personal-chat")
 class OwnloomPersonalChat extends OwnloomLightElement {
   private connectionState = "disconnected";
   private statusText = "Pair this browser or open admin access to start.";
@@ -269,3 +266,6 @@ function makeId(prefix = "message") {
   const random = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   return `${prefix}-${random}`;
 }
+
+customElements.define("ownloom-personal-app", OwnloomPersonalApp);
+customElements.define("ownloom-personal-chat", OwnloomPersonalChat);

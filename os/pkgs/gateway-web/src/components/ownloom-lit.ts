@@ -1,5 +1,4 @@
 import { LitElement, html, nothing } from "lit";
-import { customElement, property } from "lit/decorators.js";
 
 class OwnloomLightElement extends LitElement {
   protected createRenderRoot() {
@@ -7,10 +6,14 @@ class OwnloomLightElement extends LitElement {
   }
 }
 
-@customElement("ownloom-lit-button")
 export class OwnloomLitButton extends OwnloomLightElement {
-  @property({ reflect: true }) variant: "primary" | "secondary" = "primary";
-  @property() label = "Action";
+  static properties = {
+    variant: { reflect: true },
+    label: {},
+  };
+
+  variant: "primary" | "secondary" = "primary";
+  label = "Action";
 
   render() {
     const variantClass =
@@ -27,10 +30,14 @@ export class OwnloomLitButton extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-lit-chip")
 export class OwnloomLitChip extends OwnloomLightElement {
-  @property({ reflect: true }) tone: "thread" | "hearth" | "system" = "thread";
-  @property() label = "Chip";
+  static properties = {
+    tone: { reflect: true },
+    label: {},
+  };
+
+  tone: "thread" | "hearth" | "system" = "thread";
+  label = "Chip";
 
   render() {
     const toneClass = {
@@ -47,11 +54,16 @@ export class OwnloomLitChip extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-lit-card")
 export class OwnloomLitCard extends OwnloomLightElement {
-  @property() kicker = "Pattern";
-  @property() heading = "Digital Scoarță card";
-  @property() description = "Flat tonal layer, 1px structural border, 4px rhythm, and pixel-stitch detail.";
+  static properties = {
+    kicker: {},
+    heading: {},
+    description: {},
+  };
+
+  kicker = "Pattern";
+  heading = "Digital Scoarță card";
+  description = "Flat tonal layer, 1px structural border, 4px rhythm, and pixel-stitch detail.";
 
   render() {
     return html`<article
@@ -71,11 +83,16 @@ export class OwnloomLitCard extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-lit-message")
 export class OwnloomLitMessage extends OwnloomLightElement {
-  @property({ reflect: true }) role: "user" | "assistant" | "system" = "assistant";
-  @property() label = "Ownloom";
-  @property() content = "Message content.";
+  static properties = {
+    role: { reflect: true },
+    label: {},
+    content: {},
+  };
+
+  role: "user" | "assistant" | "system" = "assistant";
+  label = "Ownloom";
+  content = "Message content.";
 
   render() {
     const roleClass = {
@@ -91,11 +108,16 @@ export class OwnloomLitMessage extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-lit-rail-item")
 export class OwnloomLitRailItem extends OwnloomLightElement {
-  @property() label = "Shared substrate";
-  @property() detail = "Ownloom CLI";
-  @property({ type: Boolean, reflect: true }) active = false;
+  static properties = {
+    label: {},
+    detail: {},
+    active: { type: Boolean, reflect: true },
+  };
+
+  label = "Shared substrate";
+  detail = "Ownloom CLI";
+  active = false;
 
   render() {
     return html`<a
@@ -112,7 +134,6 @@ export class OwnloomLitRailItem extends OwnloomLightElement {
   }
 }
 
-@customElement("ownloom-lit-catalog")
 export class OwnloomLitCatalog extends OwnloomLightElement {
   render() {
     return html`<section class="grid gap-ds-md">
@@ -143,3 +164,10 @@ export class OwnloomLitCatalog extends OwnloomLightElement {
     </section>`;
   }
 }
+
+customElements.define("ownloom-lit-button", OwnloomLitButton);
+customElements.define("ownloom-lit-chip", OwnloomLitChip);
+customElements.define("ownloom-lit-card", OwnloomLitCard);
+customElements.define("ownloom-lit-message", OwnloomLitMessage);
+customElements.define("ownloom-lit-rail-item", OwnloomLitRailItem);
+customElements.define("ownloom-lit-catalog", OwnloomLitCatalog);
