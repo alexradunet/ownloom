@@ -8,9 +8,10 @@
     "build:css": "tailwindcss -i src/styles/ownloom-tailwind.css -o public/generated/ownloom-lit.css --minify",
     "build:js:catalog": "esbuild src/components/ownloom-lit.ts --bundle --format=esm --target=es2022 --outfile=public/generated/ownloom-lit.js",
     "build:js:personal": "esbuild src/components/ownloom-personal.ts --bundle --format=esm --target=es2022 --outfile=public/generated/ownloom-personal.js",
-    "build:js": "npm run build:js:catalog && npm run build:js:personal",
+    "build:js:admin": "esbuild src/components/ownloom-admin.ts --bundle --format=esm --target=es2022 --outfile=public/generated/ownloom-admin.js",
+    "build:js": "npm run build:js:catalog && npm run build:js:personal && npm run build:js:admin",
     "build": "npm run clean && npm run build:css && npm run build:js",
-    "check": "node --check public/generated/ownloom-lit.js && node --check public/generated/ownloom-personal.js"
+    "check": "node --check public/generated/ownloom-lit.js && node --check public/generated/ownloom-personal.js && node --check public/generated/ownloom-admin.js"
   },
   "devDependencies": {
     "@tailwindcss/cli": "4.3.0",

@@ -19,6 +19,7 @@ runCommand "ownloom-gateway-web-smoke" {
     test -f "$root/generated/ownloom-lit.css"
     test -f "$root/generated/ownloom-lit.js"
     test -f "$root/generated/ownloom-personal.js"
+    test -f "$root/generated/ownloom-admin.js"
     test ! -e "$root/manifest.webmanifest"
     test ! -e "$root/sw.js"
     test ! -e "$root/js/pwa.js"
@@ -56,27 +57,30 @@ runCommand "ownloom-gateway-web-smoke" {
     grep -q './generated/ownloom-lit.css' "$root/components-lit.html"
     grep -q './generated/ownloom-lit.js' "$root/components-lit.html"
     grep -q 'ownloom-lit-catalog' "$root/components-lit.html"
+    grep -q 'Back to admin' "$root/components.html"
+    grep -q 'Back to admin' "$root/components-lit.html"
     grep -q 'tailwindcss v4' "$root/generated/ownloom-lit.css"
     grep -q -- '--background:var(--ds-background)' "$root/generated/ownloom-lit.css"
     grep -q 'ownloom-lit-button' "$root/generated/ownloom-lit.js"
     grep -q 'ownloom-lit-catalog' "$root/generated/ownloom-lit.js"
+    grep -q 'ownloom-personal-app' "$root/generated/ownloom-personal.js"
     grep -q 'ownloom-personal-chat' "$root/generated/ownloom-personal.js"
     grep -q 'agent.wait' "$root/generated/ownloom-personal.js"
     grep -q 'web-personal-main' "$root/generated/ownloom-personal.js"
+    grep -q 'ownloom-admin-app' "$root/generated/ownloom-admin.js"
+    grep -q 'Gateway access workspace' "$root/generated/ownloom-admin.js"
+    grep -q 'Trace rail' "$root/generated/ownloom-admin.js"
+    grep -q 'pairButton' "$root/generated/ownloom-admin.js"
+    grep -q 'terminalFrame' "$root/generated/ownloom-admin.js"
+    grep -q 'radicaleFrame' "$root/generated/ownloom-admin.js"
     ! grep -R -q 'cdn.tailwindcss.com' "$root"
     ! grep -R -q 'fonts.googleapis.com' "$root"
-    grep -q 'Personal mode' "$root/index.html"
-    grep -q 'app-shell container-fluid' "$root/index.html"
-    grep -q 'app-sidebar' "$root/index.html"
-    grep -q 'top-lintel' "$root/index.html"
-    grep -q 'tab-panel active' "$root/index.html"
-    grep -q 'personal-layout' "$root/index.html"
-    grep -q 'ownloom-personal-chat' "$root/index.html"
+    grep -q 'ownloom-personal-app' "$root/index.html"
     grep -q '/generated/ownloom-lit.css' "$root/index.html"
     grep -q '/generated/ownloom-personal.js' "$root/index.html"
-    grep -q 'Admin cockpit' "$root/index.html"
-    grep -q '/admin' "$root/index.html"
-    grep -q '/admin?tab=organizer' "$root/index.html"
+    grep -q 'Admin cockpit' "$root/generated/ownloom-personal.js"
+    grep -q '/admin' "$root/generated/ownloom-personal.js"
+    grep -q '/admin?tab=organizer' "$root/generated/ownloom-personal.js"
     ! grep -q '/terminal/ownloom' "$root/index.html"
     ! grep -q '/radicale/' "$root/index.html"
     ! grep -q 'components.html' "$root/index.html"
@@ -86,31 +90,35 @@ runCommand "ownloom-gateway-web-smoke" {
     ! grep -q 'terminalFrame' "$root/index.html"
     ! grep -q './generated/ownloom-lit.js' "$root/index.html"
     ! grep -q 'ownloom-lit-catalog' "$root/index.html"
-    grep -q 'page-layout' "$root/admin.html"
-    grep -q 'page-sidebar' "$root/admin.html"
-    grep -q 'components.html' "$root/admin.html"
-    grep -q 'components-lit.html' "$root/admin.html"
+    grep -q 'ownloom-admin-app' "$root/admin.html"
+    grep -q '/generated/ownloom-lit.css' "$root/admin.html"
+    grep -q '/app.js' "$root/admin.html"
+    grep -q 'page-layout' "$root/generated/ownloom-admin.js"
+    grep -q 'page-sidebar' "$root/generated/ownloom-admin.js"
+    grep -q 'components.html' "$root/generated/ownloom-admin.js"
+    grep -q 'components-lit.html' "$root/generated/ownloom-admin.js"
     grep -q 'component-index' "$root/components.html"
     ! grep -q 'type="module"' "$root/components.html"
     ! grep -q 'rel="manifest"' "$root/index.html"
     ! grep -q 'rel="manifest"' "$root/admin.html"
     ! grep -q 'pwaStatus' "$root/admin.html"
-    grep -q 'role="tablist"' "$root/admin.html"
-    grep -q 'role="tab"' "$root/admin.html"
-    grep -q 'aria-controls="tab-terminal"' "$root/admin.html"
-    grep -q 'terminalFrame' "$root/admin.html"
-    grep -q 'copyTerminalTokenButton' "$root/admin.html"
-    grep -q '/terminal/ownloom' "$root/admin.html"
-    grep -q 'pairButton' "$root/admin.html"
-    grep -q 'newChatButton' "$root/admin.html"
-    grep -q 'threadRailToggle' "$root/admin.html"
-    ! grep -q 'plannerRefreshButton' "$root/admin.html"
-    ! grep -q 'plannerOverdueList' "$root/admin.html"
-    ! grep -q 'plannerUndatedList' "$root/admin.html"
-    grep -q 'radicaleFrame' "$root/admin.html"
-    grep -q '/radicale/' "$root/admin.html"
-    grep -q 'Gateway access workspace' "$root/admin.html"
-    grep -q 'Trace rail' "$root/admin.html"
+    grep -q 'role="tablist"' "$root/generated/ownloom-admin.js"
+    grep -q 'role="tab"' "$root/generated/ownloom-admin.js"
+    grep -q 'aria-controls' "$root/generated/ownloom-admin.js"
+    grep -q 'tab-terminal' "$root/generated/ownloom-admin.js"
+    grep -q 'terminalFrame' "$root/generated/ownloom-admin.js"
+    grep -q 'copyTerminalTokenButton' "$root/generated/ownloom-admin.js"
+    grep -q '/terminal/ownloom' "$root/generated/ownloom-admin.js"
+    grep -q 'pairButton' "$root/generated/ownloom-admin.js"
+    grep -q 'newChatButton' "$root/generated/ownloom-admin.js"
+    grep -q 'threadRailToggle' "$root/generated/ownloom-admin.js"
+    ! grep -q 'plannerRefreshButton' "$root/generated/ownloom-admin.js"
+    ! grep -q 'plannerOverdueList' "$root/generated/ownloom-admin.js"
+    ! grep -q 'plannerUndatedList' "$root/generated/ownloom-admin.js"
+    grep -q 'radicaleFrame' "$root/generated/ownloom-admin.js"
+    grep -q '/radicale/' "$root/generated/ownloom-admin.js"
+    grep -q 'Gateway access workspace' "$root/generated/ownloom-admin.js"
+    grep -q 'Trace rail' "$root/generated/ownloom-admin.js"
     ! grep -R -q '/api/planner' "$root"
     grep -R -q 'agent.wait' "$root"
     grep -R -q 'data-session-switch-chat' "$root"
@@ -169,11 +177,8 @@ runCommand "ownloom-gateway-web-smoke" {
       sleep 0.1
     done
     grep -qi 'Ownloom Web' /tmp/index.html
-    grep -q 'app-shell container-fluid' /tmp/index.html
-    grep -q 'top-lintel' /tmp/index.html
-    grep -q 'ownloom-personal-chat' /tmp/index.html
+    grep -q 'ownloom-personal-app' /tmp/index.html
     grep -q '/generated/ownloom-personal.js' /tmp/index.html
-    grep -q '/admin' /tmp/index.html
     ! grep -q '/terminal/ownloom' /tmp/index.html
     grep -qi 'content-security-policy:' /tmp/index.headers
     grep -qi 'x-content-type-options: nosniff' /tmp/index.headers
@@ -182,18 +187,32 @@ runCommand "ownloom-gateway-web-smoke" {
     curl -fsS -D /tmp/admin.headers http://127.0.0.1:18090/admin >/tmp/admin.html
     grep -qi 'content-type: text/html' /tmp/admin.headers
     grep -qi 'Ownloom Cockpit' /tmp/admin.html
-    grep -q 'pairButton' /tmp/admin.html
-    grep -q 'terminalFrame' /tmp/admin.html
-    grep -q 'radicaleFrame' /tmp/admin.html
+    grep -q 'ownloom-admin-app' /tmp/admin.html
+    grep -q '/generated/ownloom-lit.css' /tmp/admin.html
+    grep -q '/app.js' /tmp/admin.html
 
     curl -fsS -D /tmp/admin-slash.headers http://127.0.0.1:18090/admin/ >/tmp/admin-slash.html
     grep -qi 'content-type: text/html' /tmp/admin-slash.headers
     grep -qi 'Ownloom Cockpit' /tmp/admin-slash.html
+    grep -q 'ownloom-admin-app' /tmp/admin-slash.html
+
+    curl -fsS -D /tmp/app-js.headers http://127.0.0.1:18090/app.js >/tmp/app.js
+    grep -qi 'content-type: text/javascript' /tmp/app-js.headers
+    node --check /tmp/app.js
+    grep -q '/generated/ownloom-admin.js' /tmp/app.js
+    grep -q 'whenDefined("ownloom-admin-app")' /tmp/app.js
+
+    curl -fsS -D /tmp/admin-js.headers http://127.0.0.1:18090/generated/ownloom-admin.js >/tmp/ownloom-admin.js
+    grep -qi 'content-type: text/javascript' /tmp/admin-js.headers
+    node --check /tmp/ownloom-admin.js
+    grep -q 'ownloom-admin-app' /tmp/ownloom-admin.js
+    grep -q 'pairButton' /tmp/ownloom-admin.js
+    grep -q 'terminalFrame' /tmp/ownloom-admin.js
 
     curl -fsS -D /tmp/components.headers http://127.0.0.1:18090/components.html >/tmp/components.html
     grep -qi 'content-type: text/html' /tmp/components.headers
     grep -qi 'Ownloom Component Loom' /tmp/components.html
-    grep -q 'Back to cockpit' /tmp/components.html
+    grep -q 'Back to admin' /tmp/components.html
 
     curl -fsS -D /tmp/components-lit.headers http://127.0.0.1:18090/components-lit.html >/tmp/components-lit.html
     grep -qi 'content-type: text/html' /tmp/components-lit.headers

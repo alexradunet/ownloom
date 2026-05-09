@@ -30,10 +30,61 @@
   --color-hearth-foreground: var(--hearth-foreground);
   --color-terminal: var(--terminal);
 
+  /* Direct DESIGN.md token aliases used by the declarative app shell. */
+  --color-surface: var(--ds-surface);
+  --color-surface-dim: var(--ds-surface-dim);
+  --color-surface-bright: var(--ds-surface-bright);
+  --color-surface-container-lowest: var(--ds-surface-container-lowest);
+  --color-surface-container-low: var(--ds-surface-container-low);
+  --color-surface-container: var(--ds-surface-container);
+  --color-surface-container-high: var(--ds-surface-container-high);
+  --color-surface-container-highest: var(--ds-surface-container-highest);
+  --color-surface-variant: var(--ds-surface-variant);
+  --color-on-surface: var(--ds-on-surface);
+  --color-on-surface-variant: var(--ds-on-surface-variant);
+  --color-on-background: var(--ds-on-background);
+  --color-outline: var(--ds-outline);
+  --color-outline-variant: var(--ds-outline-variant);
+  --color-primary-container: var(--ds-primary-container);
+  --color-on-primary-container: var(--ds-on-primary-container);
+  --color-on-primary: var(--ds-on-primary);
+  --color-on-secondary: var(--ds-on-secondary);
+  --color-secondary-container: var(--ds-secondary-container);
+  --color-on-secondary-container: var(--ds-on-secondary-container);
+  --color-tertiary: var(--ds-tertiary);
+  --color-on-tertiary: var(--ds-on-tertiary);
+  --color-tertiary-container: var(--ds-tertiary-container);
+  --color-tertiary-fixed: var(--ds-tertiary-fixed);
+  --color-tertiary-fixed-dim: var(--ds-tertiary-fixed-dim);
+  --color-error: var(--ds-error);
+  --color-error-container: var(--ds-error-container);
+  --color-on-error-container: var(--ds-on-error-container);
+
   --font-sans: var(--font-body);
   --font-serif: var(--font-headline);
   --font-mono: var(--font-label);
+  --font-body-md: var(--font-body);
+  --font-body-lg: var(--font-body);
+  --font-headline-md: var(--font-headline);
+  --font-headline-lg: var(--font-headline);
+  --font-label-md: var(--font-label);
+  --font-label-sm: var(--font-label);
 
+  --text-body-md: 16px;
+  --text-body-lg: 18px;
+  --text-headline-md: 28px;
+  --text-headline-lg: 40px;
+  --text-label-md: 14px;
+  --text-label-sm: 12px;
+
+  --spacing-base: var(--space-base);
+  --spacing-xs: var(--space-xs);
+  --spacing-sm: var(--space-sm);
+  --spacing-md: var(--space-md);
+  --spacing-lg: var(--space-lg);
+  --spacing-xl: var(--space-xl);
+  --spacing-gutter: var(--space-gutter);
+  --spacing-margin: var(--space-margin);
   --spacing-ds-base: var(--space-base);
   --spacing-ds-xs: var(--space-xs);
   --spacing-ds-sm: var(--space-sm);

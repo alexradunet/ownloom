@@ -13,7 +13,7 @@ This package implements that system for the static Ownloom web shell and local c
 - Keep runtime assets self-hosted. No remote scripts, styles, fonts, icons, analytics, or image assets.
 - Preserve CSP compatibility: `style-src 'self'`, `font-src 'self'`, loopback-only API/WebSocket/frame assumptions.
 - Preserve required `/admin` IDs, `data-*` hooks, ARIA tabs, terminal hooks, Radicale frame hooks, and protocol behavior.
-- Keep `components.html` as a static no-JS component loom and `components-lit.html` as the generated Lit/Tailwind catalog. The root personal chat island is the first live generated custom-element flow; keep further migrations deliberate and one flow at a time.
+- Keep `components.html` as a static no-JS component loom and `components-lit.html` as the generated Lit/Tailwind catalog. The live personal and admin shells are light-DOM custom-element flows; preserve controller DOM hooks when editing them.
 
 ## Core visual contract
 
@@ -28,8 +28,8 @@ This package implements that system for the static Ownloom web shell and local c
 ## File responsibilities
 
 ```text
-public/index.html                  # personal/user-mode shell at /
-public/admin.html                  # existing operator cockpit at /admin
+public/index.html                  # personal/user-mode component host at /
+public/admin.html                  # operator cockpit component host at /admin
 public/style.css                   # import order: Pico, tokens/theme, app CSS
 public/vendor/pico.min.css         # self-hosted Pico CSS
 public/vendor/fonts/               # self-hosted Digital Scoarță typefaces
@@ -39,17 +39,20 @@ public/styles/layout.css           # app shell, sidebar, workbench, grids
 public/styles/components.css       # cards, chips, messages, lists, service frames, log
 public/styles/responsive.css       # mobile/zoom/reduced-motion/forced-colors
 src/styles/ownloom-tailwind.css    # Tailwind v4 token bridge; no Preflight
+src/components/ownloom-ui.ts       # shared light-DOM atoms and icons
 src/components/ownloom-lit.ts      # catalog Lit component island source
-src/components/ownloom-personal.ts # root dependency-light personal chat island source
+src/components/ownloom-personal.ts # personal shell + chat island source
+src/components/ownloom-admin.ts    # admin shell and panel component source
 public/generated/ownloom-lit.css   # generated Tailwind CSS output
 public/generated/ownloom-lit.js    # bundled self-hosted catalog island output
-public/generated/ownloom-personal.js # bundled self-hosted personal chat island output
+public/generated/ownloom-personal.js # bundled self-hosted personal shell/chat output
+public/generated/ownloom-admin.js  # bundled self-hosted admin cockpit output
 ```
 
 ## Component guidance
 
-- **Personal shell (`/`):** calm user-mode entry point using the same left sidebar and top lintel as admin, with the gateway-backed text chat as a full-width stacked work surface. Link operator surfaces through `/admin`; do not expose direct shell controls on the root page. Keep attachments/artifacts deferred until explicitly scoped.
-- **Admin cockpit (`/admin`):** preserve the existing operator behavior and hooks until a deliberate migration step moves one flow at a time.
+- **Personal shell (`/`):** calm user-mode entry point using the same sidebar/topbar/canvas grammar as admin, with the gateway-backed text chat as the main work surface. Link operator surfaces through `/admin`; do not expose direct shell controls on the root page. Keep attachments/artifacts deferred until explicitly scoped.
+- **Admin cockpit (`/admin`):** declarative light-DOM mini components render the shell and panels, while existing controllers preserve behavior through stable ids and `data-*` hooks.
 - **Sidebar:** the admin loom frame. It should carry a restrained stitched edge and active tab state that is visible beyond color.
 - **Top lintel:** title, purpose, and live status in one quiet band.
 - **Workbench:** centered active thread first; thread rail secondary and hideable.
@@ -71,14 +74,14 @@ Every admin cockpit tab should use a two-part layout:
 </div>
 ```
 
-The main work surface is carded consistently. The Workbench/chat exception keeps `.workbench-card` transparent so the conversation itself has no card background, while the right thread rail still participates in the same sidebar pattern. The personal root uses the same `.app-shell`, `.app-sidebar`, and `.top-lintel` chrome, but keeps `.personal-layout` stacked so the chat is never squeezed by a right rail.
+The main work surface is carded consistently. The Workbench/chat exception keeps `.workbench-card` transparent so the conversation itself has no card background, while the right thread rail still participates in the same sidebar pattern. The personal root uses the same sidebar/topbar/canvas language and keeps admin-only operator controls behind `/admin`.
 
 ## Change checklist
 
 Before committing gateway-web visual changes:
 
 1. Verify the change still follows `../../../DESIGN.md`.
-2. Keep custom CSS minimal and app-specific; prefer Pico semantics for existing live flows until they are intentionally migrated.
+2. Keep custom CSS minimal and app-specific; prefer declarative component markup plus existing Pico/base primitives.
 3. Use Tailwind utilities for generated islands only when they make the component clearer than hand-written CSS.
 4. Update smoke checks for intentional new static/generated assets/selectors.
 5. Run:

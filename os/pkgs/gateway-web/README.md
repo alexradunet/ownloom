@@ -2,7 +2,7 @@
 
 Small loopback-only Ownloom web surface with a gateway-backed personal chat shell and a matching operator cockpit.
 
-It serves a static HTML/CSS/JS runtime. A small build step is allowed for generated Tailwind v4 CSS and Lit/mini-lit-style component islands, but the deployed browser assets remain self-hosted files with no runtime bundler, CDN, or framework server. The existing live cockpit still uses native ES modules plus a pragmatic Atomic Design layout while generated islands are introduced incrementally.
+It serves a static HTML/CSS/JS runtime. A small build step emits self-hosted Tailwind v4 CSS and light-DOM Lit/mini-lit component islands, but there is no runtime bundler, CDN, remote font, or framework server. The live personal and admin shells are declarative mini components; existing gateway controllers still own behavior through stable DOM ids.
 
 Canonical design direction and guardrails live in the repo-level [`DESIGN.md`](../../../DESIGN.md): **Digital Scoarță / Pixel Loom Minimalism**. The gateway-specific [`DESIGN.md`](./DESIGN.md) explains how this package implements it: Pico-first, self-hosted assets, flat tonal layers, 4px rhythm, structural borders, pixel-stitch motifs, Newsreader headings, Work Sans interface text, and JetBrains Mono operational metadata.
 
@@ -20,7 +20,7 @@ From another machine, use an SSH tunnel:
 ssh -L 8090:127.0.0.1:8090 ownloom-vps
 ```
 
-Then open <http://127.0.0.1:8090> for the personal/user-mode chat shell, or <http://127.0.0.1:8090/admin> for the existing operator cockpit. Both use the same left-sidebar/header shell language; the personal page keeps its chat as a full-width stacked work surface. The personal shell can pair and remember this browser itself; `/admin` remains the fallback for manual token and operator controls. Pairing stores a loopback-only trusted runtime token in local storage so the personal shell can reconnect automatically without changing the admin thread selection.
+Then open <http://127.0.0.1:8090> for the personal/user-mode chat shell, or <http://127.0.0.1:8090/admin> for the operator cockpit. Both use the same topbar/sidebar/canvas language; the personal page keeps admin-only controls behind `/admin`. The personal shell can pair and remember this browser itself; `/admin` remains the fallback for manual token and operator controls. Pairing stores a loopback-only trusted runtime token in local storage so the personal shell can reconnect automatically without changing the admin thread selection.
 
 You can still paste a named client token manually and click **Connect** in `/admin` if needed.
 
@@ -40,15 +40,16 @@ The UI is organized as native ES modules:
 
 ```text
 public/
-  index.html              # personal/user-mode app shell
-  admin.html              # existing operator cockpit and JS hooks
+  index.html              # personal/user-mode component host
+  admin.html              # operator cockpit component host
   app.js                  # tiny compatibility bootstrap used by admin.html
   components.html         # static Ownloom component catalog / storybook-like loom
   components-lit.html     # generated Lit/Tailwind component island catalog
   generated/
     ownloom-lit.css       # Tailwind v4 token-bridge output; no Preflight
     ownloom-lit.js        # esbuild-bundled catalog Lit island, self-hosted
-    ownloom-personal.js   # esbuild-bundled gateway-backed personal chat island
+    ownloom-personal.js   # esbuild-bundled personal shell + gateway-backed chat island
+    ownloom-admin.js      # esbuild-bundled operator cockpit component tree
   js/
     app.js                # app composition/root controller
     constants.js          # storage keys, protocol constants

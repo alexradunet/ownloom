@@ -1,4 +1,42 @@
 @media (max-width: 1100px) {
+  .loom-shell {
+    flex-direction: column;
+  }
+
+  .loom-sidebar {
+    width: auto !important;
+    height: auto !important;
+    max-height: 18rem;
+    border-right: 0;
+    border-bottom: 1px dashed var(--ds-outline-variant);
+    padding-block: var(--space-sm);
+  }
+
+  .loom-sidebar nav {
+    display: flex;
+    gap: var(--space-xs);
+    overflow-x: auto;
+  }
+
+  .loom-sidebar nav > * {
+    min-width: 12rem;
+  }
+
+  .loom-content {
+    min-height: 0;
+  }
+
+  .loom-topbar {
+    height: auto !important;
+    flex-wrap: wrap;
+    padding: var(--space-xs) var(--space-sm) !important;
+  }
+
+  .loom-personal-grid {
+    grid-template-columns: 1fr !important;
+    overflow: auto;
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr);

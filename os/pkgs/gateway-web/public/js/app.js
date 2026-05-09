@@ -2,7 +2,7 @@ import { all, byId } from "./dom.js";
 import { createTabController } from "./a11y.js";
 import { createGatewayClient } from "./gateway-client.js";
 import { createAppState, currentChatId, currentSessionKey, sessionTitle } from "./state.js";
-import { getActiveTab, loadSettings, saveSettings, setActiveTab } from "./storage.js";
+import { loadSettings, saveSettings, setActiveTab } from "./storage.js";
 import { createChatController } from "./controllers/chat-controller.js";
 import { createConfigController } from "./controllers/config-controller.js";
 import { createLogController } from "./controllers/log-controller.js";
@@ -115,15 +115,21 @@ export function startApp() {
   }
 
   const requestedTab = new URLSearchParams(window.location.search).get("tab");
-  createTabController({
+  const tabController = createTabController({
     buttons: els.tabButtons,
     panels: els.tabPanels,
-    initialTab: requestedTab || getActiveTab("chat"),
+    initialTab: requestedTab || "chat",
     onPersist: setActiveTab,
-    onSelect: (tab) => {
+    onSelect: (tab, { persist } = {}) => {
       if (tab === "terminal") ensureTerminalLoaded(state, els.terminalFrame);
       if (tab === "organizer") ensureRadicaleLoaded();
+      if (persist) pushTabUrl(tab);
     },
+  });
+
+  window.addEventListener("popstate", () => {
+    const tab = new URLSearchParams(window.location.search).get("tab") || "chat";
+    tabController.select(tab, { persist: false });
   });
 
   cleanupOldPwaState(log);
@@ -132,6 +138,12 @@ export function startApp() {
   if (els.rememberSettings.checked && els.token.value.trim()) {
     configController.connect();
   }
+}
+
+function pushTabUrl(tab) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("tab", tab);
+  window.history.pushState({ tab }, "", url);
 }
 
 function collectElements() {

@@ -1,7 +1,7 @@
 export function createTabController({ buttons, panels, initialTab = "chat", onSelect = () => {}, onPersist = () => {} }) {
   const knownTabs = new Set(panels.map((panel) => panel.dataset.tabPanel));
 
-  function select(tab, { focus = false } = {}) {
+  function select(tab, { focus = false, persist = true } = {}) {
     const nextTab = knownTabs.has(tab) ? tab : "chat";
     let activeButton = null;
 
@@ -19,8 +19,8 @@ export function createTabController({ buttons, panels, initialTab = "chat", onSe
       panel.hidden = !active;
     }
 
-    onPersist(nextTab);
-    onSelect(nextTab);
+    if (persist) onPersist(nextTab);
+    onSelect(nextTab, { persist });
     if (focus) activeButton?.focus();
   }
 
@@ -50,6 +50,6 @@ export function createTabController({ buttons, panels, initialTab = "chat", onSe
     });
   }
 
-  select(initialTab);
+  select(initialTab, { persist: false });
   return { select };
 }
