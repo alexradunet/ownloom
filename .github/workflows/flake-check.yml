@@ -28,16 +28,18 @@ jobs:
             .#checks.x86_64-linux.deadnix \
             .#checks.x86_64-linux.formatting \
             .#checks.x86_64-linux.statix \
-            .#checks.x86_64-linux.nixpi-host-configurations-eval \
-            .#checks.x86_64-linux.nixpi-vps-security-eval \
-            .#checks.x86_64-linux.nixpi-gateway-module-eval \
-            .#checks.x86_64-linux.nixpi-gateway-package \
-            .#checks.x86_64-linux.nixpi-openssh-native-abuse-eval \
-            .#checks.x86_64-linux.nixpi-pi-extension-startup-smoke \
-            .#checks.x86_64-linux.nixpi-planner-package \
-            .#checks.x86_64-linux.nixpi-purity-check \
-            .#checks.x86_64-linux.nixpi-wiki-adapter-api-boundary \
-            .#checks.x86_64-linux.nixpi-wiki-cli-smoke \
-            .#checks.x86_64-linux.nixpi-wiki-npm-pack-smoke \
-            .#checks.x86_64-linux.nixpi-wiki-package \
-            .#checks.x86_64-linux.nixpi-wiki-stale-identities
+            .#checks.x86_64-linux.ownloom-host-configurations-eval \
+            .#checks.x86_64-linux.ownloom-vps-security-eval \
+            .#checks.x86_64-linux.ownloom-gateway-module-eval \
+            .#checks.x86_64-linux.ownloom-gateway-package \
+            .#checks.x86_64-linux.ownloom-gateway-web-package \
+            .#checks.x86_64-linux.ownloom-gateway-web-smoke \
+            .#checks.x86_64-linux.ownloom-openssh-native-abuse-eval \
+            .#checks.x86_64-linux.ownloom-pi-extension-startup-smoke \
+            .#checks.x86_64-linux.ownloom-planner-package \
+            .#checks.x86_64-linux.ownloom-purity-check \
+            .#checks.x86_64-linux.ownloom-wiki-adapter-api-boundary \
+            .#checks.x86_64-linux.ownloom-wiki-cli-smoke \
+            .#checks.x86_64-linux.ownloom-wiki-npm-pack-smoke \
+            .#checks.x86_64-linux.ownloom-wiki-package \
+            .#checks.x86_64-linux.ownloom-wiki-stale-identities

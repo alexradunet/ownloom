@@ -10,6 +10,8 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { handleIngest, stripSecrets } from "../src/wiki/actions-ingest.ts";
+import { buildRegistry, scanPages } from "../src/wiki/actions-meta.ts";
+import { handleWikiLint } from "../src/wiki/actions-lint.ts";
 import { todayStamp } from "../src/wiki/paths.ts";
 
 describe("stripSecrets", () => {
@@ -62,6 +64,11 @@ describe("handleIngest", () => {
 
   it("rejects empty content", () => {
     const r = handleIngest(wikiRoot, "   \n\n  ", { channel: "web" });
+    expect(r.isErr()).toBe(true);
+  });
+
+  it("rejects unsafe source channels", () => {
+    const r = handleIngest(wikiRoot, "hello", { channel: "../daily" });
     expect(r.isErr()).toBe(true);
   });
 
@@ -127,5 +134,15 @@ describe("handleIngest", () => {
       expect(r.value.details?.sourcePath).toBe(`sources/web/${today}.md`);
       expect(r.value.details?.dailyPath).toBe(`daily/${today}.md`);
     }
+  });
+
+  it("includes ingested source pages in registry and strict lint", () => {
+    handleIngest(wikiRoot, "x", { channel: "web" });
+    const registry = buildRegistry(scanPages(wikiRoot));
+    expect(registry.pages.map((page) => page.path)).toContain(`sources/web/${today}.md`);
+
+    const lint = handleWikiLint(wikiRoot, "strict");
+    expect(lint.isOk()).toBe(true);
+    if (lint.isOk()) expect(lint.value.details?.counts.total).toBe(0);
   });
 });

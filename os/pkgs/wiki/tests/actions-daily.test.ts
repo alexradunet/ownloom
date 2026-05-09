@@ -95,6 +95,11 @@ describe("actions-daily", () => {
     expect(r.isErr()).toBe(true);
   });
 
+  it("rejects non-date path segments", () => {
+    expect(handleDailyGet(wikiRoot, "../objects/secret").isErr()).toBe(true);
+    expect(handleDailyAppend(wikiRoot, ["x"], { date: "2026-05-09/evil" }).isErr()).toBe(true);
+  });
+
   it("get returns content of an existing daily note", () => {
     handleDailyAppend(wikiRoot, ["sentinel-bullet"], { date: "2099-06-15" });
     const r = handleDailyGet(wikiRoot, "2099-06-15");

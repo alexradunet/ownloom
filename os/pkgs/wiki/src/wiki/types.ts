@@ -170,6 +170,7 @@ export interface RegistryEntry {
 	validationLevel?: string;
 	reviewCycleDays?: number;
 	nextReview?: string;
+	supersedes?: string;
 }
 
 export interface RegistryData {

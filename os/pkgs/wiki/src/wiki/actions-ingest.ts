@@ -12,6 +12,8 @@ import type { ActionResult } from "./types.ts";
 import { todayStamp } from "./paths.ts";
 import { dailyNoteSkeleton } from "./actions-daily.ts";
 
+const SOURCE_CHANNELS = new Set(["whatsapp", "gmail", "calendar", "drive", "journal", "web", "voice", "other"]);
+
 const REDACT_PATTERNS: [RegExp, string][] = [
   // Long token-like strings near secret-named fields
   [/\b([A-Za-z0-9_\-]{20,})\b(?=.*(?:key|token|secret|password|passwd|pwd|api[-_]?key))/gi, "[REDACTED]"],
@@ -51,6 +53,10 @@ export function handleIngest(
 
   const today = todayStamp();
   const channel = opts.channel ?? "other";
+  if (!SOURCE_CHANNELS.has(channel)) {
+    return err(`Invalid source channel: ${channel}. Expected one of: ${[...SOURCE_CHANNELS].join(", ")}.`);
+  }
+  const areas = opts.areas?.length ? opts.areas : ["inbox"];
   const clean = stripSecrets(content);
 
   // 1. Write verbatim (secret-stripped) to sources/<channel>/YYYY-MM-DD.md
@@ -67,7 +73,7 @@ export function handleIngest(
     `channel: ${channel}`,
     `status: captured`,
     `domain: ${opts.domain ?? "personal"}`,
-    `areas: [${(opts.areas ?? []).join(", ")}]`,
+    `areas: [${areas.join(", ")}]`,
     `confidence: high`,
     `last_confirmed: ${today}`,
     `decay: normal`,

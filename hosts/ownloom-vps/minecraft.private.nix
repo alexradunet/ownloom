@@ -4,7 +4,7 @@
 # the whitelist entries with your real players (from https://mcuuid.net),
 # then run:
 #
-#   git update-index --skip-worktree hosts/nixpi-vps/minecraft.private.nix
+#   git update-index --skip-worktree hosts/ownloom-vps/minecraft.private.nix
 #
 # to keep your local edits out of commits.
 _: {

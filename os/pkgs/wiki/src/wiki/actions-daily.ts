@@ -46,6 +46,10 @@ function ensureDailyNote(dailyDir: string, today: string): string {
   return filePath;
 }
 
+function isDailyDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
 export interface DailyAppendOptions {
   section?: string;    // which section to append under; defaults to "Captured"
   date?: string;       // override date (YYYY-MM-DD); defaults to today
@@ -59,6 +63,8 @@ export function handleDailyAppend(
   if (!bullets.length) return err("No bullets provided.");
 
   const today = opts.date ?? todayStamp();
+  if (!isDailyDate(today)) return err(`Invalid daily note date: ${today}. Expected YYYY-MM-DD.`);
+
   const dailyDir = path.join(wikiRoot, "daily");
   mkdirSync(dailyDir, { recursive: true });
   const filePath = ensureDailyNote(dailyDir, today);
@@ -90,6 +96,8 @@ export function handleDailyGet(
   date?: string,
 ): ActionResult<{ path: string; content: string; exists: boolean }> {
   const day = date ?? todayStamp();
+  if (!isDailyDate(day)) return err(`Invalid daily note date: ${day}. Expected YYYY-MM-DD.`);
+
   const filePath = path.join(wikiRoot, "daily", `${day}.md`);
   const exists = existsSync(filePath);
   const content = exists ? readFileSync(filePath, "utf-8") : "";

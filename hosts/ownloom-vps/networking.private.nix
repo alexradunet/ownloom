@@ -4,7 +4,7 @@
 # After cloning, replace these with your VPS provider's real IPv4 address
 # and gateway, then run:
 #
-#   git update-index --skip-worktree hosts/nixpi-vps/networking.private.nix
+#   git update-index --skip-worktree hosts/ownloom-vps/networking.private.nix
 #
 # to keep your local edits out of commits.
 _: {

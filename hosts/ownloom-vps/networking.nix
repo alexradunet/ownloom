@@ -1,17 +1,10 @@
-{
-  config,
-  lib,
-  ...
-}: let
+{config, ...}: let
   wanAddresses = config.systemd.network.networks."10-wan".address or [];
   primaryAddress =
     if wanAddresses == []
     then ""
     else builtins.head wanAddresses;
 in {
-  imports =
-    lib.optional (builtins.pathExists ./networking.private.nix) ./networking.private.nix;
-
   networking = {
     useDHCP = false;
     useNetworkd = true;
@@ -31,8 +24,9 @@ in {
     };
   };
 
-  # The real WAN address and gateway are kept in hosts/ownloom-vps/networking.private.nix
-  # (gitignored). See networking.private.nix.example for the expected shape.
+  # The real WAN address and gateway are kept in the tracked placeholder
+  # hosts/ownloom-vps/networking.private.nix. Fill in real values locally and
+  # mark the file skip-worktree, as documented in README.md.
   assertions = [
     {
       assertion = primaryAddress != "";

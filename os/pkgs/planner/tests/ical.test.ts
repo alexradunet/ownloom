@@ -28,6 +28,15 @@ test("classifies VTODO with VALARM as reminder without custom category", () => {
   assert.equal(item?.alarmAt, "2026-05-07T08:30:00Z");
 });
 
+test("does not treat VALARM description as task description", () => {
+  const ics = todoIcs({ uid: "rem-desc", title: "Alarm title", reminderAt: "2026-05-07T08:30:00Z" });
+  assert.equal(parsePlannerItem(ics)?.description, undefined);
+
+  const updated = updateTodoFields(ics, { description: "Actual task details" });
+  assert.equal(parsePlannerItem(updated)?.description, "Actual task details");
+  assert.match(updated, /BEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Alarm title\r\nTRIGGER/);
+});
+
 test("classifies relative VALARM trigger as reminder", () => {
   const ics = [
     "BEGIN:VCALENDAR",

@@ -1,5 +1,5 @@
 /**
- * Harness-neutral utility helpers for the NixPI wiki module.
+ * Harness-neutral utility helpers for the ownloom wiki module.
  */
 
 import type { ActionResult } from "./core-utils.ts";

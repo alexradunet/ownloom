@@ -192,6 +192,7 @@ describe("path protection and markdown extraction", () => {
     expect(isProtectedPath(wikiRoot, `${wikiRoot}/meta/registry.json`)).toBe(true);
     expect(isProtectedPath(wikiRoot, `${wikiRoot}/pages/resources/technical/foo.md`)).toBe(false);
     expect(isWikiPagePath(wikiRoot, `${wikiRoot}/pages/resources/technical/foo.md`)).toBe(true);
+    expect(isWikiPagePath(wikiRoot, `${wikiRoot}/sources/web/2026-05-09.md`)).toBe(true);
     expect(isWikiPagePath(wikiRoot, `${wikiRoot}/raw/SRC-001/manifest.json`)).toBe(false);
   });
 

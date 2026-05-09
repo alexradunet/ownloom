@@ -1,6 +1,6 @@
 # PI wiki adapter
 
-PI-specific adapter for the shared `nixpi-wiki` core.
+PI-specific adapter for the shared `ownloom-wiki` core.
 
 It provides PI registered tools from the shared `toolManifest`:
 
@@ -23,4 +23,4 @@ The adapter also provides PI-only hooks/commands:
 - metadata rebuild after direct wiki Markdown edits.
 - compaction context capture.
 
-Shared wiki behavior belongs in `os/pkgs/nixpi-wiki`; this directory should remain adapter glue.
+Shared wiki behavior belongs in `os/pkgs/wiki`; this directory should remain adapter glue.

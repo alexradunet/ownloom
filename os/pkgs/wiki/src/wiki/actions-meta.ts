@@ -83,8 +83,8 @@ function listMarkdownFiles(dir: string): string[] {
 }
 
 export function scanPages(wikiRoot: string): ParsedPage[] {
-	// v2 layout: scan pages/ (legacy), daily/, objects/, meta/about-alex/
-	const scanDirs = ["pages", "daily", "objects", "meta/about-alex", "meta/audit"];
+	// v2 layout: scan pages/ (legacy), daily/, objects/, sources/, meta/about-alex/
+	const scanDirs = ["pages", "daily", "objects", "sources", "meta/about-alex", "meta/audit"];
 	const files: string[] = [];
 	for (const dir of scanDirs) {
 		const dirPath = path.join(wikiRoot, dir);
@@ -154,6 +154,7 @@ export function buildRegistry(pages: ParsedPage[]): RegistryData {
 			...(frontmatter.validation_level ? { validationLevel: asString(frontmatter.validation_level) } : {}),
 			...(typeof frontmatter.review_cycle_days === "number" ? { reviewCycleDays: frontmatter.review_cycle_days } : {}),
 			...(frontmatter.next_review ? { nextReview: asString(frontmatter.next_review) } : {}),
+			...(frontmatter.supersedes ? { supersedes: asString(frontmatter.supersedes) } : {}),
 		};
 	});
 

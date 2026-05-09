@@ -501,6 +501,47 @@ test("ClientTransport emits change events for mutating methods", async () => {
   }
 });
 
+test("ClientTransport REST rejects non-loopback Host headers", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0 },
+      new Store(path.join(tmp, "state.json")),
+      new CommandRegistry(),
+    );
+    const req = { method: "GET", url: "/api/v1/health", headers: { host: "example.com" } };
+    const res = makeMockRes();
+
+    await (transport as any).serveHttp(req, res);
+
+    assert.equal(res.status, 421);
+    assert.equal(JSON.parse(res.body).error, "Misdirected request");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("ClientTransport REST JSON responses are no-store", async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
+  try {
+    const transport = new ClientTransport(
+      { enabled: true, host: "127.0.0.1", port: 0 },
+      new Store(path.join(tmp, "state.json")),
+      new CommandRegistry(),
+    );
+    const req = { method: "GET", url: "/api/v1/health", headers: { host: "localhost" } };
+    const res = makeMockRes();
+
+    await (transport as any).serveHttp(req, res);
+
+    assert.equal(res.status, 200);
+    assert.equal(res.headers["Cache-Control"], "no-store, max-age=0");
+    assert.equal(res.headers["X-Content-Type-Options"], "nosniff");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test("ClientTransport REST pairs a loopback browser as a runtime client", async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), "ownloom-client-transport-"));
   try {

@@ -76,8 +76,8 @@ export const toolManifest: ToolManifestEntry[] = [
     name: "wiki_daily",
     label: "Wiki Daily",
     description: "Get today's daily note (action=get, read) or append bullets to it (action=append, write). Auto-creates today's note if missing.",
-    risk: "read",        // action=get is read; action=append is write but gated inside the dispatcher (see callWikiToolUnlocked)
-    mutatesWiki: false,  // declared false because action=get is the read default; append path explicitly enforces policy + rebuilds
+    risk: "read",        // action=get is read; action=append is write and is dynamically gated/locked in the dispatcher
+    mutatesWiki: false,  // declared false because action=get is the read default
     parameters: {
       action: { type: "string", enum: ["get", "append"], description: "get: read today's note. append: add bullets." },
       bullets: { type: "array", items: { type: "string" }, description: "Bullets to append (for action=append)." },

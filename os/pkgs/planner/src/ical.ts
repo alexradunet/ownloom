@@ -180,37 +180,103 @@ function valueFor(lines: string[], name: string): string | undefined {
   return lineValue?.slice(lineValue.indexOf(":") + 1);
 }
 
+function topLevelComponentLines(lines: string[], component: "VTODO" | "VEVENT"): string[] {
+  const begin = lines.indexOf(`BEGIN:${component}`);
+  if (begin < 0) return [];
+  const result: string[] = [];
+  let nestedDepth = 0;
+  for (let i = begin + 1; i < lines.length; i += 1) {
+    const entry = lines[i];
+    if (entry === `END:${component}` && nestedDepth === 0) break;
+    if (entry.startsWith("BEGIN:")) {
+      nestedDepth += 1;
+      continue;
+    }
+    if (entry.startsWith("END:") && nestedDepth > 0) {
+      nestedDepth -= 1;
+      continue;
+    }
+    if (nestedDepth === 0) result.push(entry);
+  }
+  return result;
+}
+
+function findTopLevelPropertyIndex(lines: string[], component: "VTODO" | "VEVENT", name: string): number {
+  const begin = lines.indexOf(`BEGIN:${component}`);
+  if (begin < 0) return -1;
+  let nestedDepth = 0;
+  for (let i = begin + 1; i < lines.length; i += 1) {
+    const entry = lines[i];
+    if (entry === `END:${component}` && nestedDepth === 0) return -1;
+    if (entry.startsWith("BEGIN:")) {
+      nestedDepth += 1;
+      continue;
+    }
+    if (entry.startsWith("END:") && nestedDepth > 0) {
+      nestedDepth -= 1;
+      continue;
+    }
+    if (nestedDepth === 0 && (entry.startsWith(`${name}:`) || entry.startsWith(`${name};`))) return i;
+  }
+  return -1;
+}
+
+function setTopLevelProperty(ics: string, component: "VTODO" | "VEVENT", name: string, lineValue: string): string {
+  const lines = unfold(ics);
+  const propertyIndex = findTopLevelPropertyIndex(lines, component, name);
+  if (propertyIndex >= 0) {
+    lines[propertyIndex] = lineValue;
+    return lines.join("\n");
+  }
+
+  const endIndex = lines.indexOf(`END:${component}`);
+  if (endIndex >= 0) {
+    lines.splice(endIndex, 0, lineValue);
+    return lines.join("\n");
+  }
+
+  return insertBeforeEnd(component, ics, [lineValue]);
+}
+
+function removeTopLevelProperty(ics: string, component: "VTODO" | "VEVENT", name: string): string {
+  const lines = unfold(ics);
+  const propertyIndex = findTopLevelPropertyIndex(lines, component, name);
+  if (propertyIndex >= 0) lines.splice(propertyIndex, 1);
+  return lines.join("\n");
+}
+
 export function parsePlannerItem(ics: string, href?: string): PlannerItem | undefined {
   const lines = unfold(ics);
   const isTodo = lines.includes("BEGIN:VTODO");
   const isEvent = lines.includes("BEGIN:VEVENT");
   if (!isTodo && !isEvent) return undefined;
-  const uid = valueFor(lines, "UID");
-  const title = valueFor(lines, "SUMMARY");
+  const componentLines = topLevelComponentLines(lines, isEvent ? "VEVENT" : "VTODO");
+  const uid = valueFor(componentLines, "UID");
+  const title = valueFor(componentLines, "SUMMARY");
   if (!uid || !title) return undefined;
-  const categories = (valueFor(lines, "CATEGORIES") ?? "")
+  const categories = (valueFor(componentLines, "CATEGORIES") ?? "")
     .split(",")
     .map((value) => unescapeText(value.trim()))
     .filter(Boolean);
-  const status = valueFor(lines, "STATUS") === "COMPLETED" ? "done" : "open";
+  const status = valueFor(componentLines, "STATUS") === "COMPLETED" ? "done" : "open";
   const alarmAt = valueFor(lines, "TRIGGER") ? parseIcalTrigger(valueFor(lines, "TRIGGER")!) : undefined;
   const kind: PlannerKind = isEvent ? "event" : (alarmAt || categories.includes("reminder")) ? "reminder" : "task";
-  const priorityRaw = valueFor(lines, "PRIORITY");
-  const rruleRaw = valueFor(lines, "RRULE");
+  const priorityRaw = valueFor(componentLines, "PRIORITY");
+  const rruleRaw = valueFor(componentLines, "RRULE");
   return {
     uid: unescapeText(uid),
     href,
     kind,
     status,
     title: unescapeText(title),
-    description: valueFor(lines, "DESCRIPTION") ? unescapeText(valueFor(lines, "DESCRIPTION")!) : undefined,
+    description: valueFor(componentLines, "DESCRIPTION") ? unescapeText(valueFor(componentLines, "DESCRIPTION")!) : undefined,
     categories,
     priority: priorityRaw ? Number(priorityRaw) : undefined,
-    due: valueFor(lines, "DUE") ? parseIcalDate(valueFor(lines, "DUE")!) : undefined,
-    start: valueFor(lines, "DTSTART") ? parseIcalDate(valueFor(lines, "DTSTART")!) : undefined,
-    end: valueFor(lines, "DTEND") ? parseIcalDate(valueFor(lines, "DTEND")!) : undefined,
+    due: valueFor(componentLines, "DUE") ? parseIcalDate(valueFor(componentLines, "DUE")!) : undefined,
+    start: valueFor(componentLines, "DTSTART") ? parseIcalDate(valueFor(componentLines, "DTSTART")!) : undefined,
+    end: valueFor(componentLines, "DTEND") ? parseIcalDate(valueFor(componentLines, "DTEND")!) : undefined,
     alarmAt,
-    completed: valueFor(lines, "COMPLETED") ? parseIcalDate(valueFor(lines, "COMPLETED")!) : undefined,
+    completed: valueFor(componentLines, "COMPLETED") ? parseIcalDate(valueFor(componentLines, "COMPLETED")!) : undefined,
     rrule: rruleRaw,
     raw: ics,
   };
@@ -291,22 +357,18 @@ export function updateTodoFields(ics: string, args: EditTodoArgs): string {
   const now = stamp();
 
   if (args.title !== undefined) {
-    updated = updated.replace(/^SUMMARY:.*$/m, `SUMMARY:${escapeText(args.title)}`);
+    updated = setTopLevelProperty(updated, "VTODO", "SUMMARY", `SUMMARY:${escapeText(args.title)}`);
   }
 
   if (args.description !== undefined) {
-    const descLine = `DESCRIPTION:${escapeText(args.description)}`;
-    if (/^DESCRIPTION:/m.test(updated)) updated = updated.replace(/^DESCRIPTION:.*$/m, descLine);
-    else updated = insertBeforeEnd("VTODO", updated, [descLine]);
+    updated = setTopLevelProperty(updated, "VTODO", "DESCRIPTION", `DESCRIPTION:${escapeText(args.description)}`);
   }
 
   if (args.priority !== undefined) {
     if (args.priority === 0) {
-      updated = updated.replace(/^PRIORITY:.*\n/m, "");
+      updated = removeTopLevelProperty(updated, "VTODO", "PRIORITY");
     } else {
-      const prioLine = `PRIORITY:${args.priority}`;
-      if (/^PRIORITY:/m.test(updated)) updated = updated.replace(/^PRIORITY:.*$/m, prioLine);
-      else updated = insertBeforeEnd("VTODO", updated, [prioLine]);
+      updated = setTopLevelProperty(updated, "VTODO", "PRIORITY", `PRIORITY:${args.priority}`);
     }
   }
 
@@ -322,21 +384,17 @@ export function updateTodoFields(ics: string, args: EditTodoArgs): string {
     } else if (args.categories !== undefined) {
       cats = args.categories;
     } else {
-      cats = (valueFor(unfold(updated), "CATEGORIES") ?? "")
+      cats = (valueFor(topLevelComponentLines(unfold(updated), "VTODO"), "CATEGORIES") ?? "")
         .split(",").map((c) => unescapeText(c.trim())).filter(Boolean);
       if (args.addCategories?.length) cats = [...new Set([...cats, ...args.addCategories])];
       if (args.removeCategories?.length) cats = cats.filter((c) => !args.removeCategories!.includes(c));
     }
     const catLine = cats.length ? `CATEGORIES:${cats.map(escapeText).join(",")}` : null;
-    if (/^CATEGORIES:/m.test(updated)) {
-      if (catLine) updated = updated.replace(/^CATEGORIES:.*$/m, catLine);
-      else updated = updated.replace(/^CATEGORIES:.*\n/m, "");
-    } else if (catLine) {
-      updated = insertBeforeEnd("VTODO", updated, [catLine]);
-    }
+    if (catLine) updated = setTopLevelProperty(updated, "VTODO", "CATEGORIES", catLine);
+    else updated = removeTopLevelProperty(updated, "VTODO", "CATEGORIES");
   }
 
-  if (/^LAST-MODIFIED:/m.test(updated)) updated = updated.replace(/^LAST-MODIFIED:.*$/m, `LAST-MODIFIED:${now}`);
+  if (/^LAST-MODIFIED:/m.test(updated)) updated = setTopLevelProperty(updated, "VTODO", "LAST-MODIFIED", `LAST-MODIFIED:${now}`);
   return updated.replace(/\n/g, "\r\n");
 }
 
@@ -354,13 +412,11 @@ export function updateEventFields(ics: string, args: EditEventArgs): string {
   const now = stamp();
 
   if (args.title !== undefined) {
-    updated = updated.replace(/^SUMMARY:.*$/m, `SUMMARY:${escapeText(args.title)}`);
+    updated = setTopLevelProperty(updated, "VEVENT", "SUMMARY", `SUMMARY:${escapeText(args.title)}`);
   }
 
   if (args.description !== undefined) {
-    const descLine = `DESCRIPTION:${escapeText(args.description)}`;
-    if (/^DESCRIPTION:/m.test(updated)) updated = updated.replace(/^DESCRIPTION:.*$/m, descLine);
-    else updated = insertBeforeEnd("VEVENT", updated, [descLine]);
+    updated = setTopLevelProperty(updated, "VEVENT", "DESCRIPTION", `DESCRIPTION:${escapeText(args.description)}`);
   }
 
   const hasCatArgs =
@@ -375,21 +431,17 @@ export function updateEventFields(ics: string, args: EditEventArgs): string {
     } else if (args.categories !== undefined) {
       cats = args.categories;
     } else {
-      cats = (valueFor(unfold(updated), "CATEGORIES") ?? "")
+      cats = (valueFor(topLevelComponentLines(unfold(updated), "VEVENT"), "CATEGORIES") ?? "")
         .split(",").map((c) => unescapeText(c.trim())).filter(Boolean);
       if (args.addCategories?.length) cats = [...new Set([...cats, ...args.addCategories])];
       if (args.removeCategories?.length) cats = cats.filter((c) => !args.removeCategories!.includes(c));
     }
     const catLine = cats.length ? `CATEGORIES:${cats.map(escapeText).join(",")}` : null;
-    if (/^CATEGORIES:/m.test(updated)) {
-      if (catLine) updated = updated.replace(/^CATEGORIES:.*$/m, catLine);
-      else updated = updated.replace(/^CATEGORIES:.*\n/m, "");
-    } else if (catLine) {
-      updated = insertBeforeEnd("VEVENT", updated, [catLine]);
-    }
+    if (catLine) updated = setTopLevelProperty(updated, "VEVENT", "CATEGORIES", catLine);
+    else updated = removeTopLevelProperty(updated, "VEVENT", "CATEGORIES");
   }
 
-  if (/^LAST-MODIFIED:/m.test(updated)) updated = updated.replace(/^LAST-MODIFIED:.*$/m, `LAST-MODIFIED:${now}`);
+  if (/^LAST-MODIFIED:/m.test(updated)) updated = setTopLevelProperty(updated, "VEVENT", "LAST-MODIFIED", `LAST-MODIFIED:${now}`);
   return updated.replace(/\n/g, "\r\n");
 }
 

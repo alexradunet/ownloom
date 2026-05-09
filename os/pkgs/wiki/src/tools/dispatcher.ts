@@ -8,7 +8,7 @@ import { handleWikiLint } from "../wiki/actions-lint.ts";
 import { buildWikiDigest, handleWikiStatus, loadRegistry, rebuildAllMeta } from "../wiki/actions-meta.ts";
 import { handleEnsurePage } from "../wiki/actions-pages.ts";
 import { handleWikiSearch } from "../wiki/actions-search.ts";
-import { ok } from "../wiki/lib/core-utils.ts";
+import { err, ok } from "../wiki/lib/core-utils.ts";
 import { toToolResult } from "../wiki/lib/utils.ts";
 import { mkdirSync, rmSync, statSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import path from "node:path";
@@ -132,7 +132,7 @@ export async function callWikiTool(name: string, params: Record<string, any> = {
     return { content: [{ type: "text", text: `Unknown wiki tool: ${name}` }], details: { ok: false }, isError: true };
   }
 
-  const mutatesWiki = Boolean(manifest.mutatesWiki);
+  const mutatesWiki = Boolean(manifest.mutatesWiki) || (name === "wiki_daily" && params.action !== "get");
   const mutatesCache = Boolean(manifest.mutatesCache);
   if (mutatesWiki && !options.policy?.allowMutation) return policyError(`Refusing wiki-write tool ${name} without mutation approval. Safe next step: use 'ownloom-wiki mutate ${name} ...' for intentional writes, or add --yes/OWNLOOM_WIKI_ALLOW_MUTATION=1 in a reviewed automation path.`);
   if (mutatesCache && !options.policy?.allowCacheMutation) return policyError(`${name} is a cache-write tool and requires allowCacheMutation policy.`);
@@ -190,8 +190,10 @@ async function callWikiToolUnlocked(name: string, params: Record<string, any>, o
       if (params.action === "get") {
         return toToolResult(handleDailyGet(wikiRoot, params.date));
       }
-      // append — write files and rebuild (no manifest mutation guard since risk=read, but still writes)
-      if (params.action === "append" && !options.policy?.allowMutation) {
+      if (params.action !== "append") {
+        return toToolResult(err(`Invalid wiki_daily action: ${params.action ?? "<missing>"}. Expected get or append.`));
+      }
+      if (!options.policy?.allowMutation) {
         return policyError(`wiki_daily append is a write operation. Use 'ownloom-wiki mutate wiki_daily ...' or add --yes.`);
       }
       return maybeRebuild(wikiRoot, toToolResult(handleDailyAppend(wikiRoot, params.bullets ?? [], {

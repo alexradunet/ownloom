@@ -177,8 +177,8 @@ in {
   services = {
     ownloom-code-server = {
       enable = true;
-      # hashedPassword is provided by hosts/ownloom-vps/secrets.private.nix
-      # (gitignored). See secrets.private.nix.example for the format.
+      # hashedPassword is provided by hosts/ownloom-vps/secrets.private.nix,
+      # which is tracked with a placeholder and filled locally via skip-worktree.
     };
 
     minecraft-server = {
@@ -245,9 +245,8 @@ in {
         };
         transports = {
           client.enable = true;
-          # WhatsApp transport is provided by hosts/ownloom-vps/ownloom-gateway.private.nix
-          # (gitignored) — owner phone numbers stay out of the public repo.
-          # See ownloom-gateway.private.nix.example for the format.
+          # WhatsApp transport is provided by hosts/ownloom-vps/ownloom-gateway.private.nix,
+          # which is tracked disabled-by-default and filled locally via skip-worktree.
         };
       };
     };

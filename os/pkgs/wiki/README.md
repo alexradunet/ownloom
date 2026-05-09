@@ -37,17 +37,17 @@ If `OWNLOOM_WIKI_ROOT` is not set, ownloom Wiki uses:
 From a local checkout or packed tarball:
 
 ```bash
-cd os/pkgs/ownloom-wiki
+cd os/pkgs/wiki
 npm run build
 npm pack
-npm install -g ./ownloom-wiki-0.1.0.tgz
+npm install -g ./ownloom-wiki-0.3.0.tgz
 ownloom-wiki init --root ~/work-wiki --workspace work --domain work
 ```
 
 Local project usage:
 
 ```bash
-npm install ownloom-wiki
+npm install @ownloom/wiki
 npx ownloom-wiki init --root ./wiki --workspace work --domain work
 ```
 

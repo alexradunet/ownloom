@@ -1,4 +1,4 @@
-/** Minimal filesystem helpers for the NixPI wiki module. */
+/** Minimal filesystem helpers for the ownloom wiki module. */
 import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 

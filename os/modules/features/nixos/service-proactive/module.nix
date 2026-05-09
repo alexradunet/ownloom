@@ -102,6 +102,8 @@
     };
   };
 
+  enabledTasks = lib.filterAttrs (_: task: task.enable) cfg.tasks;
+
   taskOpts = {name, ...}: {
     options = {
       enable = lib.mkEnableOption "this proactive task (${name})";
@@ -226,7 +228,7 @@ in {
         assertion = task.userPrompts != [];
         message = "services.ownloom-proactive-timers.tasks.${name}.userPrompts must not be empty.";
       })
-      cfg.tasks;
+      enabledTasks;
 
     systemd = {
       services =
@@ -234,14 +236,14 @@ in {
           name = mkSvcName name;
           value = mkTaskService name task;
         })
-        cfg.tasks;
+        enabledTasks;
 
       timers =
         lib.mapAttrs' (name: task: {
           name = mkSvcName name;
           value = mkTaskTimer name task;
         })
-        cfg.tasks;
+        enabledTasks;
     };
   };
 }

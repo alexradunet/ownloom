@@ -9,19 +9,25 @@ buildNpmPackage {
   version = "0.3.0";
 
   src = lib.cleanSourceWith {
-    src = ./.;
+    # The wiki adapter tests import the sibling pi-adapter package via
+    # ../../pi-adapter, so the package source is rooted at os/pkgs while npm
+    # still runs from the wiki package directory.
+    src = ./..;
     filter = path: _type: let
       base = baseNameOf path;
       parent = baseNameOf (dirOf path);
       forbidden = [
         "node_modules"
         "dist"
+        "dist-test"
+        "coverage"
         ".vite"
       ];
     in
       !(lib.elem base forbidden || lib.elem parent forbidden || lib.hasSuffix ".sqlite" base);
   };
 
+  npmRoot = "wiki";
   npmDepsHash = "sha256-Qc7KY8/wMoC0k+WRFbGV9aNBaWAG5bRGR5n1/hIRbLA=";
 
   nativeBuildInputs = [makeWrapper];
@@ -29,17 +35,18 @@ buildNpmPackage {
 
   buildPhase = ''
     runHook preBuild
+    cd wiki
     npm run build
+    cd ..
     runHook postBuild
   '';
 
   doCheck = true;
   checkPhase = ''
     runHook preCheck
-    npm test -- --run \
-      tests/actions-meta.test.ts \
-      tests/actions-meta-digest.test.ts \
-      tests/actions-pages-v2.test.ts
+    cd wiki
+    npm test
+    cd ..
     runHook postCheck
   '';
 
@@ -47,7 +54,9 @@ buildNpmPackage {
     runHook preInstall
 
     mkdir -p $out/share/ownloom-wiki $out/bin
-    cp -r dist package.json README.md seed $out/share/ownloom-wiki/
+    cd wiki
+    cp -r dist package.json README.md seed skill $out/share/ownloom-wiki/
+    cd ..
 
     makeWrapper ${nodejs}/bin/node $out/bin/ownloom-wiki \
       --add-flags "$out/share/ownloom-wiki/dist/cli.cjs"

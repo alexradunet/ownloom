@@ -9,7 +9,7 @@
  *   strict (default) — all 4 above
  */
 import path from "node:path";
-import { ok } from "./lib/core-utils.ts";
+import { err, ok } from "./lib/core-utils.ts";
 import { buildBacklinks, buildRegistry, scanPages } from "./actions-meta.ts";
 import { normalizeWikiLink } from "./paths.ts";
 import { REQUIRED_FRONTMATTER_FIELDS } from "./rules.ts";
@@ -31,6 +31,8 @@ function asArray(v: unknown): string[] {
   if (typeof v === "string" && v) return [v];
   return [];
 }
+
+const VALID_LINT_MODES = new Set<LintMode>(["links", "frontmatter", "duplicates", "supersedes-cycles", "strict"]);
 
 // ── 1. links ─────────────────────────────────────────────────────────────────
 
@@ -81,16 +83,19 @@ function lintFrontmatter(pages: ReturnType<typeof scanPages>): LintIssue[] {
 function lintDuplicates(registry: RegistryData): LintIssue[] {
   const issues: LintIssue[] = [];
 
-  // Duplicate slugs (same filename in different locations — shouldn't happen in flat layout)
+  // Duplicate slugs within the same folder. Cross-folder date slugs are valid
+  // in v2 (for example daily/YYYY-MM-DD.md and sources/web/YYYY-MM-DD.md).
   const slugMap = new Map<string, string[]>();
   for (const p of registry.pages) {
     const slug = path.basename(p.path, ".md").toLowerCase();
-    const arr = slugMap.get(slug) ?? [];
+    const key = `${p.folder}:${slug}`;
+    const arr = slugMap.get(key) ?? [];
     arr.push(p.path);
-    slugMap.set(slug, arr);
+    slugMap.set(key, arr);
   }
-  for (const [slug, paths] of slugMap) {
+  for (const [key, paths] of slugMap) {
     if (paths.length > 1) {
+      const slug = key.slice(key.indexOf(":") + 1);
       issues.push(issue(paths[0], `Duplicate slug "${slug}" across: ${paths.join(", ")}`));
     }
   }
@@ -150,6 +155,9 @@ export function handleWikiLint(wikiRoot: string, mode?: LintMode | string): Acti
   const registry = buildRegistry(pages);
 
   const m = mode ?? "strict";
+  if (!VALID_LINT_MODES.has(m as LintMode)) {
+    return err(`Unknown lint mode: ${m}. Expected one of: ${[...VALID_LINT_MODES].join(", ")}.`);
+  }
 
   let linkIssues: LintIssue[] = [];
   let fmIssues: LintIssue[] = [];

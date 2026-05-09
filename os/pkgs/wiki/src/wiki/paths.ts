@@ -201,11 +201,12 @@ export function isProtectedPath(wikiRoot: string, absolutePath: string): boolean
 export function isWikiPagePath(wikiRoot: string, absolutePath: string): boolean {
 	const rel = path.relative(wikiRoot, absolutePath);
 	if (rel.startsWith("..") || path.isAbsolute(rel)) return false;
-	// v2 layout: pages/, daily/, objects/, types/, meta/about-alex/, meta/audit/
+	// v2 layout: pages/, daily/, objects/, sources/, types/, meta/about-alex/, meta/audit/
 	return (
 		startsWithDir(rel, "pages") ||
 		startsWithDir(rel, "daily") ||
 		startsWithDir(rel, "objects") ||
+		startsWithDir(rel, "sources") ||
 		startsWithDir(rel, "types") ||
 		startsWithDir(rel, "meta/about-alex") ||
 		startsWithDir(rel, "meta/audit")

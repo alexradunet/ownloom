@@ -6,6 +6,7 @@
 }: let
   cfg = config.services.ownloom-webdav;
   userName = config.ownloom.human.name;
+  isLoopback = builtins.elem cfg.address ["127.0.0.1" "::1" "localhost"];
 in {
   options.services.ownloom-webdav = {
     enable = lib.mkEnableOption "loopback WebDAV server for the ownloom wiki (access via SSH tunnel)";
@@ -52,6 +53,13 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = isLoopback;
+        message = "services.ownloom-webdav.address must stay loopback-only; use an SSH tunnel for remote access.";
+      }
+    ];
+
     # nginx with WebDAV extension module, workers running as the wiki owner
     # so they can read/write ~/wiki without any chmod gymnastics.
     services.nginx = {

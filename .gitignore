@@ -18,20 +18,17 @@ dist
 os/pkgs/wiki/extension
 os/pkgs/wiki/core
 
-# Wiki lives outside the repo at ~/wiki — gitignore root wiki dirs as a
-# safety net in case someone accidentally clones one here. Keep the tracked
-# os/pkgs/wiki package able to add new source files.
-wiki/
-!os/pkgs/wiki/
-!os/pkgs/wiki/src/
-!os/pkgs/wiki/src/lib/
+# Wiki lives outside the repo at ~/wiki — ignore only a root wiki dir as a
+# safety net in case someone accidentally clones one here. Do not ignore the
+# tracked os/pkgs/wiki package or future source files under os/pkgs/wiki/src/wiki.
+/wiki/
 
 # Host-local private overlays are TRACKED with placeholder values, not
 # gitignored. After cloning, fill them in with real values and run
-# `git update-index --skip-worktree hosts/nixpi-vps/*.private.nix`
+# `git update-index --skip-worktree hosts/ownloom-vps/*.private.nix`
 # to keep local edits out of commits.
 
 # Real encrypted SOPS files are intentionally added explicitly when ready.
 hosts/*/secrets.yaml
-!hosts/nixpi-vps/secrets.yaml
+!hosts/ownloom-vps/secrets.yaml
 !hosts/*/secrets.example.yaml

@@ -50,6 +50,7 @@ Stable host secrets live in encrypted `sops-nix` files under `hosts/ownloom-vps/
 - `hosts/ownloom-vps/networking.private.nix` — VPS WAN address + gateway (TEST-NET-3 placeholder)
 - `hosts/ownloom-vps/secrets.private.nix` — code-server argon2 hash (placeholder)
 - `hosts/ownloom-vps/ownloom-gateway.private.nix` — WhatsApp transport owner numbers (disabled by default)
+- `hosts/ownloom-vps/minecraft.private.nix` — Minecraft whitelist entries (empty placeholder)
 
 After cloning, edit each file with real values, then mark them as locally-modified-only so git won't include the changes in commits or pulls:
 
@@ -57,7 +58,8 @@ After cloning, edit each file with real values, then mark them as locally-modifi
 git update-index --skip-worktree \
   hosts/ownloom-vps/networking.private.nix \
   hosts/ownloom-vps/secrets.private.nix \
-  hosts/ownloom-vps/ownloom-gateway.private.nix
+  hosts/ownloom-vps/ownloom-gateway.private.nix \
+  hosts/ownloom-vps/minecraft.private.nix
 ```
 
 A first install can boot without `hosts/ownloom-vps/secrets.yaml`; SSH keys are enough. After first boot, copy `.sops.example.yaml` to `.sops.yaml`, create a real encrypted `secrets.yaml`, force-add it past the ignore rule, and rebuild.

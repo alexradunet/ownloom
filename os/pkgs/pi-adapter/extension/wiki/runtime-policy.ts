@@ -4,7 +4,9 @@ import { dirname, join } from "node:path";
 export type SavedContext = { savedAt: string; host?: string; cwd?: string };
 
 function agentDir(): string {
-  return process.env.NIXPI_AGENT_DIR
+  return process.env.OWNLOOM_AGENT_DIR
+    ?? process.env.PI_CODING_AGENT_DIR
+    ?? process.env.NIXPI_AGENT_DIR
     ?? join(process.env.NIXPI_HOME || process.env.HOME || "/tmp", ".pi", "agent");
 }
 

@@ -1,5 +1,5 @@
 /**
- * nixpi-wiki v2 — second-brain extension.
+ * ownloom-wiki v2 — second-brain extension.
  *
  * @tools wiki_status, wiki_search, wiki_ensure_object, wiki_daily, wiki_ingest, wiki_lint, wiki_rebuild, wiki_session_capture, wiki_decay_pass
  * @hooks tool_call, agent_end, session_start, session_before_compact
@@ -8,7 +8,7 @@ import path from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { type ExtensionAPI, isToolCallEventType } from "@mariozechner/pi-coding-agent";
+import { type ExtensionAPI, isToolCallEventType } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import {
 	callWikiTool,
@@ -43,8 +43,8 @@ async function buildTodayDigest(wikiRoot: string): Promise<string> {
 	// 2. Planner: today + overdue
 	try {
 		const [{ stdout: todayOut }, { stdout: overdueOut }] = await Promise.all([
-			execFileAsync("nixpi-planner", ["list", "today", "--json"], { timeout: 8_000 }),
-			execFileAsync("nixpi-planner", ["list", "overdue", "--json"], { timeout: 8_000 }),
+			execFileAsync("ownloom-planner", ["list", "today", "--json"], { timeout: 8_000 }),
+			execFileAsync("ownloom-planner", ["list", "overdue", "--json"], { timeout: 8_000 }),
 		]);
 		const todayItems: any[] = JSON.parse(todayOut.trim() || "[]");
 		const overdueItems: any[] = JSON.parse(overdueOut.trim() || "[]");
@@ -158,7 +158,7 @@ async function executeCoreWikiTool(
 export default function (pi: ExtensionAPI) {
 	const dirtyRoots = new Set<string>();
 
-	// Register all wiki tools declared by the shared nixpi-wiki manifest.
+	// Register all wiki tools declared by the shared ownloom-wiki manifest.
 	const tools: RegisteredExtensionTool[] = toolManifest.map((manifest) => ({
 		name: manifest.name,
 		label: manifest.label,

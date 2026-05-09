@@ -99,7 +99,13 @@ export class ClientTransport implements GatewayTransport {
       });
       const wss = new WebSocketServer({ server, maxPayload: CLIENT_WS_MAX_PAYLOAD_BYTES });
 
-      wss.on("connection", (ws) => this.handleConnection(ws));
+      wss.on("connection", (ws, req) => {
+        if (!isAllowedRequest(req)) {
+          ws.close(1008, "Misdirected request");
+          return;
+        }
+        this.handleConnection(ws);
+      });
       wss.on("error", (err) => {
         console.error("client transport: server error:", err);
         reject(err);
@@ -134,14 +140,18 @@ export class ClientTransport implements GatewayTransport {
   // ── HTTP REST API ────────────────────────────────────────────────────────
 
   private async serveHttp(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    if (!isAllowedRequest(req)) {
+      writeJson(res, 421, { error: "Misdirected request" });
+      return;
+    }
+
     const url = req.url ?? "/";
     if (url.startsWith("/api/v1/")) {
       await this.serveRestApi(req, res);
       return;
     }
 
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Not found" }));
+    writeJson(res, 404, { error: "Not found" });
   }
 
   private async serveRestApi(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -150,8 +160,7 @@ export class ClientTransport implements GatewayTransport {
 
     if (path === "/api/v1/pair") {
       if (req.method !== "POST") {
-        res.writeHead(405, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Method not allowed" }));
+        writeJson(res, 405, { error: "Method not allowed" });
         return;
       }
       this.handleClientPair(req, res, parsedUrl);
@@ -160,8 +169,7 @@ export class ClientTransport implements GatewayTransport {
 
     const auth = this.authenticateRestRequest(req);
     if (!auth.ok) {
-      res.writeHead(auth.status, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: auth.error }));
+      writeJson(res, auth.status, { error: auth.error });
       return;
     }
 
@@ -171,8 +179,7 @@ export class ClientTransport implements GatewayTransport {
     }
 
     if (req.method !== "GET") {
-      res.writeHead(405, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Method not allowed" }));
+      writeJson(res, 405, { error: "Method not allowed" });
       return;
     }
 
@@ -200,27 +207,23 @@ export class ClientTransport implements GatewayTransport {
     } else if (path === "/api/v1/deliveries") {
       result = { deliveries: this.store.listQueuedDeliveries(undefined, { includeDead: true }) };
     } else {
-      res.writeHead(404, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Not found" }));
+      writeJson(res, 404, { error: "Not found" });
       return;
     }
 
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(result));
+    writeJson(res, 200, result);
   }
 
   private handleClientPair(req: IncomingMessage, res: ServerResponse, url: URL): void {
     req.resume();
     if (!isLoopbackAddress(req.socket.remoteAddress)) {
-      res.writeHead(403, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Pairing is only allowed from loopback" }));
+      writeJson(res, 403, { error: "Pairing is only allowed from loopback" });
       return;
     }
 
     const id = sanitizeClientId(url.searchParams.get("clientId") ?? "") ?? `browser-${randomUUID()}`;
     if (this.config.clients?.some((client) => client.id === id)) {
-      res.writeHead(409, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: `Client id is config-managed: ${id}` }));
+      writeJson(res, 409, { error: `Client id is config-managed: ${id}` });
       return;
     }
 
@@ -236,15 +239,13 @@ export class ClientTransport implements GatewayTransport {
 
     this.broadcastEvent(EVENTS.CLIENTS_CHANGED, this.clientsChangedPayload());
     setTimeout(() => this.disconnectIdentity(id), 0);
-    res.writeHead(201, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ client, token: result.token }));
+    writeJson(res, 201, { client, token: result.token });
   }
 
   private async handleAttachmentUpload(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const kind = req.headers["x-ownloom-attachment-kind"];
     if (kind !== "image" && kind !== "audio") {
-      res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "x-ownloom-attachment-kind must be image or audio" }));
+      writeJson(res, 400, { error: "x-ownloom-attachment-kind must be image or audio" });
       return;
     }
 
@@ -255,26 +256,23 @@ export class ClientTransport implements GatewayTransport {
     try {
       data = await readRequestBody(req, ATTACHMENT_MAX_BYTES);
     } catch (err) {
-      res.writeHead(413, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }));
+      writeJson(res, 413, { error: err instanceof Error ? err.message : String(err) });
       return;
     }
     if (data.length === 0) {
-      res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "attachment body must not be empty" }));
+      writeJson(res, 400, { error: "attachment body must not be empty" });
       return;
     }
 
     this.store.pruneAttachments(24 * 60 * 60 * 1000);
     const attachment = this.store.saveAttachment({ kind, mimeType, fileName, data });
-    res.writeHead(201, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({
+    writeJson(res, 201, {
       id: attachment.id,
       kind: attachment.kind,
       mimeType: attachment.mimeType,
       fileName: attachment.fileName,
       sizeBytes: attachment.sizeBytes,
-    }));
+    });
   }
 
   // ── WebSocket protocol/v1 ────────────────────────────────────────────────
@@ -764,6 +762,45 @@ export class ClientTransport implements GatewayTransport {
         : `conn:${client.connId}`;
     return `${owner}:${method}:${idempotencyKey}`;
   }
+}
+
+function writeJson(res: ServerResponse, status: number, body: unknown): void {
+  res.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "X-Content-Type-Options": "nosniff",
+    "Cache-Control": "no-store, max-age=0",
+  });
+  res.end(JSON.stringify(body));
+}
+
+function isAllowedRequest(req: IncomingMessage): boolean {
+  return isAllowedHostHeader(req.headers.host) && isAllowedOriginHeader(req.headers.origin);
+}
+
+function isAllowedHostHeader(value: string | string[] | undefined): boolean {
+  if (Array.isArray(value)) return value.every((item) => isAllowedHostHeader(item));
+  if (typeof value !== "string" || !value.trim()) return false;
+  try {
+    return isLoopbackHostname(new URL(`http://${value}`).hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedOriginHeader(value: string | string[] | undefined): boolean {
+  if (value === undefined) return true;
+  if (Array.isArray(value)) return value.every((item) => isAllowedOriginHeader(item));
+  if (typeof value !== "string" || !value.trim()) return false;
+  try {
+    return isLoopbackHostname(new URL(value).hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isLoopbackHostname(value: string): boolean {
+  const hostname = value.replace(/^\[|\]$/g, "").toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

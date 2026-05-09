@@ -10,6 +10,7 @@
     then "[${cfg.host}]"
     else cfg.host;
   isLoopback = builtins.elem cfg.host ["127.0.0.1" "::1" "localhost"];
+  serverIsLoopback = builtins.elem cfg.serverListen ["127.0.0.1" "::1" "localhost"];
   usesPasswordAuth = cfg.htpasswdFile != null;
   caldavUrl = "http://${bindHost}:${toString cfg.port}/";
 
@@ -118,6 +119,10 @@ in {
       {
         assertion = (!cfg.openFirewall) || usesPasswordAuth;
         message = "services.ownloom-planner.htpasswdFile is required when opening the firewall.";
+      }
+      {
+        assertion = (!cfg.enableServer) || serverIsLoopback;
+        message = "services.ownloom-planner.serverListen must stay loopback-only for the local web view/API.";
       }
     ];
 
