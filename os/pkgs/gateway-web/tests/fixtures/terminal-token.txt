@@ -1,0 +1,2 @@
+# Playwright fixture token; not a secret.
+e2e-zellij-token

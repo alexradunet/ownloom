@@ -41,7 +41,7 @@ const staticSecurityHeaders = {
     "style-src 'self'",
     "font-src 'self'",
     "img-src 'self' data: blob:",
-    "connect-src 'self' http://127.0.0.1:* http://[::1]:* http://localhost:* https://127.0.0.1:* https://[::1]:* https://localhost:* ws://127.0.0.1:* ws://[::1]:* ws://localhost:* wss://127.0.0.1:* wss://[::1]:* wss://localhost:*",
+    "connect-src 'self' http://127.0.0.1:* http://localhost:* https://127.0.0.1:* https://localhost:* ws://127.0.0.1:* ws://localhost:* wss://127.0.0.1:* wss://localhost:*",
     "frame-src 'self'",
     "object-src 'none'",
     "base-uri 'none'",

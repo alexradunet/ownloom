@@ -10,7 +10,9 @@ buildNpmPackage {
 
   src = lib.cleanSource ./.;
 
-  npmDepsHash = "sha256-U+5HTH/K1qnqzFiWziiY3RQONXoXnBRHV3/iuOpdONU=";
+  npmDepsHash = "sha256-8kF8X7OAVn7UKucUSg81flvp5IHIxZ4wTQJHyYyrz/4=";
+
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
 
   nativeBuildInputs = [makeWrapper];
 

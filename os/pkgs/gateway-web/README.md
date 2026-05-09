@@ -137,6 +137,10 @@ The gateway client transport is still expected to stay loopback-only until HTTPS
 
 ```bash
 cd os/pkgs/gateway-web && npm run build && npm run check
+# On NixOS, use the Nix-wrapped Playwright browser build:
+npm run test:e2e:nix
+# Elsewhere, install browsers once with `npx playwright install chromium`, then:
+npm run test:e2e
 find os/pkgs/gateway-web/public -name '*.js' -print0 | xargs -0 -n1 node --check
 node --check os/pkgs/gateway-web/server.mjs
 nix build .#ownloom-gateway-web --no-link

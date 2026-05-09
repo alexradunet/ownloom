@@ -11,9 +11,12 @@
     "build:js:admin": "esbuild src/components/ownloom-admin.ts --bundle --format=esm --target=es2022 --outfile=public/generated/ownloom-admin.js",
     "build:js": "npm run build:js:catalog && npm run build:js:personal && npm run build:js:admin",
     "build": "npm run clean && npm run build:css && npm run build:js",
-    "check": "node --check public/generated/ownloom-lit.js && node --check public/generated/ownloom-personal.js && node --check public/generated/ownloom-admin.js"
+    "check": "node --check public/generated/ownloom-lit.js && node --check public/generated/ownloom-personal.js && node --check public/generated/ownloom-admin.js",
+    "test:e2e": "playwright test",
+    "test:e2e:nix": "PLAYWRIGHT_BROWSERS_PATH=$(nix build --no-link --print-out-paths nixpkgs#playwright-driver.browsers) playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "1.58.2",
     "@tailwindcss/cli": "4.3.0",
     "esbuild": "0.28.0",
     "lit": "3.3.2",

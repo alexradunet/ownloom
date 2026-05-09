@@ -15,6 +15,10 @@ node_modules
 coverage
 dist-test
 dist
+playwright-report
+test-results
+os/pkgs/gateway-web/playwright-report/
+os/pkgs/gateway-web/test-results/
 os/pkgs/gateway-web/public/generated/
 os/pkgs/wiki/extension
 os/pkgs/wiki/core
